@@ -1,0 +1,70 @@
+[gd_scene load_steps=2 format=3 uid="uid://bweaponcrafttilepicker"]
+
+[ext_resource type="Script" path="res://scripts/dev/tile_picker.gd" id="1"]
+
+[node name="TilePicker" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="HeaderHBox" type="HBoxContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MarginContainer/VBox/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Kenney Tile Picker — assign sprites to game data"
+
+[node name="SaveBtn" type="Button" parent="MarginContainer/VBox/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Save All"
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Click a slot on the right, then click a tile on the left."
+
+[node name="MainHSplit" type="HSplitContainer" parent="MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 600
+
+[node name="PackTabs" type="TabContainer" parent="MarginContainer/VBox/MainHSplit"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RightVBox" type="VBoxContainer" parent="MarginContainer/VBox/MainHSplit"]
+layout_mode = 2
+
+[node name="SlotsHeader" type="Label" parent="MarginContainer/VBox/MainHSplit/RightVBox"]
+layout_mode = 2
+text = "Assignment slots"
+
+[node name="SlotScroll" type="ScrollContainer" parent="MarginContainer/VBox/MainHSplit/RightVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SlotList" type="VBoxContainer" parent="MarginContainer/VBox/MainHSplit/RightVBox/SlotScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3

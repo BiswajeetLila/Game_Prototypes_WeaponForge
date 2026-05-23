@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"r_fire"
+slot = &"rune"
+cls = &"universal"
+name = "Fire Rune"
+desc = "Adds FIRE tag and +3 ATK. Two fire sources on one weapon ignites Inferno."
+rarity = &"common"
+cost = 3
+atk = 3
+hp = 0
+crit = 0
+ult_rate = 0
+tag = &"fire"

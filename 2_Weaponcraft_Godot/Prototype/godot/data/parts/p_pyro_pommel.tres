@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"p_pyro_pommel"
+slot = &"hilt"
+cls = &"universal"
+name = "Pyro Pommel"
+desc = "Universal hilt smoldering with FIRE. Pair with a fire or ice rune to unlock crafting recipes."
+rarity = &"common"
+cost = 4
+atk = 2
+hp = 0
+crit = 0
+ult_rate = 0
+tag = &"fire"

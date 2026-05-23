@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeaponCraft RealTime v0.1.0 — Continuous Stream</title>
+    <style>
+        :root {
+            --bg-parchment: #f0e1cf;
+            --panel-bg: #c9b9a6;
+            --ornate-frame: #59402a;
+            --ornate-accent: #8e6d4c;
+            --text-dark: #3a2a1b;
+            --hp-red: #c0392b;
+            --warrior-color: #e74c3c;
+            --rogue-color: #2ecc71;
+            --mage-color: #3498db;
+            --gold-color: #f1c40f;
+            --ult-purple: #9b59b6;
+        }
+
+        @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.05); } }
+        @keyframes ultGlow { 0%,100% { box-shadow: 0 0 5px var(--ult-purple); } 50% { box-shadow: 0 0 18px var(--ult-purple); } }
+
+        body {
+            margin: 0; background-color: #222; font-family: 'Times New Roman', Times, serif;
+            display: flex; justify-content: center; color: var(--text-dark); user-select: none;
+        }
+
+        #mobile-container {
+            width: 100%; max-width: 420px; height: 100vh; max-height: 900px;
+            background: linear-gradient(180deg, #f0e1cf 0%, #dabda8 100%);
+            display: flex; flex-direction: column;
+            border-left: 3px solid var(--ornate-frame); border-right: 3px solid var(--ornate-frame);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 15px; overflow: hidden; position: relative;
+        }
+        .header-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 8px solid var(--ornate-frame); border-radius: 12px; pointer-events: none; z-index: 10; box-sizing: border-box; }
+
+        /* TOP HUD */
+        #top-hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; }
+        #gold-ui { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 15px; border: 2px solid var(--gold-color); color: white; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        #time-pill { background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 15px; border: 2px solid var(--ornate-frame); color: white; font-weight: bold; font-size: 13px; font-family: 'Courier New', monospace; letter-spacing: 1px; }
+        #time-pill.boss { border-color: var(--hp-red); animation: pulse 1.2s infinite; }
+
+        /* COMBAT */
+        #combat-zone {
+            display: flex; flex-direction: column; padding: 5px 10px; padding-top: 40px;
+            background: radial-gradient(circle at top, #dad5ca 0%, #f0e1cf 100%);
+            border-bottom: 3px solid var(--ornate-frame);
+        }
+        #affinity-banner {
+            background: linear-gradient(90deg, #c0392b 0%, #8e6d4c 100%); color: white; text-align: center;
+            padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 3px;
+            border: 2px solid var(--ornate-frame); display: none;
+        }
+        #affinity-banner.visible { display: block; animation: pulse 2s infinite; }
+        #stream-status { text-align: center; font-size: 11px; font-weight: bold; color: #d35400; margin-bottom: 2px; }
+
+        /* Arena — positional battlefield with march mechanic */
+        #arena {
+            position: relative; height: 170px; margin: 3px 0;
+            border: 4px solid var(--ornate-frame); border-radius: 10px;
+            background: linear-gradient(180deg, #e8dbc4 0%, #c4a87e 50%, #a88a5d 100%);
+            box-shadow: inset 0 0 12px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        /* Lane markings — three horizontal hero lanes */
+        #arena::before, #arena::after {
+            content: ''; position: absolute; left: 0; right: 0; height: 1px;
+            background: rgba(89,64,42,0.18); pointer-events: none;
+        }
+        #arena::before { top: 33%; }
+        #arena::after  { top: 66%; }
+        /* Spawn edge marker */
+        .arena-spawn-edge {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: linear-gradient(180deg, transparent, rgba(192,57,43,0.35), transparent);
+            pointer-events: none;
+        }
+        /* Hero anchor zone */
+        .arena-hero-zone {
+            position: absolute; right: 0; top: 0; bottom: 0; width: 64px;
+            background: linear-gradient(90deg, transparent, rgba(241,196,15,0.08));
+            pointer-events: none;
+        }
+
+        .arena-enemy {
+            position: absolute; width: 42px; height: 44px;
+            display: flex; flex-direction: column; align-items: center;
+            transition: none; pointer-events: none;
+        }
+        .arena-enemy.elite { filter: drop-shadow(0 0 4px #c0392b); }
+        .arena-enemy.boss { width: 60px; height: 70px; filter: drop-shadow(0 0 8px #c0392b); }
+        .arena-enemy .ene-icon { font-size: 26px; line-height: 1; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .arena-enemy.boss .ene-icon { font-size: 44px; }
+        .arena-enemy .ene-hpbar {
+            width: 38px; height: 5px; background: #333; border: 1px solid #000;
+            border-radius: 2px; overflow: hidden; margin-top: 2px;
+        }
+        .arena-enemy.boss .ene-hpbar { width: 56px; height: 7px; }
+        .arena-enemy .ene-hpfill { height: 100%; background: var(--hp-red); transition: width 0.15s; }
+        .arena-enemy .ene-aff { font-size: 7px; color: #2ecc71; font-weight: bold; text-shadow: 1px 1px 1px #000; line-height: 1; margin-top: 1px; }
+        .arena-enemy.frozen { filter: hue-rotate(180deg) brightness(1.2) drop-shadow(0 0 6px #29b6f6); }
+
+        .arena-hero {
+            position: absolute; right: 4px; width: 56px; height: 50px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .arena-hero .hero-arena-sprite { width: 38px; height: 38px; object-fit: contain; }
+        .arena-hero .hero-arena-sprite.has-bg { mix-blend-mode: multiply; }
+        .arena-hero .hero-arena-hpbar {
+            width: 46px; height: 4px; background: #333; border: 1px solid #000;
+            border-radius: 2px; overflow: hidden; margin-top: 1px;
+        }
+        .arena-hero .hero-arena-hpfill { height: 100%; background: #2ecc71; transition: width 0.2s; }
+        .arena-hero.downed { filter: grayscale(100%) opacity(0.5); }
+        .arena-hero.locked { display: none; }
+        .arena-hero .downed-timer {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #f1c40f; font-size: 9px; font-weight: bold;
+            padding: 1px 4px; border-radius: 4px; border: 1px solid #000;
+        }
+
+        /* Healing potion drop */
+        .arena-potion {
+            position: absolute; width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer; z-index: 5;
+            filter: drop-shadow(0 0 4px #2ecc71);
+            animation: potionBob 1.2s infinite ease-in-out;
+        }
+        @keyframes potionBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .arena-potion.expiring { animation: potionBob 0.4s infinite ease-in-out, potionFlash 0.4s infinite; }
+        @keyframes potionFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Combat log */
+        #combat-log-container { height: 38px; background-color: rgba(0,0,0,0.05); border-radius: 6px; border: 1px solid var(--ornate-frame); margin-top: 3px; padding: 3px 5px; font-size: 9px; overflow-y: auto; color: var(--text-dark); line-height: 1.2; }
+
+        /* DEPLOYMENT BAR — heroes + ult gauge */
+        #deployment-zone { padding: 5px 8px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.04); border-top: 1px solid var(--ornate-frame); border-bottom: 1px solid var(--ornate-frame); }
+        .squad-bar { display: flex; justify-content: space-around; gap: 6px; }
+        .hero-card {
+            background: #f7ebdb; border: 2px solid var(--ornate-frame); border-radius: 6px;
+            width: 82px; padding: 2px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+            display: flex; flex-direction: column; gap: 1px;
+        }
+        .hero-card.active.warrior { border-color: var(--warrior-color); box-shadow: 0 0 10px var(--warrior-color); transform: translateY(-3px); }
+        .hero-card.active.rogue { border-color: var(--rogue-color); box-shadow: 0 0 10px var(--rogue-color); transform: translateY(-3px); }
+        .hero-card.active.mage { border-color: var(--mage-color); box-shadow: 0 0 10px var(--mage-color); transform: translateY(-3px); }
+        .hero-card.downed { filter: grayscale(100%); opacity: 0.6; }
+        .hero-icon { font-size: 18px; }
+        .hero-role { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .weapon-mini { font-size: 9px; color: var(--text-dark); font-weight: bold; line-height: 1.1; min-height: 22px; }
+        .ult-gauge { background: #333; border-radius: 3px; height: 10px; position: relative; overflow: hidden; border: 1px solid var(--ornate-frame); cursor: pointer; }
+        .ult-fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--ult-purple) 0%, #d2a6e0 100%); transition: width 0.3s; }
+        .ult-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 8px; z-index: 2; text-shadow: 1px 1px 1px #000; }
+        .ult-gauge.ready { animation: ultGlow 1.2s infinite; }
+        .ult-gauge.ready .ult-fill { background: linear-gradient(90deg, var(--gold-color) 0%, #ffd76b 100%); }
+
+        /* CRAFTING / FORGE */
+        #crafting-zone { flex: 1; display: flex; flex-direction: column; background-color: #c9b9a6; border-top: 3px solid var(--ornate-frame); position: relative; overflow-y: auto; overflow-x: hidden; padding: 5px; gap: 4px; min-height: 0; }
+
+        .forge-header { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; }
+        .forge-label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--ornate-frame); letter-spacing: 1px; }
+
+        /* Anvil 3-slot */
+        #anvil-panel { background-color: var(--ornate-accent); border: 3px solid var(--ornate-frame); border-radius: 8px; padding: 4px 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .anvil-target { text-align: center; font-size: 10px; color: #f2e0c9; font-weight: bold; }
+        .anvil-stats { text-align: center; font-size: 10px; color: var(--gold-color); font-weight: bold; min-height: 12px; }
+        .anvil-grid { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 4px 0; }
+        .anvil-slot {
+            width: 50px; height: 50px; background: rgba(0,0,0,0.25); border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;
+            position: relative; cursor: pointer;
+        }
+        .anvil-slot.filled { background: rgba(0,0,0,0.4); border-style: solid; border-color: var(--gold-color); }
+        .anvil-slot-label { position: absolute; bottom: 1px; left: 0; width: 100%; text-align: center; font-size: 7px; color: #f2e0c9; letter-spacing: 0.5px; text-transform: uppercase; pointer-events: none; }
+        .anvil-slot-plus { font-weight: bold; color: var(--ornate-frame); font-size: 16px; }
+
+        /* ======= CAROUSEL SHOP (0.1.0 RT) ======= */
+        #shop-panel { background: rgba(0,0,0,0.05); border: 2px solid var(--ornate-frame); border-radius: 6px; padding: 5px; }
+        .shop-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        #carousel {
+            position: relative; height: 78px; overflow: hidden;
+            background: rgba(0,0,0,0.06); border-radius: 4px;
+        }
+        .carousel-tile {
+            position: absolute; top: 4px; width: 70px; height: 70px;
+            background: linear-gradient(180deg, #f7dfa7 0%, #dbbf80 100%); border: 2px solid #a68f63;
+            border-radius: 5px; padding: 3px; cursor: pointer; text-align: center;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+            transition: left 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            box-sizing: border-box;
+        }
+        .carousel-tile.entering { left: 380px !important; opacity: 0; }
+        .carousel-tile.exiting  { left: -80px !important; opacity: 0; }
+        .carousel-tile.sold { opacity: 0.3; cursor: not-allowed; }
+        .carousel-tile.rare { border-color: var(--mage-color); box-shadow: 0 0 6px rgba(52,152,219,0.5); }
+        .carousel-tile .ct-icon { font-size: 16px; line-height: 1; }
+        .carousel-tile .ct-name { font-size: 7px; font-weight: bold; line-height: 1; color: #59402a; }
+        .carousel-tile .ct-cost { font-size: 8px; font-weight: bold; color: #d35400; }
+        .carousel-tile .ct-ttl {
+            position: absolute; bottom: -2px; left: 2px; right: 2px; height: 3px;
+            background: rgba(0,0,0,0.25); border-radius: 2px; overflow: hidden;
+        }
+        .carousel-tile .ct-ttl-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #f1c40f, #c0392b); transition: width 0.1s linear; }
+
+        .class-badge { position: absolute; top: -3px; right: -3px; font-size: 7px; padding: 1px 3px; border-radius: 3px; color: white; font-weight: bold; }
+        .class-badge.warrior { background: var(--warrior-color); }
+        .class-badge.mage { background: var(--mage-color); }
+        .class-badge.rogue { background: var(--rogue-color); }
+        .class-badge.universal { background: #7f8c8d; }
+
+        .tag-badge {
+            position: absolute; top: -3px; left: -3px; font-size: 7px; padding: 1px 3px;
+            border-radius: 3px; color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .tag-badge.fire   { background: #c0392b; }
+        .tag-badge.ice    { background: #3498db; }
+        .tag-badge.pierce { background: #7f8c8d; }
+        .tag-badge.crit   { background: #f1c40f; color: #333; }
+        .tag-badge.charge { background: #9b59b6; }
+
+        /* Slot type label */
+        .slot-type-label {
+            font-size: 6px; font-weight: bold; letter-spacing: 0.5px;
+            background: rgba(89, 64, 42, 0.85); color: #f7ebdb;
+            padding: 1px 3px; border-radius: 3px; text-transform: uppercase;
+            margin: 0 auto; max-width: max-content; line-height: 1.1;
+        }
+
+        /* Inventory strip */
+        #inventory-panel { background: rgba(0,0,0,0.08); border: 2px solid var(--ornate-frame); border-radius: 6px; padding: 4px; }
+        #inventory-strip { display: flex; gap: 4px; overflow-x: auto; padding: 2px; min-height: 56px; }
+        #inventory-strip::-webkit-scrollbar { height: 4px; }
+        #inventory-strip::-webkit-scrollbar-thumb { background: var(--ornate-frame); border-radius: 2px; }
+        .inv-part {
+            min-width: 50px; max-width: 50px;
+            background: linear-gradient(180deg, #e8d4a8 0%, #c9b083 100%);
+            border: 2px solid #a68f63; border-radius: 5px;
+            padding: 2px; cursor: pointer; text-align: center; position: relative;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        .inv-part-icon { font-size: 16px; }
+        .inv-empty { color: #7f8c8d; font-size: 10px; text-align: center; padding: 18px 8px; font-style: italic; }
+        .inv-part .slot-type-label { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 6px; padding: 0 3px; }
+
+        /* Hero locked overlay */
+        .hero-card.locked { filter: grayscale(80%); opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+        .hero-lock-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #f1c40f; font-weight: bold; font-size: 10px; text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+
+        /* Info modal */
+        #info-modal { z-index: 110; }
+        #info-modal .info-card {
+            background: linear-gradient(180deg, #f7ebdb 0%, #dabda8 100%);
+            border: 4px solid var(--ornate-frame); border-radius: 10px;
+            padding: 20px; max-width: 320px; width: 100%; color: var(--text-dark);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        #info-modal .info-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        #info-modal .info-icon { font-size: 40px; }
+        #info-modal .info-name { font-size: 18px; font-weight: bold; color: var(--ornate-frame); }
+        #info-modal .info-subline { font-size: 11px; color: var(--ornate-accent); text-transform: uppercase; letter-spacing: 1px; }
+        #info-modal .info-stats { background: rgba(0,0,0,0.08); border-radius: 6px; padding: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+        #info-modal .info-stat-row { display: flex; justify-content: space-between; }
+        #info-modal .info-stat-val { font-weight: bold; color: #d35400; }
+        #info-modal .info-tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; color: white; text-transform: uppercase; }
+        #info-modal .info-action-row { display: flex; gap: 8px; }
+        #info-modal .info-action-row .action-button { flex: 1; padding: 10px; font-size: 11px; }
+        #info-modal .info-close { background: #7f8c8d; box-shadow: 0 4px 0 #555; border-color: #555; }
+        #info-modal .info-unequip { background: linear-gradient(180deg, #e67e22 0%, #d35400 100%); box-shadow: 0 4px 0 #a04000; border-color: #a04000; }
+
+        .action-button {
+            border: 2px solid #1f618d; color: white; text-transform: uppercase; letter-spacing: 1px;
+            font-weight: bold; font-size: 11px; padding: 8px; border-radius: 5px; cursor: pointer;
+            transition: all 0.1s; background: #7f8c8d; box-shadow: 0 4px 0 #2c3e50;
+        }
+        .action-button.primary { background: linear-gradient(180deg, #5dade2 0%, #2e86c1 100%); box-shadow: 0 4px 0 #1b4f72; }
+        .action-button:active { transform: translateY(3px); box-shadow: 0 1px 0 #1b4f72; }
+        .action-button:disabled, .action-button.disabled { background: #95a5a6; box-shadow: 0 4px 0 #555; cursor: not-allowed; border-color: #555; }
+
+        /* Modals */
+        .modal-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 100; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-title { color: var(--gold-color); font-size: 24px; text-shadow: 0 0 10px #c0392b; margin: 0 0 10px 0; }
+        .modal-subtitle { color: #bdc3c7; font-size: 13px; margin-bottom: 20px; }
+        .modal-button { width: 240px; padding: 14px; margin: 8px 0; font-size: 13px; }
+
+        /* Hero sprite cards in squad bar */
+        .hero-sprite-card {
+            width: 36px; height: 36px; object-fit: contain; display: inline-block;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        .hero-sprite-card.has-bg { mix-blend-mode: multiply; }
+
+        /* ---- VFX (carried from 0.1.9) ---- */
+        @keyframes dmgFloat {
+            0%   { transform: translate(-50%, 0)    scale(1);   opacity: 1; }
+            20%  { transform: translate(-50%, -8px) scale(1.15);opacity: 1; }
+            100% { transform: translate(-50%, -42px)scale(0.9); opacity: 0; }
+        }
+        @keyframes critFloat {
+            0%   { transform: translate(-50%, 0)    scale(0.6); opacity: 0; }
+            20%  { transform: translate(-50%, -6px) scale(1.4); opacity: 1; }
+            70%  { transform: translate(-50%, -28px)scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -55px)scale(1.0); opacity: 0; }
+        }
+        @keyframes mergeBurst {
+            0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            30%  { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.0); opacity: 0; }
+        }
+        @keyframes levelBadgePulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.3); }
+        }
+
+        .damage-pop {
+            position: absolute; transform: translateX(-50%);
+            color: white; font-weight: bold; font-size: 14px; z-index: 30;
+            pointer-events: none; text-shadow: 1px 1px 2px #000, 0 0 4px #000;
+            animation: dmgFloat 0.9s ease-out forwards;
+            white-space: nowrap;
+        }
+        .damage-pop.crit       { color: #f1c40f; font-size: 20px; animation: critFloat 1.2s ease-out forwards; text-shadow: 1px 1px 2px #000, 0 0 6px #f39c12; }
+        .damage-pop.weakness   { color: #2ecc71; font-size: 16px; text-shadow: 1px 1px 2px #000, 0 0 4px #27ae60; }
+        .damage-pop.resisted   { color: #95a5a6; font-size: 11px; }
+        .damage-pop.elem-fire  { color: #ff7043; text-shadow: 1px 1px 2px #000, 0 0 5px #ff5722; }
+        .damage-pop.elem-ice   { color: #7fd0ff; text-shadow: 1px 1px 2px #000, 0 0 5px #29b6f6; }
+        .damage-pop.elem-pierce{ color: #ecf0f1; }
+        .damage-pop.ult        { color: #d2a6e0; font-size: 22px; text-shadow: 1px 1px 2px #000, 0 0 8px var(--ult-purple); animation: critFloat 1.4s ease-out forwards; }
+        .damage-pop.enemy-hit  { color: #e74c3c; font-size: 13px; }
+        .damage-pop.heal       { color: #2ecc71; font-size: 16px; }
+
+        .merge-burst {
+            position: absolute; z-index: 40;
+            color: #f1c40f; font-weight: bold; font-size: 14px;
+            text-shadow: 0 0 6px #f39c12, 1px 1px 2px #000; pointer-events: none;
+            animation: mergeBurst 0.9s ease-out forwards;
+            white-space: nowrap;
+        }
+
+        .level-badge-inline {
+            position: absolute; top: -4px; right: -4px; padding: 1px 4px;
+            background: linear-gradient(180deg, #f1c40f 0%, #d35400 100%);
+            color: #fff; font-size: 8px; font-weight: bold; border-radius: 4px;
+            border: 1px solid #59402a; text-shadow: 1px 1px 1px #000;
+        }
+        .level-badge-inline.l3 { background: linear-gradient(180deg, #ecf0f1 0%, #95a5a6 100%); color: #2c3e50; text-shadow: 1px 1px 1px #fff; }
+        .level-badge-inline.l4 { background: linear-gradient(180deg, #9b59b6 0%, #6c3483 100%); }
+        .level-badge-inline.l5 { background: linear-gradient(180deg, #2ecc71 0%, #1d8348 100%); animation: levelBadgePulse 1.2s infinite; }
+
+        /* Active-switch pulse on hero card */
+        @keyframes activeSwitchPulse {
+            0%, 100% { transform: translateY(-3px) scale(1);    box-shadow: 0 0 10px currentColor; }
+            50%      { transform: translateY(-6px) scale(1.08); box-shadow: 0 0 24px currentColor, 0 0 36px currentColor; }
+        }
+        .hero-card.just-switched.warrior, .hero-card.just-switched.mage, .hero-card.just-switched.rogue {
+            animation: activeSwitchPulse 0.6s ease-out;
+        }
+
+        /* Element auras */
+        .hero-card.aura-fire   { box-shadow: 0 0 10px #ff5722, inset 0 0 12px rgba(255,87,34,0.15); }
+        .hero-card.aura-ice    { box-shadow: 0 0 10px #29b6f6, inset 0 0 12px rgba(41,182,246,0.15); }
+        .hero-card.aura-pierce { box-shadow: 0 0 10px #ecf0f1, inset 0 0 12px rgba(236,240,241,0.15); }
+        .hero-card.aura-multi  { box-shadow: 0 0 12px #f1c40f, inset 0 0 14px rgba(241,196,15,0.2); }
+
+        /* Element streak — fires from hero anchor toward enemy */
+        @keyframes elemStreak {
+            0%   { transform: scaleX(0.1); opacity: 0; }
+            25%  { transform: scaleX(1);   opacity: 1; }
+            100% { transform: scaleX(0.4); opacity: 0; }
+        }
+        .elem-streak {
+            position: absolute; height: 5px; border-radius: 3px; pointer-events: none; z-index: 25;
+            transform-origin: right center;
+            animation: elemStreak 0.45s ease-out forwards;
+        }
+        .elem-streak.fire   { background: linear-gradient(90deg, transparent 0%, #ff7043 30%, #ffeb3b 50%, #ff7043 70%, transparent 100%); box-shadow: 0 0 14px #ff5722; }
+        .elem-streak.ice    { background: linear-gradient(90deg, transparent 0%, #7fd0ff 30%, #ffffff 50%, #7fd0ff 70%, transparent 100%); box-shadow: 0 0 14px #29b6f6; }
+        .elem-streak.pierce { background: linear-gradient(90deg, transparent 0%, #ecf0f1 30%, #ffffff 50%, #ecf0f1 70%, transparent 100%); box-shadow: 0 0 10px #ffffff; height: 3px; }
+        .elem-streak.basic  { background: linear-gradient(90deg, transparent 0%, #d35400 30%, #f1c40f 50%, #d35400 70%, transparent 100%); box-shadow: 0 0 8px #f39c12; height: 4px; }
+
+        /* Recipe row */
+        .recipe-row { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; margin-top: 3px; min-height: 14px; }
+        .recipe-chip {
+            background: linear-gradient(180deg, #9b59b6 0%, #6c3483 100%);
+            color: #fff; font-size: 9px; font-weight: bold; letter-spacing: 0.5px;
+            padding: 1px 6px; border-radius: 8px;
+            border: 1px solid #4a235a; text-shadow: 1px 1px 1px #000;
+            box-shadow: 0 0 6px rgba(155,89,182,0.6);
+        }
+        .recipe-chip.new { animation: recipeChipPop 0.6s ease-out; }
+        @keyframes recipeChipPop {
+            0%   { transform: scale(0.6); box-shadow: 0 0 0 rgba(241,196,15,0); }
+            50%  { transform: scale(1.25); box-shadow: 0 0 14px rgba(241,196,15,0.9); }
+            100% { transform: scale(1);    box-shadow: 0 0 6px rgba(155,89,182,0.6); }
+        }
+
+        /* Codex button */
+        #codex-btn {
+            position: absolute; top: 38px; right: 10px; z-index: 20;
+            background: linear-gradient(180deg, #f1c40f 0%, #d35400 100%);
+            color: #fff; border: 2px solid #59402a; border-radius: 14px;
+            padding: 3px 10px; font-size: 11px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 3px 0 #59402a;
+            text-shadow: 1px 1px 1px #000;
+        }
+        #codex-btn .badge { background: #c0392b; color: #fff; padding: 0 4px; border-radius: 8px; font-size: 9px; margin-left: 4px; }
+
+        /* Codex modal */
+        #codex-modal .codex-card {
+            background: linear-gradient(180deg, #f7ebdb 0%, #dabda8 100%);
+            border: 4px solid var(--ornate-frame); border-radius: 12px;
+            padding: 16px; max-width: 360px; width: 100%; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        #codex-modal .codex-title { color: var(--ornate-frame); font-size: 18px; font-weight: bold; text-align: center; margin: 0 0 4px 0; }
+        #codex-modal .codex-subtitle { color: var(--ornate-accent); font-size: 11px; text-align: center; margin-bottom: 12px; }
+        #codex-modal .codex-row {
+            background: rgba(0,0,0,0.06); border: 1px solid var(--ornate-accent);
+            border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        #codex-modal .codex-row.undiscovered { opacity: 0.7; }
+        #codex-modal .codex-row.discovered { border-color: var(--ult-purple); box-shadow: inset 0 0 8px rgba(155,89,182,0.15); }
+        #codex-modal .codex-icon { font-size: 28px; min-width: 32px; text-align: center; }
+        #codex-modal .codex-icon.silhouette { filter: brightness(0.0) opacity(0.6); }
+        #codex-modal .codex-name { font-weight: bold; color: var(--ornate-frame); font-size: 13px; }
+        #codex-modal .codex-name.hidden { color: var(--ornate-accent); font-style: italic; }
+        #codex-modal .codex-desc { font-size: 10px; color: var(--text-dark); margin-top: 2px; line-height: 1.3; }
+        #codex-modal .codex-tags { font-size: 9px; color: #d35400; margin-top: 2px; font-weight: bold; letter-spacing: 0.5px; }
+        #codex-modal .codex-tags.hidden { color: #95a5a6; }
+        #codex-modal .codex-close { width: 100%; padding: 10px; margin-top: 8px; }
+
+        /* Discovery overlay */
+        #discovery-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 150;
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box; text-align: center;
+        }
+        #discovery-overlay.visible { display: flex; animation: discoveryFade 0.3s ease-in; }
+        @keyframes discoveryFade { from { opacity: 0; } to { opacity: 1; } }
+        #discovery-overlay .disc-headline {
+            color: #f1c40f; font-size: 18px; font-weight: bold; letter-spacing: 3px;
+            text-shadow: 0 0 14px #f39c12, 1px 1px 2px #000;
+            animation: pulse 1.5s infinite;
+        }
+        #discovery-overlay .disc-name {
+            color: #fff; font-size: 36px; font-weight: bold; margin: 8px 0;
+            text-shadow: 0 0 18px var(--ult-purple), 2px 2px 4px #000;
+            animation: discoveryPop 0.6s ease-out;
+        }
+        @keyframes discoveryPop {
+            0% { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+            60% { transform: scale(1.25) rotate(4deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        #discovery-overlay .disc-icon { font-size: 64px; margin: 8px 0; animation: discoveryPop 0.7s ease-out; }
+        #discovery-overlay .disc-tags { color: #f1c40f; font-size: 13px; letter-spacing: 2px; font-weight: bold; margin: 4px 0; }
+        #discovery-overlay .disc-desc { color: #ecf0f1; font-size: 13px; line-height: 1.5; max-width: 280px; margin: 12px auto; font-style: italic; }
+        #discovery-overlay .disc-tap { color: #95a5a6; font-size: 11px; margin-top: 14px; }
+
+        /* Recipe banner */
+        #recipe-banner {
+            background: linear-gradient(90deg, #6c3483 0%, #9b59b6 50%, #6c3483 100%);
+            color: #fff; text-align: center; padding: 3px 6px;
+            font-size: 10px; font-weight: bold; border-radius: 6px;
+            border: 2px solid #4a235a; margin-bottom: 3px;
+            text-shadow: 1px 1px 1px #000; display: none;
+        }
+        #recipe-banner.visible { display: block; }
+
+        /* Time-milestone banner — flashes when 1:00, 2:00, etc. */
+        @keyframes milestoneSlide {
+            0%   { transform: translate(-50%, -40px) scale(0.7); opacity: 0; }
+            20%  { transform: translate(-50%, 0) scale(1.1); opacity: 1; }
+            80%  { transform: translate(-50%, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -40px) scale(0.9); opacity: 0; }
+        }
+        .milestone-toast {
+            position: absolute; top: 80px; left: 50%; z-index: 60;
+            background: rgba(0,0,0,0.85); color: #f1c40f;
+            padding: 8px 18px; border-radius: 20px;
+            border: 2px solid #f1c40f; box-shadow: 0 0 20px #f39c12;
+            font-size: 14px; font-weight: bold; letter-spacing: 1px;
+            text-shadow: 1px 1px 2px #000; pointer-events: none;
+            animation: milestoneSlide 2.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+
+<div id="mobile-container">
+    <div class="header-bg"></div>
+
+    <!-- HUD -->
+    <div id="top-hud">
+        <div id="gold-ui">🪙 <span id="gold-count">15</span></div>
+        <div id="time-pill"><span id="time-display">0:00</span> / 3:00</div>
+    </div>
+
+    <!-- Codex button -->
+    <button id="codex-btn" onclick="openCodex()">📜 Codex<span class="badge" id="codex-badge">0/8</span></button>
+
+    <!-- Codex modal -->
+    <div id="codex-modal" class="modal-overlay">
+        <div class="codex-card" id="codex-body"></div>
+    </div>
+
+    <!-- Discovery overlay -->
+    <div id="discovery-overlay" onclick="closeDiscovery()">
+        <div class="disc-headline">✨ NEW RECIPE DISCOVERED ✨</div>
+        <div class="disc-icon" id="disc-icon">💨</div>
+        <div class="disc-name" id="disc-name">STEAMBURST</div>
+        <div class="disc-tags" id="disc-tags">FIRE + ICE</div>
+        <div class="disc-desc" id="disc-desc">AoE on hit — splash damage to adjacent enemies</div>
+        <div class="disc-tap">tap to continue</div>
+    </div>
+
+    <!-- Boss-retry modal -->
+    <div id="retry-modal" class="modal-overlay">
+        <h2 class="modal-title">⚔️ BOSS WON ⚔️</h2>
+        <div class="modal-subtitle">Your squad fell. Parts inventory preserved.</div>
+        <button class="action-button modal-button primary" onclick="bossRetry()">🔧 Reforge & Retry</button>
+        <button class="action-button modal-button" onclick="restartStage()">↻ Restart Stage</button>
+    </div>
+
+    <!-- Squad wipe (non-boss) modal -->
+    <div id="wipe-modal" class="modal-overlay">
+        <h2 class="modal-title" style="color:#e74c3c;">☠️ SQUAD WIPED ☠️</h2>
+        <div class="modal-subtitle">All heroes downed at once. The stream broke through.</div>
+        <button class="action-button modal-button primary" onclick="restartStage()">↻ Restart Stage</button>
+    </div>
+
+    <!-- Stage clear modal -->
+    <div id="clear-modal" class="modal-overlay">
+        <h2 class="modal-title" style="color:#2ecc71;">🏆 STAGE CLEAR 🏆</h2>
+        <div class="modal-subtitle" id="clear-stats"></div>
+        <button class="action-button modal-button primary" onclick="restartStage()">↻ Play Again</button>
+    </div>
+
+    <!-- Part info modal -->
+    <div id="info-modal" class="modal-overlay">
+        <div class="info-card" id="info-card-body"></div>
+    </div>
+
+    <!-- Combat zone -->
+    <div id="combat-zone">
+        <div id="affinity-banner"></div>
+        <div id="recipe-banner"></div>
+        <div id="stream-status">STREAM ACTIVE</div>
+
+        <div id="arena">
+            <div class="arena-spawn-edge"></div>
+            <div class="arena-hero-zone"></div>
+            <!-- enemies + heroes + potions injected by JS -->
+        </div>
+
+        <div id="combat-log-container">
+            <div id="combat-log">Welcome to WeaponCraft RealTime. Stream begins.</div>
+        </div>
+    </div>
+
+    <!-- Deployment / hero cards + ult gauges -->
+    <div id="deployment-zone">
+        <div class="forge-header" style="padding: 0;">
+            <div class="forge-label">Squad</div>
+            <div class="forge-label" style="color: var(--ult-purple);">Tap ⚡ to Ult</div>
+        </div>
+        <div class="squad-bar" id="hero-cards"></div>
+    </div>
+
+    <!-- Crafting zone -->
+    <div id="crafting-zone">
+        <div class="forge-header">
+            <div class="forge-label">Active: <span id="active-hero-name" style="color: var(--text-dark);">—</span></div>
+            <div class="forge-label" id="forge-phase-label">Forge Live</div>
+        </div>
+
+        <!-- Anvil -->
+        <div id="anvil-panel">
+            <div class="anvil-target" id="anvil-target">Tap a hero, then buy carousel parts</div>
+            <div class="anvil-grid">
+                <div class="anvil-slot" id="slot-head" onclick="clickAnvilSlot('head')">
+                    <span class="anvil-slot-label">Head</span>
+                </div>
+                <span class="anvil-slot-plus">+</span>
+                <div class="anvil-slot" id="slot-hilt" onclick="clickAnvilSlot('hilt')">
+                    <span class="anvil-slot-label">Hilt</span>
+                </div>
+                <span class="anvil-slot-plus">+</span>
+                <div class="anvil-slot" id="slot-rune" onclick="clickAnvilSlot('rune')">
+                    <span class="anvil-slot-label">Rune</span>
+                </div>
+            </div>
+            <div class="anvil-stats" id="anvil-stats"></div>
+            <div class="recipe-row" id="anvil-recipe-row"></div>
+        </div>
+
+        <!-- Carousel shop -->
+        <div id="shop-panel">
+            <div class="shop-row">
+                <div class="forge-label" style="font-size:10px;">Carousel · 5s churn</div>
+                <div class="forge-label" style="font-size:9px; color: var(--ornate-accent);">tap to buy + auto-equip</div>
+            </div>
+            <div id="carousel"></div>
+        </div>
+
+        <!-- Inventory -->
+        <div id="inventory-panel">
+            <div class="forge-header" style="padding: 0;">
+                <div class="forge-label" style="font-size:10px;">Inventory</div>
+                <div class="forge-label" style="font-size:9px; color: var(--ornate-accent);">tap → equip · right-click → discard</div>
+            </div>
+            <div id="inventory-strip"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =============================================================================
+// WeaponCraft RealTime v0.1.0 — Continuous-stream variant
+// Forked from BASE-A1 v0.1.9. Combat loop rebuilt for 60fps simulation.
+// =============================================================================
+
+// --- INSTRUMENTATION ---
+const SESSION_ID = 'sess_' + Date.now();
+function emit(evt, payload) {
+    const e = { t: Date.now(), sid: SESSION_ID, evt, payload: payload || {} };
+    console.log('[RT-EVT]', JSON.stringify(e));
+}
+
+// --- TIME CONSTANTS (seconds, simulated) ---
+const STAGE_LENGTH_S = 180;         // 3:00 stream
+const HERO_UNLOCK_S = { warrior: 0, mage: 60, rogue: 120 };
+const HERO_ATTACK_CD = { warrior: 0.85, mage: 1.05, rogue: 0.55 };
+const ENEMY_MARCH_BASE = 35;        // px/sec
+const ENEMY_ATTACK_CD = 1.4;        // sec per enemy strike
+const ENEMY_MELEE_RANGE_X = 70;     // px from arena right edge before enemy attacks
+const ENEMY_BASE_DMG = 4;
+const DOWNED_REVIVE_S = 20;         // auto-revive after 20s
+const REVIVE_HP_PCT = 0.50;
+const HEAL_POTION_CHANCE = 0.08;
+const HEAL_POTION_HP_PCT = 0.25;
+const HEAL_POTION_TTL_S = 4;
+const TICK_SAMPLE_INTERVAL_S = 5;   // emit 'tick' fps sample every 5s
+const ULT_TIME_CAP_S = 45;          // backstop ult fill timer
+
+// Arena layout
+const ARENA_WIDTH = 360;            // px (matches CSS arena minus padding)
+const ARENA_HEIGHT = 162;
+const HERO_LANES_Y = [12, 60, 108]; // top, middle, bottom — bran, elara, vex
+
+// Part-level system (from REF)
+const MAX_PART_LEVEL = 5;
+const LEVEL_MULTIPLIER = [1.00, 1.50, 2.10, 2.85, 3.70];
+function levelMult(level) {
+    const idx = Math.max(0, Math.min(MAX_PART_LEVEL - 1, (level || 1) - 1));
+    return LEVEL_MULTIPLIER[idx];
+}
+
+let _uidSeq = 0;
+function nextUid() { return 'iv_' + (++_uidSeq); }
+let _enemyIdSeq = 0;
+function nextEnemyId() { return 'e_' + (++_enemyIdSeq); }
+let _potionIdSeq = 0;
+function nextPotionId() { return 'p_' + (++_potionIdSeq); }
+
+function instantiatePart(partId, level) {
+    const base = PARTS[partId];
+    if (!base) return null;
+    return { ...base, level: level || 1 };
+}
+
+// --- PARTS (carried from REF 0.1.9 — unchanged catalogue) ---
+const PARTS = {
+    h_iron_edge:     { id:'h_iron_edge', slot:'head', cls:'warrior', name:'Iron Edge',     icon:'⚔️', tag:null,    atk:8,  hp:0, crit:0, ultRate:0, rarity:'common', cost:3,
+        desc:'Heavy steel blade. Reliable ATK. Warrior only.' },
+    h_crystal_orb:   { id:'h_crystal_orb', slot:'head', cls:'mage', name:'Crystal Orb',   icon:'🔮', tag:null,    atk:6,  hp:0, crit:0, ultRate:0, rarity:'common', cost:3,
+        desc:'Arcane orb. Channels spells. Mage only.' },
+    h_curved_dagger: { id:'h_curved_dagger', slot:'head', cls:'rogue', name:'Curved Dagger', icon:'🗡️', tag:'pierce', atk:5, hp:0, crit:10, ultRate:0, rarity:'common', cost:3,
+        desc:'Sharp dagger. PIERCE tag — bonus damage vs pierce-weak foes. Rogue only.' },
+    h_twin_strike:   { id:'h_twin_strike', slot:'head', cls:'universal', name:'Twin Strike', icon:'🌀', tag:null,  atk:4,  hp:0, crit:5,  ultRate:5, rarity:'rare', cost:5,
+        desc:'Dual blade. +5% crit (→ CRIT tag) & +5% ult fill (→ CHARGE tag). Contributes 2 tags — pair with elements for combos.' },
+    p_iron_hilt:     { id:'p_iron_hilt', slot:'hilt', cls:'universal', name:'Iron Hilt',   icon:'🛡️', tag:null,  atk:0,  hp:10, crit:0, ultRate:0, rarity:'common', cost:3,
+        desc:'Solid grip. +10 HP to wielder. Universal.' },
+    p_steel_grip:    { id:'p_steel_grip', slot:'hilt', cls:'warrior', name:'Steel Grip',   icon:'💪', tag:null,  atk:4,  hp:0,  crit:0, ultRate:0, rarity:'common', cost:3,
+        desc:'Reinforced grip. +4 ATK. Warrior only.' },
+    p_leather_grip:  { id:'p_leather_grip', slot:'hilt', cls:'rogue', name:'Leather Grip', icon:'🪢', tag:null,  atk:0,  hp:0,  crit:15, ultRate:0, rarity:'common', cost:3,
+        desc:'Light grip. +15% crit chance (→ CRIT tag). Rogue only.' },
+    p_pyro_pommel:    { id:'p_pyro_pommel',  slot:'hilt', cls:'universal', name:'Pyro Pommel',  icon:'🔥', tag:'fire', atk:2, hp:0, crit:0, ultRate:0, rarity:'common', cost:4,
+        desc:'Brass pommel inset with a fire shard. FIRE tag + minor ATK. Combine for combos.' },
+    p_glacier_pommel: { id:'p_glacier_pommel', slot:'hilt', cls:'universal', name:'Glacier Pommel', icon:'❄️', tag:'ice',  atk:0, hp:5, crit:0, ultRate:0, rarity:'common', cost:4,
+        desc:'Frozen-crystal pommel. ICE tag + minor HP. Combine for combos.' },
+    r_fire:          { id:'r_fire', slot:'rune', cls:'universal', name:'Fire Rune',         icon:'🔥', tag:'fire', atk:3, hp:0, crit:0, ultRate:0, rarity:'common', cost:3,
+        desc:'FIRE tag — hits fire-weak enemies for +80%. Resisted by fire-resist foes for -50%.' },
+    r_ice:           { id:'r_ice',  slot:'rune', cls:'universal', name:'Ice Rune',          icon:'❄️', tag:'ice',  atk:3, hp:0, crit:0, ultRate:0, rarity:'common', cost:3,
+        desc:'ICE tag — hits ice-weak enemies for +80%. Resisted by ice-resist foes for -50%.' },
+    r_charge:        { id:'r_charge',slot:'rune', cls:'universal', name:'Charge Rune',     icon:'⚡', tag:null,   atk:1, hp:0, crit:0, ultRate:25, rarity:'rare', cost:5,
+        desc:'+25% ult-bank fill rate (→ CHARGE tag). Combine with FIRE/ICE/PIERCE for QUICKDRAW recipe.' },
+};
+const PART_IDS = Object.keys(PARTS);
+const CLASS_COLORS = { warrior: 'var(--warrior-color)', mage: 'var(--mage-color)', rogue: 'var(--rogue-color)', universal: '#7f8c8d' };
+
+// --- RECIPES (carried from REF 0.1.9) ---
+const RECIPES = {
+    steamburst: { id:'steamburst', name:'Steamburst', icon:'💨',
+        patterns:[ ['fire','ice'] ],
+        desc:'Hits splash to other enemies for 35% damage.',
+        bonus:{ splash:0.35 } },
+    inferno:    { id:'inferno', name:'Inferno', icon:'🌋',
+        patterns:[ ['fire','fire'] ],
+        desc:'Consecutive hits on the same enemy stack +12% damage (cap +36%).',
+        bonus:{ stackBurn:0.12, stackCap:3 } },
+    permafrost: { id:'permafrost', name:'Permafrost', icon:'❄️',
+        patterns:[ ['ice','ice'] ],
+        desc:'15% chance to freeze — enemy halts for 1.5s.',
+        bonus:{ freezeChance:0.15 } },
+    skewer:     { id:'skewer', name:'Skewer', icon:'🏹',
+        patterns:[ ['pierce','pierce'] ],
+        desc:'Each attack also chips a 2nd random enemy for 60% damage.',
+        bonus:{ multiHit:0.6 } },
+    razor_wind: { id:'razor_wind', name:'Razor Wind', icon:'🌪️',
+        patterns:[ ['pierce','crit'] ],
+        desc:'+25% crit chance on this hero.',
+        bonus:{ critBonus:25 } },
+    hellfire:   { id:'hellfire', name:'Hellfire', icon:'🔥',
+        patterns:[ ['fire','crit'] ],
+        desc:'Crits also splash 50% to a random adjacent enemy.',
+        bonus:{ critSplash:0.5 } },
+    frostbite:  { id:'frostbite', name:'Frostbite', icon:'🥶',
+        patterns:[ ['ice','pierce'] ],
+        desc:'Hits slow target — march speed -40% for 2s.',
+        bonus:{ slow:0.4 } },
+    quickdraw:  { id:'quickdraw', name:'Quickdraw', icon:'⚡',
+        patterns:[ ['charge','fire'], ['charge','ice'], ['charge','pierce'] ],
+        desc:'Ult bank charges 50% faster.',
+        bonus:{ ultBoost:0.5 } },
+};
+const RECIPE_IDS = Object.keys(RECIPES);
+
+function partTags(p) {
+    const t = [];
+    if (p.tag) t.push(p.tag);
+    if (p.crit && p.crit > 0)       t.push('crit');
+    if (p.ultRate && p.ultRate > 0) t.push('charge');
+    return t;
+}
+function weaponTagCounts(weapon) {
+    const counts = {};
+    ['head','hilt','rune'].forEach(s => {
+        const p = weapon[s];
+        if (!p) return;
+        partTags(p).forEach(t => { counts[t] = (counts[t] || 0) + 1; });
+    });
+    return counts;
+}
+function partTagsHTML(p) {
+    return partTags(p).map(t => `<span class="tag-badge ${t}" title="Tag: ${t.toUpperCase()}">${t}</span>`).join('');
+}
+function patternMatches(pattern, counts) {
+    const need = {};
+    pattern.forEach(t => { need[t] = (need[t] || 0) + 1; });
+    for (const t in need) if ((counts[t] || 0) < need[t]) return false;
+    return true;
+}
+function getActiveRecipes(weapon) {
+    if (!weapon) return [];
+    const counts = weaponTagCounts(weapon);
+    return RECIPE_IDS.filter(rid => RECIPES[rid].patterns.some(pat => patternMatches(pat, counts)));
+}
+function getRecipeBonuses(hero) {
+    const ids = getActiveRecipes(hero.weapon);
+    const b = { splash:0, multiHit:0, freezeChance:0, critBonus:0, critSplash:0, slow:0,
+                ultBoost:0, stackBurn:0, stackCap:0 };
+    ids.forEach(rid => {
+        const r = RECIPES[rid].bonus || {};
+        b.splash       = Math.max(b.splash,       r.splash       || 0);
+        b.multiHit     = Math.max(b.multiHit,     r.multiHit     || 0);
+        b.freezeChance = Math.max(b.freezeChance, r.freezeChance || 0);
+        b.critBonus   += r.critBonus  || 0;
+        b.critSplash   = Math.max(b.critSplash,   r.critSplash   || 0);
+        b.slow         = Math.max(b.slow,         r.slow         || 0);
+        b.ultBoost    += r.ultBoost   || 0;
+        b.stackBurn    = Math.max(b.stackBurn,    r.stackBurn    || 0);
+        b.stackCap     = Math.max(b.stackCap,     r.stackCap     || 0);
+    });
+    return { ids, ...b };
+}
+
+// --- ENEMY POOL (per-TYPE fixed affinities per GDD §"Enemy affinities") ---
+const NORMAL_ENEMIES = {
+    goblin:    { name:'Goblin',   icon:'👺', hp:18, weak:'fire',   resist:'ice'    },
+    skeleton:  { name:'Skeleton', icon:'💀', hp:14, weak:'pierce', resist:'fire'   },
+    zombie:    { name:'Zombie',   icon:'🧟', hp:24, weak:'fire',   resist:'pierce' },
+    wolf:      { name:'Wolf',     icon:'🐺', hp:16, weak:'ice',    resist:null     },
+    slime:     { name:'Slime',    icon:'🦠', hp:20, weak:'pierce', resist:null     },
+};
+const NORMAL_ENEMY_IDS = Object.keys(NORMAL_ENEMIES);
+const ELITE_MULT = { hp: 2.5, atkMult: 1.4, scale: 1.25, goldBonus: 1 };
+const BOSS_OPTIONS = [
+    {name:'Frost Dragon', icon:'🐉', resist:'fire',   weak:'pierce', hp: 420 },
+    {name:'Flame Titan',  icon:'🔥', resist:'fire',   weak:'ice',    hp: 420 },
+    {name:'Stone Golem',  icon:'🗿', resist:'pierce', weak:'fire',   hp: 420 },
+];
+
+// --- PULSE-RHYTHM SPAWN SCHEDULE ---
+// Returns { spawnInterval, elite } given elapsed seconds.
+// Spawn rate ramps in phases per GDD §"Pulse-rhythm difficulty".
+function pulsePhaseAt(elapsedSec) {
+    const t = elapsedSec;
+    // [start, end, baseInterval, elitePer (0=none, 1=guaranteed elite once)]
+    // baseInterval = sec between spawns. Lower = faster.
+    const phases = [
+        [0,    15,  1.50, 0],
+        [15,   25,  0.75, 1],   // spike 2x + elite
+        [25,   45,  1.40, 0],
+        [45,   55,  0.60, 1],   // spike 2.5x
+        [55,   75,  1.30, 0],
+        [75,   90,  0.70, 1],   // spike post-Elara
+        [90,  105,  1.20, 0],
+        [105, 120,  0.55, 2],   // spike 3x + 2 elites
+        [120, 135,  1.10, 0],
+        [135, 150,  0.55, 1],   // spike post-Vex
+        [150, 180,  0.40, 3],   // hardest pre-boss spike
+        [180, 9999, 9999, 0],   // boss zone — no normal spawn
+    ];
+    for (const ph of phases) {
+        if (t >= ph[0] && t < ph[1]) return { spawnInterval: ph[2], eliteWeight: ph[3], phaseEnd: ph[1] };
+    }
+    return { spawnInterval: 9999, eliteWeight: 0, phaseEnd: 9999 };
+}
+
+// --- GAME STATE ---
+let G = null;
+function freshState() {
+    return {
+        gold: 15,
+        elapsed: 0,                  // sim seconds elapsed (paused-aware)
+        running: true,
+        paused: false,               // codex / discovery / modal pauses
+        activeHeroId: 0,
+        heroes: [
+            { id:0, name:'Bran',  cls:'warrior', icon:'🛡️', iconImg:'assets/heroes/bran_warrior.png', hasBg:true, hp:80, maxHp:80, baseAtk:6, color:'var(--warrior-color)', weapon:{head:null,hilt:null,rune:null}, isDowned:false, downedTimer:0, ultGauge:0, ultUsed:false, ultName:'Whirlwind',  _lastTargetId:null, _burnStack:0, attackTimer:0 },
+            { id:1, name:'Elara', cls:'mage',    icon:'🧙‍♀️', iconImg:'assets/heroes/elara_mage.png', hasBg:true, hp:55, maxHp:55, baseAtk:8, color:'var(--mage-color)',    weapon:{head:null,hilt:null,rune:null}, isDowned:false, downedTimer:0, ultGauge:0, ultUsed:false, ultName:'Meteor',     _lastTargetId:null, _burnStack:0, attackTimer:0 },
+            { id:2, name:'Vex',   cls:'rogue',   icon:'🥷',  iconImg:'assets/heroes/vex_rogue.jpg',   hasBg:true, hp:50, maxHp:50, baseAtk:7, color:'var(--rogue-color)',   weapon:{head:null,hilt:null,rune:null}, isDowned:false, downedTimer:0, ultGauge:0, ultUsed:false, ultName:'Shadowstep', _lastTargetId:null, _burnStack:0, attackTimer:0 },
+        ],
+        enemies: [],                 // {id, type, name, icon, hp, maxHp, x, attackTimer, frozenTimer, slowTimer, isElite, isBoss, weak, resist}
+        potions: [],                 // {id, x, y, ttl}
+        carousel: [],                // 5 tiles: {tileId, partId, sold, bornAt}
+        carouselChurnTimer: 5.0,     // seconds until next churn
+        inventory: [],
+        boss: null,
+        bossSpawned: false,
+        bossDefeated: false,
+        spawnTimer: 0,
+        retryCount: 0,
+        stageStartTime: Date.now(),
+        discoveredRecipes: new Set(),
+        pendingDiscoveries: [],
+        // FPS sampling
+        _frameCount: 0,
+        _fpsSampleClock: 0,
+        // Milestones already announced
+        _milestonesAnnounced: new Set(),
+        // Time-cap ult backstop
+        _ultCapClock: 0,
+    };
+}
+
+function isHeroAvailable(h, elapsed) {
+    return elapsed >= (HERO_UNLOCK_S[h.cls] || 0);
+}
+function availableHeroes() {
+    return G.heroes.filter(h => isHeroAvailable(h, G.elapsed));
+}
+function availableAliveHeroes() {
+    return G.heroes.filter(h => isHeroAvailable(h, G.elapsed) && !h.isDowned);
+}
+
+// --- INIT ---
+function initGame() {
+    G = freshState();
+    emit('session_start', { stageStartTime: G.stageStartTime, unlockSchedule: HERO_UNLOCK_S, mode: 'realtime' });
+    G.activeHeroId = G.heroes.find(h => isHeroAvailable(h, 0)).id;
+    seedCarousel();
+    log(`<b style="color:#f1c40f;">⭐ ${G.heroes[G.activeHeroId].name} (WARRIOR) deployed. Elara @ 1:00, Vex @ 2:00.</b>`);
+    log(`<span style="color:#9b59b6;">🎠 Carousel churns every 5s — grab what you need.</span>`);
+    renderAll();
+    _lastFrameMs = 0;
+    requestAnimationFrame(loop);
+}
+
+// =============================================================================
+// CAROUSEL SHOP — 1-tile churn every 5s, slide-in/out animations
+// =============================================================================
+function eligiblePartIds() {
+    // Pre-unlock filtering: only universal + already-unlocked class parts.
+    const unlockedClasses = G.heroes.filter(h => isHeroAvailable(h, G.elapsed)).map(h => h.cls);
+    return PART_IDS.filter(id => {
+        const p = PARTS[id];
+        return p.cls === 'universal' || unlockedClasses.includes(p.cls);
+    });
+}
+function makeCarouselTile() {
+    const eligible = eligiblePartIds();
+    const partId = eligible[Math.floor(Math.random() * eligible.length)];
+    return { tileId: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), partId, sold:false, bornAt: G.elapsed };
+}
+function seedCarousel() {
+    G.carousel = [];
+    // Seed all 5 slots with staggered birth times so the player sees variety from the start.
+    for (let i = 0; i < 5; i++) {
+        const tile = makeCarouselTile();
+        tile.bornAt = G.elapsed - i; // older slots = earlier birth
+        G.carousel.push(tile);
+    }
+    G.carouselChurnTimer = 5.0;
+}
+function churnCarousel() {
+    if (G.carousel.length === 0) {
+        for (let i = 0; i < 5; i++) G.carousel.push(makeCarouselTile());
+        return;
+    }
+    // Drop oldest (leftmost), append new at end.
+    const dropped = G.carousel.shift();
+    G.carousel.push(makeCarouselTile());
+    emit('shop_churn', { droppedPart: dropped.partId, newPart: G.carousel[G.carousel.length-1].partId });
+}
+function clickCarouselTile(tileId) {
+    if (G.paused) return;
+    const idx = G.carousel.findIndex(t => t.tileId === tileId);
+    if (idx < 0) return;
+    const tile = G.carousel[idx];
+    if (tile.sold) return;
+    const part = PARTS[tile.partId];
+    if (G.gold < part.cost) { log('🪙 Not enough gold for ' + part.name); flashGoldUI(); return; }
+    G.gold -= part.cost;
+    tile.sold = true;
+    emit('shop_buy', { tileId, partId: part.id, slotType: part.slot, costG: part.cost, atElapsed: G.elapsed.toFixed(1) });
+    acquirePart(part.id, 'buy');
+    renderAll();
+}
+
+// =============================================================================
+// PART ACQUISITION (carried from REF, minor renames)
+// =============================================================================
+function acquirePart(partId, source) {
+    const def = PARTS[partId];
+    if (!def) return;
+
+    const active = G.heroes[G.activeHeroId];
+    const activeEligible = active && !active.isDowned && isHeroAvailable(active, G.elapsed) &&
+                           (def.cls === 'universal' || def.cls === active.cls);
+
+    if (activeEligible) {
+        const ep = active.weapon[def.slot];
+        if (ep && ep.id === partId) {
+            if (ep.level < MAX_PART_LEVEL) {
+                ep.level += 1;
+                clampHp(active);
+                emit('part_merge', { partId, newLevel: ep.level, source, target: 'equipped', heroId: active.id });
+                log(`<b style="color:#f1c40f;">✨ MERGED!</b> ${def.icon} ${def.name} on ${active.name} → L${ep.level}`);
+                spawnMergeBurstOnHeroCard(active.id);
+                return;
+            }
+        } else if (!ep) {
+            active.weapon[def.slot] = instantiatePart(partId, 1);
+            clampHp(active);
+            emit('forge_swap', { heroId: active.id, slotType: def.slot, oldPartId: null, newPartId: partId });
+            log(`⚒️ ${def.icon} ${def.name} → ${active.name}'s ${def.slot}`);
+            if (hasFullWeapon(active)) selectNextNeedyHero();
+            return;
+        }
+    }
+
+    const equippedTarget = findEquippedDuplicate(def, active && activeEligible ? active.id : null);
+    if (equippedTarget) {
+        const ep = equippedTarget.hero.weapon[equippedTarget.slot];
+        if (ep.level < MAX_PART_LEVEL) {
+            ep.level += 1;
+            clampHp(equippedTarget.hero);
+            emit('part_merge', { partId, newLevel: ep.level, source, target: 'equipped', heroId: equippedTarget.hero.id });
+            log(`<b style="color:#f1c40f;">✨ MERGED!</b> ${def.icon} ${def.name} on ${equippedTarget.hero.name} → L${ep.level}`);
+            spawnMergeBurstOnHeroCard(equippedTarget.hero.id);
+            return;
+        }
+    }
+
+    const otherEquip = findEquipTargetForFresh(def, active && activeEligible ? active.id : null);
+    if (otherEquip) {
+        if (G.activeHeroId !== otherEquip.id) {
+            G.activeHeroId = otherEquip.id;
+            log(`→ Active hero: ${otherEquip.name}`);
+            queueActiveSwitchPulse(otherEquip.id);
+        }
+        otherEquip.weapon[def.slot] = instantiatePart(partId, 1);
+        clampHp(otherEquip);
+        emit('forge_swap', { heroId: otherEquip.id, slotType: def.slot, oldPartId: null, newPartId: partId });
+        log(`⚒️ ${def.icon} ${def.name} → ${otherEquip.name}'s ${def.slot}`);
+        if (hasFullWeapon(otherEquip)) selectNextNeedyHero();
+        return;
+    }
+
+    const invIdx = G.inventory.findIndex(it => it.partId === partId);
+    if (invIdx >= 0 && (G.inventory[invIdx].level || 1) < MAX_PART_LEVEL) {
+        const item = G.inventory[invIdx];
+        item.level = (item.level || 1) + 1;
+        emit('part_merge', { partId, newLevel: item.level, source, target: 'inventory' });
+        log(`<b style="color:#f1c40f;">✨ MERGED!</b> ${def.icon} ${def.name} in inventory → L${item.level}`);
+        spawnMergeBurstInInventory(item.uid);
+        return;
+    }
+
+    G.inventory.push({ uid: nextUid(), partId, level: 1 });
+    log(`📥 ${def.icon} ${def.name} → inventory`);
+}
+
+function findEquippedDuplicate(def, excludeHeroId) {
+    const eligible = availableHeroes().filter(h =>
+        !h.isDowned && (def.cls === 'universal' || def.cls === h.cls) && h.id !== excludeHeroId
+    );
+    for (const h of eligible) {
+        const ep = h.weapon[def.slot];
+        if (ep && ep.id === def.id) return { hero: h, slot: def.slot };
+    }
+    return null;
+}
+function findEquipTargetForFresh(def, excludeHeroId) {
+    const eligible = availableHeroes().filter(h =>
+        !h.isDowned && (def.cls === 'universal' || def.cls === h.cls) && h.id !== excludeHeroId
+    );
+    if (eligible.length === 0) return null;
+    const active = eligible.find(h => h.id === G.activeHeroId);
+    if (active && !active.weapon[def.slot]) return active;
+    const open = eligible.find(h => !h.weapon[def.slot]);
+    return open || null;
+}
+function flashGoldUI() {
+    const el = document.getElementById('gold-ui');
+    if (!el) return;
+    el.style.transition = 'transform 0.1s';
+    el.style.transform = 'scale(1.2)';
+    el.style.borderColor = '#e74c3c';
+    setTimeout(() => { el.style.transform = 'scale(1)'; el.style.borderColor = '#f1c40f'; }, 250);
+}
+function equipFromInventory(uid) {
+    if (G.paused) return;
+    const idx = G.inventory.findIndex(it => it.uid === uid);
+    if (idx < 0) return;
+    const item = G.inventory[idx];
+    const def = PARTS[item.partId];
+    const itemLevel = item.level || 1;
+    const active = G.heroes[G.activeHeroId];
+    const activeEligible = active && !active.isDowned && isHeroAvailable(active, G.elapsed) &&
+                           (def.cls === 'universal' || def.cls === active.cls);
+
+    if (activeEligible) {
+        const ep = active.weapon[def.slot];
+        if (ep && ep.id === item.partId) {
+            ep.level = Math.min(MAX_PART_LEVEL, ep.level + itemLevel);
+            clampHp(active);
+            G.inventory.splice(idx, 1);
+            emit('part_merge', { partId: item.partId, newLevel: ep.level, source: 'inventory_click', target: 'equipped', heroId: active.id });
+            log(`<b style="color:#f1c40f;">✨ MERGED!</b> ${def.icon} ${def.name} on ${active.name} → L${ep.level}`);
+            spawnMergeBurstOnHeroCard(active.id);
+            renderAll(); return;
+        }
+        if (!ep) {
+            active.weapon[def.slot] = instantiatePart(item.partId, itemLevel);
+            clampHp(active);
+            G.inventory.splice(idx, 1);
+            emit('forge_swap', { heroId: active.id, slotType: def.slot, oldPartId: null, newPartId: item.partId, fromInventory: true });
+            log(`⚒️ ${def.icon} L${itemLevel} ${def.name} → ${active.name}'s ${def.slot}`);
+            renderAll(); return;
+        }
+        G.inventory.push({ uid: nextUid(), partId: ep.id, level: ep.level || 1 });
+        active.weapon[def.slot] = instantiatePart(item.partId, itemLevel);
+        clampHp(active);
+        G.inventory.splice(idx, 1);
+        emit('forge_swap', { heroId: active.id, slotType: def.slot, oldPartId: ep.id, newPartId: item.partId, fromInventory: true, swapped: true });
+        log(`🔁 Swapped ${active.name}'s ${def.slot}: ${def.icon} L${itemLevel} ${def.name}`);
+        renderAll(); return;
+    }
+
+    const dup = findEquippedDuplicate(def);
+    if (dup && dup.hero.weapon[dup.slot].level < MAX_PART_LEVEL) {
+        const ep = dup.hero.weapon[dup.slot];
+        ep.level = Math.min(MAX_PART_LEVEL, ep.level + itemLevel);
+        clampHp(dup.hero);
+        G.inventory.splice(idx, 1);
+        emit('part_merge', { partId: item.partId, newLevel: ep.level, source: 'inventory_click', target: 'equipped', heroId: dup.hero.id });
+        log(`<b style="color:#f1c40f;">✨ MERGED!</b> ${def.icon} ${def.name} on ${dup.hero.name} → L${ep.level}`);
+        spawnMergeBurstOnHeroCard(dup.hero.id);
+        renderAll(); return;
+    }
+    const fresh = findEquipTargetForFresh(def);
+    if (fresh) {
+        if (G.activeHeroId !== fresh.id) { G.activeHeroId = fresh.id; queueActiveSwitchPulse(fresh.id); }
+        fresh.weapon[def.slot] = instantiatePart(item.partId, itemLevel);
+        clampHp(fresh);
+        G.inventory.splice(idx, 1);
+        log(`⚒️ ${def.icon} L${itemLevel} ${def.name} → ${fresh.name}'s ${def.slot}`);
+        renderAll(); return;
+    }
+    log(`No eligible hero unlocked for ${def.name}.`);
+}
+
+function unequipToInventory(heroId, slot) {
+    if (G.paused) return;
+    const hero = G.heroes.find(h => h.id === heroId);
+    if (!hero) return;
+    const p = hero.weapon[slot];
+    if (!p) return;
+    G.inventory.push({ uid: nextUid(), partId: p.id, level: p.level || 1 });
+    hero.weapon[slot] = null;
+    clampHp(hero);
+    emit('forge_swap', { heroId, slotType: slot, oldPartId: p.id, newPartId: null, toInventory: true });
+    log(`↩️ Unequipped ${p.icon} L${p.level || 1} ${p.name} from ${hero.name}`);
+    renderAll();
+}
+function discardFromInventory(uid) {
+    if (G.paused) return;
+    const idx = G.inventory.findIndex(it => it.uid === uid);
+    if (idx < 0) return;
+    const item = G.inventory[idx];
+    const part = PARTS[item.partId];
+    const level = item.level || 1;
+    const refund = Math.floor(part.cost * level / 3);
+    G.inventory.splice(idx, 1);
+    G.gold += refund;
+    log(`🗑️ Discarded ${part.icon} L${level} ${part.name} (+${refund}🪙)`);
+    renderAll();
+}
+
+// =============================================================================
+// HERO SELECTION + WEAPON
+// =============================================================================
+function selectHero(id) {
+    if (G.paused) return;
+    const h = G.heroes.find(x => x.id === id);
+    if (!h) return;
+    if (!isHeroAvailable(h, G.elapsed)) {
+        log(`${h.name} unlocks at ${fmtTime(HERO_UNLOCK_S[h.cls])}.`);
+        return;
+    }
+    if (h.isDowned) {
+        log(`${h.name} is downed (${Math.ceil(DOWNED_REVIVE_S - h.downedTimer)}s to revive).`);
+        return;
+    }
+    G.activeHeroId = id;
+    renderAll();
+}
+function selectNextNeedyHero() {
+    for (const h of G.heroes) {
+        if (h.isDowned) continue;
+        if (!isHeroAvailable(h, G.elapsed)) continue;
+        if (!h.weapon.head || !h.weapon.hilt || !h.weapon.rune) {
+            G.activeHeroId = h.id;
+            queueActiveSwitchPulse(h.id);
+            return;
+        }
+    }
+}
+function clickAnvilSlot(slot) {
+    if (G.paused) return;
+    const h = G.heroes.find(x => x.id === G.activeHeroId);
+    if (!h) return;
+    if (h.weapon[slot]) {
+        unequipToInventory(h.id, slot);
+    } else {
+        log(`📥 ${slot.toUpperCase()} slot empty — wait for carousel.`);
+    }
+}
+function weaponStats(hero) {
+    let atk = hero.baseAtk, hpBonus = 0, crit = 0, ultRate = 0, tags = [];
+    ['head', 'hilt', 'rune'].forEach(s => {
+        const p = hero.weapon[s];
+        if (p) {
+            const m = levelMult(p.level);
+            atk += Math.round(p.atk * m);
+            hpBonus += Math.round(p.hp * m);
+            crit += Math.round(p.crit * m);
+            ultRate += Math.round(p.ultRate * m);
+            if (p.tag) tags.push(p.tag);
+        }
+    });
+    return { atk, hpBonus, crit, ultRate, tags };
+}
+function hasFullWeapon(hero) { return hero.weapon.head && hero.weapon.hilt && hero.weapon.rune; }
+function getMaxHp(hero) { return hero.maxHp + weaponStats(hero).hpBonus; }
+function clampHp(hero) {
+    const max = getMaxHp(hero);
+    if (hero.hp > max) hero.hp = max;
+    checkHeroForDiscoveries(hero);
+}
+
+// =============================================================================
+// MAIN LOOP — requestAnimationFrame, 60fps simulation
+// =============================================================================
+let _lastFrameMs = 0;
+function loop(nowMs) {
+    if (!G.running) return;
+    if (_lastFrameMs === 0) _lastFrameMs = nowMs;
+    let dtMs = nowMs - _lastFrameMs;
+    _lastFrameMs = nowMs;
+    if (dtMs > 100) dtMs = 100; // clamp on tab-switch
+    const dt = dtMs / 1000;
+
+    // FPS sample (always, even paused)
+    G._frameCount++;
+    G._fpsSampleClock += dt;
+    if (G._fpsSampleClock >= TICK_SAMPLE_INTERVAL_S) {
+        const fps = G._frameCount / G._fpsSampleClock;
+        emit('tick', { elapsed: G.elapsed.toFixed(1), fps: fps.toFixed(1), frames: G._frameCount });
+        G._frameCount = 0;
+        G._fpsSampleClock = 0;
+    }
+
+    if (!G.paused) {
+        simStep(dt);
+    }
+    renderArena(); // arena always renders so paused state still draws current positions
+
+    requestAnimationFrame(loop);
+}
+
+function simStep(dt) {
+    G.elapsed += dt;
+
+    // Time-milestones
+    checkMilestone(60,  '⭐ Elara joins the squad!');
+    checkMilestone(120, '⭐ Vex joins the squad!');
+    checkMilestone(STAGE_LENGTH_S, '⚠️ BOSS APPROACHES ⚠️');
+
+    // Carousel churn
+    G.carouselChurnTimer -= dt;
+    if (G.carouselChurnTimer <= 0) {
+        churnCarousel();
+        G.carouselChurnTimer = 5.0;
+    }
+
+    // Spawn schedule
+    if (!G.bossSpawned) {
+        G.spawnTimer -= dt;
+        const phase = pulsePhaseAt(G.elapsed);
+        if (G.spawnTimer <= 0 && G.elapsed < STAGE_LENGTH_S) {
+            spawnEnemy(phase.eliteWeight);
+            G.spawnTimer = phase.spawnInterval * (0.85 + Math.random() * 0.3);
+        }
+    }
+
+    // Boss spawn at 3:00
+    if (!G.bossSpawned && G.elapsed >= STAGE_LENGTH_S) {
+        spawnBoss();
+    }
+
+    // Enemy update — march, attack, frozen/slow timers
+    for (const e of G.enemies) {
+        if (e.frozenTimer > 0) { e.frozenTimer -= dt; continue; }
+        if (e.slowTimer > 0) e.slowTimer -= dt;
+        const slowFactor = e.slowTimer > 0 ? 0.6 : 1.0;
+        // Light speed-up over time per GDD ("+5%/15s scaling")
+        const ageBoost = 1 + Math.min(0.4, 0.05 * (G.elapsed / 15));
+        e.x += ENEMY_MARCH_BASE * slowFactor * ageBoost * dt;
+
+        const meleeX = ARENA_WIDTH - ENEMY_MELEE_RANGE_X;
+        if (e.x >= meleeX) {
+            e.x = meleeX; // halt at melee line
+            e.attackTimer -= dt;
+            if (e.attackTimer <= 0) {
+                e.attackTimer = ENEMY_ATTACK_CD;
+                enemyAttack(e);
+            }
+        }
+    }
+    // Cull dead enemies (defensive — should be culled at kill site)
+    G.enemies = G.enemies.filter(e => e.hp > 0);
+
+    // Hero update — attacks, ult fill, downed timer
+    for (const h of G.heroes) {
+        if (!isHeroAvailable(h, G.elapsed)) continue;
+        if (h.isDowned) {
+            h.downedTimer += dt;
+            if (h.downedTimer >= DOWNED_REVIVE_S) {
+                h.isDowned = false;
+                h.downedTimer = 0;
+                h.hp = Math.floor(getMaxHp(h) * REVIVE_HP_PCT);
+                emit('hero_revive', { heroId: h.id, atElapsed: G.elapsed.toFixed(1) });
+                log(`<b style="color:#2ecc71;">↑ ${h.name} revives at 50% HP!</b>`);
+            }
+            continue;
+        }
+        if (!hasFullWeapon(h)) continue;
+        h.attackTimer -= dt;
+        const cd = HERO_ATTACK_CD[h.cls] || 0.85;
+        if (h.attackTimer <= 0 && G.enemies.length > 0) {
+            heroAttack(h);
+            h.attackTimer = cd;
+        }
+    }
+
+    // Backstop ult cap — fill any hero's ult to 100 every ULT_TIME_CAP_S of combat
+    G._ultCapClock += dt;
+    if (G._ultCapClock >= ULT_TIME_CAP_S) {
+        G._ultCapClock = 0;
+        availableAliveHeroes().forEach(h => {
+            if (!h.ultUsed && h.ultGauge < 100) h.ultGauge = 100;
+        });
+    }
+
+    // Potion update
+    G.potions = G.potions.filter(p => {
+        p.ttl -= dt;
+        return p.ttl > 0;
+    });
+
+    // Wipe check — all unlocked heroes simultaneously downed
+    const unlocked = G.heroes.filter(h => isHeroAvailable(h, G.elapsed));
+    if (unlocked.length > 0 && unlocked.every(h => h.isDowned)) {
+        triggerWipe();
+        return;
+    }
+
+    // Boss-cleared check
+    if (G.bossSpawned && !G.bossDefeated && G.enemies.length === 0) {
+        // All enemies (including boss) dead.
+        triggerStageClear();
+        return;
+    }
+}
+
+function checkMilestone(atSec, text) {
+    if (G._milestonesAnnounced.has(atSec)) return;
+    if (G.elapsed >= atSec) {
+        G._milestonesAnnounced.add(atSec);
+        emit('time_milestone', { mark: atSec, msg: text });
+        log(`<b style="color:#f1c40f;">${text}</b>`);
+        spawnMilestoneToast(text);
+    }
+}
+
+function spawnEnemy(eliteWeight) {
+    const typeId = NORMAL_ENEMY_IDS[Math.floor(Math.random() * NORMAL_ENEMY_IDS.length)];
+    const def = NORMAL_ENEMIES[typeId];
+    const isElite = Math.random() < (eliteWeight * 0.15); // eliteWeight 0..3
+    const hpScale = 1 + Math.min(2.0, G.elapsed / 60);    // HP grows linearly with time
+    const hp = Math.floor(def.hp * hpScale * (isElite ? ELITE_MULT.hp : 1));
+    const enemy = {
+        id: nextEnemyId(),
+        type: typeId,
+        name: def.name, icon: def.icon,
+        hp, maxHp: hp,
+        x: -20,
+        y: 8 + Math.random() * (ARENA_HEIGHT - 60),
+        attackTimer: ENEMY_ATTACK_CD,
+        frozenTimer: 0, slowTimer: 0,
+        isElite, isBoss: false,
+        weak: def.weak, resist: def.resist,
+    };
+    G.enemies.push(enemy);
+    emit('enemy_spawn', { id: enemy.id, type: typeId, isElite, hp, atElapsed: G.elapsed.toFixed(1) });
+}
+
+function spawnBoss() {
+    G.bossSpawned = true;
+    G.boss = G.boss || BOSS_OPTIONS[Math.floor(Math.random() * BOSS_OPTIONS.length)];
+    const b = G.boss;
+    const enemy = {
+        id: nextEnemyId(),
+        type: 'boss',
+        name: b.name, icon: b.icon,
+        hp: b.hp, maxHp: b.hp,
+        x: -40,
+        y: ARENA_HEIGHT / 2 - 30,
+        attackTimer: ENEMY_ATTACK_CD,
+        frozenTimer: 0, slowTimer: 0,
+        isElite: false, isBoss: true,
+        weak: b.weak, resist: b.resist,
+    };
+    G.enemies.push(enemy);
+    showAffinityBanner();
+    document.getElementById('time-pill').classList.add('boss');
+    log(`<b style="color:#c0392b;">🐉 ${b.name} appears! Weak: ${b.weak.toUpperCase()} · Resists: ${b.resist.toUpperCase()}</b>`);
+    emit('enemy_spawn', { id: enemy.id, type: 'boss', boss: b.name, hp: b.hp });
+}
+function showAffinityBanner() {
+    const banner = document.getElementById('affinity-banner');
+    banner.innerHTML = `BOSS: ${G.boss.name} — Resists: ${G.boss.resist.toUpperCase()} · Weak to: ${G.boss.weak.toUpperCase()}`;
+    banner.classList.add('visible');
+}
+function hideAffinityBanner() { document.getElementById('affinity-banner').classList.remove('visible'); }
+
+// =============================================================================
+// COMBAT — hero attack + enemy attack + recipe side-effects
+// =============================================================================
+function heroAttack(hero) {
+    const stats = weaponStats(hero);
+    const bonuses = getRecipeBonuses(hero);
+    bonuses.ids.forEach(rid => markRecipeTriggered(rid));
+
+    // Pick nearest enemy (lowest distance to right edge — i.e. highest x).
+    let target = null;
+    let bestX = -Infinity;
+    for (const e of G.enemies) {
+        if (e.hp <= 0) continue;
+        if (e.x > bestX) { bestX = e.x; target = e; }
+    }
+    if (!target) return;
+
+    let dmg = stats.atk;
+
+    // Inferno stack
+    let stackMult = 1.0;
+    if (bonuses.stackBurn > 0 && hero._lastTargetId === target.id) {
+        hero._burnStack = Math.min((hero._burnStack || 0) + 1, bonuses.stackCap);
+        stackMult = 1 + bonuses.stackBurn * hero._burnStack;
+    } else {
+        hero._burnStack = 0;
+    }
+    hero._lastTargetId = target.id;
+
+    const effCrit = stats.crit + bonuses.critBonus;
+    const isCrit = Math.random() * 100 < effCrit;
+    if (isCrit) dmg = Math.floor(dmg * 1.6);
+
+    let affMult = 1.0;
+    if (target.weak || target.resist) {
+        stats.tags.forEach(t => {
+            if (target.weak && t === target.weak)     affMult *= 1.8;
+            if (target.resist && t === target.resist) affMult *= 0.5;
+        });
+    }
+    dmg = Math.max(1, Math.floor(dmg * affMult * stackMult));
+
+    target.hp -= dmg;
+
+    // Ult gauge — Quickdraw bonus
+    const gaugeMult = 1 + bonuses.ultBoost;
+    const gaugeGain = (4 + Math.floor(dmg * 0.15) + (stats.ultRate / 5)) * gaugeMult;
+    if (!hero.ultUsed) hero.ultGauge = Math.min(100, hero.ultGauge + gaugeGain);
+
+    const primaryTag = stats.tags.find(t => t === target.weak) || stats.tags[0] || null;
+    spawnDamagePopAtEnemy(target.id, dmg, {
+        crit: isCrit,
+        weakness: affMult > 1.0 && !isCrit,
+        resisted: affMult < 1.0 && !isCrit,
+        element: primaryTag,
+    });
+    spawnElemStreakToEnemy(hero.id, target.id, primaryTag || 'basic');
+
+    // Recipe side-effects
+    if (bonuses.splash > 0) {
+        const splashDmg = Math.floor(dmg * bonuses.splash);
+        G.enemies.forEach(e => {
+            if (e.id === target.id || e.hp <= 0) return;
+            e.hp -= splashDmg;
+            spawnDamagePopAtEnemy(e.id, splashDmg, { element: primaryTag || 'fire' });
+        });
+    }
+    if (isCrit && bonuses.critSplash > 0) {
+        const others = G.enemies.filter(e => e.id !== target.id && e.hp > 0);
+        if (others.length > 0) {
+            const pick = others[Math.floor(Math.random() * others.length)];
+            const cs = Math.floor(dmg * bonuses.critSplash);
+            pick.hp -= cs;
+            spawnDamagePopAtEnemy(pick.id, cs, { element: 'fire' });
+        }
+    }
+    if (bonuses.multiHit > 0 && Math.random() < 0.7) {
+        const others = G.enemies.filter(e => e.id !== target.id && e.hp > 0);
+        if (others.length > 0) {
+            const pick = others[Math.floor(Math.random() * others.length)];
+            const mh = Math.floor(dmg * bonuses.multiHit);
+            pick.hp -= mh;
+            spawnDamagePopAtEnemy(pick.id, mh, { element: 'pierce' });
+        }
+    }
+    if (bonuses.freezeChance > 0 && Math.random() < bonuses.freezeChance && target.frozenTimer <= 0) {
+        target.frozenTimer = 1.5;
+    }
+    if (bonuses.slow > 0) {
+        target.slowTimer = 2.0;
+    }
+
+    // Kill check
+    for (let i = G.enemies.length - 1; i >= 0; i--) {
+        if (G.enemies[i].hp <= 0) {
+            killEnemy(i);
+        }
+    }
+}
+
+function killEnemy(idx) {
+    const e = G.enemies[idx];
+    let goldGain = 1;
+    if (e.isElite) goldGain += ELITE_MULT.goldBonus;
+    if (e.isBoss) goldGain = 20;
+    G.gold += goldGain;
+    emit('enemy_kill', { id: e.id, type: e.type, isElite: e.isElite, isBoss: e.isBoss, goldGain, atElapsed: G.elapsed.toFixed(1) });
+
+    // Potion drop chance (not on boss)
+    if (!e.isBoss && Math.random() < HEAL_POTION_CHANCE) {
+        const potion = {
+            id: nextPotionId(),
+            x: Math.max(20, Math.min(ARENA_WIDTH - 30, e.x)),
+            y: e.y,
+            ttl: HEAL_POTION_TTL_S,
+        };
+        G.potions.push(potion);
+        emit('potion_drop', { id: potion.id, fromEnemy: e.id });
+    }
+
+    if (e.isBoss) {
+        G.bossDefeated = true;
+        log(`<b style="color:#f1c40f;">🏆 ${e.name} defeated!</b>`);
+    }
+    G.enemies.splice(idx, 1);
+}
+
+function enemyAttack(e) {
+    const targets = availableAliveHeroes();
+    if (targets.length === 0) return;
+    // Pick lowest-HP hero in melee — simulates "they hit closest" but lowest HP is more punishing & dramatic.
+    targets.sort((a, b) => a.hp - b.hp);
+    const t = targets[0];
+    let dmg = ENEMY_BASE_DMG + Math.floor(G.elapsed / 25);
+    if (e.isElite) dmg = Math.floor(dmg * ELITE_MULT.atkMult);
+    if (e.isBoss)  dmg = Math.floor(dmg * 2.0);
+    t.hp -= dmg;
+    spawnDamagePopAtHero(t.id, dmg, { enemyHit: true });
+    if (t.hp <= 0) {
+        t.hp = 0;
+        t.isDowned = true;
+        t.downedTimer = 0;
+        emit('hero_down', { heroId: t.id, atElapsed: G.elapsed.toFixed(1), byEnemy: e.id });
+        log(`<b style="color:#e74c3c">💀 ${t.name} downed!</b> Revives in ${DOWNED_REVIVE_S}s.`);
+    }
+}
+
+function clickPotion(potionId) {
+    if (G.paused) return;
+    const idx = G.potions.findIndex(p => p.id === potionId);
+    if (idx < 0) return;
+    G.potions.splice(idx, 1);
+    const alive = availableAliveHeroes();
+    if (alive.length === 0) return;
+    // Heal lowest-HP-pct alive hero.
+    alive.sort((a, b) => (a.hp / getMaxHp(a)) - (b.hp / getMaxHp(b)));
+    const t = alive[0];
+    const heal = Math.floor(getMaxHp(t) * HEAL_POTION_HP_PCT);
+    t.hp = Math.min(getMaxHp(t), t.hp + heal);
+    emit('potion_used', { potionId, heroId: t.id, healAmount: heal });
+    log(`<b style="color:#2ecc71;">🧪 Potion → ${t.name} +${heal} HP</b>`);
+    spawnDamagePopAtHero(t.id, heal, { heal: true });
+}
+
+// =============================================================================
+// ULT
+// =============================================================================
+function tapUlt(heroId) {
+    if (G.paused) return;
+    const h = G.heroes.find(x => x.id === heroId);
+    if (!h || h.isDowned || h.ultUsed) return;
+    if (h.ultGauge < 100) { log('⚡ Ultimate not ready'); return; }
+    emit('ult_tapped', { heroId, atElapsed: G.elapsed.toFixed(1), gauge: h.ultGauge });
+    h.ultUsed = true; h.ultGauge = 0;
+    const stats = weaponStats(h);
+    const dmg = Math.floor(stats.atk * 3.5);
+    log(`<b style="color:var(--ult-purple);">⚡ ${h.name} unleashes ${h.ultName}!</b>`);
+    if (h.cls === 'warrior') {
+        G.enemies.forEach(e => {
+            e.hp -= dmg;
+            spawnDamagePopAtEnemy(e.id, dmg, { ult: true });
+        });
+    } else if (h.cls === 'mage') {
+        const sorted = G.enemies.slice().sort((a,b) => b.x - a.x).slice(0, 3);
+        sorted.forEach(e => {
+            e.hp -= dmg;
+            spawnDamagePopAtEnemy(e.id, dmg, { ult: true, element: 'fire' });
+        });
+    } else if (h.cls === 'rogue') {
+        const sorted = G.enemies.slice().sort((a,b) => b.x - a.x);
+        if (sorted[0]) {
+            const big = Math.floor(dmg * 1.5);
+            sorted[0].hp -= big;
+            spawnDamagePopAtEnemy(sorted[0].id, big, { ult: true, crit: true });
+        }
+    }
+    for (let i = G.enemies.length - 1; i >= 0; i--) {
+        if (G.enemies[i].hp <= 0) killEnemy(i);
+    }
+    // Reset ult fully on stage clear — also reset per-stage. For now: ult is one-shot per stage (GDD §"Ult gauge").
+}
+
+// =============================================================================
+// END-STATE HANDLERS
+// =============================================================================
+function triggerWipe() {
+    if (!G.running) return;
+    G.running = false;
+    emit('stream_ended', { reason: G.bossSpawned ? 'boss_wipe' : 'normal_wipe', atElapsed: G.elapsed.toFixed(1), retries: G.retryCount });
+    if (G.bossSpawned) {
+        document.getElementById('retry-modal').classList.add('visible');
+    } else {
+        document.getElementById('wipe-modal').classList.add('visible');
+    }
+}
+function triggerStageClear() {
+    if (!G.running) return;
+    G.running = false;
+    const totalTime = G.elapsed;
+    document.getElementById('clear-stats').innerHTML =
+        `Time: ${fmtTime(totalTime)} · Retries: ${G.retryCount} · Discoveries: ${G.discoveredRecipes.size}/${RECIPE_IDS.length}`;
+    document.getElementById('clear-modal').classList.add('visible');
+    emit('stream_ended', { reason: 'stage_clear', atElapsed: totalTime.toFixed(1), retries: G.retryCount });
+}
+function bossRetry() {
+    document.getElementById('retry-modal').classList.remove('visible');
+    G.retryCount++;
+    emit('boss_retry', { partsKept: 'all_equipped', retries: G.retryCount });
+    // Resurrect heroes at full effective max HP, parts kept.
+    G.heroes.forEach(h => {
+        if (!isHeroAvailable(h, G.elapsed)) return;
+        h.isDowned = false; h.downedTimer = 0; h.hp = getMaxHp(h); h.ultUsed = false;
+    });
+    G.enemies = [];
+    G.potions = [];
+    G.bossSpawned = false;
+    G.bossDefeated = false;
+    // Re-spawn boss immediately (do not wait 3:00 again).
+    spawnBoss();
+    // Refresh carousel for re-tooling
+    seedCarousel();
+    G.running = true;
+    _lastFrameMs = 0;
+    log(`<b style="color:var(--gold-color);">🔧 Reforge & Retry — boss reset.</b>`);
+    renderAll();
+    requestAnimationFrame(loop);
+}
+function restartStage() {
+    document.getElementById('retry-modal').classList.remove('visible');
+    document.getElementById('wipe-modal').classList.remove('visible');
+    document.getElementById('clear-modal').classList.remove('visible');
+    document.getElementById('time-pill').classList.remove('boss');
+    hideAffinityBanner();
+    initGame();
+}
+
+// =============================================================================
+// DISCOVERY + CODEX (carried)
+// =============================================================================
+function markRecipeTriggered(rid) {
+    if (G.discoveredRecipes.has(rid)) return;
+    G.discoveredRecipes.add(rid);
+    G.pendingDiscoveries.push(rid);
+    emit('recipe_discovered', { recipeId: rid, atElapsed: G.elapsed.toFixed(1) });
+    setTimeout(showNextDiscovery, 100);
+}
+function checkHeroForDiscoveries(hero) {
+    if (!hero || !hero.weapon) return;
+    getActiveRecipes(hero.weapon).forEach(rid => markRecipeTriggered(rid));
+}
+function showNextDiscovery() {
+    if (G.pendingDiscoveries.length === 0) return;
+    if (document.getElementById('discovery-overlay').classList.contains('visible')) return;
+    const rid = G.pendingDiscoveries.shift();
+    const r = RECIPES[rid];
+    document.getElementById('disc-icon').innerText = r.icon;
+    document.getElementById('disc-name').innerText = r.name.toUpperCase();
+    document.getElementById('disc-tags').innerText = r.patterns[0].map(t => t.toUpperCase()).join(' + ');
+    document.getElementById('disc-desc').innerText = r.desc;
+    document.getElementById('discovery-overlay').classList.add('visible');
+    G.paused = true;
+}
+function closeDiscovery() {
+    document.getElementById('discovery-overlay').classList.remove('visible');
+    if (G.pendingDiscoveries.length > 0) {
+        setTimeout(showNextDiscovery, 250);
+        return;
+    }
+    G.paused = false;
+    renderAll();
+}
+function openCodex() {
+    if (G.paused) return;
+    G.paused = true;
+    const body = document.getElementById('codex-body');
+    const total = RECIPE_IDS.length;
+    const discCount = G.discoveredRecipes.size;
+    let rows = `<div class="codex-title">📜 Recipe Codex</div>
+                <div class="codex-subtitle">Discovered ${discCount} of ${total}. Mix tags. Find combos.</div>`;
+    RECIPE_IDS.forEach(rid => {
+        const r = RECIPES[rid];
+        const isDisc = G.discoveredRecipes.has(rid);
+        const iconCls = isDisc ? '' : 'silhouette';
+        const nameCls = isDisc ? '' : 'hidden';
+        const tagsCls = isDisc ? '' : 'hidden';
+        const name = isDisc ? r.name : '???';
+        const tags = isDisc
+            ? r.patterns.map(p => p.map(t => t.toUpperCase()).join(' + ')).join('  ·  ')
+            : r.patterns[0].map(_ => '???').join(' + ');
+        rows += `
+            <div class="codex-row ${isDisc ? 'discovered' : 'undiscovered'}">
+                <div class="codex-icon ${iconCls}">${r.icon}</div>
+                <div style="flex:1;">
+                    <div class="codex-name ${nameCls}">${name}</div>
+                    <div class="codex-desc">${r.desc}</div>
+                    <div class="codex-tags ${tagsCls}">Recipe: ${tags}</div>
+                </div>
+            </div>`;
+    });
+    rows += `<button class="action-button codex-close" onclick="closeCodex()">Close</button>`;
+    body.innerHTML = rows;
+    document.getElementById('codex-modal').classList.add('visible');
+}
+function closeCodex() {
+    document.getElementById('codex-modal').classList.remove('visible');
+    G.paused = false;
+}
+
+// =============================================================================
+// PART INFO MODAL
+// =============================================================================
+function openPartInfo(source, ref) {
+    if (G.paused) return;
+    let part;
+    if (source === 'inventory') {
+        const item = G.inventory.find(it => it.uid === ref);
+        if (!item) return;
+        part = PARTS[item.partId];
+    } else if (source === 'anvil') {
+        const hero = G.heroes.find(h => h.id === ref.heroId);
+        if (!hero) return;
+        part = hero.weapon[ref.slot];
+        if (!part) return;
+    } else return;
+
+    const body = document.getElementById('info-card-body');
+    const tagHTML = part.tag ? `<span class="info-tag tag-badge ${part.tag}">${part.tag}</span>` : '';
+    const classLabel = part.cls === 'universal' ? 'Universal' : `${part.cls[0].toUpperCase()}${part.cls.slice(1)}-only`;
+    const stats = [];
+    if (part.atk) stats.push(['ATK', '+' + part.atk]);
+    if (part.hp) stats.push(['HP', '+' + part.hp]);
+    if (part.crit) stats.push(['Crit %', '+' + part.crit]);
+    if (part.ultRate) stats.push(['Ult Fill', '+' + part.ultRate + '%']);
+    const statsHTML = stats.map(s => `<div class="info-stat-row"><span>${s[0]}</span><span class="info-stat-val">${s[1]}</span></div>`).join('');
+
+    let actions = '';
+    if (source === 'inventory') {
+        const eligible = availableHeroes().filter(h => !h.isDowned && (part.cls === 'universal' || part.cls === h.cls));
+        const equipBtns = eligible.map(h => `
+            <button class="action-button info-equip" onclick="equipFromInventory('${ref}')" style="border-color:${h.color}; border-width:2px;">
+                ${h.icon} ${h.name}
+            </button>`).join('');
+        actions = (eligible.length ? `<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">${equipBtns}</div>` : `<div class="info-warning">No eligible hero available.</div>`) +
+            `<div class="info-action-row">
+                <button class="action-button info-unequip" onclick="discardFromInventory('${ref}')">🗑️ Discard (+${Math.floor(part.cost/3)}🪙)</button>
+                <button class="action-button info-close" onclick="closePartInfo()">Close</button>
+            </div>`;
+    } else if (source === 'anvil') {
+        actions = `
+            <button class="action-button info-unequip" onclick="unequipToInventory(${ref.heroId}, '${ref.slot}')">↩️ Unequip → Inventory</button>
+            <button class="action-button info-close" onclick="closePartInfo()">Close</button>
+        `;
+    }
+
+    body.innerHTML = `
+        <div class="info-header">
+            <div class="info-icon">${part.icon}</div>
+            <div>
+                <div class="info-name">${part.name}</div>
+                <div class="info-subline">${classLabel} · ${part.slot.toUpperCase()} ${tagHTML}</div>
+            </div>
+        </div>
+        <div class="info-stats">${statsHTML || '<i>No stat bonuses</i>'}</div>
+        ${actions}
+    `;
+    document.getElementById('info-modal').classList.add('visible');
+}
+function closePartInfo() {
+    document.getElementById('info-modal').classList.remove('visible');
+}
+
+// =============================================================================
+// LOG
+// =============================================================================
+function log(msg) {
+    const ld = document.getElementById('combat-log');
+    ld.innerHTML += `<div>${msg}</div>`;
+    // Cap log at ~80 entries to prevent runaway memory.
+    while (ld.childElementCount > 80) ld.removeChild(ld.firstChild);
+    ld.scrollTop = ld.scrollHeight;
+}
+function fmtTime(s) {
+    s = Math.max(0, s | 0);
+    const m = Math.floor(s / 60), r = s % 60;
+    return `${m}:${r.toString().padStart(2,'0')}`;
+}
+
+// =============================================================================
+// VFX HELPERS
+// =============================================================================
+function _arenaCoords(x, y) {
+    const arena = document.getElementById('arena');
+    const aRect = arena.getBoundingClientRect();
+    const cRect = document.getElementById('mobile-container').getBoundingClientRect();
+    return {
+        container: document.getElementById('mobile-container'),
+        left: aRect.left - cRect.left + x,
+        top:  aRect.top  - cRect.top  + y,
+    };
+}
+function spawnDamagePopAtEnemy(enemyId, dmg, opts) {
+    const e = G.enemies.find(x => x.id === enemyId);
+    if (!e) return;
+    const c = _arenaCoords(e.x + 20, e.y - 6);
+    _doPop(c, dmg, opts);
+}
+function spawnDamagePopAtHero(heroId, dmg, opts) {
+    const hPos = arenaHeroPos(heroId);
+    if (!hPos) return;
+    const c = _arenaCoords(hPos.x + 24, hPos.y - 4);
+    _doPop(c, dmg, opts);
+}
+function _doPop(c, dmg, opts) {
+    opts = opts || {};
+    const pop = document.createElement('div');
+    let cls = 'damage-pop';
+    if (opts.crit)     cls += ' crit';
+    if (opts.weakness) cls += ' weakness';
+    if (opts.resisted) cls += ' resisted';
+    if (opts.element)  cls += ' elem-' + opts.element;
+    if (opts.ult)      cls += ' ult';
+    if (opts.enemyHit) cls += ' enemy-hit';
+    if (opts.heal)     cls += ' heal';
+    pop.className = cls;
+    pop.style.position = 'absolute';
+    pop.style.left = c.left + 'px';
+    pop.style.top  = c.top + 'px';
+    const prefix = opts.crit ? 'CRIT! ' : (opts.weakness ? '★ ' : (opts.resisted ? '~' : (opts.heal ? '+' : '')));
+    pop.innerText = prefix + Math.ceil(dmg);
+    c.container.appendChild(pop);
+    setTimeout(() => pop.remove(), 1300);
+}
+function spawnElemStreakToEnemy(heroId, enemyId, element) {
+    const e = G.enemies.find(x => x.id === enemyId);
+    const hPos = arenaHeroPos(heroId);
+    if (!e || !hPos) return;
+    const x1 = e.x + 20, y1 = e.y + 18;
+    const x2 = hPos.x + 8, y2 = hPos.y + 18;
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    const c = _arenaCoords(x1, y1);
+    const streak = document.createElement('div');
+    streak.className = 'elem-streak ' + (element || 'basic');
+    streak.style.position = 'absolute';
+    streak.style.left = c.left + 'px';
+    streak.style.top  = c.top + 'px';
+    streak.style.width = len + 'px';
+    streak.style.transform = `rotate(${angle}deg)`;
+    streak.style.transformOrigin = '0 50%';
+    c.container.appendChild(streak);
+    setTimeout(() => streak.remove(), 500);
+}
+function arenaHeroPos(heroId) {
+    const h = G.heroes.find(x => x.id === heroId);
+    if (!h) return null;
+    const unlockedIdx = G.heroes.filter(x => isHeroAvailable(x, G.elapsed)).findIndex(x => x.id === heroId);
+    if (unlockedIdx < 0) return null;
+    return { x: ARENA_WIDTH - 56, y: HERO_LANES_Y[unlockedIdx] };
+}
+function spawnMergeBurstOnHeroCard(heroId) {
+    const card = document.querySelector(`#hero-cards .hero-card[data-card-hero-id="${heroId}"]`);
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const cRect = document.getElementById('mobile-container').getBoundingClientRect();
+    const burst = document.createElement('div');
+    burst.className = 'merge-burst';
+    burst.style.left = (rect.left - cRect.left + rect.width / 2) + 'px';
+    burst.style.top  = (rect.top - cRect.top + rect.height / 2) + 'px';
+    burst.innerText = '✨ MERGED!';
+    document.getElementById('mobile-container').appendChild(burst);
+    setTimeout(() => burst.remove(), 900);
+}
+function spawnMergeBurstInInventory(uid) {
+    const tile = document.getElementById('inv-' + uid);
+    if (!tile) return;
+    const rect = tile.getBoundingClientRect();
+    const cRect = document.getElementById('mobile-container').getBoundingClientRect();
+    const burst = document.createElement('div');
+    burst.className = 'merge-burst';
+    burst.style.left = (rect.left - cRect.left + rect.width / 2) + 'px';
+    burst.style.top  = (rect.top - cRect.top + rect.height / 2) + 'px';
+    burst.innerText = '✨ MERGED!';
+    document.getElementById('mobile-container').appendChild(burst);
+    setTimeout(() => burst.remove(), 900);
+}
+function spawnMilestoneToast(text) {
+    const toast = document.createElement('div');
+    toast.className = 'milestone-toast';
+    toast.innerText = text;
+    document.getElementById('mobile-container').appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+}
+
+let _pendingPulseHeroId = null;
+function queueActiveSwitchPulse(heroId) { _pendingPulseHeroId = heroId; }
+function flushPendingPulse() {
+    if (_pendingPulseHeroId == null) return;
+    const card = document.querySelector(`#hero-cards .hero-card[data-card-hero-id="${_pendingPulseHeroId}"]`);
+    if (card) {
+        card.classList.add('just-switched');
+        setTimeout(() => card.classList.remove('just-switched'), 650);
+    }
+    _pendingPulseHeroId = null;
+}
+
+// =============================================================================
+// RENDER
+// =============================================================================
+function renderAll() {
+    document.getElementById('gold-count').innerText = G.gold;
+    document.getElementById('time-display').innerText = fmtTime(G.elapsed);
+    renderHeroes();
+    renderArena();
+    renderAnvil();
+    renderAnvilRecipes();
+    renderCarousel();
+    renderInventory();
+    refreshCodexBadge();
+    refreshRecipeBanner();
+    flushPendingPulse();
+}
+
+function renderHeroes() {
+    const sq = document.getElementById('hero-cards');
+    sq.innerHTML = '';
+    G.heroes.forEach(h => {
+        const unlocked = isHeroAvailable(h, G.elapsed);
+        const active = (unlocked && h.id === G.activeHeroId && !h.isDowned) ? `active ${h.cls}` : '';
+        const downed = h.isDowned ? 'downed' : '';
+        const locked = !unlocked ? 'locked' : '';
+        const stats = weaponStats(h);
+        const full = hasFullWeapon(h);
+        const lvlSymbol = (p) => {
+            if (!p) return '·';
+            const lvl = p.level || 1;
+            return lvl === 1 ? '✓' : (lvl === 2 ? '②' : lvl === 3 ? '③' : lvl === 4 ? '④' : '⑤');
+        };
+        const weaponLine = full
+            ? `${stats.atk}atk${stats.crit?` · ${stats.crit}c`:''}${stats.tags.length?` · ${stats.tags.join('+')}`:''}`
+            : `${['head','hilt','rune'].map(s => lvlSymbol(h.weapon[s])).join(' ')}`;
+        const gaugePct = h.ultGauge;
+        const gaugeReady = unlocked && gaugePct >= 100 && !h.ultUsed && !h.isDowned;
+        const lockOverlay = !unlocked
+            ? `<div class="hero-lock-overlay">🔒<div style="font-size:8px; margin-top:2px;">@ ${fmtTime(HERO_UNLOCK_S[h.cls])}</div></div>`
+            : '';
+        const downedOverlay = h.isDowned
+            ? `<div class="hero-lock-overlay" style="color:#e74c3c;">💀<div style="font-size:8px; margin-top:2px;">${Math.ceil(DOWNED_REVIVE_S - h.downedTimer)}s</div></div>`
+            : '';
+        const aura = (() => {
+            const tags = stats.tags.filter(Boolean);
+            if (tags.length === 0) return '';
+            if (tags.length > 1) return 'aura-multi';
+            return 'aura-' + tags[0];
+        })();
+        const safeIcon = (h.icon || '').replace(/'/g, "\\'");
+        const iconHTML = h.iconImg
+            ? `<img src="${h.iconImg}" class="hero-sprite-card${h.hasBg ? ' has-bg' : ''}" alt="${h.name}"
+                    onerror="this.outerHTML='<span style=&quot;font-size:20px&quot;>${safeIcon}</span>';">`
+            : `<span style="font-size:20px;">${h.icon}</span>`;
+        const hpMax = getMaxHp(h);
+        const hpPct = Math.max(0, (h.hp / hpMax) * 100);
+        sq.innerHTML += `
+            <div class="hero-card ${active} ${downed} ${locked} ${aura}" data-card-hero-id="${h.id}" onclick="selectHero(${h.id})">
+                <div class="hero-icon">${iconHTML}</div>
+                <div class="entity-name" style="color:${h.color}; font-size:10px;">${h.name}</div>
+                <div style="background:#333; border-radius:4px; height:11px; position:relative; overflow:hidden; border:1px solid #59402a;">
+                    <div style="height:100%; background:#c0392b; width:${hpPct}%; transition: width 0.2s;"></div>
+                    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:8px; font-weight:bold; text-shadow:1px 1px 1px #000;">${Math.ceil(h.hp)}/${Math.ceil(hpMax)}</div>
+                </div>
+                <div class="hero-role" style="color:${h.color};">${h.cls}</div>
+                <div class="weapon-mini">${h.isDowned ? '<span style="color:#888;">DOWN</span>' : weaponLine}</div>
+                <div class="ult-gauge ${gaugeReady ? 'ready' : ''}" onclick="event.stopPropagation(); tapUlt(${h.id});" title="Ult bank — fills from damage; tap when full.">
+                    <div class="ult-fill" style="width:${gaugePct}%;"></div>
+                    <div class="ult-text">${h.ultUsed ? 'ULT USED' : (gaugeReady ? '⚡ ' + h.ultName : '⚡ ' + Math.floor(gaugePct) + '%')}</div>
+                </div>
+                ${lockOverlay}
+                ${downedOverlay}
+            </div>`;
+    });
+    const active = G.heroes[G.activeHeroId];
+    document.getElementById('active-hero-name').innerText = active ? `${active.name} (${active.cls})` : '—';
+}
+
+function renderArena() {
+    const arena = document.getElementById('arena');
+    // Preserve the spawn-edge + hero-zone children; replace the rest.
+    const persistent = arena.querySelectorAll('.arena-spawn-edge, .arena-hero-zone');
+    arena.innerHTML = '';
+    persistent.forEach(p => arena.appendChild(p));
+
+    // Render heroes (anchored right, lanes by unlock order)
+    const unlockedHeroes = G.heroes.filter(h => isHeroAvailable(h, G.elapsed));
+    unlockedHeroes.forEach((h, idx) => {
+        const y = HERO_LANES_Y[idx] || 12;
+        const downed = h.isDowned ? 'downed' : '';
+        const safeIcon = (h.icon || '').replace(/'/g, "\\'");
+        const iconHTML = h.iconImg
+            ? `<img src="${h.iconImg}" class="hero-arena-sprite${h.hasBg ? ' has-bg' : ''}" alt="${h.name}"
+                    onerror="this.outerHTML='<span style=&quot;font-size:30px&quot;>${safeIcon}</span>';">`
+            : `<span style="font-size:30px;">${h.icon}</span>`;
+        const hpMax = getMaxHp(h);
+        const hpPct = Math.max(0, (h.hp / hpMax) * 100);
+        const downedBadge = h.isDowned ? `<div class="downed-timer">${Math.ceil(DOWNED_REVIVE_S - h.downedTimer)}s</div>` : '';
+        const div = document.createElement('div');
+        div.className = `arena-hero ${downed}`;
+        div.style.top = y + 'px';
+        div.innerHTML = `${iconHTML}<div class="hero-arena-hpbar"><div class="hero-arena-hpfill" style="width:${hpPct}%;"></div></div>${downedBadge}`;
+        arena.appendChild(div);
+    });
+
+    // Render enemies
+    G.enemies.forEach(e => {
+        const div = document.createElement('div');
+        const cls = ['arena-enemy'];
+        if (e.isElite) cls.push('elite');
+        if (e.isBoss) cls.push('boss');
+        if (e.frozenTimer > 0) cls.push('frozen');
+        div.className = cls.join(' ');
+        div.style.left = Math.floor(e.x) + 'px';
+        div.style.top  = Math.floor(e.y) + 'px';
+        const hpPct = Math.max(0, (e.hp / e.maxHp) * 100);
+        const affParts = [];
+        if (!e.isBoss) {
+            if (e.weak) affParts.push(`W:${e.weak[0].toUpperCase()}`);
+            if (e.resist) affParts.push(`<span style="color:#95a5a6;">R:${e.resist[0].toUpperCase()}</span>`);
+        }
+        const aff = affParts.length ? `<div class="ene-aff">${affParts.join('·')}</div>` : '';
+        const eliteMark = e.isElite ? `<div style="position:absolute; top:-6px; left:0; font-size:8px; color:#f1c40f; font-weight:bold; text-shadow:1px 1px 1px #000;">★ELITE</div>` : '';
+        div.innerHTML = `${eliteMark}<div class="ene-icon">${e.icon}</div><div class="ene-hpbar"><div class="ene-hpfill" style="width:${hpPct}%;"></div></div>${aff}`;
+        arena.appendChild(div);
+    });
+
+    // Render potions
+    G.potions.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'arena-potion' + (p.ttl < 1.0 ? ' expiring' : '');
+        div.style.left = Math.floor(p.x) + 'px';
+        div.style.top  = Math.floor(p.y) + 'px';
+        div.innerText = '🧪';
+        div.onclick = () => clickPotion(p.id);
+        arena.appendChild(div);
+    });
+
+    // Stream-status line
+    const status = document.getElementById('stream-status');
+    if (G.bossSpawned && !G.bossDefeated) {
+        status.innerText = '🐉 BOSS ENCOUNTER';
+        status.style.color = '#c0392b';
+    } else if (G.elapsed >= STAGE_LENGTH_S) {
+        status.innerText = '⚠️ BOSS INCOMING';
+        status.style.color = '#c0392b';
+    } else {
+        const phase = pulsePhaseAt(G.elapsed);
+        const intensity = phase.spawnInterval < 1.0 ? '🔥 SPIKE' : 'STREAM';
+        status.innerText = `${intensity} — ${G.enemies.length} active`;
+        status.style.color = phase.spawnInterval < 1.0 ? '#c0392b' : '#d35400';
+    }
+}
+
+function renderAnvil() {
+    const h = G.heroes[G.activeHeroId];
+    if (!h) return;
+    const stats = weaponStats(h);
+    const tgtTxt = h.isDowned ? `${h.name} is DOWN — pick another hero` : `Forging for ${h.name} (${h.cls.toUpperCase()})`;
+    document.getElementById('anvil-target').innerText = tgtTxt;
+    const stx = hasFullWeapon(h)
+        ? `ATK ${stats.atk} · HP +${stats.hpBonus} · Crit ${stats.crit}% · Ult+${stats.ultRate}% ${stats.tags.length ? ' · ' + stats.tags.join('+') : ''}`
+        : 'Need: ' + ['head','hilt','rune'].filter(s => !h.weapon[s]).join(' + ');
+    document.getElementById('anvil-stats').innerText = stx;
+    ['head','hilt','rune'].forEach(slot => {
+        const el = document.getElementById('slot-' + slot);
+        const p = h.weapon[slot];
+        if (p) {
+            const lvl = p.level || 1;
+            const lvlBadge = lvl > 1 ? `<div class="level-badge-inline ${lvl >= 3 ? 'l'+lvl : ''}">L${lvl}</div>` : '';
+            el.classList.add('filled');
+            el.title = `${p.name} L${lvl}\n${p.desc || ''}\n\n(click to unequip)`;
+            el.innerHTML = `${lvlBadge}<div>${p.icon}</div><span class="anvil-slot-label">${slot}</span>`;
+        } else {
+            el.classList.remove('filled');
+            el.title = `${slot.toUpperCase()} slot empty — buy from carousel.`;
+            el.innerHTML = `<span class="anvil-slot-label">${slot}</span>`;
+        }
+    });
+}
+
+function renderCarousel() {
+    const carousel = document.getElementById('carousel');
+    carousel.innerHTML = '';
+    // 5 slots wide, total width ≈ 380px, tile=70px, gap = (380 - 5*70)/4 = ~7.5px
+    const slotWidth = 75; // tile + gap
+    G.carousel.forEach((tile, i) => {
+        const p = PARTS[tile.partId];
+        const sold = tile.sold ? 'sold' : '';
+        const rare = p.rarity === 'rare' ? 'rare' : '';
+        const ageS = G.elapsed - tile.bornAt;
+        const ttlPct = Math.max(0, Math.min(100, (1 - ageS / 25) * 100));
+        const tagBadge = partTagsHTML(p);
+        const classBadge = `<span class="class-badge ${p.cls}">${p.cls === 'universal' ? 'U' : p.cls[0].toUpperCase()}</span>`;
+        const clickAttr = (!tile.sold && !G.paused) ? `onclick="clickCarouselTile('${tile.tileId}')"` : '';
+        const div = document.createElement('div');
+        div.className = `carousel-tile ${sold} ${rare}`;
+        div.style.left = (i * slotWidth + 4) + 'px';
+        div.title = `${p.name}\n${p.desc || ''}`;
+        div.innerHTML = `
+            ${tagBadge}
+            ${classBadge}
+            <div class="slot-type-label">${p.slot.toUpperCase()}</div>
+            <div class="ct-icon">${p.icon}</div>
+            <div class="ct-name">${p.name}</div>
+            <div class="ct-cost">${tile.sold ? 'SOLD' : p.cost + '🪙'}</div>
+            <div class="ct-ttl"><div class="ct-ttl-fill" style="width:${ttlPct}%;"></div></div>`;
+        if (clickAttr) div.setAttribute('onclick', `clickCarouselTile('${tile.tileId}')`);
+        carousel.appendChild(div);
+    });
+}
+
+function renderInventory() {
+    const strip = document.getElementById('inventory-strip');
+    if (G.inventory.length === 0) {
+        strip.innerHTML = '<div class="inv-empty">Empty — buy parts from carousel above.</div>';
+        return;
+    }
+    strip.innerHTML = '';
+    G.inventory.forEach(item => {
+        const p = PARTS[item.partId];
+        const lvl = item.level || 1;
+        const lvlBadge = lvl > 1 ? `<div class="level-badge-inline ${lvl >= 3 ? 'l'+lvl : ''}">L${lvl}</div>` : '';
+        const tagBadge = partTagsHTML(p);
+        const classBadge = `<span class="class-badge ${p.cls}">${p.cls === 'universal' ? 'U' : p.cls[0].toUpperCase()}</span>`;
+        strip.innerHTML += `
+            <div class="inv-part" id="inv-${item.uid}" onclick="equipFromInventory('${item.uid}')" oncontextmenu="event.preventDefault(); discardFromInventory('${item.uid}'); return false;" title="${p.name} L${lvl}">
+                ${lvlBadge}
+                ${tagBadge}
+                ${classBadge}
+                <div class="inv-part-icon">${p.icon}</div>
+                <div class="slot-type-label">${p.slot}</div>
+            </div>`;
+    });
+}
+
+function renderAnvilRecipes() {
+    const row = document.getElementById('anvil-recipe-row');
+    const h = G.heroes[G.activeHeroId];
+    if (!h) { row.innerHTML = ''; return; }
+    const ids = getActiveRecipes(h.weapon);
+    if (ids.length === 0) { row.innerHTML = '<span style="color:#7f8c8d; font-size:9px; font-style:italic;">No recipes yet — combine tags to discover.</span>'; return; }
+    row.innerHTML = ids.map(rid => {
+        const r = RECIPES[rid];
+        const isNew = !G._renderedRecipeIds || !G._renderedRecipeIds.has(rid);
+        return `<span class="recipe-chip ${isNew ? 'new' : ''}" title="${r.desc}">${r.icon} ${r.name}</span>`;
+    }).join('');
+    G._renderedRecipeIds = new Set(ids);
+}
+
+function refreshCodexBadge() {
+    const el = document.getElementById('codex-badge');
+    if (el) el.innerText = `${G.discoveredRecipes.size}/${RECIPE_IDS.length}`;
+}
+function refreshRecipeBanner() {
+    const banner = document.getElementById('recipe-banner');
+    const parts = [];
+    G.heroes.forEach(h => {
+        if (!isHeroAvailable(h, G.elapsed) || h.isDowned) return;
+        const ids = getActiveRecipes(h.weapon);
+        if (ids.length === 0) return;
+        const names = ids.map(rid => `${RECIPES[rid].icon} ${RECIPES[rid].name}`).join(' · ');
+        parts.push(`<span style="color:${h.color};">${h.name}</span>: ${names}`);
+    });
+    if (parts.length === 0) { banner.classList.remove('visible'); return; }
+    banner.innerHTML = parts.join('  |  ');
+    banner.classList.add('visible');
+}
+
+// Render-loop-driven refresh of squad bar HUD elements (HP, ult, downed timer).
+// Decoupled from full re-render so it ticks every frame.
+let _hudClock = 0;
+const _origRenderArena = renderArena;
+renderArena = function() {
+    _origRenderArena();
+    _hudClock += 0.016;
+    if (_hudClock > 0.2) {
+        _hudClock = 0;
+        document.getElementById('time-display').innerText = fmtTime(G.elapsed);
+        document.getElementById('gold-count').innerText = G.gold;
+        renderHeroes();
+        refreshCodexBadge();
+        refreshRecipeBanner();
+    }
+};
+
+// --- BOOT ---
+window.addEventListener('DOMContentLoaded', initGame);
+</script>
+</body>
+</html>

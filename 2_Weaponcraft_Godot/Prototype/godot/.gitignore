@@ -1,0 +1,17 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+/build/
+
+# Local editor caches & exports
+*.translation
+export.cfg
+export_presets.cfg
+
+# Imported asset cache
+*.import
+
+# Mono / .NET artifacts (we're using GDScript, but keep just in case)
+.mono/
+data_*/
+mono_crash.*.json

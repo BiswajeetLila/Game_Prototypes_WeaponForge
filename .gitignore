@@ -1,0 +1,16 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# Editor / IDE local config
+.vscode/
+.idea/
+
+# Build artifacts (none yet — single-HTML prototype)
+node_modules/
+dist-build/
+
+# Note: AI-generated PNG assets (heroes, mockups) ARE tracked — they're part of the prototype.

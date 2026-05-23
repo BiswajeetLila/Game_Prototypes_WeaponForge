@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PartData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"r_ice"
+slot = &"rune"
+cls = &"universal"
+name = "Ice Rune"
+desc = "Adds ICE tag and +3 ATK. Pair with a fire source for Steamburst splash."
+rarity = &"common"
+cost = 3
+atk = 3
+hp = 0
+crit = 0
+ult_rate = 0
+tag = &"ice"

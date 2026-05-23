@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"bran"
+name = "Bran"
+cls = &"warrior"
+hp_base = 80
+atk_base = 6
+ult_name = "Whirlwind"
+ult_desc = "AoE all alive enemies for atk * 3.5"
+ult_atk_multiplier = 3.5

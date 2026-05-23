@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weapon Crafter Prototype - Roguelite Gacha & Revive</title>
+    <style>
+        :root {
+            --bg-parchment: #f0e1cf;
+            --panel-bg: #c9b9a6;
+            --ornate-frame: #59402a;
+            --ornate-accent: #8e6d4c;
+            --text-dark: #3a2a1b;
+            --hp-red: #e74c3c;
+            --rune-yellow: #f1c40f;
+            --rune-green: #2ecc71;
+            --action-blue: #3498db;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        body {
+            margin: 0; background-color: #222; font-family: 'Times New Roman', Times, serif; 
+            display: flex; justify-content: center; color: var(--text-dark); user-select: none;
+        }
+
+        #mobile-container {
+            width: 100%; max-width: 420px; height: 100vh; max-height: 850px;
+            background: linear-gradient(180deg, #f0e1cf 0%, #dabda8 100%);
+            display: flex; flex-direction: column;
+            border-left: 3px solid var(--ornate-frame); border-right: 3px solid var(--ornate-frame);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 15px; overflow: hidden; position: relative;
+        }
+
+        .header-bg { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: 8px solid var(--ornate-frame); border-radius: 12px; pointer-events: none; z-index: 10; box-sizing: border-box;
+        }
+        
+        .panel-container { border: 2px solid var(--ornate-frame); border-radius: 8px; background: rgba(0,0,0,0.05); margin: 5px; box-sizing: border-box;}
+        .label-text { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #7f8c8d; font-weight: bold; margin: 3px 0;}
+
+        /* --- COMBAT PHASE --- */
+        #combat-zone {
+            flex: 1.2; display: flex; flex-direction: column; padding: 10px;
+            background: radial-gradient(circle at top, #dad5ca 0%, #f0e1cf 100%);
+            border-bottom: 3px solid var(--ornate-frame);
+        }
+
+        #game-info-header { text-align: center; color: var(--ornate-frame); border-bottom: 1px solid var(--ornate-accent); padding-bottom: 5px;}
+        #wave-display { font-size: 12px; font-weight: bold;}
+        #turn-display { font-size: 14px; font-weight: bold;}
+
+        #battle-view {
+            flex: 1; margin: 10px 0; padding: 10px; border: 4px solid var(--ornate-frame); border-radius: 10px;
+            background-color: #f7ebdb; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; position: relative;
+        }
+        
+        .combat-label { position: absolute; bottom: 5px; left: 0; width: 100%; text-align: center; color: var(--text-dark); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;}
+        .entities-area { flex: 1; display: flex; justify-content: center; gap: 20px; align-items: center; min-height: 100px; padding: 10px;}
+        .entity {
+            background: rgba(0,0,0,0.05); border: 2px solid var(--ornate-frame); border-radius: 8px;
+            width: 70px; padding: 5px; text-align: center; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .hp-container { background: #8c2a1d; border-radius: 4px; border: 1px solid var(--ornate-frame); margin: 2px 0;}
+        .hp-bar-text { color: #e74c3c; font-weight: bold; font-size: 12px; padding: 1px 0;}
+        .entity-name { color: var(--ornate-frame); font-weight: bold; font-size: 12px; margin-top: 3px;}
+        .element-tags { font-size: 9px; display: flex; justify-content: center; gap: 5px; margin-top: 2px; }
+        .tag-weak { color: #2ecc71; }
+        
+        #combat-log-container {
+            height: 60px; background-color: rgba(0,0,0,0.05); border-radius: 6px;
+            border: 1px solid var(--ornate-frame); margin: 5px 0; padding: 5px; font-size: 11px; overflow-y: auto; color: var(--text-dark);
+        }
+
+        /* --- DEPLOYMENT ZONE & REVIVE --- */
+        #deployment-zone { height: 105px; margin: 0 5px; padding: 5px; display: flex; flex-direction: column;}
+        
+        .deploy-header { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; margin-bottom: 2px;}
+        
+        #revive-btn {
+            background: #7f8c8d; border: 2px solid var(--ornate-frame); color: white;
+            font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; cursor: pointer; text-transform: uppercase;
+        }
+        #revive-btn.ready { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); animation: pulse 1.5s infinite; border-color: #1d8348; box-shadow: 0 0 8px #2ecc71;}
+
+        .squad-bar { display: flex; justify-content: space-around; gap: 10px; padding: 2px 0;}
+        
+        .hero-card {
+            background: #f7ebdb; border: 2px solid var(--ornate-frame); border-radius: 6px;
+            width: 85px; padding: 4px; text-align: center; cursor: pointer; transition: background 0.1s; position: relative;
+        }
+        .hero-card:hover { background: #dad0bc; }
+        .hero-card.ready-to-equip { border-color: #3498db; box-shadow: 0 0 10px rgba(52, 152, 219, 0.4); }
+        .hero-card.equipped { border-color: #f39c12; background: #fae5b6; box-shadow: 0 0 10px rgba(243, 156, 18, 0.5); }
+        .hero-card.dead { filter: grayscale(100%); opacity: 0.7; border-color: #333; cursor: not-allowed; }
+        .hero-role { font-size: 9px; color: #2ecc71; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        .weapon-slot { font-size: 12px; min-height: 28px; margin-top: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+
+        /* --- WORKBENCH & SCROLLING --- */
+        #crafting-zone { 
+            flex: 1.4; display: flex; background-color: #c9b9a6; border-top: 3px solid var(--ornate-frame); 
+            position: relative; overflow: hidden;
+        }
+
+        #blueprint-rail {
+            width: 85px; display: flex; flex-direction: column; gap: 8px; padding: 10px;
+            border-right: 3px solid var(--ornate-frame); background: rgba(0,0,0,0.05); 
+            overflow-y: auto; text-align: center; height: 100%; box-sizing: border-box; padding-bottom: 20px; 
+        }
+        
+        #blueprint-rail::-webkit-scrollbar { width: 6px; }
+        #blueprint-rail::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 3px; }
+        #blueprint-rail::-webkit-scrollbar-thumb { background: var(--ornate-frame); border-radius: 3px; }
+
+        .blueprint-scroll {
+            background: linear-gradient(180deg, #f7dfa7 0%, #dbbf80 100%); border: 2px solid #a68f63; border-radius: 5px;
+            width: 65px; min-height: 65px; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #59402a; cursor: pointer; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            flex-shrink: 0; 
+        }
+        .blueprint-scroll:hover { transform: scale(1.03); border-color: #59402a; }
+        .level-badge { position: absolute; top: -5px; right: -5px; background: #3498db; color: #fff; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 4px; border: 1px solid #1f618d;}
+
+        .workbench-area { flex: 1; padding: 10px; display: flex; flex-direction: column; overflow-y: auto;}
+        .workbench-panel {
+            background-color: var(--ornate-accent); border: 4px solid var(--ornate-frame); border-radius: 8px;
+            flex: 1; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        
+        .workbench-title-box { text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 3px; margin-bottom: 10px; width: 100%;}
+        .workbench-main-label { color: #f2e0c9; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 13px;}
+        #workbench-stats { font-size: 11px; color: #f1c40f; font-weight: bold; margin-top: 3px; min-height: 14px; letter-spacing: 0.5px;}
+
+        .workbench-grid { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 15px; width: 100%;}
+        .wb-box {
+            width: 60px; height: 60px; background-color: rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; position: relative;
+        }
+        .wb-box:hover { border-color: #fff; }
+        .material-placeholder { font-size: 9px; text-transform: uppercase; color: #f2e0c9; position: absolute; bottom: 3px; width: 100%; text-align: center; pointer-events: none;}
+
+        .action-button {
+            border: 2px solid #1f618d; color: white; text-transform: uppercase; letter-spacing: 1.5px;
+            font-weight: bold; font-size: 11px; padding: 10px; width: 100%; max-width: 160px;
+            border-radius: 5px; cursor: pointer; transition: all 0.1s; background: #7f8c8d; box-shadow: 0 4px 0 #2c3e50;
+        }
+        .action-button.can-forge { background: linear-gradient(180deg, #5dade2 0%, #2e86c1 100%); box-shadow: 0 4px 0 #1b4f72;}
+        .action-button.can-merge { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); box-shadow: 0 4px 0 #1d8348;}
+        .action-button.discard { background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); box-shadow: 0 4px 0 #922b21; border-color: #78281f;}
+        .action-button:active { transform: translateY(3px); box-shadow: 0 1px 0 #1b4f72; }
+
+        .rune-bar { height: 60px; display: flex; justify-content: center; gap: 15px; align-items: center; margin: 5px; padding: 10px; border-top: 1px solid rgba(0,0,0,0.1);}
+        
+        .rune-pouch {
+            width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background-color: rgba(0,0,0,0.05); border: 2px solid var(--ornate-frame);
+            font-size: 24px; cursor: pointer; transition: background 0.1s, transform 0.1s;
+        }
+        .rune-pouch:hover { background: #dad0bc; transform: scale(1.03); }
+
+        .deployment-button {
+            width: 50px; height: 50px; position: absolute; bottom: 10px; right: 10px;
+            background: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10 40 L90 40 L80 90 L20 90 Z" fill="%23a0785a" stroke="%2359402a" stroke-width="5"/></svg>') no-repeat center;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; z-index: 20;
+        }
+        .deployment-button-text { text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dark); font-size: 10px; font-weight: bold; line-height: 1.1; margin-top: 5px;}
+
+        /* GACHA MODAL (CHOICE SYSTEM) */
+        #gacha-modal {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        
+        .gacha-options-container {
+            display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 300px; margin-top: 20px;
+        }
+
+        .gacha-card {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); border: 2px solid #f1c40f;
+            border-radius: 10px; padding: 15px; cursor: pointer; color: white; text-align: left;
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .gacha-card:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
+        .gacha-card-icon { font-size: 32px; }
+        .gacha-card-title { font-weight: bold; font-size: 14px; color: #f1c40f; margin-bottom: 4px; text-transform: uppercase;}
+        .gacha-card-desc { font-size: 11px; color: #ecf0f1; }
+
+    </style>
+</head>
+<body>
+
+<div id="mobile-container">
+    <div class="header-bg"></div>
+
+    <div id="gacha-modal">
+        <h2 style="color:#f1c40f; text-shadow: 0 0 10px #e67e22; margin:0 0 5px 0;">✨ LOOT DROP ✨</h2>
+        <div style="color: #bdc3c7; font-size: 13px;">Choose one reward to claim:</div>
+        <div class="gacha-options-container" id="gacha-options">
+            </div>
+    </div>
+
+    <div id="combat-zone">
+        <div id="game-info-header">
+            <div id="wave-display">LEVEL 1-3 | WAVE 1</div>
+            <div id="turn-display">TURN 1</div>
+        </div>
+        
+        <div id="battle-view">
+            <div class="entities-area">
+                <div id="enemy-view"></div>
+                <div style="color: var(--ornate-accent); font-size: 24px; font-weight: bold;">VS</div>
+                <div id="hero-view"></div>
+            </div>
+            <div class="combat-label">Combat Phase</div>
+            <div id="combat-log-container"><div id="combat-log">Welcome! Craft weapons and deploy them.</div></div>
+        </div>
+    </div>
+
+    <div id="deployment-zone" class="panel-container">
+        <div class="deploy-header">
+            <div class="label-text">Deployment Zone (Squad)</div>
+            <button id="revive-btn" onclick="useRevive()">Revive (0/3 Waves)</button>
+        </div>
+        <div class="squad-bar" id="hero-cards"></div>
+    </div>
+
+    <div id="crafting-zone">
+        <div id="blueprint-rail"></div>
+
+        <div class="workbench-area">
+            <div class="workbench-panel">
+                <div class="workbench-title-box">
+                    <div class="workbench-main-label">Workbench</div>
+                    <div id="dynamic-wield-target" style="font-size: 10px; color: #f2e0c9;">Awaiting Materials</div>
+                    <div id="workbench-stats"></div>
+                </div>
+
+                <div class="workbench-grid">
+                    <div class="wb-box" id="wb-slot-1" onclick="clearSlot(1)"><span class="material-placeholder">Blueprint</span></div>
+                    <div style="font-weight:bold; color:var(--ornate-frame); font-size: 20px;">+</div>
+                    <div class="wb-box" id="wb-slot-2" onclick="clearSlot(2)"><span class="material-placeholder">BP / Rune</span></div>
+                </div>
+
+                <button class="action-button" id="forge-btn" onclick="processAnvil()">Select Items</button>
+            </div>
+            
+            <div class="rune-bar" id="runes-pouch-area"></div>
+        </div>
+
+        <div class="deployment-button" onclick="executeTurn()">
+            <div class="deployment-button-text">FINISH<br>TURN</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- GAME STATE & DATA ---
+    let turnCount = 1;
+    let waveCount = 1;
+    let turnsSinceGacha = 0; // NEW: Track turns for Gacha
+    let bpUidCounter = 0;
+
+    // NEW: Revive mechanics
+    let reviveCharge = 0;
+    const reviveMax = 3;
+
+    // NEW: Global Buffs (Roguelite elements)
+    let globalBuffs = {
+        warriorDmgMult: 1.0,
+        fireDmgMult: 1.0,
+        mageHeal: 0
+    };
+
+    let heroes = [
+        { id: 0, name: 'Kaelen', hp: 80, maxHp: 80, icon: '🛡️', type: 'warrior', weapon: null, isDead: false },
+        { id: 1, name: 'Lena', hp: 50, maxHp: 50, icon: '🥷', type: 'rogue', weapon: null, isDead: false },
+        { id: 2, name: 'Dara', hp: 45, maxHp: 45, icon: '🧙‍♀️', type: 'mage', weapon: null, isDead: false }
+    ];
+    let enemies = [];
+
+    const blueprintTypes = {
+        'sword': { id: 'sword', name: 'Sword', baseDmg: 10, icon: '🗡️', heroType: 'warrior' },
+        'dagger': { id: 'dagger', name: 'Dagger', baseDmg: 5, icon: '🔪', heroType: 'rogue' },
+        'wand': { id: 'wand', name: 'Wand', baseDmg: 8, icon: '🪄', heroType: 'mage' },
+        'axe': { id: 'axe', name: 'Axe', baseDmg: 15, icon: '🪓', heroType: 'warrior' } 
+    };
+    let unlockedBlueprintIds = ['sword', 'dagger', 'wand'];
+    let playerBlueprints = [];
+
+    let unlockedRunes = [
+        { id: 'rn_fire', name: 'Fire', bonusDmg: 5, icon: '🔥', element: 'fire' },
+        { id: 'rn_ice', name: 'Ice', bonusDmg: 3, icon: '❄️', element: 'ice' },
+        { id: 'rn_poison', name: 'Poison', bonusDmg: 8, icon: '🧪', element: 'poison' }
+    ];
+
+    let anvilSlot1 = null; 
+    let anvilSlot2 = null; 
+    let craftedWeapon = null;
+
+    const elementIcons = { 'fire': '🔥', 'ice': '❄️', 'poison': '🧪', 'lightning': '⚡', 'none': '⚪' };
+
+    // --- INITIALIZATION ---
+    function generateBlueprint(typeId, level) {
+        let base = blueprintTypes[typeId];
+        bpUidCounter++;
+        return {
+            uid: 'bp_' + bpUidCounter,
+            id: base.id, name: base.name, icon: base.icon, level: level,
+            dmg: base.baseDmg + ((level - 1) * 6), heroType: base.heroType,
+            isExhausted: false 
+        };
+    }
+
+    function spawnWave() {
+        let healthScale = 25 + (waveCount * 15);
+        if (waveCount % 3 === 0) {
+            enemies = [{ id: 0, name: 'Dragon Boss', hp: healthScale * 2.5, maxHp: healthScale * 2.5, icon: '🐉', weak: 'fire', resist: 'ice' }];
+            log(`<b>🚨 BOSS RAID! 🐉 A fierce Dragon appears!</b>`);
+        } else {
+            enemies = [
+                { id: 0, name: 'Troll', hp: healthScale, maxHp: healthScale, icon: '👹', weak: 'poison', resist: 'none' },
+                { id: 1, name: 'Slime', hp: healthScale-10, maxHp: healthScale-10, icon: '🦠', weak: 'ice', resist: 'poison' }
+            ];
+        }
+        document.getElementById('wave-display').innerText = `LEVEL 1-3 | WAVE ${waveCount}`;
+        renderCombat();
+    }
+
+    playerBlueprints.push(generateBlueprint('sword', 1));
+    playerBlueprints.push(generateBlueprint('sword', 1));
+    playerBlueprints.push(generateBlueprint('dagger', 1));
+    playerBlueprints.push(generateBlueprint('wand', 1));
+
+    // --- RENDER FUNCTIONS ---
+    function renderBlueprints() {
+        const bpDiv = document.getElementById('blueprint-rail');
+        bpDiv.innerHTML = '<div class="label-text" style="font-size: 9px;">Scrolls</div>';
+        
+        playerBlueprints.forEach(bp => {
+            if (bp.isExhausted) return;
+            if ((anvilSlot1 && anvilSlot1.uid === bp.uid) || (anvilSlot2 && anvilSlot2.uid === bp.uid)) return;
+            bpDiv.innerHTML += `
+                <div class="blueprint-scroll" onclick="selectBlueprint('${bp.uid}')">
+                    <div class="level-badge">Lv.${bp.level}</div>
+                    ${bp.icon}
+                </div>`;
+        });
+    }
+
+    function renderRunes() {
+        const rnDiv = document.getElementById('runes-pouch-area');
+        rnDiv.innerHTML = '';
+        unlockedRunes.forEach(rn => {
+            if (anvilSlot2 && anvilSlot2.id === rn.id && anvilSlot2.element) return;
+            rnDiv.innerHTML += `<div class="rune-pouch" onclick="selectRune('${rn.id}')">${rn.icon}</div>`;
+        });
+    }
+
+    function renderHeroCards() {
+        const cardsDiv = document.getElementById('hero-cards');
+        cardsDiv.innerHTML = '';
+        heroes.forEach(h => {
+            let stateClass = '';
+            let weaponDisplay = '';
+
+            if (h.isDead) {
+                stateClass = 'dead';
+                weaponDisplay = '<div style="color:#333; font-weight:bold;">DEAD</div>';
+            } else if (h.weapon) {
+                stateClass = 'equipped';
+                let eleIcon = elementIcons[h.weapon.element] || '⚪';
+                weaponDisplay = `
+                    <div style="font-size:14px">${h.weapon.icon} ${eleIcon}</div>
+                    <div style="font-size:10px; font-weight:bold; color:#d35400;">${h.weapon.dmg} ATK</div>`;
+            } else if (craftedWeapon && craftedWeapon.targetHeroType === h.type) {
+                stateClass = 'ready-to-equip';
+                weaponDisplay = '<div style="color:#3498db; font-weight:bold;">Waiting...</div>';
+            } else {
+                weaponDisplay = '<div style="color:#7f8c8d;">Empty</div>';
+            }
+
+            cardsDiv.innerHTML += `
+                <div class="hero-card ${stateClass}" onclick="equipToHero(${h.id})">
+                    <div style="font-size: 16px;">${h.icon}</div>
+                    <div class="entity-name">${h.name}</div>
+                    <div class="hero-role">(${h.type})</div>
+                    <div class="weapon-slot">${weaponDisplay}</div>
+                </div>`;
+        });
+
+        // Update Revive Button Visuals
+        const revBtn = document.getElementById('revive-btn');
+        revBtn.innerText = `Revive (${reviveCharge}/${reviveMax})`;
+        if (reviveCharge >= reviveMax && heroes.some(h => h.isDead)) {
+            revBtn.classList.add('ready');
+            revBtn.innerText = "⭐ REVIVE READY ⭐";
+        } else {
+            revBtn.classList.remove('ready');
+        }
+    }
+
+    function renderWorkbench() {
+        const titleText = document.getElementById('dynamic-wield-target');
+        const statsText = document.getElementById('workbench-stats');
+        const btn = document.getElementById('forge-btn');
+        btn.className = 'action-button';
+        
+        document.getElementById('wb-slot-1').innerHTML = anvilSlot1 ? 
+            `<div style="position:relative">${anvilSlot1.icon}<div class="level-badge" style="font-size:8px;">Lv.${anvilSlot1.level}</div></div>` : 
+            `<span class="material-placeholder">Blueprint</span>`;
+        
+        if (anvilSlot2 && anvilSlot2.uid) {
+            document.getElementById('wb-slot-2').innerHTML = `<div style="position:relative">${anvilSlot2.icon}<div class="level-badge" style="font-size:8px;">Lv.${anvilSlot2.level}</div></div>`;
+        } else if (anvilSlot2 && anvilSlot2.element) {
+            document.getElementById('wb-slot-2').innerHTML = anvilSlot2.icon;
+        } else {
+            document.getElementById('wb-slot-2').innerHTML = `<span class="material-placeholder">BP / Rune</span>`;
+        }
+
+        if (craftedWeapon) {
+            titleText.innerText = "Tap Hero to Deploy!";
+            statsText.innerText = `ATK: ${craftedWeapon.dmg} | ELE: ${craftedWeapon.element.toUpperCase()}`;
+            btn.innerText = "🗑️ Discard Weapon";
+            btn.classList.add('discard');
+        } else if (anvilSlot1) {
+            let hero = heroes.find(h => h.type === anvilSlot1.heroType);
+            
+            if (anvilSlot2 && anvilSlot2.uid) { 
+                if (anvilSlot1.id === anvilSlot2.id && anvilSlot1.level === anvilSlot2.level) {
+                    titleText.innerText = "Valid Merge Setup";
+                    statsText.innerText = `NEXT LVL ATK: ${anvilSlot1.dmg + 6}`;
+                    btn.innerText = "Merge Blueprints";
+                    btn.classList.add('can-merge');
+                } else {
+                    titleText.innerText = "Mismatched Blueprints";
+                    statsText.innerText = "Incompatible";
+                    btn.innerText = "Cannot Merge";
+                }
+            } else if (anvilSlot2 && anvilSlot2.element) {
+                titleText.innerText = `For ${hero.name}'s ${anvilSlot1.name}`;
+                // Show buffs in crafting preview if applicable
+                let previewAtk = anvilSlot1.dmg + anvilSlot2.bonusDmg;
+                if (anvilSlot1.heroType === 'warrior') previewAtk = Math.floor(previewAtk * globalBuffs.warriorDmgMult);
+                if (anvilSlot2.element === 'fire') previewAtk = Math.floor(previewAtk * globalBuffs.fireDmgMult);
+
+                statsText.innerText = `TOTAL ATK: ${previewAtk} | ELE: ${anvilSlot2.element.toUpperCase()}`;
+                btn.innerText = "Deploy Weapon!";
+                btn.classList.add('can-forge');
+            } else {
+                titleText.innerText = `Configuring ${anvilSlot1.name}`;
+                statsText.innerText = `BASE ATK: ${anvilSlot1.dmg} | ELE: NONE`;
+                btn.innerText = "Select Catalyst";
+            }
+        } else {
+            titleText.innerText = "Awaiting Materials";
+            statsText.innerText = "";
+            btn.innerText = "Select Items";
+        }
+    }
+
+    function updateAll() { renderBlueprints(); renderRunes(); renderWorkbench(); renderHeroCards(); renderCombat(); }
+
+    function log(msg) {
+        const logDiv = document.getElementById('combat-log');
+        logDiv.innerHTML += `<div>${msg}</div>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // --- INTERACTION LOGIC ---
+    function selectBlueprint(uid) {
+        let bp = playerBlueprints.find(b => b.uid === uid);
+        if (!anvilSlot1) anvilSlot1 = bp;
+        else if (!anvilSlot2) anvilSlot2 = bp;
+        else anvilSlot2 = bp;
+        updateAll();
+    }
+
+    function selectRune(id) {
+        let rn = unlockedRunes.find(r => r.id === id);
+        anvilSlot2 = rn; 
+        updateAll();
+    }
+
+    function clearSlot(num) {
+        if (num === 1) anvilSlot1 = null;
+        if (num === 2) anvilSlot2 = null;
+        updateAll();
+    }
+
+    function processAnvil() {
+        if (craftedWeapon) {
+            let sourceBp = playerBlueprints.find(b => b.uid === craftedWeapon.sourceBlueprintUid);
+            if (sourceBp) sourceBp.isExhausted = false; 
+            
+            craftedWeapon = null;
+            log(`<span style="color:#e74c3c">🗑️ Weapon discarded. Blueprint returned.</span>`);
+            updateAll();
+            return;
+        }
+
+        if (!anvilSlot1 || !anvilSlot2) return;
+
+        if (anvilSlot2.uid && anvilSlot1.id === anvilSlot2.id && anvilSlot1.level === anvilSlot2.level) {
+            let newLevel = anvilSlot1.level + 1;
+            let newBp = generateBlueprint(anvilSlot1.id, newLevel);
+            playerBlueprints = playerBlueprints.filter(b => b.uid !== anvilSlot1.uid && b.uid !== anvilSlot2.uid);
+            playerBlueprints.push(newBp);
+            
+            log(`<span style="color:#2ecc71">✨ MERGE SUCCESS! Created Lv.${newLevel} ${newBp.name} (${newBp.dmg} DMG)</span>`);
+            anvilSlot1 = null; anvilSlot2 = null;
+            updateAll();
+
+        } else if (anvilSlot2.element) {
+            // Apply Global Damage Buffs During Crafting
+            let finalDmg = anvilSlot1.dmg + anvilSlot2.bonusDmg;
+            if (anvilSlot1.heroType === 'warrior') finalDmg = Math.floor(finalDmg * globalBuffs.warriorDmgMult);
+            if (anvilSlot2.element === 'fire') finalDmg = Math.floor(finalDmg * globalBuffs.fireDmgMult);
+
+            craftedWeapon = {
+                name: `${anvilSlot2.name} ${anvilSlot1.name}`,
+                dmg: finalDmg,
+                element: anvilSlot2.element,
+                icon: anvilSlot1.icon,
+                targetHeroType: anvilSlot1.heroType,
+                sourceBlueprintUid: anvilSlot1.uid 
+            };
+            
+            anvilSlot1.isExhausted = true; 
+            
+            log(`<span style="color:#3498db">⚒️ CRAFTED! Hand it to the ${craftedWeapon.targetHeroType.toUpperCase()}.</span>`);
+            anvilSlot1 = null; anvilSlot2 = null; 
+            updateAll();
+        }
+    }
+
+    function equipToHero(heroId) {
+        if (!craftedWeapon) return;
+        const hero = heroes.find(h => h.id === heroId);
+        
+        if (hero.isDead) {
+            alert(`${hero.name} has fallen! They cannot hold a weapon.`);
+            return;
+        }
+
+        if (hero.weapon) {
+            alert(`${hero.name} is already LOADED with a weapon!`);
+            return;
+        }
+
+        if(hero.type !== craftedWeapon.targetHeroType) {
+            alert(`This weapon is for the ${craftedWeapon.targetHeroType.toUpperCase()}!`);
+            return;
+        }
+
+        hero.weapon = craftedWeapon;
+        craftedWeapon = null;
+        log(`Handed ${hero.weapon.name} to ${hero.name}.`);
+        updateAll();
+    }
+
+    // --- REVIVE LOGIC ---
+    function useRevive() {
+        if (reviveCharge < reviveMax) {
+            alert(`Revive is charging... (${reviveCharge}/${reviveMax} Waves Cleared)`);
+            return;
+        }
+
+        let deadHero = heroes.find(h => h.isDead);
+        if (!deadHero) {
+            alert("Everyone is alive!");
+            return;
+        }
+
+        deadHero.isDead = false;
+        deadHero.hp = deadHero.maxHp;
+        reviveCharge = 0;
+        
+        log(`👼 <b style="color:#f1c40f">MAGIC! ${deadHero.name} has been revived!</b>`);
+        updateAll();
+    }
+
+    function chargeRevive() {
+        if (reviveCharge < reviveMax) {
+            reviveCharge++;
+            if(reviveCharge === reviveMax) log(`⭐ <b style="color:#2ecc71">Revive Meter is FULL!</b>`);
+        }
+    }
+
+    // --- GACHA CHOICE LOGIC (ROGUELITE) ---
+    const gachaPool = [
+        { id: 'g_fire', name: 'Inferno Runes', desc: 'All Fire weapons deal +20% Damage', action: () => { globalBuffs.fireDmgMult += 0.2; }, icon: '🔥' },
+        { id: 'g_warrior', name: 'Warrior\'s Might', desc: 'Warrior deals +15% Damage', action: () => { globalBuffs.warriorDmgMult += 0.15; }, icon: '⚔️' },
+        { id: 'g_mage', name: 'Healing Aura', desc: 'Mage heals everyone for 5 HP each turn', action: () => { globalBuffs.mageHeal += 5; }, icon: '✨' },
+        { id: 'g_sword3', name: 'Epic Sword', desc: 'Get a Lv. 3 Sword Blueprint instantly', action: () => { playerBlueprints.push(generateBlueprint('sword', 3)); }, icon: '🗡️' },
+        { id: 'g_dagger3', name: 'Epic Dagger', desc: 'Get a Lv. 3 Dagger Blueprint instantly', action: () => { playerBlueprints.push(generateBlueprint('dagger', 3)); }, icon: '🔪' },
+        { id: 'g_lightning', name: 'Lightning Rune', desc: 'Unlocks the powerful Lightning Rune', 
+          condition: () => !unlockedRunes.find(r => r.id === 'rn_lightning'), 
+          action: () => { unlockedRunes.push({ id: 'rn_lightning', name: 'Spark', bonusDmg: 15, icon: '⚡', element: 'lightning' }); }, icon: '⚡' }
+    ];
+
+    function triggerGacha() {
+        const modal = document.getElementById('gacha-modal');
+        const container = document.getElementById('gacha-options');
+        container.innerHTML = '';
+        modal.style.display = 'flex';
+
+        // Filter valid options and pick 3 random
+        let validPool = gachaPool.filter(g => !g.condition || g.condition());
+        let shuffled = validPool.sort(() => 0.5 - Math.random());
+        let choices = shuffled.slice(0, 3);
+
+        choices.forEach(choice => {
+            container.innerHTML += `
+                <div class="gacha-card" onclick="selectGacha('${choice.id}')">
+                    <div class="gacha-card-icon">${choice.icon}</div>
+                    <div>
+                        <div class="gacha-card-title">${choice.name}</div>
+                        <div class="gacha-card-desc">${choice.desc}</div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function selectGacha(id) {
+        let choice = gachaPool.find(g => g.id === id);
+        choice.action();
+        
+        log(`<span style="color:#f1c40f">✨ Gacha Selected: ${choice.name}!</span>`);
+        document.getElementById('gacha-modal').style.display = 'none';
+        
+        const rail = document.getElementById('blueprint-rail');
+        rail.scrollTop = rail.scrollHeight;
+        
+        updateAll();
+    }
+
+    // --- COMBAT LOGIC ---
+    function renderCombat() {
+        const enemiesDiv = document.getElementById('enemy-view');
+        enemiesDiv.innerHTML = '';
+        enemies.forEach(e => {
+            enemiesDiv.innerHTML += `
+                <div class="entity">
+                    <div class="icon" style="font-size: 24px;">${e.icon}</div>
+                    <div class="hp-container"><div class="hp-bar-text">${Math.ceil(e.hp)} HP</div></div>
+                    <div class="entity-name">${e.name}</div>
+                    <div class="element-tags"><span class="tag-weak">W: ${elementIcons[e.weak]||'⚪'}</span></div>
+                </div>`;
+        });
+        if (enemies.length === 0) enemiesDiv.innerHTML = '<div style="color: var(--ornate-accent); font-weight: bold;">(Cleared)</div>';
+
+        const heroesDiv = document.getElementById('hero-view');
+        heroesDiv.innerHTML = '';
+        heroes.forEach(h => {
+            let deadStyle = h.isDead ? 'filter: grayscale(100%); opacity: 0.5;' : '';
+            heroesDiv.innerHTML += `
+                <div class="entity" style="${deadStyle}">
+                    <div class="icon" style="font-size: 24px;">${h.icon}</div>
+                    <div class="hp-container"><div class="hp-bar-text">${Math.ceil(h.hp)} HP</div></div>
+                    <div class="entity-name">${h.name}</div>
+                </div>`;
+        });
+    }
+
+    function endTurnLoot() {
+        let randomId = unlockedBlueprintIds[Math.floor(Math.random() * unlockedBlueprintIds.length)];
+        let newBp = generateBlueprint(randomId, 1);
+        playerBlueprints.push(newBp);
+        log(`<span style="color:#f1c40f">🎁 LOOT: Found a Lv.1 ${newBp.name} scroll!</span>`);
+        
+        setTimeout(() => {
+            const rail = document.getElementById('blueprint-rail');
+            rail.scrollTop = rail.scrollHeight;
+        }, 50);
+    }
+
+    function executeTurn() {
+        let aliveHeroes = heroes.filter(h => !h.isDead);
+        if (aliveHeroes.length === 0 || enemies.length === 0) return;
+        
+        log(`<br><div style="color:var(--ornate-frame); font-weight:bold;">--- TURN ${turnCount} SUMMARY ---</div>`);
+
+        // 0. Mage Passive Heal (If alive and buffed)
+        let mage = heroes.find(h => h.type === 'mage');
+        if (mage && !mage.isDead && globalBuffs.mageHeal > 0) {
+            aliveHeroes.forEach(h => {
+                h.hp = Math.min(h.hp + globalBuffs.mageHeal, h.maxHp);
+            });
+            log(`✨ Dara's Healing Aura restores ${globalBuffs.mageHeal} HP to the squad!`);
+        }
+
+        // 1. Heroes Attack
+        aliveHeroes.forEach(hero => {
+            if (enemies.length === 0 || !hero.weapon) return;
+            let targetIdx = Math.floor(Math.random() * enemies.length);
+            let target = enemies[targetIdx];
+            
+            let multiplier = 1;
+            if (hero.weapon.element === target.weak) multiplier = 2;
+            else if (hero.weapon.element === target.resist) multiplier = 0.5;
+
+            let finalDmg = hero.weapon.dmg * multiplier;
+            target.hp -= finalDmg;
+            
+            let fx = multiplier === 2 ? ' <b style="color:#2ecc71">Critical!</b>' : '';
+            log(`${hero.icon} hit ${target.icon} for ${finalDmg} damage!${fx}`);
+            hero.weapon = null; 
+
+            if (target.hp <= 0) {
+                log(`💀 ${target.name} defeated!`);
+                enemies.splice(targetIdx, 1); 
+            }
+        });
+
+        // 2. Wave Check & Enemy Attacks
+        if (enemies.length === 0) {
+            waveCount++;
+            chargeRevive(); // Gain revive charge on wave clear!
+            log(`<b style="color:#e74c3c;">🌊 WAVE CLEARED!</b>`);
+            spawnWave();
+        } else {
+            enemies.forEach(enemy => {
+                let currentAlive = heroes.filter(h => !h.isDead);
+                if (currentAlive.length === 0) return;
+                
+                let target = currentAlive[Math.floor(Math.random() * currentAlive.length)];
+                let dmg = 15 + Math.floor(waveCount * 5); 
+                target.hp -= dmg;
+                log(`${enemy.icon} hit ${target.icon} for ${dmg} damage!`);
+                
+                if (target.hp <= 0) {
+                    target.hp = 0;
+                    target.isDead = true; // Mark as dead instead of deleting
+                    log(`💀 <b style="color:#e74c3c">${target.name} fell in battle!</b>`);
+                }
+            });
+        }
+
+        // 3. Turn Resolution & Gacha Trigger
+        if (heroes.filter(h => !h.isDead).length === 0) {
+            log("<b style='color:#e74c3c;'>☠️ SQUAD WIPED! Refresh to restart.</b>");
+        } else {
+            turnCount++;
+            turnsSinceGacha++;
+            document.getElementById('turn-display').innerText = `TURN ${turnCount}`;
+            
+            playerBlueprints.forEach(bp => bp.isExhausted = false);
+            endTurnLoot(); 
+
+            if (turnsSinceGacha >= 3) {
+                turnsSinceGacha = 0; // Reset counter
+                triggerGacha();
+            }
+        }
+
+        updateAll();
+    }
+
+    // Init
+    spawnWave();
+    updateAll();
+</script>
+</body>
+</html>

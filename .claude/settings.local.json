@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir)",
+      "Bash(mkdir -p \"1_Robotek_WeaponCraft/docs/02_systems\" \"1_Robotek_WeaponCraft/docs/03_content\" \"1_Robotek_WeaponCraft/docs/04_economy\" \"1_Robotek_WeaponCraft/Mockup\" \"1_Robotek_WeaponCraft/Prototype\" && ls -la 1_Robotek_WeaponCraft/)",
+      "PowerShell(Move-Item 'C:\\\\_BISU\\\\_WORKSPACE\\\\AI_Explorations\\\\_Claude\\\\Game_Prototypes\\\\2_WeaponCraft_Base\\\\Prototype\\\\dist\\\\BASE-A1_0.1.0.html' 'C:\\\\_BISU\\\\_WORKSPACE\\\\AI_Explorations\\\\_Claude\\\\Game_Prototypes\\\\2_WeaponCraft_Base\\\\Prototype\\\\dist\\\\BASE-A1_0.1.1.html')",
+      "Bash(mkdir -p \"C:/_BISU/_WORKSPACE/AI_Explorations/_Claude/Game_Prototypes/2_Weaponcraft_Godot/docs/superpowers/specs/\")"
+    ]
+  }
+}

@@ -1,12 +1,10 @@
-[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="EnemyData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/kenney/kenney_tiny-dungeon/Tiles/tile_0121.png" id="2_0ypgr"]
 
 [resource]
 script = ExtResource("1")
 id = &"skeleton"
 name = "Skeleton"
-hp_base = 15
-hp_per_wave = 8
-dmg_base = 4
-dmg_per_wave = 1.4
+sprite = ExtResource("2_0ypgr")

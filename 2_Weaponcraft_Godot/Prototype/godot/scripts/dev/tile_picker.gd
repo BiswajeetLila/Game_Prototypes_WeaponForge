@@ -42,6 +42,10 @@ var active_slot_id: StringName = &""
 @onready var save_btn: Button = %SaveBtn
 
 func _ready() -> void:
+	## Project window is locked to 420x800 portrait for the game. The picker is a
+	## dev tool that needs more room — force-resize and center on launch so every
+	## label, button, and the right-hand slot column are fully visible.
+	_resize_window_for_picker()
 	for slot in SLOTS:
 		picks[slot.id] = _load_existing_pick(slot)
 	_build_pack_tab("Tiny Dungeon", TINY_DUNGEON_DIR)
@@ -50,6 +54,18 @@ func _ready() -> void:
 	save_btn.pressed.connect(_on_save_all)
 	_set_active_slot(SLOTS[0].id)
 	_refresh_status()
+
+func _resize_window_for_picker() -> void:
+	const W := 1100
+	const H := 760
+	var win_id: int = get_window().get_window_id() if get_window() != null else 0
+	DisplayServer.window_set_size(Vector2i(W, H), win_id)
+	## Center on the primary screen.
+	var screen_idx: int = DisplayServer.window_get_current_screen(win_id)
+	var screen_size: Vector2i = DisplayServer.screen_get_size(screen_idx)
+	var screen_pos: Vector2i = DisplayServer.screen_get_position(screen_idx)
+	var pos := screen_pos + (screen_size - Vector2i(W, H)) / 2
+	DisplayServer.window_set_position(pos, win_id)
 
 ## ---------- Pack tabs (left panel: scrollable grid of tile buttons) ----------
 

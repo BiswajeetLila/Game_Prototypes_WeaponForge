@@ -8,10 +8,13 @@
 export.cfg
 export_presets.cfg
 
-# Imported asset cache
-*.import
+# NOTE: *.import sidecar files MUST be tracked in Godot 4 — they store the
+# stable UID for each imported asset. Ignoring them causes UID churn across
+# clones, breaking .tscn references. Re-imports regenerate the binary cache
+# under .godot/ which IS ignored above.
 
-# Mono / .NET artifacts (we're using GDScript, but keep just in case)
+# Mono / .NET artifacts (we're using GDScript primarily but the editor build
+# is the Mono variant, so .mono/ may appear during C# tooling work).
 .mono/
 data_*/
 mono_crash.*.json

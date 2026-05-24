@@ -138,12 +138,28 @@ func _render_tags(def: PartData) -> void:
 	if def.ult_rate > 0:
 		_tag_box.add_child(_make_tag_chip(&"charge"))
 
-func _make_tag_chip(tag: StringName) -> Label:
+func _make_tag_chip(tag: StringName) -> Control:
+	## Pill: colored background + white text. Reverses the FG/BG so the tag
+	## color stays meaningful but stays readable at any background.
+	var bg_color: Color = TAG_COLORS.get(tag, Color(0.4, 0.4, 0.4))
+	var pill := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg_color
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_left = 4
+	sb.corner_radius_bottom_right = 4
+	sb.content_margin_left = 4
+	sb.content_margin_right = 4
+	sb.content_margin_top = 1
+	sb.content_margin_bottom = 1
+	pill.add_theme_stylebox_override(&"panel", sb)
 	var l := Label.new()
 	l.text = String(tag).to_upper()
-	l.add_theme_font_size_override(&"font_size", 9)
-	l.add_theme_color_override(&"font_color", TAG_COLORS.get(tag, Color.WHITE))
-	return l
+	l.add_theme_font_size_override(&"font_size", 8)
+	l.add_theme_color_override(&"font_color", Color(1, 1, 1))
+	pill.add_child(l)
+	return pill
 
 func _render_cost(def: PartData) -> void:
 	if _mode == &"shop":

@@ -1,6 +1,22 @@
-[gd_scene format=3 uid="uid://c5uqrkpm525f4"]
+[gd_scene load_steps=2 format=3 uid="uid://c5uqrkpm525f4"]
 
 [ext_resource type="Script" path="res://scripts/ui/forge_panel.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="gold_pill"]
+bg_color = Color(0.176, 0.110, 0.059, 1)
+border_color = Color(0.949, 0.722, 0.133, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_left = 8
+corner_radius_bottom_right = 8
+content_margin_left = 8.0
+content_margin_right = 8.0
+content_margin_top = 2.0
+content_margin_bottom = 2.0
 
 [node name="ForgePanel" type="PanelContainer"]
 size_flags_horizontal = 3
@@ -40,7 +56,7 @@ unique_name_in_owner = true
 layout_mode = 2
 text = ""
 autowrap_mode = 3
-theme_override_colors/font_color = Color(0.84, 0.66, 1, 1)
+theme_override_colors/font_color = Color(0.227, 0.102, 0.416, 1)
 theme_override_font_sizes/font_size = 10
 
 [node name="StartWaveBtn" type="Button" parent="MarginContainer/VBox"]
@@ -62,12 +78,16 @@ size_flags_vertical = 4
 text = "Shop"
 theme_override_font_sizes/font_size = 12
 
-[node name="GoldLabel" type="Label" parent="MarginContainer/VBox/ShopHeader"]
-unique_name_in_owner = true
+[node name="GoldPill" type="PanelContainer" parent="MarginContainer/VBox/ShopHeader"]
 layout_mode = 2
 size_flags_vertical = 4
+theme_override_styles/panel = SubResource("gold_pill")
+
+[node name="GoldLabel" type="Label" parent="MarginContainer/VBox/ShopHeader/GoldPill"]
+unique_name_in_owner = true
+layout_mode = 2
 text = "🪙 0"
-theme_override_colors/font_color = Color(0.929, 0.722, 0.133, 1)
+theme_override_colors/font_color = Color(0.984, 0.788, 0.235, 1)
 theme_override_font_sizes/font_size = 14
 
 [node name="RerollBtn" type="Button" parent="MarginContainer/VBox/ShopHeader"]

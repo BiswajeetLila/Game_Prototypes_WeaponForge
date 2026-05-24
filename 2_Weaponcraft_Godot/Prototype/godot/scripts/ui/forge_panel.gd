@@ -88,15 +88,32 @@ func _rebuild_recipe_chips() -> void:
 		var rec = GameState.get_recipe_def(recipe_id)
 		if rec == null:
 			continue
-		## Short pill label (name only) so the HBox doesn't try to wrap the
-		## desc to 1-char width. Full desc lives in the tooltip + the dedicated
-		## RecipeDescLabel below the chip row.
+		## Purple pill: saturated bg + white text so it reads as an active
+		## "buff" badge no matter the underlying panel color.
+		var pill := PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.416, 0.227, 0.651, 1)
+		sb.border_color = Color(0.85, 0.65, 1, 1)
+		sb.border_width_left = 1
+		sb.border_width_top = 1
+		sb.border_width_right = 1
+		sb.border_width_bottom = 1
+		sb.corner_radius_top_left = 6
+		sb.corner_radius_top_right = 6
+		sb.corner_radius_bottom_left = 6
+		sb.corner_radius_bottom_right = 6
+		sb.content_margin_left = 8
+		sb.content_margin_right = 8
+		sb.content_margin_top = 2
+		sb.content_margin_bottom = 2
+		pill.add_theme_stylebox_override(&"panel", sb)
 		var chip := Label.new()
 		chip.text = rec.name
 		chip.add_theme_font_size_override(&"font_size", 12)
-		chip.add_theme_color_override(&"font_color", Color("d8a8ff"))
+		chip.add_theme_color_override(&"font_color", Color(1, 1, 1))
 		chip.tooltip_text = "%s\n%s" % [rec.name, rec.desc]
-		_recipe_chips.add_child(chip)
+		pill.add_child(chip)
+		_recipe_chips.add_child(pill)
 	## Update the wider desc row below the chips.
 	_refresh_recipe_desc()
 

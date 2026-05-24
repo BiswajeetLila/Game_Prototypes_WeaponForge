@@ -34,6 +34,11 @@ window/size/window_width_override=420
 window/size/window_height_override=800
 window/stretch/mode="canvas_items"
 
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/enable_file_logging.pc=true
+
 [dotnet]
 
 project/assembly_name="WeaponCraft Godot Ultra-MVP"

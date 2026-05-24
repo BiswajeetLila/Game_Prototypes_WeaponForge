@@ -113,7 +113,10 @@ func _on_reroll_pressed() -> void:
 ## ---------- Inventory ----------
 
 func _rebuild_inventory() -> void:
+	## EmptyInvLabel is also a child of the strip — leave it alone, queue_free the rest.
 	for child in _inventory_strip.get_children():
+		if child == _empty_inv_label:
+			continue
 		child.queue_free()
 	_empty_inv_label.visible = GameState.inventory.is_empty()
 	for item in GameState.inventory:

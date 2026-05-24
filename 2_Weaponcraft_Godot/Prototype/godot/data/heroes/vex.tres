@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="HeroData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/heroes/vex_rogue.png" id="1_vex"]
+
+[resource]
+script = ExtResource("1")
+id = &"vex"
+name = "Vex"
+cls = &"rogue"
+portrait = ExtResource("1_vex")
+hp_base = 65
+atk_base = 9
+ult_name = "Shadowstep"
+ult_desc = "3x atk to highest-HP, guaranteed crit"
+ult_atk_multiplier = 3.0
+ult_key = &"shadowstep"

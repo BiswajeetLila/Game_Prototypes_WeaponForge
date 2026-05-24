@@ -7,6 +7,8 @@
 extends Control
 
 const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
+const HeroDataT = preload("res://scripts/data/hero_data.gd")
+const HeroStateT = preload("res://scripts/data/hero_state.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -30,6 +32,9 @@ func _ready() -> void:
 	_test_hero_death_emits_wipe()
 	_test_wave_clear_awards_gold_5_plus_2w()
 	_test_time_cap_force_fills_ult()
+	_test_fire_ult_meteor_aoe_plus_burn_on_primary()
+	_test_fire_ult_shadowstep_single_target_3x_crit_flag()
+	_test_wipe_only_when_all_squad_dead()
 	_summary()
 	_render_to_ui()
 
@@ -321,6 +326,123 @@ func _test_wave_clear_awards_gold_5_plus_2w() -> void:
 	## Wave 2 award = 5 + 2*2 = 9.
 	_check("wave clear awards 5 + wave*2 = 9 gold at wave 2",
 		GameState.gold == 9, "gold=%d" % GameState.gold)
+	Combat.stop()
+
+func _test_fire_ult_meteor_aoe_plus_burn_on_primary() -> void:
+	## Meteor: AoE all alive enemies × ult_atk_multiplier + advances burn_stack
+	## against the highest-HP target (capped by Inferno's stack_cap).
+	_fresh_session_with_weapon([
+		[&"hilt", &"p_pyro_pommel", 1],   ## fire
+		[&"rune", &"r_fire", 1],          ## fire -> Inferno active, stack_cap=3
+	])
+	Combat.start_wave(1, false)
+	_force_enemies([
+		{"hp": 9999, "name": "primary"},
+		{"hp": 50,   "name": "secondary_a"},
+		{"hp": 30,   "name": "secondary_b"},
+	])
+	var hero = GameState.hero
+	var saved_key = hero.data.ult_key
+	var saved_mult = hero.data.ult_atk_multiplier
+	hero.data.ult_key = &"meteor"
+	hero.data.ult_atk_multiplier = 1.5
+	hero.ult_gauge = 100.0
+	hero.burn_stack = 0
+	hero.last_target_name = &""
+	var hp_before := [9999, 50, 30]
+	var ok: bool = Combat.fire_ult(&"bran")
+	## Restore so subsequent tests aren't poisoned.
+	hero.data.ult_key = saved_key
+	hero.data.ult_atk_multiplier = saved_mult
+	## Bran atk = 6 + 2 + 3 = 11. Meteor dmg = floor(11 * 1.5) = 16 per enemy.
+	var deltas := [
+		hp_before[0] - GameState.enemies[0].hp,
+		hp_before[1] - GameState.enemies[1].hp,
+		hp_before[2] - GameState.enemies[2].hp,
+	]
+	var all_hit_16: bool = deltas[0] == 16 and deltas[1] == 16 and deltas[2] == 16
+	## With Inferno equipped (stack_cap=3), burn_stack goes 0 -> 1, primary locks in.
+	var burn_ok: bool = hero.burn_stack == 1 and hero.last_target_name == "primary"
+	_check("Meteor: AoE 16 to each + burn_stack=1 against primary",
+		ok and all_hit_16 and burn_ok,
+		"ok=%s deltas=%s burn=%d last=%s" % [str(ok), str(deltas), hero.burn_stack, str(hero.last_target_name)])
+	Combat.stop()
+
+func _test_fire_ult_shadowstep_single_target_3x_crit_flag() -> void:
+	## Shadowstep: single-target highest-HP, damage = atk × ult_atk_multiplier,
+	## is_crit flag emitted on the hit signal (informational; no double-stack).
+	_fresh_session_with_weapon([
+		[&"head", &"h_iron_edge", 1],   ## +8 atk -> total 14
+	])
+	Combat.start_wave(1, false)
+	_force_enemies([
+		{"hp": 200, "name": "primary"},   ## highest
+		{"hp": 80,  "name": "weak"},
+		{"hp": 50,  "name": "weakest"},
+	])
+	var hero = GameState.hero
+	var saved_key = hero.data.ult_key
+	var saved_mult = hero.data.ult_atk_multiplier
+	hero.data.ult_key = &"shadowstep"
+	hero.data.ult_atk_multiplier = 3.0
+	hero.ult_gauge = 100.0
+	## Capture the hit signal: only the primary index, with is_crit true.
+	var hits := []
+	var cb := func(_hid, idx, dmg, src, is_crit):
+		hits.append({"idx": idx, "dmg": dmg, "src": src, "is_crit": is_crit})
+	Combat.hero_hit_enemy.connect(cb)
+	var ok: bool = Combat.fire_ult(&"bran")
+	Combat.hero_hit_enemy.disconnect(cb)
+	hero.data.ult_key = saved_key
+	hero.data.ult_atk_multiplier = saved_mult
+	## atk=14, dmg = floor(14 * 3.0) = 42. Only primary (idx 0) should be hit.
+	var primary_hit_42: bool = (200 - GameState.enemies[0].hp) == 42
+	var others_untouched: bool = GameState.enemies[1].hp == 80 and GameState.enemies[2].hp == 50
+	var single_crit_hit: bool = hits.size() == 1 and hits[0].idx == 0 and hits[0].dmg == 42 and hits[0].is_crit
+	_check("Shadowstep: highest-HP only for 42 with crit flag",
+		ok and primary_hit_42 and others_untouched and single_crit_hit,
+		"ok=%s prim=%d hits=%s" % [str(ok), 200 - GameState.enemies[0].hp, str(hits)])
+	Combat.stop()
+
+func _test_wipe_only_when_all_squad_dead() -> void:
+	## Two-hero squad: while any teammate alive, squad_wiped MUST NOT fire even
+	## though one hero is dead. Validates the any_alive() guard in step()'s
+	## win/loss check. Per-individual hero_died is covered by the solo wipe test.
+	_fresh_session_with_weapon([])
+	var stunt_data = HeroDataT.new()
+	stunt_data.id = &"stunt"
+	stunt_data.name = "Stunt"
+	stunt_data.cls = &"warrior"
+	stunt_data.hp_base = 80
+	stunt_data.atk_base = 6
+	stunt_data.ult_key = &"whirlwind"
+	var stunt = HeroStateT.new(stunt_data)
+	GameState.heroes[&"stunt"] = stunt
+	GameState.squad_order.append(&"stunt")
+	## Kill Bran deterministically (bypass enemy-RNG); stunt stays at full hp.
+	GameState.hero.hp = 0
+	GameState.hero.is_dead = true
+
+	Combat.start_wave(1, false)
+	_force_enemies([{"hp": 9999, "name": "lone"}])
+
+	var wiped := [false]
+	var wipe_cb := func(): wiped[0] = true
+	GameState.squad_wiped.connect(wipe_cb)
+
+	## Tick 1: enemy can only target stunt (active_heroes filters Bran out).
+	## Stunt loses some hp but lives. squad_wiped MUST stay quiet.
+	Combat.step()
+	var no_wipe_with_one_alive: bool = (not wiped[0]) and (not stunt.is_dead)
+
+	## Drain stunt to 1 hp; next tick the enemy attack kills him -> full wipe.
+	stunt.hp = 1
+	Combat.step()
+	GameState.squad_wiped.disconnect(wipe_cb)
+	_check("squad_wiped fires only when no heroes alive",
+		no_wipe_with_one_alive and wiped[0] and stunt.is_dead,
+		"no_wipe=%s wiped=%s stunt_dead=%s stunt_hp=%d"
+			% [str(no_wipe_with_one_alive), str(wiped[0]), str(stunt.is_dead), stunt.hp])
 	Combat.stop()
 
 func _test_time_cap_force_fills_ult() -> void:

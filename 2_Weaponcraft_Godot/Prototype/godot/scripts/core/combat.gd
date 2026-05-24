@@ -163,22 +163,20 @@ func fire_ult(hero_id: StringName) -> bool:
 		return false
 	if hero.weapon == null:
 		return false
-
-	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
-	var ult_atk: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
 	var alive: Array = _alive_enemy_indices()
 	if alive.is_empty():
 		return false
 
-	## Warrior Whirlwind = AoE all alive. Mage/Rogue variants come in Phase 2.
+	## Dispatch per HeroData.ult_key. Empty / unknown -> Whirlwind fallback so
+	## new heroes default to a sane AoE while their custom ult is being built.
 	var total_dmg: int = 0
-	for idx in alive:
-		var enemy = GameState.enemies[idx]
-		var dmg: int = ult_atk    ## Ults bypass element multipliers in the prototype.
-		enemy.hp = maxi(0, enemy.hp - dmg)
-		total_dmg += dmg
-		GameState.emit_signal(&"enemy_hp_changed", idx)
-		emit_signal(&"hero_hit_enemy", hero_id, idx, dmg, &"ult", false)
+	match hero.data.ult_key:
+		&"meteor":
+			total_dmg = _ult_meteor(hero, alive)
+		&"shadowstep":
+			total_dmg = _ult_shadowstep(hero, alive)
+		_:
+			total_dmg = _ult_whirlwind(hero, alive)
 
 	hero.ult_used = true
 	hero.ult_gauge = 0.0
@@ -189,6 +187,68 @@ func fire_ult(hero_id: StringName) -> bool:
 	if _all_enemies_dead():
 		_on_wave_cleared()
 	return true
+
+## ---------- Ult implementations ----------
+
+func _ult_whirlwind(hero, alive: Array) -> int:
+	## Warrior Whirlwind = AoE all alive enemies × ult_atk_multiplier.
+	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
+	var ult_atk: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
+	var total: int = 0
+	for idx in alive:
+		var enemy = GameState.enemies[idx]
+		enemy.hp = maxi(0, enemy.hp - ult_atk)
+		total += ult_atk
+		GameState.emit_signal(&"enemy_hp_changed", idx)
+		emit_signal(&"hero_hit_enemy", hero.data.id, idx, ult_atk, &"ult", false)
+	return total
+
+func _ult_meteor(hero, alive: Array) -> int:
+	## Mage Meteor = AoE all alive × ult_atk_multiplier + applies one burn stack
+	## to the highest-HP enemy (capped by stack_cap; effectively no-op unless
+	## the caster has Inferno equipped for the stack_burn payoff). The narrow
+	## scope avoids refactoring burn to per-(hero, enemy).
+	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
+	var ult_atk: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
+	var primary_idx: int = _highest_hp_idx(alive)
+	var primary = GameState.enemies[primary_idx]
+	var total: int = 0
+	for idx in alive:
+		var enemy = GameState.enemies[idx]
+		enemy.hp = maxi(0, enemy.hp - ult_atk)
+		total += ult_atk
+		GameState.emit_signal(&"enemy_hp_changed", idx)
+		emit_signal(&"hero_hit_enemy", hero.data.id, idx, ult_atk, &"ult_meteor", false)
+	var bonuses: Dictionary = Recipes.get_recipe_bonuses(hero)
+	var stack_cap: int = int(bonuses.get(&"stack_cap", 0))
+	if stack_cap > 0:
+		hero.burn_stack = mini(stack_cap, hero.burn_stack + 1)
+	hero.last_target_name = primary.name
+	return total
+
+func _ult_shadowstep(hero, alive: Array) -> int:
+	## Rogue Shadowstep = single-target highest-HP, damage = atk × ult_atk_multiplier.
+	## is_crit=true is emitted on the hit signal for VFX / future recipe hooks,
+	## but does NOT additionally multiply by CRIT_MULT — locking the ult damage
+	## ceiling at the multiplier alone (3× by default).
+	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
+	var dmg: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
+	var target_idx: int = _highest_hp_idx(alive)
+	var enemy = GameState.enemies[target_idx]
+	enemy.hp = maxi(0, enemy.hp - dmg)
+	GameState.emit_signal(&"enemy_hp_changed", target_idx)
+	emit_signal(&"hero_hit_enemy", hero.data.id, target_idx, dmg, &"ult_shadowstep", true)
+	return dmg
+
+func _highest_hp_idx(alive: Array) -> int:
+	var best_idx: int = alive[0]
+	var best_hp: int = GameState.enemies[alive[0]].hp
+	for idx in alive:
+		var hp: int = GameState.enemies[idx].hp
+		if hp > best_hp:
+			best_hp = hp
+			best_idx = idx
+	return best_idx
 
 ## ---------- Tick internals ----------
 

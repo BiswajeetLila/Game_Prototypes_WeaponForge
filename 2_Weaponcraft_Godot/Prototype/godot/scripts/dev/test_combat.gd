@@ -290,18 +290,25 @@ func _test_enemy_attacks_hero_for_wave_scaled_dmg() -> void:
 	Combat.stop()
 
 func _test_hero_death_emits_wipe() -> void:
+	## Solo squad: Bran dying triggers BOTH hero_died(bran) (per-individual) and
+	## squad_wiped (no heroes left alive). Phase 2 multi-hero adds a separate
+	## case verifying squad_wiped does NOT fire while any teammate is alive.
 	_fresh_session_with_weapon([])
 	Combat.start_wave(1, false)
 	_force_enemies([{"hp": 9999}, {"hp": 9999}])
 	GameState.hero.hp = 1
-	var fired := [false]
-	var cb := func(_id): fired[0] = true
-	GameState.hero_died.connect(cb)
+	var died := [false]
+	var wiped := [false]
+	var died_cb := func(_id): died[0] = true
+	var wipe_cb := func(): wiped[0] = true
+	GameState.hero_died.connect(died_cb)
+	GameState.squad_wiped.connect(wipe_cb)
 	Combat.step()
-	GameState.hero_died.disconnect(cb)
-	_check("hero death triggers hero_died signal",
-		fired[0] and GameState.hero.is_dead,
-		"fired=%s dead=%s hp=%d" % [str(fired[0]), str(GameState.hero.is_dead), GameState.hero.hp])
+	GameState.hero_died.disconnect(died_cb)
+	GameState.squad_wiped.disconnect(wipe_cb)
+	_check("solo hero death emits hero_died + squad_wiped",
+		died[0] and wiped[0] and GameState.hero.is_dead,
+		"died=%s wiped=%s dead=%s hp=%d" % [str(died[0]), str(wiped[0]), str(GameState.hero.is_dead), GameState.hero.hp])
 	Combat.stop()
 
 func _test_wave_clear_awards_gold_5_plus_2w() -> void:

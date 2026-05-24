@@ -14,18 +14,9 @@ extends Control
 
 const POP_LIFETIME: float = 0.9
 const POP_RISE_PX: float = 38.0
+const FLASH_BOOST: Color = Color(1.8, 1.8, 1.8, 1.0)
 
-const TAG_COLORS: Dictionary = {
-	&"fire":       Color("ff8800"),
-	&"ice":        Color("88ddff"),
-	&"pierce":     Color("dddddd"),
-	&"steamburst": Color("aaffee"),
-	&"hellfire":   Color("ff5544"),
-	&"skewer":     Color("ccccff"),
-	&"ult":        Color("aa66ff"),
-}
-const CRIT_COLOR: Color = Color("ffd700")
-const ENEMY_HIT_COLOR: Color = Color("ff5555")
+const JuiceConfigT = preload("res://scripts/core/juice_config.gd")
 
 @onready var _hero_portrait: TextureRect = %HeroPortrait
 @onready var _enemy_row: HBoxContainer = %EnemyRow
@@ -199,65 +190,86 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 	if enemy_idx < 0 or enemy_idx >= _enemy_row.get_child_count():
 		return
 	var card := _enemy_row.get_child(enemy_idx) as Control
-	_shake(card, 4.0, is_crit)
+	var profile: Dictionary = JuiceConfigT.profile_for(source, is_crit)
+	ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
+	HitPause.freeze(float(profile.pause))
+	_flash_sprite_in(card, float(profile.flash_dur))
 	var origin: Vector2 = card.global_position + Vector2(card.size.x * 0.5, 0)
-	var color: Color = TAG_COLORS.get(source, Color.WHITE)
-	if is_crit:
-		color = CRIT_COLOR
-	var prefix: String = ""
-	var enemy: Dictionary = GameState.enemies[enemy_idx]
-	## Star prefix on weakness hits — but the source key here is the tag/source label,
-	## so we approximate: any damage pop where weapon has a tag matching enemy.weak.
-	## Simpler heuristic: if source is fire/ice/pierce and matches enemy.weak, prefix ★.
-	if source in [&"fire", &"ice", &"pierce"]:
-		if source == enemy.get(&"weak"):
-			prefix = "★ "
-		elif source == enemy.get(&"resist"):
-			prefix = "~ "
-	if is_crit:
-		prefix = "⚡ " + prefix
-	_spawn_pop(origin, "%s%d" % [prefix, dmg], color, is_crit)
+	_spawn_pop(origin,
+		"%s%d" % [String(profile.prefix), dmg],
+		profile.color, int(profile.font_pt))
 
-func _on_enemy_hit_hero(_enemy_idx: int, _hero_id: StringName, dmg: int) -> void:
-	_shake(_hero_anchor, 3.0, false)
-	var origin: Vector2 = _hero_anchor.global_position + Vector2(_hero_anchor.size.x * 0.5, 0)
-	_spawn_pop(origin, "-%d" % dmg, ENEMY_HIT_COLOR, false)
+func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
+	var profile: Dictionary = JuiceConfigT.ENEMY_HIT_HERO
+	ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
+	HitPause.freeze(float(profile.pause))
+	## Only flash + pop the BattleView portrait when the hit hero is the one
+	## currently displayed (Bran in ultra-MVP). Per-card flash on every hero
+	## lives in SquadBar, which dispatches by hero_id.
+	if hero_id == &"bran":
+		_flash_sprite_in(_hero_anchor, float(profile.flash_dur))
+		var origin: Vector2 = _hero_anchor.global_position + Vector2(_hero_anchor.size.x * 0.5, 0)
+		_spawn_pop(origin, "%s%d" % [String(profile.prefix), dmg],
+			profile.color, int(profile.font_pt))
 
 func _on_ult_fired(_hero_id: StringName, total_dmg: int) -> void:
-	## A single pop at center to highlight the ult. Per-enemy pops already fired
-	## from hero_hit_enemy with source=&"ult".
+	## Per-enemy pops already fired from hero_hit_enemy with source=&"ult".
+	## This is the summary banner-pop centered over the arena.
+	var profile: Dictionary = JuiceConfigT.PROFILES[&"ult"]
 	var origin: Vector2 = _enemy_row.global_position + Vector2(_enemy_row.size.x * 0.5, 0)
-	_spawn_pop(origin, "ULT %d" % total_dmg, TAG_COLORS[&"ult"], true)
+	_spawn_pop(origin, "%s%d" % [String(profile.prefix), total_dmg],
+		profile.color, int(profile.font_pt) + 4)
 
-func _spawn_pop(origin: Vector2, text: String, color: Color, big: bool) -> void:
+func _spawn_pop(origin: Vector2, text: String, color: Color, font_pt: int) -> void:
 	var label := Label.new()
 	label.text = text
 	label.modulate = color
-	label.add_theme_font_size_override(&"font_size", 18 if big else 14)
+	label.add_theme_font_size_override(&"font_size", font_pt)
 	label.add_theme_color_override(&"font_color", color)
 	label.add_theme_color_override(&"font_outline_color", Color.BLACK)
 	label.add_theme_constant_override(&"outline_size", 4)
 	label.z_index = 100
 	_pops_layer.add_child(label)
-	## Place relative to pops_layer.
 	label.global_position = origin
+	## Cap concurrent popups so the layer stays readable.
+	const MAX_POPS: int = 8
+	while _pops_layer.get_child_count() > MAX_POPS:
+		_pops_layer.get_child(0).queue_free()
+	## Pop-in then drift-up + fade.
+	label.scale = Vector2(0.4, 0.4)
+	label.pivot_offset = Vector2.ZERO
+	var pop_in := create_tween()
+	pop_in.tween_property(label, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(label, "position:y", label.position.y - POP_RISE_PX, POP_LIFETIME)
-	tween.tween_property(label, "modulate:a", 0.0, POP_LIFETIME)
+	tween.tween_property(label, "modulate:a", 0.0, POP_LIFETIME).set_delay(POP_LIFETIME - 0.30)
 	tween.chain().tween_callback(label.queue_free)
 
-## ---------- Hit-shake ----------
+## ---------- Sprite flash ----------
 
-func _shake(node: Control, amplitude: float, big: bool) -> void:
-	if node == null:
+## Brightens a sprite-bearing Control (or its first TextureRect child) by
+## boosting modulate above 1.0, then easing back over `duration`. No shader
+## required; modulate values >1 are valid and brighten the rendered texture.
+func _flash_sprite_in(host: Control, duration: float) -> void:
+	if host == null or duration <= 0.0:
 		return
-	## Lightweight position-offset shake; spring back.
-	var origin: Vector2 = node.position
-	var amp: float = amplitude * (1.6 if big else 1.0)
+	var target: CanvasItem = _find_sprite_in(host)
+	if target == null:
+		return
+	target.modulate = FLASH_BOOST
 	var t := create_tween()
-	t.tween_property(node, "position", origin + Vector2(amp, 0), 0.04)
-	t.tween_property(node, "position", origin - Vector2(amp, 0), 0.04)
-	t.tween_property(node, "position", origin, 0.04)
+	t.tween_property(target, "modulate", Color.WHITE, duration).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+
+func _find_sprite_in(host: Control) -> CanvasItem:
+	if host is TextureRect:
+		return host
+	for child in host.get_children():
+		if child is TextureRect:
+			return child
+		var nested = _find_sprite_in(child) if child is Control else null
+		if nested != null:
+			return nested
+	return null
 
 ## ---------- Log ----------
 

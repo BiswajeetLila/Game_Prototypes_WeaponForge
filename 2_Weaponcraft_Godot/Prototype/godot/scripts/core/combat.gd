@@ -180,6 +180,7 @@ func fire_ult(hero_id: StringName) -> bool:
 	hero.ult_gauge = 0.0
 	GameState.emit_signal(&"hero_ult_changed", hero_id)
 	emit_signal(&"ult_fired", hero_id, total_dmg)
+	GameState.append_combat_log("[color=aa66ff]🌀 %s — %d total[/color]" % [hero.data.ult_name, total_dmg])
 
 	if _all_enemies_dead():
 		_on_wave_cleared()
@@ -231,6 +232,7 @@ func _hero_attack(hero) -> void:
 	enemy.hp = maxi(0, enemy.hp - final_dmg)
 	GameState.emit_signal(&"enemy_hp_changed", target_idx)
 	emit_signal(&"hero_hit_enemy", &"bran", target_idx, final_dmg, &"basic", is_crit)
+	_log_hero_hit(enemy, final_dmg, is_crit)
 
 	## Ult gauge fill (Quickdraw multiplies via ult_boost).
 	var gauge_gain: float = ULT_BASE_FILL + floor(float(final_dmg) * ULT_FILL_PER_DMG) + float(stats_ultrate) * ULT_FILL_PER_RATE
@@ -304,6 +306,7 @@ func _enemy_attack(enemy_idx: int) -> void:
 		hero.is_dead = true
 	GameState.emit_signal(&"hero_hp_changed", &"bran")
 	emit_signal(&"enemy_hit_hero", enemy_idx, &"bran", base_dmg)
+	GameState.append_combat_log("[color=ff8888]%s → Bran for %d[/color]" % [enemy.name, base_dmg])
 
 ## ---------- Spawning ----------
 
@@ -378,3 +381,10 @@ func _on_time_cap() -> void:
 	if GameState.hero != null and not GameState.hero.is_dead:
 		GameState.hero.ult_gauge = ULT_GAUGE_MAX
 		GameState.emit_signal(&"hero_ult_changed", &"bran")
+
+## Tag-aware narration helper for the combat log.
+func _log_hero_hit(enemy, dmg: int, is_crit: bool) -> void:
+	var prefix: String = ""
+	if is_crit:
+		prefix += "⚡"
+	GameState.append_combat_log("[color=ffd070]%sBran → %s for %d[/color]" % [prefix, enemy.name, dmg])

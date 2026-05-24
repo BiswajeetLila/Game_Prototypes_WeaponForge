@@ -32,6 +32,7 @@ const ENEMY_HIT_COLOR: Color = Color("ff5555")
 @onready var _pops_layer: Control = %DamagePops
 @onready var _log_label: RichTextLabel = %CombatLog
 @onready var _hero_anchor: Control = %HeroAnchor
+@onready var _recipe_chips: HBoxContainer = %RecipeChips
 
 func _ready() -> void:
 	if GameState.hero != null and GameState.hero.data != null:
@@ -40,10 +41,28 @@ func _ready() -> void:
 	GameState.enemy_hp_changed.connect(_on_enemy_hp_changed)
 	GameState.enemy_status_changed.connect(_on_enemy_status_changed)
 	GameState.combat_log_appended.connect(_on_log_appended)
+	GameState.weapon_changed.connect(_rebuild_recipe_chips)
 	Combat.hero_hit_enemy.connect(_on_hero_hit_enemy)
 	Combat.enemy_hit_hero.connect(_on_enemy_hit_hero)
 	Combat.ult_fired.connect(_on_ult_fired)
 	_rebuild_enemy_row()
+	_rebuild_recipe_chips(&"bran")
+
+func _rebuild_recipe_chips(_hero_id: StringName) -> void:
+	for child in _recipe_chips.get_children():
+		child.queue_free()
+	var hero = GameState.hero
+	if hero == null or hero.weapon == null:
+		return
+	for recipe_id in Recipes.get_active_recipes(hero.weapon):
+		var rec = GameState.get_recipe_def(recipe_id)
+		if rec == null:
+			continue
+		var chip := Label.new()
+		chip.text = "✨ %s" % rec.name
+		chip.add_theme_font_size_override(&"font_size", 11)
+		chip.add_theme_color_override(&"font_color", Color("d8a8ff"))
+		_recipe_chips.add_child(chip)
 
 ## ---------- Enemy row ----------
 
@@ -145,6 +164,7 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 	if enemy_idx < 0 or enemy_idx >= _enemy_row.get_child_count():
 		return
 	var card := _enemy_row.get_child(enemy_idx) as Control
+	_shake(card, 4.0, is_crit)
 	var origin: Vector2 = card.global_position + Vector2(card.size.x * 0.5, 0)
 	var color: Color = TAG_COLORS.get(source, Color.WHITE)
 	if is_crit:
@@ -164,6 +184,7 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 	_spawn_pop(origin, "%s%d" % [prefix, dmg], color, is_crit)
 
 func _on_enemy_hit_hero(_enemy_idx: int, _hero_id: StringName, dmg: int) -> void:
+	_shake(_hero_anchor, 3.0, false)
 	var origin: Vector2 = _hero_anchor.global_position + Vector2(_hero_anchor.size.x * 0.5, 0)
 	_spawn_pop(origin, "-%d" % dmg, ENEMY_HIT_COLOR, false)
 
@@ -189,6 +210,19 @@ func _spawn_pop(origin: Vector2, text: String, color: Color, big: bool) -> void:
 	tween.tween_property(label, "position:y", label.position.y - POP_RISE_PX, POP_LIFETIME)
 	tween.tween_property(label, "modulate:a", 0.0, POP_LIFETIME)
 	tween.chain().tween_callback(label.queue_free)
+
+## ---------- Hit-shake ----------
+
+func _shake(node: Control, amplitude: float, big: bool) -> void:
+	if node == null:
+		return
+	## Lightweight position-offset shake; spring back.
+	var origin: Vector2 = node.position
+	var amp: float = amplitude * (1.6 if big else 1.0)
+	var t := create_tween()
+	t.tween_property(node, "position", origin + Vector2(amp, 0), 0.04)
+	t.tween_property(node, "position", origin - Vector2(amp, 0), 0.04)
+	t.tween_property(node, "position", origin, 0.04)
 
 ## ---------- Log ----------
 

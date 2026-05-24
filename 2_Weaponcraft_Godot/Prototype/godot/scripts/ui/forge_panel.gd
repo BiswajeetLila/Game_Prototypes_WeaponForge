@@ -17,6 +17,7 @@ const PartCardScene = preload("res://scenes/PartCard.tscn")
 
 @onready var _anvil_row: HBoxContainer = %AnvilRow
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
+@onready var _recipe_desc: Label = %RecipeDesc
 @onready var _shop_grid: HBoxContainer = %ShopGrid
 @onready var _reroll_btn: Button = %RerollBtn
 @onready var _gold_label: Label = %GoldLabel
@@ -87,14 +88,28 @@ func _rebuild_recipe_chips() -> void:
 		var rec = GameState.get_recipe_def(recipe_id)
 		if rec == null:
 			continue
-		## Effect summary visible inline so the player understands the proc.
+		## Short pill label (name only) so the HBox doesn't try to wrap the
+		## desc to 1-char width. Full desc lives in the tooltip + the dedicated
+		## RecipeDescLabel below the chip row.
 		var chip := Label.new()
-		chip.text = "%s — %s" % [rec.name, rec.desc]
-		chip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		chip.add_theme_font_size_override(&"font_size", 11)
+		chip.text = rec.name
+		chip.add_theme_font_size_override(&"font_size", 12)
 		chip.add_theme_color_override(&"font_color", Color("d8a8ff"))
 		chip.tooltip_text = "%s\n%s" % [rec.name, rec.desc]
 		_recipe_chips.add_child(chip)
+	## Update the wider desc row below the chips.
+	_refresh_recipe_desc()
+
+func _refresh_recipe_desc() -> void:
+	if GameState.hero == null or GameState.hero.weapon == null:
+		_recipe_desc.text = ""
+		return
+	var lines: Array = []
+	for recipe_id in Recipes.get_active_recipes(GameState.hero.weapon):
+		var rec = GameState.get_recipe_def(recipe_id)
+		if rec != null:
+			lines.append("• %s — %s" % [rec.name, rec.desc])
+	_recipe_desc.text = "\n".join(lines)
 
 ## ---------- Shop ----------
 

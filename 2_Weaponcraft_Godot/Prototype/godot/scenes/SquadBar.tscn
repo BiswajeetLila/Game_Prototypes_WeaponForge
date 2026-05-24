@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/ui/squad_bar.gd" id="1"]
 
 [node name="SquadBar" type="PanelContainer"]
-custom_minimum_size = Vector2(0, 110)
+custom_minimum_size = Vector2(0, 92)
 size_flags_horizontal = 3
 script = ExtResource("1")
 
@@ -19,7 +19,7 @@ layout_mode = 2
 
 [node name="Portrait" type="TextureRect" parent="MarginContainer/HBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(58, 58)
 layout_mode = 2
 size_flags_vertical = 4
 expand_mode = 1

@@ -102,7 +102,7 @@ func _make_enemy_card(idx: int) -> Control:
 
 	var sprite := TextureRect.new()
 	sprite.name = "Sprite"
-	sprite.custom_minimum_size = Vector2(56, 56)
+	sprite.custom_minimum_size = Vector2(48, 48)
 	## EXPAND_IGNORE_SIZE + STRETCH_KEEP_ASPECT_CENTERED makes the texture fit
 	## within the control bounds instead of expanding the control to the
 	## texture's native 128 px size (which was overflowing the arena).

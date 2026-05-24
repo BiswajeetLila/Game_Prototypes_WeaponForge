@@ -1,14 +1,48 @@
-[gd_scene format=3 uid="uid://c5umdm3tuo0gg"]
+[gd_scene load_steps=5 format=3 uid="uid://c5umdm3tuo0gg"]
 
 [ext_resource type="Script" path="res://scripts/ui/battle_view.gd" id="1"]
 
+[sub_resource type="StyleBoxFlat" id="arena_inner_style"]
+bg_color = Color(0.749, 0.631, 0.470, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.290, 0.149, 0.067, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="combat_log_dark"]
+bg_color = Color(0.227, 0.145, 0.086, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.149, 0.090, 0.043, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 6.0
+content_margin_top = 4.0
+content_margin_right = 6.0
+content_margin_bottom = 4.0
+
 [node name="BattleView" type="PanelContainer"]
-custom_minimum_size = Vector2(0, 220)
+custom_minimum_size = Vector2(0, 250)
 size_flags_horizontal = 3
+clip_contents = true
 script = ExtResource("1")
 
 [node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="RecipeChips" type="HBoxContainer" parent="VBox"]
 unique_name_in_owner = true
@@ -16,52 +50,61 @@ layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 6
 
-[node name="ArenaHBox" type="HBoxContainer" parent="VBox"]
+[node name="Arena" type="PanelContainer" parent="VBox"]
 layout_mode = 2
 size_flags_vertical = 3
+clip_contents = true
+theme_override_styles/panel = SubResource("arena_inner_style")
 
-[node name="HeroAnchor" type="Control" parent="VBox/ArenaHBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(76, 80)
+[node name="ArenaHBox" type="HBoxContainer" parent="VBox/Arena"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="HeroPortrait" type="TextureRect" parent="VBox/ArenaHBox/HeroAnchor"]
+[node name="HeroAnchor" type="Control" parent="VBox/Arena/ArenaHBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 72)
+custom_minimum_size = Vector2(72, 96)
+layout_mode = 2
+size_flags_vertical = 8
+
+[node name="HeroPortrait" type="TextureRect" parent="VBox/Arena/ArenaHBox/HeroAnchor"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -36.0
-offset_top = -36.0
-offset_right = 36.0
-offset_bottom = 36.0
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+expand_mode = 1
 stretch_mode = 5
 
-[node name="Spacer" type="Control" parent="VBox/ArenaHBox"]
-custom_minimum_size = Vector2(8, 0)
-layout_mode = 2
-
-[node name="EnemyRow" type="HBoxContainer" parent="VBox/ArenaHBox"]
+[node name="EnemyRow" type="HBoxContainer" parent="VBox/Arena/ArenaHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
+size_flags_vertical = 8
 alignment = 2
 theme_override_constants/separation = 6
 
-[node name="DamagePops" type="Control" parent="VBox"]
+[node name="DamagePops" type="Control" parent="VBox/Arena"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="CombatLog" type="RichTextLabel" parent="VBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+[node name="CombatLogPanel" type="PanelContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
+theme_override_styles/panel = SubResource("combat_log_dark")
+
+[node name="CombatLog" type="RichTextLabel" parent="VBox/CombatLogPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/default_color = Color(0.961, 0.902, 0.784, 1)
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 scroll_following = true
 fit_content = false

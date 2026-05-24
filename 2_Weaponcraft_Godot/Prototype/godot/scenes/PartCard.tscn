@@ -35,8 +35,9 @@ size_flags_vertical = 3
 
 [node name="Icon" type="TextureRect" parent="Btn/VBox/IconBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(36, 36)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
+expand_mode = 1
 stretch_mode = 5
 
 [node name="EmptyLabel" type="Label" parent="Btn/VBox/IconBox"]

@@ -58,6 +58,9 @@ func _make_enemy_card(idx: int) -> Control:
 	var v := VBoxContainer.new()
 	v.name = "Enemy_%d" % idx
 	v.custom_minimum_size = Vector2(72, 0)
+	## Vertically center the card in the row so it aligns with the hero portrait
+	## instead of stacking at the top of the EnemyRow.
+	v.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var sprite := TextureRect.new()
 	sprite.name = "Sprite"

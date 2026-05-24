@@ -47,15 +47,6 @@ text = "EMPTY"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 10
 
-[node name="LevelBadge" type="Label" parent="Btn/VBox/IconBox"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-text = "L2"
-horizontal_alignment = 2
-theme_override_colors/font_color = Color(1, 0.85, 0, 1)
-theme_override_font_sizes/font_size = 10
-
 [node name="NameLabel" type="Label" parent="Btn/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -76,3 +67,19 @@ layout_mode = 2
 text = "🪙 3"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 11
+
+[node name="LevelBadge" type="Label" parent="Btn"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 0.0
+anchor_bottom = 0.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 32.0
+offset_bottom = 18.0
+text = "L2"
+theme_override_colors/font_color = Color(1, 0.85, 0, 1)
+theme_override_font_sizes/font_size = 11
+z_index = 5

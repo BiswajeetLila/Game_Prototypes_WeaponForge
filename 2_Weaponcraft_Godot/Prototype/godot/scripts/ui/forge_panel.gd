@@ -19,6 +19,7 @@ const PartCardScene = preload("res://scenes/PartCard.tscn")
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
 @onready var _shop_grid: HBoxContainer = %ShopGrid
 @onready var _reroll_btn: Button = %RerollBtn
+@onready var _gold_label: Label = %GoldLabel
 @onready var _inventory_strip: HBoxContainer = %InventoryStrip
 @onready var _start_wave_btn: Button = %StartWaveBtn
 @onready var _empty_inv_label: Label = %EmptyInvLabel
@@ -58,6 +59,7 @@ func _on_weapon_changed(_hero_id: StringName) -> void:
 func _on_gold_changed(new_gold: int) -> void:
 	_reroll_btn.disabled = new_gold < Shop.REROLL_COST
 	_reroll_btn.text = "🔄 Reroll (🪙%d)" % Shop.REROLL_COST
+	_gold_label.text = "🪙 %d" % new_gold
 
 ## ---------- Anvil ----------
 

@@ -20,6 +20,7 @@ const TAG_COLORS: Dictionary = {
 
 @onready var _icon: TextureRect = %Icon
 @onready var _slot_label: Label = %SlotLabel
+@onready var _slot_badge: PanelContainer = $Btn/SlotBadge
 @onready var _name_label: Label = %NameLabel
 @onready var _tag_box: HBoxContainer = %TagBox
 @onready var _stat_label: Label = %StatLabel
@@ -94,6 +95,7 @@ func _refresh() -> void:
 	_icon.texture = def.icon
 	_name_label.text = def.name
 	_slot_label.text = String(def.slot).to_upper()
+	_slot_badge.visible = true
 	_render_tags(def)
 	_render_stats(def)
 	_render_cost(def)
@@ -120,6 +122,7 @@ func _render_empty() -> void:
 	_icon.visible = false
 	_name_label.text = ""
 	_slot_label.text = ""
+	_slot_badge.visible = false
 	for child in _tag_box.get_children():
 		child.queue_free()
 	_cost_label.visible = false

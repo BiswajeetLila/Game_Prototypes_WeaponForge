@@ -1,13 +1,18 @@
 ## ForgePanel — between-wave forge moment UI.
 ##
 ## Layout (top to bottom):
+##   - TabBar (HBox of hero buttons; hidden while only 1 hero is unlocked)
 ##   - Anvil row (3 PartCards: head, hilt, rune; empty = "EMPTY")
 ##   - Active recipe chips (purple pills, populated from Recipes.get_active_recipes)
-##   - Shop header + Reroll button
+##   - Shop header + Reroll button (shared across all heroes)
 ##   - Shop grid (5 PartCards; bought slots show "SOLD" overlay)
 ##   - Inventory header
-##   - Inventory strip (horizontal HBox in ScrollContainer)
+##   - Inventory strip (horizontal HBox in ScrollContainer; shared, global pool)
 ##   - Start Wave button (in deployment zone — always visible)
+##
+## The TabBar selects which hero's anvil + recipes are displayed. Shop, gold,
+## and inventory stay global — only the anvil / recipe view scopes to the
+## active tab.
 ##
 ## Signals wave_start_requested when the player taps Start Wave; Main handles
 ## advancing the wave + calling Combat.start_wave().
@@ -15,6 +20,7 @@ extends Control
 
 const PartCardScene = preload("res://scenes/PartCard.tscn")
 
+@onready var _tab_bar: HBoxContainer = %TabBar
 @onready var _anvil_row: HBoxContainer = %AnvilRow
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
 @onready var _recipe_desc: Label = %RecipeDesc
@@ -27,11 +33,14 @@ const PartCardScene = preload("res://scenes/PartCard.tscn")
 
 signal wave_start_requested
 
+var _current_hero_id: StringName = &"bran"
+
 func _ready() -> void:
 	GameState.shop_changed.connect(_rebuild_shop)
 	GameState.inventory_changed.connect(_rebuild_inventory)
 	GameState.weapon_changed.connect(_on_weapon_changed)
 	GameState.gold_changed.connect(_on_gold_changed)
+	GameState.hero_unlocked.connect(_on_hero_unlocked)
 	_reroll_btn.pressed.connect(_on_reroll_pressed)
 	_start_wave_btn.pressed.connect(func(): emit_signal(&"wave_start_requested"))
 	_rebuild_all()
@@ -47,30 +56,79 @@ func refresh_forge_moment() -> void:
 ## ---------- Rebuild dispatch ----------
 
 func _rebuild_all() -> void:
+	_ensure_current_hero_valid()
+	_rebuild_tab_bar()
 	_rebuild_anvil()
 	_rebuild_recipe_chips()
 	_rebuild_shop()
 	_rebuild_inventory()
 	_on_gold_changed(GameState.gold)
 
-func _on_weapon_changed(_hero_id: StringName) -> void:
-	_rebuild_anvil()
-	_rebuild_recipe_chips()
+func _ensure_current_hero_valid() -> void:
+	if GameState.squad_order.is_empty():
+		_current_hero_id = &""
+		return
+	if not GameState.squad_order.has(_current_hero_id):
+		_current_hero_id = GameState.squad_order[0]
+
+func _on_hero_unlocked(_hero_id: StringName) -> void:
+	## new_session unlocks &"bran" — reset to bran tab so a stale Elara/Vex
+	## selection from the prior run doesn't show an empty anvil.
+	if _hero_id == &"bran":
+		_current_hero_id = &"bran"
+	_rebuild_all()
+
+func _on_weapon_changed(hero_id: StringName) -> void:
+	if hero_id == _current_hero_id:
+		_rebuild_anvil()
+		_rebuild_recipe_chips()
 
 func _on_gold_changed(new_gold: int) -> void:
 	_reroll_btn.disabled = new_gold < Shop.REROLL_COST
 	_reroll_btn.text = "🔄 Reroll (🪙%d)" % Shop.REROLL_COST
 	_gold_label.text = "🪙 %d" % new_gold
 
+## ---------- Tabs ----------
+
+func _rebuild_tab_bar() -> void:
+	for child in _tab_bar.get_children():
+		child.queue_free()
+	## Hide the bar entirely while only Bran is unlocked — keeps the single-hero
+	## forge moment uncluttered.
+	if GameState.squad_order.size() <= 1:
+		_tab_bar.visible = false
+		return
+	_tab_bar.visible = true
+	for id in GameState.squad_order:
+		var hero = GameState.get_hero(id)
+		var btn := Button.new()
+		btn.text = hero.data.name if hero != null else str(id)
+		btn.disabled = (id == _current_hero_id)
+		var tab_id: StringName = id
+		btn.pressed.connect(func(): _on_tab_pressed(tab_id))
+		_tab_bar.add_child(btn)
+
+func _on_tab_pressed(hero_id: StringName) -> void:
+	if hero_id == _current_hero_id:
+		return
+	_current_hero_id = hero_id
+	_rebuild_tab_bar()
+	_rebuild_anvil()
+	_rebuild_recipe_chips()
+
 ## ---------- Anvil ----------
+
+func _current_hero():
+	return GameState.get_hero(_current_hero_id)
 
 func _rebuild_anvil() -> void:
 	for child in _anvil_row.get_children():
 		child.queue_free()
-	if GameState.hero == null or GameState.hero.weapon == null:
+	var hero = _current_hero()
+	if hero == null or hero.weapon == null:
 		return
 	for slot in [&"head", &"hilt", &"rune"]:
-		var item = GameState.hero.weapon.get_slot(slot)
+		var item = hero.weapon.get_slot(slot)
 		var card = PartCardScene.instantiate()
 		_anvil_row.add_child(card)
 		card.setup_anvil(item, slot)
@@ -81,15 +139,15 @@ func _rebuild_anvil() -> void:
 func _rebuild_recipe_chips() -> void:
 	for child in _recipe_chips.get_children():
 		child.queue_free()
-	if GameState.hero == null or GameState.hero.weapon == null:
+	var hero = _current_hero()
+	if hero == null or hero.weapon == null:
+		_refresh_recipe_desc()
 		return
-	var active: Array = Recipes.get_active_recipes(GameState.hero.weapon)
+	var active: Array = Recipes.get_active_recipes(hero.weapon)
 	for recipe_id in active:
 		var rec = GameState.get_recipe_def(recipe_id)
 		if rec == null:
 			continue
-		## Purple pill: saturated bg + white text so it reads as an active
-		## "buff" badge no matter the underlying panel color.
 		var pill := PanelContainer.new()
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(0.416, 0.227, 0.651, 1)
@@ -114,15 +172,15 @@ func _rebuild_recipe_chips() -> void:
 		chip.tooltip_text = "%s\n%s" % [rec.name, rec.desc]
 		pill.add_child(chip)
 		_recipe_chips.add_child(pill)
-	## Update the wider desc row below the chips.
 	_refresh_recipe_desc()
 
 func _refresh_recipe_desc() -> void:
-	if GameState.hero == null or GameState.hero.weapon == null:
+	var hero = _current_hero()
+	if hero == null or hero.weapon == null:
 		_recipe_desc.text = ""
 		return
 	var lines: Array = []
-	for recipe_id in Recipes.get_active_recipes(GameState.hero.weapon):
+	for recipe_id in Recipes.get_active_recipes(hero.weapon):
 		var rec = GameState.get_recipe_def(recipe_id)
 		if rec != null:
 			lines.append("• %s — %s" % [rec.name, rec.desc])
@@ -167,9 +225,9 @@ func _rebuild_inventory() -> void:
 func _on_card_clicked(_card, mode: StringName, payload) -> void:
 	match mode:
 		&"shop":
-			Shop.buy(int(payload))
+			Shop.buy(int(payload), _current_hero_id)
 		&"inventory":
-			Merge.equip_from_inventory(payload)
+			Merge.equip_from_inventory(payload, _current_hero_id)
 		&"anvil":
 			if payload != &"":
-				Merge.unequip_to_inventory(payload)
+				Merge.unequip_to_inventory(payload, _current_hero_id)

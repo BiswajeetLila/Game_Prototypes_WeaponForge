@@ -54,7 +54,7 @@ func reroll() -> bool:
 	refresh(false)
 	return true
 
-func buy(slot_idx: int) -> bool:
+func buy(slot_idx: int, hero_id: StringName = &"") -> bool:
 	if slot_idx < 0 or slot_idx >= GameState.shop_parts.size():
 		return false
 	var part_id = GameState.shop_parts[slot_idx]
@@ -68,8 +68,8 @@ func buy(slot_idx: int) -> bool:
 		return false
 	if not GameState.spend_gold(def.cost):
 		return false
-	## Hand off to Merge — it decides level-up vs new L1 + active-hero priority.
-	var item = Merge.acquire_part(part_id)
+	## Hand off to Merge — it decides level-up vs new L1 + per-hero priority.
+	var item = Merge.acquire_part(part_id, hero_id)
 	if item == null:
 		## Merge declined (shouldn't happen with current rules). Refund and bail.
 		GameState.add_gold(def.cost)

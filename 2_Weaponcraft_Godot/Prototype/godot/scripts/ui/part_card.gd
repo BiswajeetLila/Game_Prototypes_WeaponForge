@@ -7,22 +7,41 @@
 ##                 If item is null shows empty slot placeholder.
 ##
 ## Same .tscn file used everywhere; configure via `setup(...)`.
+##
+## Element coding:
+##   - Card bg tinted per primary element tag (bronze / fire orange / ice blue)
+##   - ElementBadge corner pill in top-left when fire/ice present
+##   - Text colors adapt for legibility on dark fire/ice bgs
 class_name PartCard
 extends PanelContainer
 
-const TAG_COLORS: Dictionary = {
-	&"fire":   Color("ff8800"),
-	&"ice":    Color("88ddff"),
-	&"pierce": Color("dddddd"),
-	&"crit":   Color("ffd700"),
-	&"charge": Color("aa66ff"),
-}
+## ---------- Style tokens ----------
+
+const BRONZE_BG       := Color(0.910, 0.769, 0.510, 1)
+const BRONZE_BORDER   := Color(0.420, 0.255, 0.137, 1)
+const FIRE_BG         := Color(0.659, 0.376, 0.169, 1)
+const FIRE_BORDER     := Color(0.349, 0.165, 0.063, 1)
+const FIRE_ACCENT     := Color(0.965, 0.553, 0.231, 1)
+const ICE_BG          := Color(0.196, 0.318, 0.475, 1)
+const ICE_BORDER      := Color(0.094, 0.196, 0.314, 1)
+const ICE_ACCENT      := Color(0.412, 0.706, 0.965, 1)
+
+const TEXT_DARK_NAME  := Color(0.176, 0.110, 0.059, 1)
+const TEXT_DARK_STAT  := Color(0.165, 0.392, 0.157, 1)
+const TEXT_DARK_COST  := Color(0.553, 0.353, 0.094, 1)
+
+const TEXT_LIGHT_NAME := Color(1, 0.965, 0.871, 1)
+const TEXT_LIGHT_STAT := Color(0.682, 1, 0.671, 1)
+const TEXT_LIGHT_COST := Color(1, 0.871, 0.337, 1)
+
+## ---------- Node refs ----------
 
 @onready var _icon: TextureRect = %Icon
 @onready var _slot_label: Label = %SlotLabel
-@onready var _slot_badge: PanelContainer = $Btn/SlotBadge
+@onready var _slot_badge: PanelContainer = %SlotBadge
+@onready var _element_label: Label = %ElementLabel
+@onready var _element_badge: PanelContainer = %ElementBadge
 @onready var _name_label: Label = %NameLabel
-@onready var _tag_box: HBoxContainer = %TagBox
 @onready var _stat_label: Label = %StatLabel
 @onready var _cost_label: Label = %CostLabel
 @onready var _level_badge: Label = %LevelBadge
@@ -33,7 +52,7 @@ var _mode: StringName = &"shop"
 var _payload                  ## shop_idx:int OR InventoryItem OR slot_name:StringName
 var _part_id: StringName = &""
 var _level: int = 1
-var _current_uid: int = -1   ## set by setup_inventory/anvil so we can match merge signals
+var _current_uid: int = -1
 
 signal clicked(card, mode: StringName, payload)
 
@@ -54,7 +73,7 @@ func _on_merge_completed(uid: int, new_level: int) -> void:
 		return
 	_play_merge_celebration(new_level)
 
-## Setup helpers. Pass null part_id for empty slot in anvil mode.
+## ---------- Setup helpers ----------
 
 func setup_shop(part_id: StringName, shop_idx: int) -> void:
 	_mode = &"shop"
@@ -96,15 +115,76 @@ func _refresh() -> void:
 	_name_label.text = def.name
 	_slot_label.text = String(def.slot).to_upper()
 	_slot_badge.visible = true
-	_render_tags(def)
+	_apply_element_style(def.tag)
 	_render_stats(def)
 	_render_cost(def)
 	_render_level_badge()
 	tooltip_text = "%s (L%d)\n%s" % [def.name, _level, def.desc]
 
+func _apply_element_style(tag: StringName) -> void:
+	## Card bg, element badge, and text colors swap together per element.
+	var bg := BRONZE_BG
+	var border := BRONZE_BORDER
+	var badge_color := Color.TRANSPARENT
+	var badge_text := ""
+	var text_name := TEXT_DARK_NAME
+	var text_stat := TEXT_DARK_STAT
+	var text_cost := TEXT_DARK_COST
+	match tag:
+		&"fire":
+			bg = FIRE_BG
+			border = FIRE_BORDER
+			badge_color = FIRE_ACCENT
+			badge_text = "FIRE"
+			text_name = TEXT_LIGHT_NAME
+			text_stat = TEXT_LIGHT_STAT
+			text_cost = TEXT_LIGHT_COST
+		&"ice":
+			bg = ICE_BG
+			border = ICE_BORDER
+			badge_color = ICE_ACCENT
+			badge_text = "ICE"
+			text_name = TEXT_LIGHT_NAME
+			text_stat = TEXT_LIGHT_STAT
+			text_cost = TEXT_LIGHT_COST
+		_:
+			pass
+	## Card bg.
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = border
+	sb.border_width_left = 2
+	sb.border_width_top = 2
+	sb.border_width_right = 2
+	sb.border_width_bottom = 2
+	sb.corner_radius_top_left = 8
+	sb.corner_radius_top_right = 8
+	sb.corner_radius_bottom_left = 8
+	sb.corner_radius_bottom_right = 8
+	add_theme_stylebox_override(&"panel", sb)
+	## Element badge.
+	if badge_text == "":
+		_element_badge.visible = false
+	else:
+		_element_badge.visible = true
+		_element_label.text = badge_text
+		var ebsb := StyleBoxFlat.new()
+		ebsb.bg_color = badge_color
+		ebsb.corner_radius_top_left = 0
+		ebsb.corner_radius_top_right = 0
+		ebsb.corner_radius_bottom_right = 4
+		ebsb.corner_radius_bottom_left = 0
+		ebsb.content_margin_left = 5.0
+		ebsb.content_margin_right = 5.0
+		ebsb.content_margin_top = 1.0
+		ebsb.content_margin_bottom = 1.0
+		_element_badge.add_theme_stylebox_override(&"panel", ebsb)
+	## Adaptive text colors.
+	_name_label.add_theme_color_override(&"font_color", text_name)
+	_stat_label.add_theme_color_override(&"font_color", text_stat)
+	_cost_label.add_theme_color_override(&"font_color", text_cost)
+
 func _render_stats(def: PartData) -> void:
-	## Apply level multiplier to each contributing stat so the player sees
-	## raw -> scaled numbers climb as they merge.
 	var mult: float = Merge.level_multiplier(_level)
 	var parts: Array = []
 	if def.atk > 0:
@@ -123,46 +203,12 @@ func _render_empty() -> void:
 	_name_label.text = ""
 	_slot_label.text = ""
 	_slot_badge.visible = false
-	for child in _tag_box.get_children():
-		child.queue_free()
+	_element_badge.visible = false
 	_cost_label.visible = false
 	_level_badge.visible = false
 	tooltip_text = ""
-
-func _render_tags(def: PartData) -> void:
-	for child in _tag_box.get_children():
-		child.queue_free()
-	## Explicit tag.
-	if def.tag != &"":
-		_tag_box.add_child(_make_tag_chip(def.tag))
-	## Derived crit/charge — only if this part contributes.
-	if def.crit > 0:
-		_tag_box.add_child(_make_tag_chip(&"crit"))
-	if def.ult_rate > 0:
-		_tag_box.add_child(_make_tag_chip(&"charge"))
-
-func _make_tag_chip(tag: StringName) -> Control:
-	## Pill: colored background + white text. Reverses the FG/BG so the tag
-	## color stays meaningful but stays readable at any background.
-	var bg_color: Color = TAG_COLORS.get(tag, Color(0.4, 0.4, 0.4))
-	var pill := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg_color
-	sb.corner_radius_top_left = 4
-	sb.corner_radius_top_right = 4
-	sb.corner_radius_bottom_left = 4
-	sb.corner_radius_bottom_right = 4
-	sb.content_margin_left = 4
-	sb.content_margin_right = 4
-	sb.content_margin_top = 1
-	sb.content_margin_bottom = 1
-	pill.add_theme_stylebox_override(&"panel", sb)
-	var l := Label.new()
-	l.text = String(tag).to_upper()
-	l.add_theme_font_size_override(&"font_size", 8)
-	l.add_theme_color_override(&"font_color", Color(1, 1, 1))
-	pill.add_child(l)
-	return pill
+	## Reset to bronze default (empty slots in the anvil should look "neutral").
+	_apply_element_style(&"")
 
 func _render_cost(def: PartData) -> void:
 	if _mode == &"shop":
@@ -183,30 +229,24 @@ func _render_level_badge() -> void:
 const MERGE_SPARKLE_TEX = preload("res://assets/generated/vfx/merge_sparkle.png")
 
 func _play_merge_celebration(new_level: int) -> void:
-	## Update level + re-render badge + stats so numbers climb on screen.
 	_level = new_level
 	var def = GameState.get_part_def(_part_id)
 	if def != null:
 		_render_stats(def)
 	_render_level_badge()
 	_level_badge.pivot_offset = _level_badge.size * 0.5
-	## Card scale bounce.
 	pivot_offset = size * 0.5
 	var t1 := create_tween()
 	t1.tween_property(self, "scale", Vector2(1.18, 1.18), 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t1.tween_property(self, "scale", Vector2.ONE, 0.12)
-	## Gold border flash via self_modulate so children stay normal color.
 	var orig: Color = self_modulate
 	var t2 := create_tween()
 	t2.tween_property(self, "self_modulate", Color(1.4, 1.2, 0.5, 1.0), 0.08)
 	t2.tween_property(self, "self_modulate", orig, 0.30)
-	## Level badge pop.
 	_level_badge.scale = Vector2(2.0, 2.0)
 	var t3 := create_tween()
 	t3.tween_property(_level_badge, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	## Sparkle burst sprite centered on the card.
 	_spawn_sparkle_sprite()
-	## Floating "✨ L<n>!" text.
 	_spawn_merge_pop(new_level)
 
 func _spawn_sparkle_sprite() -> void:

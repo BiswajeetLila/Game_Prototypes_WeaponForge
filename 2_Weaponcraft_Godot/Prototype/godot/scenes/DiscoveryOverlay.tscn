@@ -19,6 +19,8 @@ content_margin_right = 22.0
 content_margin_bottom = 22.0
 
 [node name="DiscoveryOverlay" type="ColorRect"]
+z_index = 100
+z_as_relative = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

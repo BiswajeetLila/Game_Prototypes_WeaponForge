@@ -133,7 +133,6 @@ offset_left = 0.0
 offset_top = 0.0
 offset_right = 36.0
 offset_bottom = 14.0
-z_index = 4
 
 [node name="ElementLabel" type="Label" parent="Btn/ElementBadge"]
 unique_name_in_owner = true
@@ -155,7 +154,6 @@ offset_right = 0.0
 offset_bottom = 14.0
 grow_horizontal = 0
 theme_override_styles/panel = SubResource("slot_badge")
-z_index = 4
 
 [node name="SlotLabel" type="Label" parent="Btn/SlotBadge"]
 unique_name_in_owner = true
@@ -181,4 +179,3 @@ theme_override_colors/font_color = Color(1, 0.85, 0, 1)
 theme_override_colors/font_outline_color = Color(0.149, 0.090, 0.043, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 12
-z_index = 5

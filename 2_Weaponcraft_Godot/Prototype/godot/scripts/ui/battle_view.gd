@@ -138,16 +138,28 @@ func _status_text(enemy: Dictionary) -> String:
 func _on_enemy_hp_changed(idx: int) -> void:
 	if idx < 0 or idx >= _enemy_row.get_child_count():
 		return
-	var card := _enemy_row.get_child(idx)
+	var card := _enemy_row.get_child(idx) as Control
 	var enemy: Dictionary = GameState.enemies[idx]
 	var bar := card.get_node_or_null("HpBar") as ProgressBar
 	if bar != null:
-		bar.value = float(enemy.hp)
+		_tween_bar(bar, float(enemy.hp))
 	var txt := card.get_node_or_null("HpText") as Label
 	if txt != null:
 		txt.text = "%d/%d" % [enemy.hp, enemy.max_hp]
-	if enemy.hp <= 0:
-		card.modulate = Color(0.4, 0.4, 0.4, 0.6)
+	if enemy.hp <= 0 and not card.get_meta(&"dying", false):
+		card.set_meta(&"dying", true)
+		_play_enemy_death(card)
+
+func _tween_bar(bar: ProgressBar, target: float) -> void:
+	var t := create_tween()
+	t.tween_property(bar, "value", target, 0.18).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+
+func _play_enemy_death(card: Control) -> void:
+	card.pivot_offset = card.size * 0.5
+	var t := create_tween().set_parallel(true)
+	t.tween_property(card, "modulate:a", 0.35, 0.45)
+	t.tween_property(card, "scale", Vector2(0.75, 0.75), 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.tween_property(card, "rotation", deg_to_rad(8.0), 0.45)
 
 func _on_enemy_status_changed(idx: int) -> void:
 	if idx < 0 or idx >= _enemy_row.get_child_count():

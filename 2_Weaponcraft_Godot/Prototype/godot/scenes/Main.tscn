@@ -1,6 +1,7 @@
-[gd_scene load_steps=9 format=3 uid="uid://bweaponcraftmainscene"]
+[gd_scene load_steps=11 format=3 uid="uid://bweaponcraftmainscene"]
 
 [ext_resource type="Script" path="res://scripts/ui/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/screen_flash.gd" id="9"]
 [ext_resource type="PackedScene" uid="uid://bweaponcrafthud" path="res://scenes/Hud.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftbattleview" path="res://scenes/BattleView.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftsquadbar" path="res://scenes/SquadBar.tscn" id="4"]
@@ -8,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://bweaponcraftcodexmodal" path="res://scenes/CodexModal.tscn" id="6"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftdiscoveryoverlay" path="res://scenes/DiscoveryOverlay.tscn" id="7"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftresultmodal" path="res://scenes/ResultModal.tscn" id="8"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftnotifications" path="res://scenes/Notifications.tscn" id="10"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -53,6 +55,20 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 text = "↺ Reset"
+
+[node name="ScreenFlash" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 0)
+mouse_filter = 2
+script = ExtResource("9")
+
+[node name="Notifications" parent="." instance=ExtResource("10")]
+unique_name_in_owner = true
 
 [node name="CodexModal" parent="." instance=ExtResource("6")]
 unique_name_in_owner = true

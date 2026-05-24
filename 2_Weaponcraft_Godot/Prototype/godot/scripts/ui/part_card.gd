@@ -31,11 +31,26 @@ var _mode: StringName = &"shop"
 var _payload                  ## shop_idx:int OR InventoryItem OR slot_name:StringName
 var _part_id: StringName = &""
 var _level: int = 1
+var _current_uid: int = -1   ## set by setup_inventory/anvil so we can match merge signals
 
 signal clicked(card, mode: StringName, payload)
 
 func _ready() -> void:
 	_btn.pressed.connect(func(): emit_signal(&"clicked", self, _mode, _payload))
+	## Pop-in scale tween every time the card is freshly added to the tree
+	## (i.e. every shop/inventory/anvil rebuild). Cheap juice.
+	pivot_offset = size * 0.5
+	scale = Vector2(0.85, 0.85)
+	modulate.a = 0.0
+	var t := create_tween().set_parallel(true)
+	t.tween_property(self, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(self, "modulate:a", 1.0, 0.15)
+	GameState.merge_completed.connect(_on_merge_completed)
+
+func _on_merge_completed(uid: int, new_level: int) -> void:
+	if uid != _current_uid:
+		return
+	_play_merge_celebration(new_level)
 
 ## Setup helpers. Pass null part_id for empty slot in anvil mode.
 
@@ -44,6 +59,7 @@ func setup_shop(part_id: StringName, shop_idx: int) -> void:
 	_payload = shop_idx
 	_part_id = part_id
 	_level = 1
+	_current_uid = -1
 	_refresh()
 
 func setup_inventory(item) -> void:
@@ -51,6 +67,7 @@ func setup_inventory(item) -> void:
 	_payload = item
 	_part_id = item.part_id if item != null else &""
 	_level = item.level if item != null else 1
+	_current_uid = item.uid if item != null else -1
 	_refresh()
 
 func setup_anvil(item, slot_name: StringName) -> void:
@@ -58,6 +75,7 @@ func setup_anvil(item, slot_name: StringName) -> void:
 	_payload = slot_name
 	_part_id = item.part_id if item != null else &""
 	_level = item.level if item != null else 1
+	_current_uid = item.uid if item != null else -1
 	_refresh()
 
 ## ---------- Render ----------
@@ -123,3 +141,42 @@ func _render_level_badge() -> void:
 		return
 	_level_badge.visible = true
 	_level_badge.text = "L%d" % _level
+
+## ---------- Merge celebration ----------
+
+func _play_merge_celebration(new_level: int) -> void:
+	## Update the badge to the new level then play the pop.
+	_level = new_level
+	_render_level_badge()
+	_level_badge.pivot_offset = _level_badge.size * 0.5
+	## Card scale bounce.
+	pivot_offset = size * 0.5
+	var t1 := create_tween()
+	t1.tween_property(self, "scale", Vector2(1.18, 1.18), 0.10).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t1.tween_property(self, "scale", Vector2.ONE, 0.12)
+	## Gold border flash via self_modulate so children stay normal color.
+	var orig: Color = self_modulate
+	var t2 := create_tween()
+	t2.tween_property(self, "self_modulate", Color(1.4, 1.2, 0.5, 1.0), 0.08)
+	t2.tween_property(self, "self_modulate", orig, 0.30)
+	## Level badge pop.
+	_level_badge.scale = Vector2(2.0, 2.0)
+	var t3 := create_tween()
+	t3.tween_property(_level_badge, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	## Floating "✨ L<n>!" text.
+	_spawn_merge_pop(new_level)
+
+func _spawn_merge_pop(new_level: int) -> void:
+	var label := Label.new()
+	label.text = "✨ MERGED L%d!" % new_level
+	label.add_theme_color_override(&"font_color", Color(1, 0.9, 0.3))
+	label.add_theme_color_override(&"font_outline_color", Color.BLACK)
+	label.add_theme_constant_override(&"outline_size", 4)
+	label.add_theme_font_size_override(&"font_size", 14)
+	label.z_index = 100
+	add_child(label)
+	label.position = Vector2(size.x * 0.5 - 40, 6)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(label, "position:y", label.position.y - 28, 0.85)
+	tw.tween_property(label, "modulate:a", 0.0, 0.85)
+	tw.chain().tween_callback(label.queue_free)

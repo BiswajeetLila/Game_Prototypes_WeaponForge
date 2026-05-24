@@ -60,6 +60,7 @@ func acquire_part(part_id: StringName):
 			if equipped.level < InventoryItemT.LEVEL_CAP:
 				equipped.level_up()
 				_on_equipped_changed(hero)
+				GameState.emit_signal(&"merge_completed", equipped.uid, equipped.level)
 				return equipped
 			## At cap — fall through. Don't lose the part.
 
@@ -76,6 +77,7 @@ func acquire_part(part_id: StringName):
 		if item.part_id == part_id and item.level < InventoryItemT.LEVEL_CAP:
 			item.level_up()
 			GameState.emit_signal(&"inventory_changed")
+			GameState.emit_signal(&"merge_completed", item.uid, item.level)
 			return item
 
 	## Step 4 — fresh L1 to inventory.

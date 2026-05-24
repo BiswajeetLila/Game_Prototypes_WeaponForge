@@ -41,6 +41,10 @@ signal enemies_spawned
 signal enemy_hp_changed(enemy_idx: int)
 signal enemy_status_changed(enemy_idx: int)
 
+## Emitted by Merge after a successful level-up. UI listens to fire celebration
+## VFX on the affected card (gold border flash + "✨ L<n>!" pop).
+signal merge_completed(uid: int, new_level: int)
+
 ## ---------- Catalogs (loaded once from disk in _ready) ----------
 
 var parts_by_id: Dictionary = {}      ## StringName -> PartData
@@ -65,7 +69,7 @@ var gold: int = STARTING_GOLD
 var hero = null   ## HeroState — ultra-MVP: only one hero (Bran). Untyped here to dodge cold-start class registry.
 
 var shop_parts: Array = []        ## Array[InventoryItem snapshot for shop slot]
-                                  ## shop items get unique uids only when bought.
+								  ## shop items get unique uids only when bought.
 var inventory: Array = []         ## Array[InventoryItem] — unequipped owned parts
 var _next_uid: int = 1
 

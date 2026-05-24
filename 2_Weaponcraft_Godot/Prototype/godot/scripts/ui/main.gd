@@ -6,10 +6,13 @@
 ##     -> open_forge_moment for wave 1
 ##
 ##   ForgePanel emits wave_start_requested -> Combat.start_wave(wave)
-##   GameState.wave_cleared -> next wave forge OR stage clear modal
+##   GameState.wave_cleared -> banner + next forge OR stage clear modal
 ##   GameState.stage_cleared -> ResultModal.open("clear")
 ##   GameState.hero_died    -> ResultModal.open("wipe")
-##   ResultModal.restart_requested -> _on_reset_pressed (clean session)
+##   ResultModal.restart_requested -> _on_reset_pressed
+##
+##   Notifications layer renders transient banners (wave start / clear /
+##   wipe / stage clear). ScreenFlash overlay tints purple on ult fire.
 extends Control
 
 @onready var _forge: Control = %ForgePanel
@@ -17,6 +20,7 @@ extends Control
 @onready var _hud: Control = %Hud
 @onready var _codex_modal: Control = %CodexModal
 @onready var _result_modal: Control = %ResultModal
+@onready var _notifications: Control = %Notifications
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -33,18 +37,23 @@ func _open_forge_moment() -> void:
 	_forge.refresh_forge_moment()
 
 func _on_wave_start_requested() -> void:
+	_notifications.show_banner("⚔ WAVE %d" % GameState.wave, Color(1, 0.9, 0.6), 1.0)
 	Combat.start_wave(GameState.wave)
 
 func _on_wave_cleared(wave: int) -> void:
+	var reward: int = 5 + wave * 2
+	_notifications.show_banner("✓ WAVE %d CLEAR  +🪙%d" % [wave, reward], Color(0.6, 1, 0.7), 1.3)
 	if wave >= GameState.TOTAL_WAVES:
-		return  ## stage_cleared signal fires too — handled there
+		return
 	GameState.set_wave(wave + 1)
 	_open_forge_moment()
 
 func _on_stage_cleared() -> void:
+	_notifications.show_banner("🏆 STAGE CLEAR", Color(1, 0.85, 0.2), 1.8)
 	_result_modal.open(&"clear")
 
 func _on_hero_died(_hero_id: StringName) -> void:
+	_notifications.show_banner("💀 WIPE", Color(1, 0.3, 0.3), 1.6)
 	_result_modal.open(&"wipe")
 
 func _on_reset_pressed() -> void:

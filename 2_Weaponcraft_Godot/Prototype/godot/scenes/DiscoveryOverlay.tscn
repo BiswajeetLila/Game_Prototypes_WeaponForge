@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bweaponcraftdiscoveryoverlay"]
+[gd_scene format=3 uid="uid://clk32nqo3spgu"]
 
 [ext_resource type="Script" path="res://scripts/ui/discovery_overlay.gd" id="1"]
 

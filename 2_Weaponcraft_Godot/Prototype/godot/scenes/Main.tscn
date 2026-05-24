@@ -1,10 +1,13 @@
-[gd_scene load_steps=6 format=3 uid="uid://bweaponcraftmainscene"]
+[gd_scene load_steps=9 format=3 uid="uid://bweaponcraftmainscene"]
 
 [ext_resource type="Script" path="res://scripts/ui/main.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bweaponcrafthud" path="res://scenes/Hud.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftbattleview" path="res://scenes/BattleView.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftsquadbar" path="res://scenes/SquadBar.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftforgepanel" path="res://scenes/ForgePanel.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftcodexmodal" path="res://scenes/CodexModal.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftdiscoveryoverlay" path="res://scenes/DiscoveryOverlay.tscn" id="7"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftresultmodal" path="res://scenes/ResultModal.tscn" id="8"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -25,6 +28,7 @@ grow_vertical = 2
 theme_override_constants/separation = 4
 
 [node name="Hud" parent="VBox" instance=ExtResource("2")]
+unique_name_in_owner = true
 layout_mode = 2
 
 [node name="BattleView" parent="VBox" instance=ExtResource("3")]
@@ -49,3 +53,15 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 layout_mode = 2
 text = "↺ Reset"
+
+[node name="CodexModal" parent="." instance=ExtResource("6")]
+unique_name_in_owner = true
+visible = false
+
+[node name="DiscoveryOverlay" parent="." instance=ExtResource("7")]
+unique_name_in_owner = true
+visible = false
+
+[node name="ResultModal" parent="." instance=ExtResource("8")]
+unique_name_in_owner = true
+visible = false

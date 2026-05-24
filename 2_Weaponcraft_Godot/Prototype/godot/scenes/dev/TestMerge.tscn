@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bweaponcrafttestmerge"]
+[gd_scene format=3 uid="uid://b14y7cgvncl2s"]
 
 [ext_resource type="Script" path="res://scripts/dev/test_merge.gd" id="1"]
 

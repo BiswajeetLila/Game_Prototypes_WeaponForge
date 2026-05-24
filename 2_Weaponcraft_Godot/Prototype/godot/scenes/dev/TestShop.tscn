@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bweaponcrafttestshop"]
+[gd_scene format=3 uid="uid://y8k7qnye7mrv"]
 
 [ext_resource type="Script" path="res://scripts/dev/test_shop.gd" id="1"]
 

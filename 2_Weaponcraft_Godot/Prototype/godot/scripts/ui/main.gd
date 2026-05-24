@@ -34,6 +34,7 @@ func _ready() -> void:
 	GameState.stage_cleared.connect(_on_stage_cleared)
 	GameState.squad_wiped.connect(_on_squad_wiped)
 	GameState.hero_died.connect(_on_hero_died)
+	ScreenShake.register_target(self)
 	_open_forge_moment()
 
 func _open_forge_moment() -> void:
@@ -47,6 +48,7 @@ func _on_wave_start_requested() -> void:
 func _on_wave_cleared(wave: int) -> void:
 	var reward: int = 5 + wave * 2
 	_notifications.show_banner("✓ WAVE %d CLEAR  +🪙%d" % [wave, reward], Color(0.6, 1, 0.7), 1.3)
+	ScreenShake.kick(JuiceConfig.WAVE_CLEAR.shake_amp, JuiceConfig.WAVE_CLEAR.shake_dur)
 
 	## Per-hero unlocks: wave 2 -> Elara (mage), wave 4 -> Vex (rogue).
 	## Banner fires 0.7s later so it doesn't pile under the wave-clear banner.

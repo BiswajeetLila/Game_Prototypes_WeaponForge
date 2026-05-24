@@ -59,8 +59,9 @@ func _on_hp_changed(_hero_id: StringName) -> void:
 	_hp_bar.max_value = float(hero.max_hp)
 	_hp_bar.value = float(hero.hp)
 	_hp_text.text = "%d / %d" % [hero.hp, hero.max_hp]
-	if hero.is_dead:
-		modulate = Color(0.5, 0.5, 0.5, 0.8)
+	## Reset modulate every refresh — otherwise a prior wipe leaves the panel
+	## greyed even after new_session() resurrects Bran.
+	modulate = Color(0.5, 0.5, 0.5, 0.8) if hero.is_dead else Color.WHITE
 
 func _on_ult_changed(_hero_id: StringName) -> void:
 	var hero = GameState.hero

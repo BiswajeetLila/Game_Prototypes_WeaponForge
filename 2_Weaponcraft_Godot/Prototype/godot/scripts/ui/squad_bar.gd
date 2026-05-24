@@ -8,12 +8,27 @@
 extends PanelContainer
 
 const HeroCardScene := preload("res://scenes/HeroCard.tscn")
+const JuiceConfigT = preload("res://scripts/core/juice_config.gd")
 
 @onready var _cards_row: HBoxContainer = %CardsRow
 
 func _ready() -> void:
 	GameState.hero_unlocked.connect(_on_hero_unlocked)
+	Combat.enemy_hit_hero.connect(_on_enemy_hit_hero)
 	_rebuild_all()
+
+## Routes the enemy-hit-hero juice to the matching card so each hero "reacts"
+## visually, regardless of which one the BattleView happens to display.
+func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, _dmg: int) -> void:
+	var card = _find_card(hero_id)
+	if card != null:
+		card.flash(float(JuiceConfigT.ENEMY_HIT_HERO.flash_dur))
+
+func _find_card(hero_id: StringName):
+	for child in _cards_row.get_children():
+		if child.has_method(&"hero_id") and child.hero_id() == hero_id:
+			return child
+	return null
 
 func _on_hero_unlocked(hero_id: StringName) -> void:
 	if hero_id == &"bran":

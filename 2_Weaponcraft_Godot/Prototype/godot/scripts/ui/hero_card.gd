@@ -111,3 +111,20 @@ func _on_weapon_changed(hero_id: StringName) -> void:
 func _on_ult_btn_pressed() -> void:
 	if _hero_id != &"":
 		Combat.fire_ult(_hero_id)
+
+## ---------- Juice ----------
+
+const _FLASH_BOOST: Color = Color(1.8, 1.8, 1.8, 1.0)
+
+## Briefly brightens the portrait via modulate boost. Called by SquadBar in
+## response to Combat.enemy_hit_hero so the right card "reacts" to the hit
+## even though it isn't the BattleView's displayed hero.
+func flash(duration: float) -> void:
+	if _portrait == null or duration <= 0.0:
+		return
+	_portrait.modulate = _FLASH_BOOST
+	var t := create_tween()
+	t.tween_property(_portrait, "modulate", Color.WHITE, duration).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+
+func hero_id() -> StringName:
+	return _hero_id

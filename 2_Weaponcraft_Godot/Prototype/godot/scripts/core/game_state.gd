@@ -37,6 +37,9 @@ signal combat_log_appended(line: String)
 signal wave_cleared(wave: int)
 signal stage_cleared
 signal hero_died(hero_id: StringName)
+signal enemies_spawned
+signal enemy_hp_changed(enemy_idx: int)
+signal enemy_status_changed(enemy_idx: int)
 
 ## ---------- Catalogs (loaded once from disk in _ready) ----------
 
@@ -70,6 +73,15 @@ var discovered_recipes: Dictionary = {}   ## Set-as-Dict: StringName -> true
 var pending_discoveries: Array = []       ## queue of StringName
 
 var combat_log: Array = []
+
+## Runtime enemy state during a wave. Each element is a Dictionary:
+##   { id: StringName, name: String (unique per spawn, for Inferno target tracking),
+##     hp: int, max_hp: int, weak: StringName, resist: StringName,
+##     sprite: Texture2D, frozen: bool, debuffed: bool, debuff_dur: int,
+##     debuff_mult: float }
+##
+## Cleared between waves by Combat._spawn_enemies().
+var enemies: Array = []
 
 ## ---------- Lifecycle ----------
 
@@ -112,6 +124,7 @@ func new_session() -> void:
 	gold = STARTING_GOLD
 	shop_parts = []
 	inventory = []
+	enemies = []
 	discovered_recipes = {}
 	pending_discoveries = []
 	combat_log = []

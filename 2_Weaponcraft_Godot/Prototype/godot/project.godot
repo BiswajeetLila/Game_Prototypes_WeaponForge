@@ -24,6 +24,7 @@ RNG="*res://scripts/core/rng.gd"
 Recipes="*res://scripts/core/recipes.gd"
 Merge="*res://scripts/core/merge.gd"
 Shop="*res://scripts/core/shop.gd"
+Combat="*res://scripts/core/combat.gd"
 
 [display]
 

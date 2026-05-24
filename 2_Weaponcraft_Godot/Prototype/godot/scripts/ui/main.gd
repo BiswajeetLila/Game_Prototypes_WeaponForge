@@ -1,38 +1,54 @@
 ## Main — composition root for the ultra-MVP play scene.
 ##
-## Mounts HUD + BattleView + SquadBar. The ForgePanel comes in UI Chunk 2;
-## for UI Chunk 1 a debug button equips Bran with a default loadout and starts
-## wave 1 so the player can verify combat ticks, ult fire, and damage pops.
+## Lifecycle:
+##   _ready
+##     -> new_session (handled by GameState autoload)
+##     -> open_forge_moment for wave 1
 ##
-## After UI Chunk 2 the debug button is removed and replaced by the real forge
-## "Start Wave" button in the deployment zone (per addendum 0.1.8).
+##   ForgePanel emits wave_start_requested when the player taps Start Wave.
+##   Main calls Combat.start_wave(GameState.wave).
+##
+##   Combat emits wave_cleared (via GameState) when all enemies die. Main
+##   either opens the next forge moment OR shows the Stage Clear modal
+##   (modal lives in UI Chunk 4 — for now, just open the next forge moment
+##   or print a console line).
+##
+##   Combat emits hero_died on wipe. UI Chunk 4 adds the Wipe modal; for now
+##   Main resets the session so the player can keep poking the build.
 extends Control
 
-const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
-
-@onready var _start_btn: Button = %StartWaveBtn
+@onready var _forge: Control = %ForgePanel
 @onready var _reset_btn: Button = %ResetBtn
 
 func _ready() -> void:
-	_start_btn.pressed.connect(_on_debug_start_pressed)
 	_reset_btn.pressed.connect(_on_reset_pressed)
+	_forge.wave_start_requested.connect(_on_wave_start_requested)
+	GameState.wave_cleared.connect(_on_wave_cleared)
+	GameState.stage_cleared.connect(_on_stage_cleared)
+	GameState.hero_died.connect(_on_hero_died)
+	_open_forge_moment()
 
-func _on_debug_start_pressed() -> void:
-	## Equip a sensible default loadout so the test player sees Steamburst trigger
-	## right away (fire hilt + ice rune) once the discovery overlay lands in UI Chunk 3.
-	if GameState.hero == null:
-		return
-	GameState.hero.weapon.set_slot(&"head", InventoryItemT.new(GameState.next_uid(), &"h_iron_edge", 1))
-	GameState.hero.weapon.set_slot(&"hilt", InventoryItemT.new(GameState.next_uid(), &"p_pyro_pommel", 1))
-	GameState.hero.weapon.set_slot(&"rune", InventoryItemT.new(GameState.next_uid(), &"r_ice", 1))
-	GameState.hero.refresh_max_hp()
-	Recipes.check_hero_for_discoveries(GameState.hero)
-	GameState.emit_signal(&"weapon_changed", &"bran")
-	GameState.emit_signal(&"hero_hp_changed", &"bran")
-	Combat.start_wave(1)
-	_start_btn.disabled = true
+func _open_forge_moment() -> void:
+	## Free roll the shop for this wave's forge moment.
+	_forge.refresh_forge_moment()
+
+func _on_wave_start_requested() -> void:
+	Combat.start_wave(GameState.wave)
+
+func _on_wave_cleared(wave: int) -> void:
+	print("[Main] wave %d cleared" % wave)
+	if wave >= GameState.TOTAL_WAVES:
+		return  ## stage_cleared signal will fire too — handled there
+	GameState.set_wave(wave + 1)
+	_open_forge_moment()
+
+func _on_stage_cleared() -> void:
+	print("[Main] STAGE CLEARED — UI Chunk 4 will add the modal")
+
+func _on_hero_died(_hero_id: StringName) -> void:
+	print("[Main] WIPE — UI Chunk 4 will add the modal")
 
 func _on_reset_pressed() -> void:
 	Combat.stop()
 	GameState.new_session()
-	_start_btn.disabled = false
+	_open_forge_moment()

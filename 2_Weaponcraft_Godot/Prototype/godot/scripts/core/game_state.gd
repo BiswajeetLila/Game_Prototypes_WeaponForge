@@ -37,6 +37,8 @@ signal combat_log_appended(line: String)
 signal wave_cleared(wave: int)
 signal stage_cleared
 signal hero_died(hero_id: StringName)
+signal hero_unlocked(hero_id: StringName)
+signal squad_wiped
 signal enemies_spawned
 signal enemy_hp_changed(enemy_idx: int)
 signal enemy_status_changed(enemy_idx: int)
@@ -61,12 +63,26 @@ var recipe_ids: Array = []
 ## ---------- Per-run state ----------
 
 const STARTING_GOLD: int = 20
-const TOTAL_WAVES: int = 3  ## ultra-MVP: 3 normal, no boss
+const TOTAL_WAVES: int = 5  ## Phase 2: 5 waves, no boss. Heroes unlock at wave 2 + 4 clear.
 
 var wave: int = 1
 var gold: int = STARTING_GOLD
 
-var hero = null   ## HeroState — ultra-MVP: only one hero (Bran). Untyped here to dodge cold-start class registry.
+## ---------- Roster ----------
+##
+## Phase 2 multi-hero. Bran starts unlocked; Elara unlocks on wave 2 clear,
+## Vex on wave 4 clear. All three share the global shop + inventory + gold.
+##
+## `hero` is a back-compat shim that returns the first squad member (Bran).
+## Removed in a follow-up commit once all callsites migrate to get_hero(id).
+
+var heroes: Dictionary = {}         ## StringName -> HeroState
+var squad_order: Array = []         ## ordered list of StringName ids (unlock order = display order)
+var unlocked_classes: Dictionary = {}  ## StringName cls -> true (shop class filter)
+
+## Back-compat shim. Reads first squad member (Bran in ultra-MVP). Writable
+## for legacy callsites in tests that re-assign GameState.hero = HeroStateT.new(...).
+var hero = null
 
 var shop_parts: Array = []        ## Array[InventoryItem snapshot for shop slot]
 								  ## shop items get unique uids only when bought.
@@ -134,20 +150,69 @@ func new_session() -> void:
 	combat_log = []
 	_next_uid = 1
 
-	## Bran is the only hero in ultra-MVP. Assumes data/heroes/bran.tres has id="bran".
-	var bran_data = heroes_by_id.get(&"bran")
-	if bran_data == null:
-		push_error("GameState: bran HeroData missing — check data/heroes/bran.tres")
-		return
-	hero = HeroStateT.new(bran_data)
+	heroes = {}
+	squad_order = []
+	unlocked_classes = {}
+	hero = null
+
+	## Bran starts unlocked. Elara + Vex unlock on wave 2 + 4 clear (see Main).
+	unlock_hero(&"bran")
 
 	emit_signal("gold_changed", gold)
 	emit_signal("wave_changed", wave)
 	emit_signal("inventory_changed")
-	emit_signal("weapon_changed", &"bran")
-	emit_signal("hero_hp_changed", &"bran")
-	emit_signal("hero_ult_changed", &"bran")
 	_emit_codex_badge()
+
+## ---------- Roster helpers ----------
+
+func get_hero(hero_id: StringName):
+	return heroes.get(hero_id)
+
+func all_heroes() -> Array:
+	var out: Array = []
+	for id in squad_order:
+		var h = heroes.get(id)
+		if h != null:
+			out.append(h)
+	return out
+
+func active_heroes() -> Array:
+	var out: Array = []
+	for id in squad_order:
+		var h = heroes.get(id)
+		if h != null and not h.is_dead:
+			out.append(h)
+	return out
+
+func any_alive() -> bool:
+	for id in squad_order:
+		var h = heroes.get(id)
+		if h != null and not h.is_dead:
+			return true
+	return false
+
+## Instantiates a HeroState from the catalog, appends to squad_order, marks the
+## hero's class as unlocked (widens shop pool), and emits hero_unlocked.
+##
+## First-unlocked hero also populates the `hero` back-compat shim so legacy
+## callsites keep working until they migrate to get_hero(id).
+func unlock_hero(hero_id: StringName) -> void:
+	if heroes.has(hero_id):
+		return
+	var data = heroes_by_id.get(hero_id)
+	if data == null:
+		push_error("GameState.unlock_hero: missing HeroData for %s" % hero_id)
+		return
+	var hs = HeroStateT.new(data)
+	heroes[hero_id] = hs
+	squad_order.append(hero_id)
+	unlocked_classes[data.cls] = true
+	if hero == null:
+		hero = hs
+	emit_signal("hero_unlocked", hero_id)
+	emit_signal("weapon_changed", hero_id)
+	emit_signal("hero_hp_changed", hero_id)
+	emit_signal("hero_ult_changed", hero_id)
 
 ## ---------- Catalog lookups ----------
 

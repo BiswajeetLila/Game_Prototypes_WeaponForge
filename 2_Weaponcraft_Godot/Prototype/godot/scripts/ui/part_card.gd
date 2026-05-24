@@ -17,14 +17,17 @@ extends PanelContainer
 
 ## ---------- Style tokens ----------
 
+## Desaturated palette (~60% saturation drop from prior values) for the
+## cozy parchment vibe — fire / ice should be felt as warm/cool tilts on the
+## bronze base, not Crayola callouts.
 const BRONZE_BG       := Color(0.910, 0.769, 0.510, 1)
 const BRONZE_BORDER   := Color(0.420, 0.255, 0.137, 1)
-const FIRE_BG         := Color(0.659, 0.376, 0.169, 1)
-const FIRE_BORDER     := Color(0.349, 0.165, 0.063, 1)
-const FIRE_ACCENT     := Color(0.965, 0.553, 0.231, 1)
-const ICE_BG          := Color(0.196, 0.318, 0.475, 1)
-const ICE_BORDER      := Color(0.094, 0.196, 0.314, 1)
-const ICE_ACCENT      := Color(0.412, 0.706, 0.965, 1)
+const FIRE_BG         := Color(0.671, 0.522, 0.412, 1)
+const FIRE_BORDER     := Color(0.353, 0.255, 0.184, 1)
+const FIRE_ACCENT     := Color(0.835, 0.596, 0.420, 1)
+const ICE_BG          := Color(0.408, 0.467, 0.541, 1)
+const ICE_BORDER      := Color(0.196, 0.243, 0.290, 1)
+const ICE_ACCENT      := Color(0.541, 0.651, 0.745, 1)
 
 const TEXT_DARK_NAME  := Color(0.176, 0.110, 0.059, 1)
 const TEXT_DARK_STAT  := Color(0.165, 0.392, 0.157, 1)

@@ -1,6 +1,22 @@
-[gd_scene format=3 uid="uid://clk32nqo3spgu"]
+[gd_scene load_steps=2 format=3 uid="uid://clk32nqo3spgu"]
 
 [ext_resource type="Script" path="res://scripts/ui/discovery_overlay.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="card_style"]
+bg_color = Color(0.137, 0.082, 0.169, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.682, 0.486, 0.890, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 22.0
+content_margin_top = 22.0
+content_margin_right = 22.0
+content_margin_bottom = 22.0
 
 [node name="DiscoveryOverlay" type="ColorRect"]
 layout_mode = 3
@@ -9,7 +25,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0, 0.1, 0.85)
+color = Color(0.05, 0, 0.1, 0.94)
 script = ExtResource("1")
 
 [node name="ClickToDismiss" type="Button" parent="."]
@@ -23,7 +39,7 @@ grow_vertical = 2
 flat = true
 focus_mode = 0
 
-[node name="CenterVBox" type="VBoxContainer" parent="."]
+[node name="Card" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -31,55 +47,67 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -160.0
-offset_top = -160.0
+offset_top = -180.0
 offset_right = 160.0
-offset_bottom = 160.0
+offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
-alignment = 1
-theme_override_constants/separation = 12
+mouse_filter = 2
+theme_override_styles/panel = SubResource("card_style")
 
-[node name="Headline" type="Label" parent="CenterVBox"]
+[node name="CenterVBox" type="VBoxContainer" parent="Card"]
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+theme_override_constants/separation = 10
+
+[node name="Headline" type="Label" parent="Card/CenterVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "✨ RECIPE DISCOVERED"
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(1, 0.85, 0, 1)
+theme_override_colors/font_color = Color(1, 0.851, 0.302, 1)
 theme_override_font_sizes/font_size = 14
 
-[node name="Icon" type="TextureRect" parent="CenterVBox"]
+[node name="IconBox" type="CenterContainer" parent="Card/CenterVBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(96, 96)
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
-size_flags_horizontal = 4
+
+[node name="Icon" type="TextureRect" parent="Card/CenterVBox/IconBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+expand_mode = 1
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="CenterVBox"]
+[node name="NameLabel" type="Label" parent="Card/CenterVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Steamburst"
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.85, 0.65, 1, 1)
+theme_override_colors/font_color = Color(0.918, 0.745, 1, 1)
 theme_override_font_sizes/font_size = 28
 
-[node name="TagLabel" type="Label" parent="CenterVBox"]
+[node name="TagLabel" type="Label" parent="Card/CenterVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "FIRE + ICE"
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.851, 0.851, 0.851, 1)
+theme_override_font_sizes/font_size = 13
 
-[node name="DescLabel" type="Label" parent="CenterVBox"]
+[node name="DescLabel" type="Label" parent="Card/CenterVBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
 text = "On every hit, 35% of damage splashes to all other alive enemies."
 horizontal_alignment = 1
 autowrap_mode = 3
+theme_override_colors/font_color = Color(0.961, 0.902, 0.784, 1)
 theme_override_font_sizes/font_size = 12
 
-[node name="DismissHint" type="Label" parent="CenterVBox"]
+[node name="DismissHint" type="Label" parent="Card/CenterVBox"]
 layout_mode = 2
 text = "click to continue"
 horizontal_alignment = 1

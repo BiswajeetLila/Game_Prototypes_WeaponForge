@@ -3,29 +3,141 @@
 ## Mirrors prototype's `acquirePart` from BASE-A1 0.1.6 + the merge_mechanic.md
 ## level-up rule.
 ##
-## Per addendum 0.1.6 priority (single-hero ultra-MVP version — other-hero
+## Per addendum 0.1.6 priority (ultra-MVP single-hero version; other-hero
 ## steps cut, will return in Phase 2):
 ##   1. Merge into active hero's equipped duplicate of same rarity
 ##   2. Equip into active hero's empty slot
 ##   3. Merge into inventory duplicate of same rarity
 ##   4. Fresh L1 to inventory
 ##
-## NOTE: stub for build step 1-2 (autoload registration). Implementation
-##       fills in during task #13 (build step 7-8).
+## "Same rarity" rule (merge_mechanic.md): satisfied implicitly because each
+## part_id maps to exactly one PartData, which has a fixed rarity. Items
+## sharing a part_id always share rarity. Future cross-rarity skins would get
+## their own part_id and naturally not merge.
+##
+## Level cap is 5 (InventoryItem.LEVEL_CAP). Acquiring a duplicate at cap does
+## NOT lose the part — it falls through to step 4 (fresh L1 to inventory).
+##
+## Side effects on a successful equip / level-up that touches the active hero's
+## weapon: refresh max_hp (hp delta if hilt's hp changed), call
+## Recipes.check_hero_for_discoveries (discover-on-equip per addendum 0.1.7),
+## emit weapon_changed + hero_hp_changed signals.
+##
+## Inventory-only ops emit inventory_changed.
+##
+## Untyped types throughout — this is an autoload and global class_name
+## resolution is unreliable during cold-start parsing.
 extends Node
 
-## L1..L5 multiplier table — see merge_mechanic.md. Lives here as the canonical
-## source; Weapon._stat_for() reads its own copy for hot-path performance.
+const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
+
+## L1..L5 multiplier table — see merge_mechanic.md. Mirrored on Weapon for the
+## hot-path read; this copy is the canonical source.
 const LEVEL_MULT: Array = [1.00, 1.50, 2.10, 2.85, 3.70]
 
-## Returns the stat multiplier for a given 1-indexed level.
+## Returns the stat multiplier for a 1-indexed level.
 func level_multiplier(level: int) -> float:
-	return LEVEL_MULT[clampi(level - 1, 0, LEVEL_MULT.size() - 1)]
+	var idx: int = clampi(level - 1, 0, LEVEL_MULT.size() - 1)
+	return float(LEVEL_MULT[idx])
+
+## ---------- Public API ----------
 
 ## Buy / reward path. Caller already paid the gold (or this is a free drop).
-## Returns the InventoryItem that ended up holding the part, or null on error.
-##
-## Return type untyped because this script is an autoload — class_name resolution
-## is unreliable during cold-start parsing. Caller treats as InventoryItem.
-func acquire_part(_part_id: StringName):
-	return null
+## Returns the InventoryItem holding the part (newly created OR leveled-up),
+## or null if part_id is unknown.
+func acquire_part(part_id: StringName):
+	var def = GameState.get_part_def(part_id)
+	if def == null:
+		push_warning("Merge.acquire_part: unknown part_id %s" % str(part_id))
+		return null
+
+	var hero = GameState.hero
+
+	## Step 1 — active hero's equipped duplicate.
+	if hero != null and hero.weapon != null:
+		var equipped = hero.weapon.get_slot(def.slot)
+		if equipped != null and equipped.part_id == part_id:
+			if equipped.level < InventoryItemT.LEVEL_CAP:
+				equipped.level_up()
+				_on_equipped_changed(hero)
+				return equipped
+			## At cap — fall through. Don't lose the part.
+
+	## Step 2 — equip into active hero's matching empty slot.
+	if hero != null and hero.weapon != null:
+		if hero.weapon.get_slot(def.slot) == null:
+			var fresh = _new_item(part_id)
+			hero.weapon.set_slot(def.slot, fresh)
+			_on_equipped_changed(hero)
+			return fresh
+
+	## Step 3 — inventory duplicate.
+	for item in GameState.inventory:
+		if item.part_id == part_id and item.level < InventoryItemT.LEVEL_CAP:
+			item.level_up()
+			GameState.emit_signal(&"inventory_changed")
+			return item
+
+	## Step 4 — fresh L1 to inventory.
+	var fresh_inv = _new_item(part_id)
+	GameState.inventory.append(fresh_inv)
+	GameState.emit_signal(&"inventory_changed")
+	return fresh_inv
+
+## Equip an existing InventoryItem onto the active hero's matching slot. Used
+## by ForgePanel's "click inventory tile → equip" flow. Returns true on success.
+## If the target slot is already occupied, the displaced item goes to inventory.
+func equip_from_inventory(item) -> bool:
+	if item == null:
+		return false
+	var hero = GameState.hero
+	if hero == null or hero.weapon == null:
+		return false
+	var def = GameState.get_part_def(item.part_id)
+	if def == null:
+		return false
+
+	## Same-partId target already in slot? Try level-up instead of equip.
+	var current = hero.weapon.get_slot(def.slot)
+	if current != null and current.part_id == item.part_id and current.level < InventoryItemT.LEVEL_CAP:
+		current.level_up()
+		## Remove the source from inventory — it's consumed.
+		GameState.inventory.erase(item)
+		GameState.emit_signal(&"inventory_changed")
+		_on_equipped_changed(hero)
+		return true
+
+	## Different partId in slot — swap. Old goes to inventory.
+	if current != null:
+		GameState.inventory.append(current)
+	hero.weapon.set_slot(def.slot, item)
+	GameState.inventory.erase(item)
+	GameState.emit_signal(&"inventory_changed")
+	_on_equipped_changed(hero)
+	return true
+
+## Unequip the active hero's slot back to inventory. Returns true if a part
+## was actually moved.
+func unequip_to_inventory(slot: StringName) -> bool:
+	var hero = GameState.hero
+	if hero == null or hero.weapon == null:
+		return false
+	var current = hero.weapon.get_slot(slot)
+	if current == null:
+		return false
+	hero.weapon.set_slot(slot, null)
+	GameState.inventory.append(current)
+	GameState.emit_signal(&"inventory_changed")
+	_on_equipped_changed(hero)
+	return true
+
+## ---------- Internals ----------
+
+func _new_item(part_id: StringName):
+	return InventoryItemT.new(GameState.next_uid(), part_id, 1)
+
+func _on_equipped_changed(hero) -> void:
+	hero.refresh_max_hp()
+	Recipes.check_hero_for_discoveries(hero)
+	GameState.emit_signal(&"weapon_changed", &"bran")
+	GameState.emit_signal(&"hero_hp_changed", &"bran")

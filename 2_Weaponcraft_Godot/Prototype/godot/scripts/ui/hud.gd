@@ -28,4 +28,4 @@ func _on_wave_changed(new_wave: int) -> void:
 	_wave_label.text = "WAVE %d/%d" % [new_wave, GameState.TOTAL_WAVES]
 
 func _on_codex_badge_changed(discovered: int, total: int) -> void:
-	_codex_btn.text = "📜 %d/%d" % [discovered, total]
+	_codex_btn.text = "CODEX %d/%d" % [discovered, total]

@@ -87,10 +87,13 @@ func _rebuild_recipe_chips() -> void:
 		var rec = GameState.get_recipe_def(recipe_id)
 		if rec == null:
 			continue
+		## Effect summary visible inline so the player understands the proc.
 		var chip := Label.new()
-		chip.text = "✨ %s" % rec.name
+		chip.text = "%s — %s" % [rec.name, rec.desc]
+		chip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		chip.add_theme_font_size_override(&"font_size", 11)
 		chip.add_theme_color_override(&"font_color", Color("d8a8ff"))
+		chip.tooltip_text = "%s\n%s" % [rec.name, rec.desc]
 		_recipe_chips.add_child(chip)
 
 ## ---------- Shop ----------

@@ -22,6 +22,7 @@ const TAG_COLORS: Dictionary = {
 @onready var _slot_label: Label = %SlotLabel
 @onready var _name_label: Label = %NameLabel
 @onready var _tag_box: HBoxContainer = %TagBox
+@onready var _stat_label: Label = %StatLabel
 @onready var _cost_label: Label = %CostLabel
 @onready var _level_badge: Label = %LevelBadge
 @onready var _btn: Button = %Btn
@@ -94,9 +95,25 @@ func _refresh() -> void:
 	_name_label.text = def.name
 	_slot_label.text = String(def.slot).to_upper()
 	_render_tags(def)
+	_render_stats(def)
 	_render_cost(def)
 	_render_level_badge()
-	tooltip_text = "%s\n%s" % [def.name, def.desc]
+	tooltip_text = "%s (L%d)\n%s" % [def.name, _level, def.desc]
+
+func _render_stats(def: PartData) -> void:
+	## Apply level multiplier to each contributing stat so the player sees
+	## raw -> scaled numbers climb as they merge.
+	var mult: float = Merge.level_multiplier(_level)
+	var parts: Array = []
+	if def.atk > 0:
+		parts.append("+%d ATK" % int(floor(float(def.atk) * mult)))
+	if def.hp > 0:
+		parts.append("+%d HP" % int(floor(float(def.hp) * mult)))
+	if def.crit > 0:
+		parts.append("+%d%% CRIT" % int(floor(float(def.crit) * mult)))
+	if def.ult_rate > 0:
+		parts.append("+%d ULT" % int(floor(float(def.ult_rate) * mult)))
+	_stat_label.text = "  ".join(parts)
 
 func _render_empty() -> void:
 	_empty_label.visible = true
@@ -145,8 +162,11 @@ func _render_level_badge() -> void:
 ## ---------- Merge celebration ----------
 
 func _play_merge_celebration(new_level: int) -> void:
-	## Update the badge to the new level then play the pop.
+	## Update level + re-render badge + stats so numbers climb on screen.
 	_level = new_level
+	var def = GameState.get_part_def(_part_id)
+	if def != null:
+		_render_stats(def)
 	_render_level_badge()
 	_level_badge.pivot_offset = _level_badge.size * 0.5
 	## Card scale bounce.

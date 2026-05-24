@@ -45,15 +45,18 @@ func level_multiplier(level: int) -> float:
 ## Buy / reward path. Caller already paid the gold (or this is a free drop).
 ## Returns the InventoryItem holding the part (newly created OR leveled-up),
 ## or null if part_id is unknown.
-func acquire_part(part_id: StringName):
+##
+## hero_id selects the target hero. Empty default resolves to the first alive
+## squad member — preserves single-Bran behavior in tests and pre-tab UI.
+func acquire_part(part_id: StringName, hero_id: StringName = &""):
 	var def = GameState.get_part_def(part_id)
 	if def == null:
 		push_warning("Merge.acquire_part: unknown part_id %s" % str(part_id))
 		return null
 
-	var hero = GameState.hero
+	var hero = _resolve_hero(hero_id)
 
-	## Step 1 — active hero's equipped duplicate.
+	## Step 1 — target hero's equipped duplicate.
 	if hero != null and hero.weapon != null:
 		var equipped = hero.weapon.get_slot(def.slot)
 		if equipped != null and equipped.part_id == part_id:
@@ -64,7 +67,7 @@ func acquire_part(part_id: StringName):
 				return equipped
 			## At cap — fall through. Don't lose the part.
 
-	## Step 2 — equip into active hero's matching empty slot.
+	## Step 2 — equip into target hero's matching empty slot.
 	if hero != null and hero.weapon != null:
 		if hero.weapon.get_slot(def.slot) == null:
 			var fresh = _new_item(part_id)
@@ -72,7 +75,7 @@ func acquire_part(part_id: StringName):
 			_on_equipped_changed(hero)
 			return fresh
 
-	## Step 3 — inventory duplicate.
+	## Step 3 — inventory duplicate (global pool).
 	for item in GameState.inventory:
 		if item.part_id == part_id and item.level < InventoryItemT.LEVEL_CAP:
 			item.level_up()
@@ -86,13 +89,13 @@ func acquire_part(part_id: StringName):
 	GameState.emit_signal(&"inventory_changed")
 	return fresh_inv
 
-## Equip an existing InventoryItem onto the active hero's matching slot. Used
+## Equip an existing InventoryItem onto the target hero's matching slot. Used
 ## by ForgePanel's "click inventory tile → equip" flow. Returns true on success.
 ## If the target slot is already occupied, the displaced item goes to inventory.
-func equip_from_inventory(item) -> bool:
+func equip_from_inventory(item, hero_id: StringName = &"") -> bool:
 	if item == null:
 		return false
-	var hero = GameState.hero
+	var hero = _resolve_hero(hero_id)
 	if hero == null or hero.weapon == null:
 		return false
 	var def = GameState.get_part_def(item.part_id)
@@ -118,10 +121,10 @@ func equip_from_inventory(item) -> bool:
 	_on_equipped_changed(hero)
 	return true
 
-## Unequip the active hero's slot back to inventory. Returns true if a part
+## Unequip the target hero's slot back to inventory. Returns true if a part
 ## was actually moved.
-func unequip_to_inventory(slot: StringName) -> bool:
-	var hero = GameState.hero
+func unequip_to_inventory(slot: StringName, hero_id: StringName = &"") -> bool:
+	var hero = _resolve_hero(hero_id)
 	if hero == null or hero.weapon == null:
 		return false
 	var current = hero.weapon.get_slot(slot)
@@ -138,8 +141,17 @@ func unequip_to_inventory(slot: StringName) -> bool:
 func _new_item(part_id: StringName):
 	return InventoryItemT.new(GameState.next_uid(), part_id, 1)
 
+## hero_id = &"" -> first alive squad member (Bran in default sessions).
+func _resolve_hero(hero_id: StringName):
+	if hero_id != &"":
+		return GameState.get_hero(hero_id)
+	var squad: Array = GameState.active_heroes()
+	if squad.is_empty():
+		return null
+	return squad[0]
+
 func _on_equipped_changed(hero) -> void:
 	hero.refresh_max_hp()
 	Recipes.check_hero_for_discoveries(hero)
-	GameState.emit_signal(&"weapon_changed", &"bran")
-	GameState.emit_signal(&"hero_hp_changed", &"bran")
+	GameState.emit_signal(&"weapon_changed", hero.data.id)
+	GameState.emit_signal(&"hero_hp_changed", hero.data.id)

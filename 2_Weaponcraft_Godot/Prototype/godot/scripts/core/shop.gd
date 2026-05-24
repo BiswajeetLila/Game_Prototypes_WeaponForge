@@ -120,15 +120,17 @@ func _eligible_part_ids() -> Array:
 	return out
 
 func _class_unlocked(cls: StringName) -> bool:
-	## Ultra-MVP: only Bran (warrior). Phase 2 will check
-	## GameState.unlocked_classes once Elara (mage) + Vex (rogue) ramp in at
-	## waves 3 and 5.
-	return cls == &"warrior"
+	return GameState.unlocked_classes.has(cls)
 
 func _needs_slot_guarantee() -> bool:
-	## True if any unlocked hero is not fully kitted. Ultra-MVP: only Bran.
-	if GameState.hero == null:
+	## True if any unlocked hero is not fully kitted. Multi-hero: scan the
+	## active squad; one empty slot anywhere = guarantee fires.
+	var squad: Array = GameState.active_heroes()
+	if squad.is_empty():
 		return true
-	if GameState.hero.weapon == null:
-		return true
-	return not GameState.hero.weapon.is_full()
+	for h in squad:
+		if h.weapon == null:
+			return true
+		if not h.weapon.is_full():
+			return true
+	return false

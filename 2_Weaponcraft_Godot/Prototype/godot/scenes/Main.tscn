@@ -1,7 +1,8 @@
-[gd_scene load_steps=11 format=3 uid="uid://bweaponcraftmainscene"]
+[gd_scene load_steps=12 format=3 uid="uid://bweaponcraftmainscene"]
 
 [ext_resource type="Script" path="res://scripts/ui/main.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/screen_flash.gd" id="9"]
+[ext_resource type="Theme" uid="uid://bweaponcrafttheme" path="res://theme.tres" id="11"]
 [ext_resource type="PackedScene" uid="uid://bweaponcrafthud" path="res://scenes/Hud.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftbattleview" path="res://scenes/BattleView.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftsquadbar" path="res://scenes/SquadBar.tscn" id="4"]
@@ -12,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://bweaponcraftnotifications" path="res://scenes/Notifications.tscn" id="10"]
 
 [node name="Main" type="Control"]
+theme = ExtResource("11")
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

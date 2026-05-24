@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="PartData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/kenney/kenney_tiny-dungeon/Tiles/tile_0124.png" id="1_cp3sr"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/r_ice.png" id="1_cp3sr"]
 
 [resource]
 script = ExtResource("1")

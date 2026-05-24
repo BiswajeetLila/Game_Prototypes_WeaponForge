@@ -161,6 +161,8 @@ func _render_level_badge() -> void:
 
 ## ---------- Merge celebration ----------
 
+const MERGE_SPARKLE_TEX = preload("res://assets/generated/vfx/merge_sparkle.png")
+
 func _play_merge_celebration(new_level: int) -> void:
 	## Update level + re-render badge + stats so numbers climb on screen.
 	_level = new_level
@@ -183,8 +185,29 @@ func _play_merge_celebration(new_level: int) -> void:
 	_level_badge.scale = Vector2(2.0, 2.0)
 	var t3 := create_tween()
 	t3.tween_property(_level_badge, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	## Sparkle burst sprite centered on the card.
+	_spawn_sparkle_sprite()
 	## Floating "✨ L<n>!" text.
 	_spawn_merge_pop(new_level)
+
+func _spawn_sparkle_sprite() -> void:
+	var s := TextureRect.new()
+	s.texture = MERGE_SPARKLE_TEX
+	s.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	s.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	s.size = Vector2(96, 96)
+	s.position = size * 0.5 - s.size * 0.5
+	s.pivot_offset = s.size * 0.5
+	s.z_index = 90
+	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	s.scale = Vector2(0.2, 0.2)
+	s.modulate = Color(1, 1, 1, 1)
+	add_child(s)
+	var burst := create_tween().set_parallel(true)
+	burst.tween_property(s, "scale", Vector2(1.4, 1.4), 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	burst.tween_property(s, "rotation", deg_to_rad(30.0), 0.55)
+	burst.tween_property(s, "modulate:a", 0.0, 0.55)
+	burst.chain().tween_callback(s.queue_free)
 
 func _spawn_merge_pop(new_level: int) -> void:
 	var label := Label.new()

@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="EnemyData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/kenney/kenney_tiny-dungeon/Tiles/tile_0096.png" id="2_dk6at"]
+[ext_resource type="Texture2D" path="res://assets/generated/enemies/goblin.png" id="2_dk6at"]
 
 [resource]
 script = ExtResource("1")

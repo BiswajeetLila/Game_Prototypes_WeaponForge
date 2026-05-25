@@ -14,3 +14,4 @@ node_modules/
 dist-build/
 
 # Note: AI-generated PNG assets (heroes, mockups) ARE tracked — they're part of the prototype.
+.gstack/

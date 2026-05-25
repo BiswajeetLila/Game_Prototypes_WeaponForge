@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeaponCraft ForgeLoop v0.1.0</title>
+    <style>
+        :root {
+            --bg-parchment: #f0e1cf;
+            --panel-bg: #c9b9a6;
+            --ornate-frame: #59402a;
+            --ornate-accent: #8e6d4c;
+            --text-dark: #3a2a1b;
+            --hp-red: #c0392b;
+            --warrior-color: #e74c3c;
+            --rogue-color: #2ecc71;
+            --mage-color: #3498db;
+            --gold-color: #f1c40f;
+            --ult-purple: #9b59b6;
+        }
+
+        @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.05); } }
+        @keyframes ultGlow { 0%,100% { box-shadow: 0 0 5px var(--ult-purple); } 50% { box-shadow: 0 0 18px var(--ult-purple); } }
+
+        body {
+            margin: 0; background-color: #222; font-family: 'Times New Roman', Times, serif;
+            display: flex; justify-content: center; color: var(--text-dark); user-select: none;
+        }
+
+        #mobile-container {
+            width: 100%; max-width: 420px; min-height: 100vh; max-height: none;
+            background: linear-gradient(180deg, #f0e1cf 0%, #dabda8 100%);
+            display: flex; flex-direction: column;
+            border-left: 3px solid var(--ornate-frame); border-right: 3px solid var(--ornate-frame);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 15px; overflow-y: auto; overflow-x: hidden; position: relative;
+        }
+        body { min-height: 100vh; }
+        .header-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 8px solid var(--ornate-frame); border-radius: 12px; pointer-events: none; z-index: 10; box-sizing: border-box; }
+
+        /* TOP HUD */
+        #top-hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; }
+        #gold-ui { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 15px; border: 2px solid var(--gold-color); color: white; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        #wave-pill { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 15px; border: 2px solid var(--ornate-frame); color: white; font-weight: bold; font-size: 12px; }
+
+        /* COMBAT */
+        #combat-zone {
+            flex: 1; display: flex; flex-direction: column; padding: 5px 10px; padding-top: 40px;
+            background: radial-gradient(circle at top, #dad5ca 0%, #f0e1cf 100%);
+            border-bottom: 3px solid var(--ornate-frame);
+        }
+        #affinity-banner {
+            background: linear-gradient(90deg, #c0392b 0%, #8e6d4c 100%); color: white; text-align: center;
+            padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 3px;
+            border: 2px solid var(--ornate-frame); display: none;
+        }
+        #affinity-banner.visible { display: block; animation: pulse 2s infinite; }
+        #turn-display { text-align: center; font-size: 13px; font-weight: bold; color: #d35400; }
+
+        #battle-view {
+            flex: 1; margin: 5px 0; padding: 5px; border: 4px solid var(--ornate-frame); border-radius: 10px;
+            background-color: #f7ebdb; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; position: relative;
+        }
+        .entities-area { flex: 1; display: flex; justify-content: center; gap: 15px; align-items: center; min-height: 80px; padding: 5px; }
+        .entity {
+            background: rgba(0,0,0,0.05); border: 2px solid var(--ornate-frame); border-radius: 8px;
+            width: 60px; padding: 4px; text-align: center; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .hp-container { background: #333; border-radius: 4px; border: 1px solid var(--ornate-frame); margin: 1px 0; position: relative; height: 12px; overflow: hidden; }
+        .hp-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--hp-red); transition: width 0.3s ease; }
+        .hp-bar-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; z-index: 2; text-shadow: 1px 1px 1px #000; }
+        .entity-name { color: var(--ornate-frame); font-weight: bold; font-size: 10px; margin-top: 2px; }
+        .enemy-tag { font-size: 8px; color: var(--ornate-accent); }
+
+        #combat-log-container { height: 45px; background-color: rgba(0,0,0,0.05); border-radius: 6px; border: 1px solid var(--ornate-frame); margin-top: 4px; padding: 4px; font-size: 10px; overflow-y: auto; color: var(--text-dark); }
+
+        /* DEPLOYMENT BAR — heroes + ult gauge */
+        #deployment-zone { padding: 5px 8px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.04); border-top: 1px solid var(--ornate-frame); border-bottom: 1px solid var(--ornate-frame); }
+        .squad-bar { display: flex; justify-content: space-around; gap: 6px; }
+        .hero-card {
+            background: #f7ebdb; border: 2px solid var(--ornate-frame); border-radius: 6px;
+            width: 82px; padding: 2px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+            display: flex; flex-direction: column; gap: 1px;
+        }
+        .hero-card.active.warrior { border-color: var(--warrior-color); box-shadow: 0 0 10px var(--warrior-color); transform: translateY(-3px); }
+        .hero-card.active.rogue { border-color: var(--rogue-color); box-shadow: 0 0 10px var(--rogue-color); transform: translateY(-3px); }
+        .hero-card.active.mage { border-color: var(--mage-color); box-shadow: 0 0 10px var(--mage-color); transform: translateY(-3px); }
+        .hero-card.dead { filter: grayscale(100%); opacity: 0.6; }
+        .hero-icon { font-size: 18px; }
+        .hero-role { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .weapon-mini { font-size: 9px; color: var(--text-dark); font-weight: bold; line-height: 1.1; min-height: 22px; }
+        .ult-gauge { background: #333; border-radius: 3px; height: 10px; position: relative; overflow: hidden; border: 1px solid var(--ornate-frame); cursor: pointer; }
+        .ult-fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--ult-purple) 0%, #d2a6e0 100%); transition: width 0.3s; }
+        .ult-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 8px; z-index: 2; text-shadow: 1px 1px 1px #000; }
+        .ult-gauge.ready { animation: ultGlow 1.2s infinite; }
+        .ult-gauge.ready .ult-fill { background: linear-gradient(90deg, var(--gold-color) 0%, #ffd76b 100%); }
+
+        /* FORGE ZONE — base rule removed; canonical rule lives further down (search "FORGE ZONE — ring layout"). */
+
+        .action-button {
+            border: 2px solid #1f618d; color: white; text-transform: uppercase; letter-spacing: 1px;
+            font-weight: bold; font-size: 11px; padding: 8px; border-radius: 5px; cursor: pointer;
+            transition: all 0.1s; background: #7f8c8d; box-shadow: 0 4px 0 #2c3e50;
+        }
+        .action-button.primary { background: linear-gradient(180deg, #5dade2 0%, #2e86c1 100%); box-shadow: 0 4px 0 #1b4f72; }
+        .action-button.battle { background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); box-shadow: 0 4px 0 #78281f; border-color: #78281f; }
+        .action-button:active { transform: translateY(3px); box-shadow: 0 1px 0 #1b4f72; }
+        .action-button:disabled, .action-button.disabled { background: #95a5a6; box-shadow: 0 4px 0 #555; cursor: not-allowed; border-color: #555; }
+
+        /* 0.1.8: start button row INSIDE deployment-zone — always visible regardless of scroll. */
+        #start-button-row { padding: 4px 4px 2px 4px; }
+        #start-button-row .action-button { width: 100%; padding: 7px; font-size: 12px; }
+
+        /* Modals */
+        .modal-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 100; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-title { color: var(--gold-color); font-size: 24px; text-shadow: 0 0 10px #c0392b; margin: 0 0 10px 0; }
+        .modal-subtitle { color: #bdc3c7; font-size: 13px; margin-bottom: 20px; }
+        .modal-button { width: 240px; padding: 14px; margin: 8px 0; font-size: 13px; }
+
+        /* Hero sprites */
+        .hero-sprite-card {
+            width: 36px; height: 36px; object-fit: contain; display: inline-block;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        .hero-sprite-battle {
+            width: 44px; height: 44px; object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        .hero-sprite-card.has-bg, .hero-sprite-battle.has-bg {
+            mix-blend-mode: multiply;
+        }
+
+        /* ---- VFX ---- */
+        @keyframes dmgFloat {
+            0%   { transform: translate(-50%, 0)    scale(1);   opacity: 1; }
+            20%  { transform: translate(-50%, -8px) scale(1.15);opacity: 1; }
+            100% { transform: translate(-50%, -42px)scale(0.9); opacity: 0; }
+        }
+        @keyframes critFloat {
+            0%   { transform: translate(-50%, 0)    scale(0.6); opacity: 0; }
+            20%  { transform: translate(-50%, -6px) scale(1.4); opacity: 1; }
+            70%  { transform: translate(-50%, -28px)scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -55px)scale(1.0); opacity: 0; }
+        }
+        @keyframes hitFlash {
+            0%, 100% { box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+            50%      { box-shadow: 0 0 18px 4px rgba(255,255,255,0.9), 0 0 28px 6px rgba(255,255,255,0.5); }
+        }
+
+        .damage-pop {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            color: white; font-weight: bold; font-size: 16px; z-index: 30;
+            pointer-events: none; text-shadow: 1px 1px 2px #000, 0 0 4px #000;
+            animation: dmgFloat 0.9s ease-out forwards;
+            white-space: nowrap;
+        }
+        .damage-pop.crit       { color: #f1c40f; font-size: 22px; animation: critFloat 1.2s ease-out forwards; text-shadow: 1px 1px 2px #000, 0 0 6px #f39c12; }
+        .damage-pop.weakness   { color: #2ecc71; font-size: 18px; text-shadow: 1px 1px 2px #000, 0 0 4px #27ae60; }
+        .damage-pop.resisted   { color: #95a5a6; font-size: 13px; }
+        .damage-pop.elem-fire  { color: #ff7043; text-shadow: 1px 1px 2px #000, 0 0 5px #ff5722; }
+        .damage-pop.elem-ice   { color: #7fd0ff; text-shadow: 1px 1px 2px #000, 0 0 5px #29b6f6; }
+        .damage-pop.elem-pierce{ color: #ecf0f1; }
+        .damage-pop.ult        { color: #d2a6e0; font-size: 24px; text-shadow: 1px 1px 2px #000, 0 0 8px var(--ult-purple); animation: critFloat 1.4s ease-out forwards; }
+        .damage-pop.enemy-hit  { color: #e74c3c; font-size: 14px; }
+
+        .entity.hit-flash { animation: hitFlash 0.35s ease-out; }
+
+        /* Ult gauge persistent label */
+        .ult-bank-hint { position: absolute; bottom: -1px; right: 2px; font-size: 7px; color: #f1c40f; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 1px #000; }
+
+        /* Enemy weakness icon */
+        .enemy-affinity { font-size: 8px; color: #2ecc71; font-weight: bold; line-height: 1.1; text-shadow: 1px 1px 1px #000; }
+        .enemy-affinity .resist-tag { color: #95a5a6; }
+
+        /* Element streak overlay */
+        @keyframes elemStreak {
+            0%   { transform: translateX(100px) scaleX(0.2); opacity: 0; }
+            30%  { transform: translateX(0)     scaleX(1);   opacity: 1; }
+            100% { transform: translateX(-120px)scaleX(0.4); opacity: 0; }
+        }
+        .elem-streak {
+            position: absolute; top: 50%; left: 50%; transform-origin: center;
+            width: 120px; height: 6px; border-radius: 3px; pointer-events: none; z-index: 25;
+            animation: elemStreak 0.55s ease-out forwards;
+        }
+        .elem-streak.fire   { background: linear-gradient(90deg, transparent 0%, #ff7043 30%, #ffeb3b 50%, #ff7043 70%, transparent 100%); box-shadow: 0 0 14px #ff5722; }
+        .elem-streak.ice    { background: linear-gradient(90deg, transparent 0%, #7fd0ff 30%, #ffffff 50%, #7fd0ff 70%, transparent 100%); box-shadow: 0 0 14px #29b6f6; }
+        .elem-streak.pierce { background: linear-gradient(90deg, transparent 0%, #ecf0f1 30%, #ffffff 50%, #ecf0f1 70%, transparent 100%); box-shadow: 0 0 10px #ffffff; height: 3px; }
+        .elem-streak.basic  { background: linear-gradient(90deg, transparent 0%, #d35400 30%, #f1c40f 50%, #d35400 70%, transparent 100%); box-shadow: 0 0 8px #f39c12; height: 4px; }
+
+        /* FORGE ZONE — ring layout */
+        #forge-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            background: linear-gradient(180deg, #2a1f15, #1a120a);
+            border-top: 2px solid #6b4a26;
+            /* Hold content size against flex squeeze from combat-zone (flex:1). */
+            flex: 0 0 auto;
+            min-height: 470px;
+        }
+        #ring-stage {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            flex: 0 0 320px;   /* hold 320 against column-flex shrink (children are position:absolute, so flex-basis would otherwise collapse to 0) */
+        }
+        #tile-tray, #forge-controls {
+            flex-shrink: 0;
+        }
+        .forge-heart {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 80px; height: 80px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, #ff8a3d 0%, #6b2a0c 60%, transparent 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 30px #ff5e1f;
+            pointer-events: none;
+        }
+        .ring-cell {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 64px; height: 64px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px;
+            font-size: 28px;
+            background: #3a2818;
+            border: 2px dashed #6b4a26;
+            color: #d4b885;
+            transition: transform 120ms, border-color 200ms, background 200ms;
+        }
+        .ring-cell.fixed { border-style: solid; border-color: #c89058; background: #4a2f18; }
+        .ring-cell.filled { border-style: solid; border-color: #c89058; background: #5a3a20; box-shadow: 0 0 12px rgba(255,160,80,0.4); }
+        .ring-cell.empty { opacity: 0.7; }
+        .ring-cell.drop-target { border-color: #ffd66b; background: #6b4a26; transform: translate(-50%, -50%) scale(1.08); }
+        .ring-cell.station-active { box-shadow: 0 0 24px #ff8a3d, 0 0 8px #fff inset; }
+        #tile-tray {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            min-height: 70px;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            border: 1px solid #5a3a20;
+        }
+        #start-lap-btn {
+            margin-top: 10px;
+            padding: 10px 24px;
+            font-size: 18px;
+            background: #c89058; color: #1a120a; border: 2px solid #ffd66b; border-radius: 8px;
+            cursor: pointer;
+        }
+        #start-lap-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .tray-tile {
+            width: 54px; height: 54px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            background: #4a2f18; border: 2px solid #c89058; border-radius: 10px;
+            color: #ffd66b;
+            cursor: grab;
+            user-select: none; touch-action: none;
+            transition: transform 100ms;
+        }
+        .tray-tile:active { cursor: grabbing; transform: scale(1.1); }
+        .tray-tile.dragging { opacity: 0.4; }
+        .tile-ghost {
+            position: fixed;
+            width: 54px; height: 54px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            background: rgba(74,47,24,0.9); border: 2px solid #ffd66b; border-radius: 10px;
+            color: #ffd66b;
+        }
+        #ingot {
+            position: absolute;
+            left: 50%; top: 50%;
+            width: 18px; height: 18px;
+            background: radial-gradient(circle, #fff 0%, #ffb84a 40%, #ff5e1f 80%, transparent 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 18px #ff8a3d, 0 0 4px #fff inset;
+            transform: translate(-50%, -50%);
+            transition: transform 500ms cubic-bezier(0.4, 0, 0.6, 1);
+            pointer-events: none;
+            z-index: 10;
+        }
+        #ingot.cool { background: radial-gradient(circle, #fff 0%, #a8d8ff 40%, #3a78c8 80%, transparent 100%); box-shadow: 0 0 14px #6ba8e8; }
+
+        /* Minigame modal — overrides base .modal-overlay with fixed positioning + higher z-index */
+        #minigame-modal.modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.72);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .minigame-shell {
+            width: 320px;
+            background: linear-gradient(180deg, #3a2818 0%, #1a120a 100%);
+            border: 3px solid #c89058;
+            border-radius: 14px;
+            padding: 18px 18px 14px;
+            box-shadow: 0 0 40px rgba(255,138,61,0.4);
+            color: #ffd66b;
+            text-align: center;
+        }
+        .minigame-title { font-size: 22px; font-weight: 700; margin-bottom: 14px; letter-spacing: 0.5px; }
+        .minigame-body { min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .minigame-hint { font-size: 13px; color: #b89860; margin-top: 12px; }
+        .anvil-track {
+            width: 240px; height: 60px;
+            position: relative;
+            background: #2a1810; border: 2px solid #6b4a26; border-radius: 6px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+        .anvil-zone {
+            position: absolute; top: 0; bottom: 0;
+            left: 50%; transform: translateX(-50%);
+            background: rgba(120,255,120,0.18);
+            border-left: 1px solid #6bff6b; border-right: 1px solid #6bff6b;
+        }
+        .anvil-hammer {
+            position: absolute; top: 50%; transform: translateX(0); transform-origin: center;
+            font-size: 32px; margin-top: -22px;
+            pointer-events: none;
+        }
+        .anvil-counter { font-size: 14px; color: #d4b885; }
+        .anvil-feedback {
+            min-height: 32px;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-align: center;
+            pointer-events: none;
+        }
+        .anvil-track { position: relative; }
+        .anvil-sparks {
+            position: absolute; inset: 0;
+            pointer-events: none;
+            overflow: visible;
+        }
+        .anvil-spark {
+            position: absolute;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, #ffd66b 60%, transparent 100%);
+            box-shadow: 0 0 8px #ffd66b;
+            animation: anvilSpark 700ms ease-out forwards;
+            pointer-events: none;
+        }
+        .anvil-spark.perfect {
+            background: radial-gradient(circle, #fff 0%, #6bff6b 50%, transparent 100%);
+            box-shadow: 0 0 10px #6bff6b;
+            width: 8px; height: 8px;
+        }
+        @keyframes anvilSpark {
+            0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+        }
+        .lap-complete-shell { width: 300px; background: linear-gradient(180deg, #3a2818, #1a120a); border: 3px solid #c89058; border-radius: 14px; padding: 20px; text-align: center; color: #ffd66b; }
+        .lap-complete-title { font-size: 24px; margin-bottom: 14px; }
+        .lap-complete-preview { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-size: 14px; line-height: 1.6; color: #d4b885; margin-bottom: 16px; }
+        .lap-complete-actions { display: flex; flex-direction: column; gap: 8px; }
+        .lap-complete-actions button { padding: 12px; background: #c89058; color: #1a120a; border: 2px solid #ffd66b; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .lap-complete-actions button:disabled { background: #6b4a26; color: #8a7050; cursor: not-allowed; }
+        .weapon-sprite-svg { display: block; }
+
+        .reveal-stage {
+            position: relative;
+            width: 360px; height: 480px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .reveal-bg-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+        .reveal-anvil { position: absolute; top: 200px; font-size: 80px; opacity: 0; transform: scale(0.5); }
+        .reveal-particles { position: absolute; top: 180px; width: 80px; height: 180px; pointer-events: none; }
+        .reveal-particles .spark {
+            position: absolute; width: 4px; height: 4px; border-radius: 50%;
+            background: radial-gradient(circle, #fff, #ff8a3d 60%, transparent);
+            animation: revealSpark 1.4s ease-out forwards;
+        }
+        @keyframes revealSpark {
+            0%   { transform: translate(0, 80px); opacity: 1; }
+            100% { transform: translate(var(--dx), -120px); opacity: 0; }
+        }
+        .reveal-weapon {
+            position: absolute; top: 100px;
+            opacity: 0; transform: scale(0.4);
+            filter: drop-shadow(0 0 18px #ffd66b);
+        }
+        .reveal-weapon svg { width: 140px; height: 140px; }
+        .reveal-banner {
+            position: absolute; top: 60px; width: 320px;
+            padding: 10px 14px;
+            background: linear-gradient(90deg, transparent, #c89058, transparent);
+            color: #1a120a; font-weight: 700; font-size: 17px;
+            text-align: center;
+            opacity: 0; transform: scaleX(0);
+            transform-origin: center;
+        }
+        .reveal-stats {
+            position: absolute; top: 360px; width: 320px;
+            color: #ffd66b; text-align: center; font-size: 15px;
+            opacity: 0;
+        }
+        @keyframes revealShake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-4px, 2px); }
+            40% { transform: translate(4px, -3px); }
+            60% { transform: translate(-3px, 3px); }
+            80% { transform: translate(3px, -2px); }
+        }
+        .reveal-stage.shake { animation: revealShake 380ms ease-out; }
+
+        /* Hero card weapon slot */
+        .hero-weapon-slot {
+            position: absolute;
+            right: -8px; bottom: 30px;
+            width: 56px; height: 56px;
+            z-index: 2;
+        }
+        .hero-weapon-slot svg { width: 56px; height: 56px; }
+
+        /* Crit star marker */
+        .crit-star { position: absolute; top: -10px; right: -6px; color: #ffd66b; font-size: 22px; text-shadow: 0 0 8px #ffd66b; animation: critPop 700ms ease-out forwards; pointer-events: none; }
+        @keyframes critPop {
+            0%   { opacity: 0; transform: scale(0.4); }
+            20%  { opacity: 1; transform: scale(1.3); }
+            100% { opacity: 0; transform: scale(1.6) translateY(-20px); }
+        }
+
+        /* Element burst overlay */
+        .elem-burst { position: absolute; inset: -10px; border-radius: 50%; opacity: 0.85; animation: elemBurst 500ms ease-out forwards; pointer-events: none; }
+        @keyframes elemBurst {
+            0%   { opacity: 0.95; transform: scale(0.3); }
+            100% { opacity: 0; transform: scale(1.4); }
+        }
+
+        /* Forge Again modal */
+        .forge-again-shell { width: 300px; background: linear-gradient(180deg, #3a2818, #1a120a); border: 3px solid #c89058; border-radius: 14px; padding: 20px; text-align: center; color: #ffd66b; }
+        .forge-again-title { font-size: 22px; margin-bottom: 12px; }
+        .forge-again-current { font-size: 14px; color: #d4b885; margin-bottom: 16px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; }
+        .forge-again-actions { display: flex; flex-direction: column; gap: 8px; }
+        .forge-again-actions button { padding: 10px; background: #c89058; color: #1a120a; border: 2px solid #ffd66b; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .forge-again-actions button:disabled { background: #6b4a26; color: #8a7050; cursor: not-allowed; }
+        .bellows-meter { width: 220px; height: 14px; background: #2a1810; border: 1px solid #6b4a26; border-radius: 7px; overflow: hidden; }
+        .bellows-meter-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff8a3d, #ffd66b); transition: width 200ms; }
+        .bellows-beat { width: 24px; height: 24px; border-radius: 50%; background: #6b4a26; margin: 12px 0; }
+        .bellows-beat.pulse { animation: bellowsBeat 220ms ease-out; }
+        @keyframes bellowsBeat {
+            0%   { background: #ffd66b; box-shadow: 0 0 24px #ffd66b; transform: scale(1.4); }
+            100% { background: #6b4a26; box-shadow: 0 0 0 transparent; transform: scale(1.0); }
+        }
+        .bellows-icon { font-size: 64px; cursor: pointer; user-select: none; touch-action: none; }
+        .bellows-counter { font-size: 14px; color: #d4b885; margin-top: 8px; }
+        .quench-gauge {
+            position: relative;
+            width: 36px; height: 200px;
+            background: linear-gradient(180deg, #ff5e1f 0%, #ffd66b 40%, #a8d8ff 70%, #3a78c8 100%);
+            border: 2px solid #6b4a26; border-radius: 8px;
+            margin: 0 auto;
+        }
+        .quench-perfect {
+            position: absolute; left: -4px; right: -4px;
+            top: 50%; transform: translateY(-50%);
+            height: 40px;
+            border-top: 2px solid #6bff6b; border-bottom: 2px solid #6bff6b;
+            background: rgba(120,255,120,0.18);
+        }
+        .quench-marker {
+            position: absolute; left: -8px; right: -8px;
+            height: 6px; bottom: 0;
+            background: #fff; border-radius: 3px;
+            box-shadow: 0 0 8px #fff;
+        }
+        .quench-stop {
+            margin-top: 16px;
+            padding: 12px 28px;
+            background: #c89058; color: #1a120a; border: 2px solid #ffd66b; border-radius: 8px;
+            font-size: 18px; font-weight: 700; cursor: pointer;
+        }
+        .engraver-palette { display: flex; gap: 6px; margin-bottom: 10px; }
+        .glyph-pick { padding: 6px 10px; background: #4a2f18; color: #ffd66b; border: 1px solid #c89058; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        .glyph-pick:hover { background: #6b4a26; }
+        #engraver-canvas { width: 200px; height: 200px; background: #1a120a; border: 2px solid #6b4a26; border-radius: 8px; touch-action: none; }
+        #engraver-coverage { font-size: 13px; color: #d4b885; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+<div id="mobile-container">
+    <div class="header-bg"></div>
+
+    <!-- HUD -->
+    <div id="top-hud">
+        <div id="gold-ui">🪙 <span id="gold-count">5</span></div>
+        <div id="wave-pill">WAVE <span id="wave-num">1</span></div>
+    </div>
+
+    <!-- Boss-retry modal -->
+    <div id="retry-modal" class="modal-overlay">
+        <h2 class="modal-title">⚔️ BOSS WON ⚔️</h2>
+        <div class="modal-subtitle">Your squad fell. Forge again to retry.</div>
+        <button class="action-button modal-button primary" onclick="bossRetry()">🔧 Reforge & Retry</button>
+        <button class="action-button modal-button" onclick="restartStage()">↻ Restart Stage</button>
+    </div>
+
+    <!-- Wipe modal -->
+    <div id="wipe-modal" class="modal-overlay">
+        <h2 class="modal-title" style="color:#e74c3c;">☠️ SQUAD WIPED ☠️</h2>
+        <div class="modal-subtitle">The horde was too strong.</div>
+        <button class="action-button modal-button primary" onclick="restartStage()">↻ Restart Stage</button>
+    </div>
+
+    <!-- Stage clear modal -->
+    <div id="clear-modal" class="modal-overlay">
+        <h2 class="modal-title" style="color:#2ecc71;">🏆 STAGE CLEAR 🏆</h2>
+        <div class="modal-subtitle" id="clear-stats"></div>
+        <button class="action-button modal-button primary" onclick="restartStage()">↻ Play Again</button>
+    </div>
+
+    <!-- Combat zone -->
+    <div id="combat-zone">
+        <div id="affinity-banner"></div>
+        <div id="turn-display">PREPARATION PHASE</div>
+
+        <div id="battle-view">
+            <div class="entities-area">
+                <div id="enemy-view"></div>
+                <div style="color: var(--ornate-accent); font-size: 22px; font-weight: bold;">VS</div>
+                <div id="hero-view"></div>
+            </div>
+            <div id="combat-log-container">
+                <div id="combat-log">Welcome to ForgeLoop. Place station tiles on the ring → Start Lap → forge your weapon → fight!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deployment / hero cards + ult gauges -->
+    <div id="deployment-zone">
+        <div class="squad-bar" id="hero-cards"></div>
+        <div id="start-button-row">
+            <button class="action-button battle" id="battle-btn" onclick="startBattle()">⚔️ Start Wave</button>
+        </div>
+    </div>
+
+    <!-- Minigame modal -->
+    <div id="minigame-modal" class="modal-overlay" style="display:none;">
+        <div class="minigame-shell">
+            <div class="minigame-title"></div>
+            <div class="minigame-body"></div>
+            <div class="minigame-hint"></div>
+        </div>
+    </div>
+
+    <!-- Lap-complete modal -->
+    <div id="lap-complete-modal" class="modal-overlay" style="display:none;">
+        <div class="lap-complete-shell">
+            <div class="lap-complete-title">Lap Complete</div>
+            <div class="lap-complete-preview" id="lap-complete-preview"></div>
+            <div class="lap-complete-actions">
+                <button id="commit-forge-btn">Forge Weapon Now</button>
+                <button id="another-lap-btn" disabled title="Multi-lap arrives in 0.1.1">Run Another Lap</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reveal modal (Task 13) -->
+    <div id="reveal-modal" class="modal-overlay" style="display:none;">
+        <div class="reveal-stage">
+            <div class="reveal-bg-flash" id="reveal-flash"></div>
+            <div class="reveal-anvil" id="reveal-anvil">⚒️</div>
+            <div class="reveal-particles" id="reveal-particles"></div>
+            <div class="reveal-weapon" id="reveal-weapon"></div>
+            <div class="reveal-banner" id="reveal-banner"></div>
+            <div class="reveal-stats" id="reveal-stats"></div>
+        </div>
+    </div>
+
+    <!-- Forge Again modal (Task 16) -->
+    <div id="forge-again-modal" class="modal-overlay" style="display:none;">
+        <div class="forge-again-shell">
+            <div class="forge-again-title">Wave Cleared</div>
+            <div class="forge-again-current" id="forge-again-current"></div>
+            <div class="forge-again-actions">
+                <button id="forge-again-yes">Forge Again (5🪙)</button>
+                <button id="forge-again-no">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forge zone (replaces crafting-zone) -->
+    <div id="forge-zone">
+        <div id="ring-stage"></div>
+        <div id="tile-tray"></div>
+        <div id="forge-controls">
+            <button id="start-lap-btn" disabled>Start Lap (5🪙)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================================
+// === SECTION: CONFIG ===
+// ============================================================================
+
+const RING_CELLS               = 8;
+const CELL_SMELTER             = 0;
+const CELL_INSPECTOR           = 4;
+const CELL_CUSTOMIZABLE        = [1, 2, 3, 5, 6, 7];
+const LOOP_DIRECTION           = 'cw';
+const LAP_DURATION_TARGET_MS   = 25000;
+const FORGE_COST_G             = 5;
+const STARTING_GOLD            = 5;
+const WAVE_REWARD_G            = 5;
+const STARTER_TILES            = ['bellows', 'anvil', 'quench', 'engraver'];
+const REVEAL_DURATION_MS       = 4000;
+const EMPTY_CELL_TRANSIT_MS    = 500;
+const STATION_GLOW_MS          = 1000;
+const BELLOWS_PUMPS            = 4;
+const BELLOWS_HIT_WINDOW_MS    = 200;
+const ANVIL_SWINGS             = 5;
+const ANVIL_HIT_WINDOW_PX      = 40;
+const QUENCH_BAR_SPEED_PX_S    = 400;
+const QUENCH_PERFECT_PX        = 20;
+const ENGRAVER_TRACE_PASS_PCT  = 0.60;
+
+// Combat constants (retained from base)
+const STAGE_LENGTH = 6;
+const BOSS_WAVE = 6;
+const ULT_TIME_CAP_MS = 30000;
+const TICK_MS = 1100;
+
+// ============================================================================
+// === SECTION: STATE ===
+// ============================================================================
+
+let state = null;
+
+function freshState() {
+    return {
+        wave: 1,
+        gold: STARTING_GOLD,
+        ring: new Array(RING_CELLS).fill(null),
+        tray: [...STARTER_TILES],
+        weapon: null,
+        lapInProgress: false,
+        lapCounter: 0,
+        lapStats: null,
+        heroes: [{ id: 'bran', class: 'warrior', name: 'Bran', maxHpBase: 30, atkBase: 4, hp: 30, ult: 0, dead: false }],
+        activeHeroId: 'bran',
+        enemies: [],
+        isBattling: false,
+        battleStart: 0,
+        battleTick: null,
+        boss: null,
+        tutorialActive: true,
+        sessionStart: Date.now(),
+    };
+}
+
+// ============================================================================
+// === SECTION: EVENTS ===
+// ============================================================================
+
+const SESSION_ID = 'sess_' + Date.now();
+function emit(evt, payload) {
+    const e = { t: Date.now(), sid: SESSION_ID, evt, payload: payload || {} };
+    console.log('[FL-EVT]', JSON.stringify(e));
+}
+
+window.__forgeLoopStats = function() {
+    return {
+        wave: state.wave,
+        gold: state.gold,
+        ring: state.ring,
+        tray: state.tray,
+        weapon: state.weapon,
+        lapInProgress: state.lapInProgress,
+        lapStats: state.lapStats || null,
+        lapCounter: state.lapCounter || 0,
+        heroes: state.heroes.map(h => ({ id: h.id, hp: h.hp, ult: h.ult })),
+    };
+};
+
+// ============================================================================
+// === SECTION: RING_GEOMETRY ===
+// ============================================================================
+
+// Cell 0 = top (Smelter). Cells go clockwise: 0,1,2,3 down right side; 4 = bottom (Inspector); 5,6,7 up left side.
+// Polar layout: angle = -90deg + (i * 45deg) so cell 0 is at 12 o'clock.
+const RING_RADIUS = 130;  // px, from center of #ring-stage
+const CELL_SIZE = 64;     // px, hex cell width
+
+function cellAngleDeg(i) {
+    return -90 + i * (360 / RING_CELLS);
+}
+
+function cellCenterPx(i) {
+    const a = cellAngleDeg(i) * Math.PI / 180;
+    return { x: RING_RADIUS * Math.cos(a), y: RING_RADIUS * Math.sin(a) };
+}
+
+console.assert(RING_CELLS === 8, 'ring must be 8 cells');
+console.assert(Math.abs(cellCenterPx(0).y + RING_RADIUS) < 0.001, 'cell 0 must be at top');
+console.assert(Math.abs(cellCenterPx(4).y - RING_RADIUS) < 0.001, 'cell 4 must be at bottom');
+
+// ============================================================================
+// === SECTION: RING_RENDER ===
+// ============================================================================
+
+function renderRing() {
+    const stage = document.getElementById('ring-stage');
+    stage.innerHTML = '';
+    // Center decorative heart.
+    const heart = document.createElement('div');
+    heart.className = 'forge-heart';
+    stage.appendChild(heart);
+    // 8 cells.
+    for (let i = 0; i < RING_CELLS; i++) {
+        const { x, y } = cellCenterPx(i);
+        const cell = document.createElement('div');
+        cell.className = 'ring-cell';
+        cell.dataset.cellIndex = String(i);
+        cell.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+        const station = state.ring[i];
+        if (i === CELL_SMELTER) {
+            cell.classList.add('fixed', 'smelter');
+            cell.textContent = '🔥';
+        } else if (i === CELL_INSPECTOR) {
+            cell.classList.add('fixed', 'inspector');
+            cell.textContent = '🔍';
+        } else if (station) {
+            cell.classList.add('filled', `st-${station}`);
+            cell.textContent = stationIcon(station);
+            attachLongPressRemove(cell, i);
+        } else {
+            cell.classList.add('empty');
+            cell.textContent = '';
+        }
+        stage.appendChild(cell);
+    }
+    // Ingot element — positioned relative to stage center via transform.
+    const ingot = document.createElement('div');
+    ingot.id = 'ingot';
+    ingot.style.display = 'none';
+    stage.appendChild(ingot);
+}
+
+function stationIcon(id) {
+    return { bellows: '💨', anvil: '🔨', quench: '💧', engraver: '✒️' }[id] || '·';
+}
+
+// ============================================================================
+// === SECTION: TRAY ===
+// ============================================================================
+
+function renderTray() {
+    const tray = document.getElementById('tile-tray');
+    tray.innerHTML = '';
+    state.tray.forEach((stationId, idx) => {
+        const tile = document.createElement('div');
+        tile.className = 'tray-tile';
+        tile.dataset.stationId = stationId;
+        tile.dataset.trayIdx = String(idx);
+        tile.textContent = stationIcon(stationId);
+        tile.title = stationLabel(stationId);
+        attachDrag(tile);
+        tray.appendChild(tile);
+    });
+}
+
+function stationLabel(id) {
+    return { bellows: 'Bellows', anvil: 'Anvil', quench: 'Quench', engraver: 'Engraver',
+             smelter: 'Smelter', inspector: 'Inspector' }[id] || id;
+}
+
+// ============================================================================
+// === SECTION: DRAG_DROP ===
+// ============================================================================
+
+let dragState = null;  // { stationId, trayIdx, ghostEl, originTile, pointerId }
+
+function attachDrag(tileEl) {
+    tileEl.addEventListener('pointerdown', onDragStart);
+}
+
+function onDragStart(e) {
+    if (state.lapInProgress) return;  // no edits mid-lap
+    const tile = e.currentTarget;
+    tile.setPointerCapture(e.pointerId);
+    const stationId = tile.dataset.stationId;
+    const trayIdx = parseInt(tile.dataset.trayIdx, 10);
+    const ghost = document.createElement('div');
+    ghost.className = 'tile-ghost';
+    ghost.textContent = stationIcon(stationId);
+    ghost.style.left = e.clientX + 'px';
+    ghost.style.top = e.clientY + 'px';
+    document.body.appendChild(ghost);
+    tile.classList.add('dragging');
+    dragState = { stationId, trayIdx, ghostEl: ghost, originTile: tile, pointerId: e.pointerId };
+    tile.addEventListener('pointermove', onDragMove);
+    tile.addEventListener('pointerup', onDragEnd);
+    tile.addEventListener('pointercancel', onDragEnd);
+}
+
+function onDragMove(e) {
+    if (!dragState) return;
+    dragState.ghostEl.style.left = e.clientX + 'px';
+    dragState.ghostEl.style.top = e.clientY + 'px';
+    // Highlight drop target.
+    document.querySelectorAll('.ring-cell.drop-target').forEach(c => c.classList.remove('drop-target'));
+    const cell = cellUnderPointer(e.clientX, e.clientY);
+    if (cell && canDropOnCell(cell)) cell.classList.add('drop-target');
+}
+
+function onDragEnd(e) {
+    if (!dragState) return;
+    const cell = cellUnderPointer(e.clientX, e.clientY);
+    const dropped = cell && canDropOnCell(cell);
+    if (dropped) {
+        const cellIndex = parseInt(cell.dataset.cellIndex, 10);
+        placeStation(dragState.stationId, dragState.trayIdx, cellIndex);
+    }
+    dragState.ghostEl.remove();
+    dragState.originTile.classList.remove('dragging');
+    document.querySelectorAll('.ring-cell.drop-target').forEach(c => c.classList.remove('drop-target'));
+    dragState = null;
+}
+
+function cellUnderPointer(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el && el.classList.contains('ring-cell') ? el : null;
+}
+
+function canDropOnCell(cell) {
+    if (cell.classList.contains('fixed')) return false;
+    return cell.classList.contains('empty');
+}
+
+function placeStation(stationId, trayIdx, cellIndex) {
+    state.ring[cellIndex] = stationId;
+    state.tray.splice(trayIdx, 1);
+    emit('station_placed', { wave: state.wave, cellIndex, stationId, fromTray: true });
+    snapFitFeedback(cellIndex);
+    renderAll();
+    refreshStartLapButton();
+}
+
+function snapFitFeedback(cellIndex) {
+    // S7 Lego snap: scale-pulse + click SFX (SFX deferred — visual only in 0.1.0).
+    setTimeout(() => {
+        const cell = document.querySelector(`.ring-cell[data-cell-index="${cellIndex}"]`);
+        if (!cell) return;
+        cell.animate(
+            [{ transform: cell.style.transform + ' scale(1.0)' },
+             { transform: cell.style.transform + ' scale(1.18)' },
+             { transform: cell.style.transform + ' scale(1.0)' }],
+            { duration: 220, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+        );
+    }, 10);
+}
+
+function refreshStartLapButton() {
+    const btn = document.getElementById('start-lap-btn');
+    const hasAnyStation = state.ring.some((s, i) => s && i !== CELL_SMELTER && i !== CELL_INSPECTOR);
+    btn.disabled = !hasAnyStation || state.gold < FORGE_COST_G || state.lapInProgress;
+    btn.textContent = `Start Lap (${FORGE_COST_G}🪙)`;
+}
+
+function removeStation(cellIndex) {
+    if (state.lapInProgress) return;
+    const stationId = state.ring[cellIndex];
+    if (!stationId || cellIndex === CELL_SMELTER || cellIndex === CELL_INSPECTOR) return;
+    state.ring[cellIndex] = null;
+    state.tray.push(stationId);
+    emit('station_removed', { wave: state.wave, cellIndex, stationId });
+    renderAll();
+    refreshStartLapButton();
+}
+
+function attachLongPressRemove(cellEl, cellIndex) {
+    let pressTimer = null;
+    const cancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+    cellEl.addEventListener('pointerdown', (e) => {
+        pressTimer = setTimeout(() => { pressTimer = null; removeStation(cellIndex); }, 500);
+    });
+    cellEl.addEventListener('pointerup', cancel);
+    cellEl.addEventListener('pointerleave', cancel);
+    cellEl.addEventListener('pointercancel', cancel);
+}
+
+// ============================================================================
+// === SECTION: INGOT ===
+// ============================================================================
+
+function moveIngotToCell(cellIndex, durationMs) {
+    const ingot = document.getElementById('ingot');
+    ingot.style.display = 'block';
+    const { x, y } = cellCenterPx(cellIndex);
+    ingot.style.transition = `transform ${durationMs}ms cubic-bezier(0.4, 0, 0.6, 1)`;
+    ingot.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+    return new Promise(resolve => setTimeout(resolve, durationMs));
+}
+
+function hideIngot() {
+    const ingot = document.getElementById('ingot');
+    ingot.style.display = 'none';
+}
+
+// ============================================================================
+// === SECTION: MINIGAME_FRAMEWORK ===
+// ============================================================================
+
+const MINIGAME_RENDERERS = {};  // populated by Tasks 6–9
+
+function openMinigame(stationId, cellIndex, renderFn) {
+    emit('minigame_start', { stationId, cellIndex, lap: state.lapCounter });
+    const modal = document.getElementById('minigame-modal');
+    const titleEl = modal.querySelector('.minigame-title');
+    const bodyEl = modal.querySelector('.minigame-body');
+    const hintEl = modal.querySelector('.minigame-hint');
+    titleEl.textContent = stationLabel(stationId);
+    bodyEl.innerHTML = '';
+    hintEl.textContent = '';
+    modal.style.display = 'flex';
+    // renderFn(bodyEl, hintEl, resolve) — minigame fills body, calls resolve({score, perf, stats}).
+    return new Promise(resolve => {
+        renderFn(bodyEl, hintEl, (result) => {
+            emit('minigame_complete', {
+                stationId, cellIndex, lap: state.lapCounter,
+                score: result.score, perf: result.perf, statsContribution: result.stats
+            });
+            // Apply stats to lap accumulator.
+            accumulateLapStats(stationId, result);
+            // Brief close delay so player sees final state.
+            setTimeout(() => {
+                modal.style.display = 'none';
+                resolve(result);
+            }, 700);
+        });
+    });
+}
+
+function accumulateLapStats(stationId, result) {
+    const s = state.lapStats;
+    s.atk += result.stats.atk || 0;
+    s.crit += result.stats.crit || 0;
+    s.dur += result.stats.dur || 0;
+    if (result.stats.element) s.element = result.stats.element;
+    if (result.stats.heatTag) s.heatTag = true;
+    s.perfBuckets.push({ stationId, perf: result.perf });
+}
+
+function logMinigameInput(stationId, inputType, payload) {
+    emit('minigame_input', { stationId, inputType, payload });
+}
+
+// perf classifier from raw 0..1 normalized score.
+function classifyPerf(normScore) {
+    if (normScore >= 0.95) return 'perfect';
+    if (normScore >= 0.55) return 'good';
+    return 'soft_fail';
+}
+
+// ============================================================================
+// === SECTION: MINIGAME_BELLOWS ===
+// ============================================================================
+
+MINIGAME_RENDERERS['bellows'] = (bodyEl, hintEl, resolve) => {
+    bodyEl.innerHTML = `
+        <div class="bellows-meter"><div class="bellows-meter-fill" id="bellows-fill"></div></div>
+        <div class="bellows-beat" id="bellows-beat"></div>
+        <div class="bellows-icon" id="bellows-icon">💨</div>
+        <div class="bellows-counter"><span id="bellows-hits">0</span>/${BELLOWS_PUMPS} pumps</div>
+    `;
+    hintEl.textContent = 'Tap the bellows on every beat';
+    const ICON = document.getElementById('bellows-icon');
+    const BEAT = document.getElementById('bellows-beat');
+    const FILL = document.getElementById('bellows-fill');
+    const HITS = document.getElementById('bellows-hits');
+    const BEAT_MS = 1000;
+    const pumps = [];  // beat times (absolute ms)
+    const start = Date.now();
+    for (let i = 1; i <= BELLOWS_PUMPS; i++) pumps.push(start + i * BEAT_MS);
+    let hits = 0;
+    let nextBeatIdx = 0;
+    function flashBeat() {
+        BEAT.classList.remove('pulse');
+        // Force reflow to restart animation.
+        void BEAT.offsetWidth;
+        BEAT.classList.add('pulse');
+    }
+    const beatTimers = pumps.map((t, idx) => setTimeout(flashBeat, t - start - 80));  // visual lead 80ms
+    function onTap(e) {
+        const now = Date.now();
+        // Find closest unhit beat.
+        if (nextBeatIdx >= pumps.length) return;
+        const beatT = pumps[nextBeatIdx];
+        const delta = Math.abs(now - beatT);
+        logMinigameInput('bellows', 'tap', { beatIdx: nextBeatIdx, deltaMs: delta });
+        if (delta <= BELLOWS_HIT_WINDOW_MS) {
+            hits++;
+            HITS.textContent = String(hits);
+            FILL.style.width = ((hits / BELLOWS_PUMPS) * 100) + '%';
+            ICON.animate(
+                [{ transform: 'scale(1.0)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1.0)' }],
+                { duration: 180 }
+            );
+        }
+        nextBeatIdx++;
+    }
+    ICON.addEventListener('pointerdown', onTap);
+    // End after last beat + 400ms grace.
+    setTimeout(() => {
+        const norm = hits / BELLOWS_PUMPS;
+        const perf = classifyPerf(norm);
+        resolve({
+            score: hits,
+            perf,
+            stats: {
+                heatTag: hits >= 2,   // 50%+ pumps lights the heat tag
+                atk: 0
+            }
+        });
+    }, BEAT_MS * BELLOWS_PUMPS + 400);
+};
+
+// ============================================================================
+// === SECTION: MINIGAME_ANVIL ===
+// ============================================================================
+
+MINIGAME_RENDERERS['anvil'] = (bodyEl, hintEl, resolve) => {
+    bodyEl.innerHTML = `
+        <div class="anvil-feedback" id="anvil-feedback"></div>
+        <div class="anvil-track">
+            <div class="anvil-zone" id="anvil-zone"></div>
+            <div class="anvil-hammer" id="anvil-hammer">🔨</div>
+            <div class="anvil-sparks" id="anvil-sparks"></div>
+        </div>
+        <div class="anvil-counter"><span id="anvil-hits">0</span>/${ANVIL_SWINGS} swings · <span id="anvil-atk">0</span> ATK</div>
+    `;
+    hintEl.textContent = 'Tap when the hammer is in the green zone';
+    const TRACK_W = 240;
+    const ZONE_W = ANVIL_HIT_WINDOW_PX;
+    const ZONE_EL = document.getElementById('anvil-zone');
+    ZONE_EL.style.width = ZONE_W + 'px';
+    const HAMMER = document.getElementById('anvil-hammer');
+    const HITS_EL = document.getElementById('anvil-hits');
+    const ATK_EL = document.getElementById('anvil-atk');
+    const FB_EL = document.getElementById('anvil-feedback');
+    const SPARKS_EL = document.getElementById('anvil-sparks');
+    let hits = 0;
+    let swingsTaken = 0;
+    let totalAtkBoost = 0;
+    let pos = 0;            // 0..TRACK_W
+    let dir = 1;            // 1 or -1
+    const SPEED = TRACK_W / 0.6;  // px per second → traversal in 0.6s, so ~3 traversals per swing
+    let lastT = performance.now();
+    let rafId;
+    let tapped = false;
+    const hotBonus = state.lapStats.heatTag ? 1.3 : 1.0;
+
+    function frame(t) {
+        const dt = (t - lastT) / 1000; lastT = t;
+        pos += dir * SPEED * dt;
+        if (pos <= 0) { pos = 0; dir = 1; }
+        if (pos >= TRACK_W) { pos = TRACK_W; dir = -1; }
+        HAMMER.style.transform = `translateX(${pos}px)`;
+        rafId = requestAnimationFrame(frame);
+    }
+    rafId = requestAnimationFrame(frame);
+
+    function flashFeedback(text, color) {
+        FB_EL.textContent = text;
+        FB_EL.style.color = color;
+        FB_EL.style.textShadow = `0 0 12px ${color}, 0 0 4px #fff`;
+        FB_EL.animate(
+            [{ opacity: 0, transform: 'scale(0.6) translateY(8px)' },
+             { opacity: 1, transform: 'scale(1.25) translateY(0)', offset: 0.25 },
+             { opacity: 1, transform: 'scale(1.0) translateY(0)', offset: 0.7 },
+             { opacity: 0, transform: 'scale(0.95) translateY(-10px)' }],
+            { duration: 650, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+        );
+    }
+
+    function flashZone(color, glow) {
+        ZONE_EL.animate(
+            [{ background: 'rgba(120,255,120,0.18)', boxShadow: 'none' },
+             { background: color, boxShadow: `0 0 24px ${glow}, inset 0 0 12px ${glow}`, offset: 0.2 },
+             { background: 'rgba(120,255,120,0.18)', boxShadow: 'none' }],
+            { duration: 360, easing: 'ease-out' }
+        );
+    }
+
+    function burstSparks(xPx, perfect) {
+        const count = perfect ? 8 : 5;
+        for (let i = 0; i < count; i++) {
+            const spark = document.createElement('div');
+            spark.className = 'anvil-spark';
+            spark.style.left = xPx + 'px';
+            spark.style.top = '50%';
+            const dx = (Math.random() - 0.5) * 80;
+            const dy = -(20 + Math.random() * 30);
+            spark.style.setProperty('--dx', dx + 'px');
+            spark.style.setProperty('--dy', dy + 'px');
+            if (perfect) spark.classList.add('perfect');
+            SPARKS_EL.appendChild(spark);
+            setTimeout(() => spark.remove(), 700);
+        }
+    }
+
+    function shakeTrack() {
+        const track = bodyEl.querySelector('.anvil-track');
+        track.animate(
+            [{ transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(0)' }],
+            { duration: 260, easing: 'ease-out' }
+        );
+    }
+
+    function onTap() {
+        if (tapped || swingsTaken >= ANVIL_SWINGS) return;
+        tapped = true;
+        const zoneCenter = TRACK_W / 2;
+        const inZone = Math.abs(pos - zoneCenter) <= ZONE_W / 2;
+        const perfect = Math.abs(pos - zoneCenter) <= ZONE_W / 4;  // tighter inner band = "perfect" feedback
+        logMinigameInput('anvil', 'tap', { posPx: Math.round(pos), inZone });
+        if (inZone) {
+            hits++;
+            const boost = 2 * hotBonus;
+            totalAtkBoost += boost;
+            HITS_EL.textContent = String(hits);
+            ATK_EL.textContent = String(Math.round(totalAtkBoost));
+            // Strong feedback stack
+            flashFeedback(perfect ? `★ PERFECT! +${Math.round(boost)} ATK` : `HIT! +${Math.round(boost)} ATK`, perfect ? '#ffd66b' : '#6bff6b');
+            flashZone(perfect ? 'rgba(255,214,107,0.55)' : 'rgba(120,255,120,0.55)', perfect ? '#ffd66b' : '#6bff6b');
+            burstSparks(pos, perfect);
+            HAMMER.animate(
+                [{ transform: `translateX(${pos}px) scale(1.0) rotate(0deg)`, filter: 'brightness(1)' },
+                 { transform: `translateX(${pos}px) scale(1.5) rotate(-20deg)`, filter: 'brightness(2.4)' },
+                 { transform: `translateX(${pos}px) scale(1.0) rotate(0deg)`, filter: 'brightness(1)' }],
+                { duration: 240, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', composite: 'replace' }
+            );
+        } else {
+            // Miss feedback
+            flashFeedback('MISS', '#e74c3c');
+            shakeTrack();
+            HAMMER.animate(
+                [{ filter: 'brightness(1)' }, { filter: 'grayscale(0.8) brightness(0.6)' }, { filter: 'brightness(1)' }],
+                { duration: 260 }
+            );
+        }
+        swingsTaken++;
+        // Brief lockout so player doesn't double-tap one swing.
+        setTimeout(() => { tapped = false; }, 250);
+        if (swingsTaken >= ANVIL_SWINGS) {
+            cancelAnimationFrame(rafId);
+            const norm = hits / ANVIL_SWINGS;
+            const perf = classifyPerf(norm);
+            const critBonus = (hits === ANVIL_SWINGS) ? 100 : 0;  // ★ Crit Bonus → +100% (one auto-crit)
+            // Final summary flash before resolve
+            setTimeout(() => {
+                if (critBonus > 0) flashFeedback('★★★ ALL PERFECT — CRIT BONUS!', '#ffd66b');
+                else if (hits >= 3) flashFeedback(`${hits}/${ANVIL_SWINGS} HITS`, '#6bff6b');
+                else flashFeedback(`${hits}/${ANVIL_SWINGS}`, '#d4b885');
+            }, 80);
+            resolve({
+                score: hits,
+                perf,
+                stats: { atk: Math.round(totalAtkBoost), crit: critBonus, hotBonus }
+            });
+        }
+    }
+    bodyEl.addEventListener('pointerdown', onTap);
+};
+
+// ============================================================================
+// === SECTION: MINIGAME_QUENCH ===
+// ============================================================================
+
+MINIGAME_RENDERERS['quench'] = (bodyEl, hintEl, resolve) => {
+    bodyEl.innerHTML = `
+        <div class="quench-gauge">
+            <div class="quench-perfect"></div>
+            <div class="quench-marker" id="quench-marker"></div>
+        </div>
+        <button class="quench-stop" id="quench-stop">QUENCH</button>
+    `;
+    hintEl.textContent = 'Tap QUENCH when the marker hits the green band';
+    const GAUGE_H = 200;
+    const PERFECT_H = QUENCH_PERFECT_PX * 2;  // band height ≈ 40px (perfect zone is ±20 from center)
+    const MARKER = document.getElementById('quench-marker');
+    let pos = 0; let dir = 1;
+    const speedPxPerS = QUENCH_BAR_SPEED_PX_S;
+    let lastT = performance.now(); let rafId; let stopped = false;
+    function frame(t) {
+        if (stopped) return;
+        const dt = (t - lastT) / 1000; lastT = t;
+        pos += dir * speedPxPerS * dt;
+        if (pos <= 0) { pos = 0; dir = 1; }
+        if (pos >= GAUGE_H) { pos = GAUGE_H; dir = -1; }
+        MARKER.style.bottom = pos + 'px';
+        rafId = requestAnimationFrame(frame);
+    }
+    rafId = requestAnimationFrame(frame);
+    document.getElementById('quench-stop').addEventListener('click', () => {
+        if (stopped) return;
+        stopped = true;
+        cancelAnimationFrame(rafId);
+        const center = GAUGE_H / 2;
+        const delta = Math.abs(pos - center);
+        logMinigameInput('quench', 'stop', { posPx: Math.round(pos), deltaPx: Math.round(delta) });
+        let dur = 0, perf = 'soft_fail';
+        if (delta <= QUENCH_PERFECT_PX) { dur = 5; perf = 'perfect'; }
+        else if (delta <= QUENCH_PERFECT_PX * 2) { dur = 3; perf = 'good'; }
+        // Visual flash: cool steam burst.
+        MARKER.style.background = '#a8d8ff';
+        bodyEl.animate([{ filter: 'brightness(1.6)' }, { filter: 'brightness(1)' }], { duration: 400 });
+        // Hot ingot cools — flip visual.
+        const ingot = document.getElementById('ingot');
+        if (ingot) ingot.classList.add('cool');
+        resolve({ score: 5 - Math.min(5, Math.round(delta / 20)), perf, stats: { dur } });
+    });
+};
+
+// ============================================================================
+// === SECTION: MINIGAME_ENGRAVER ===
+// ============================================================================
+
+const GLYPHS = {
+    fire:   { id: 'fire',   icon: '🔥', color: '#ff8a3d', nodes: [[0.5,0.1],[0.85,0.9],[0.15,0.9],[0.5,0.1]] },        // triangle
+    ice:    { id: 'ice',    icon: '❄️', color: '#a8d8ff', nodes: [[0.1,0.1],[0.9,0.9],[0.5,0.5],[0.9,0.1],[0.1,0.9]] }, // X
+    pierce: { id: 'pierce', icon: '✶',  color: '#e0e0e0', nodes: [[0.5,0.05],[0.5,0.95]] },                            // vertical line
+};
+
+MINIGAME_RENDERERS['engraver'] = (bodyEl, hintEl, resolve) => {
+    bodyEl.innerHTML = `
+        <div class="engraver-palette">
+            <button class="glyph-pick" data-glyph="fire">🔥 Fire</button>
+            <button class="glyph-pick" data-glyph="ice">❄️ Ice</button>
+            <button class="glyph-pick" data-glyph="pierce">✶ Pierce</button>
+        </div>
+        <canvas id="engraver-canvas" width="200" height="200"></canvas>
+        <div id="engraver-coverage">Pick a glyph above</div>
+    `;
+    hintEl.textContent = 'Pick a glyph, then trace the dotted path in one stroke';
+    let glyph = null;
+    let path = [];
+    let dragging = false;
+    const CANVAS = document.getElementById('engraver-canvas');
+    const ctx = CANVAS.getContext('2d');
+    const COV_EL = document.getElementById('engraver-coverage');
+
+    function drawGlyph() {
+        ctx.clearRect(0, 0, 200, 200);
+        if (!glyph) return;
+        // Dotted target path.
+        ctx.setLineDash([4, 6]);
+        ctx.strokeStyle = glyph.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        glyph.nodes.forEach((n, i) => {
+            const x = n[0] * 200, y = n[1] * 200;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        // Trace path (solid).
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        path.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+        ctx.stroke();
+    }
+
+    function coverage() {
+        if (!glyph) return 0;
+        // For each segment between consecutive glyph nodes, sample N points and count how many
+        // lie within 18px of the player's traced polyline.
+        const RADIUS = 18;
+        const SAMPLES_PER_SEG = 12;
+        let totalSamples = 0, hits = 0;
+        for (let i = 0; i < glyph.nodes.length - 1; i++) {
+            const a = glyph.nodes[i], b = glyph.nodes[i + 1];
+            for (let s = 0; s < SAMPLES_PER_SEG; s++) {
+                const t = s / (SAMPLES_PER_SEG - 1);
+                const x = (a[0] + (b[0] - a[0]) * t) * 200;
+                const y = (a[1] + (b[1] - a[1]) * t) * 200;
+                totalSamples++;
+                if (path.some(p => Math.hypot(p.x - x, p.y - y) <= RADIUS)) hits++;
+            }
+        }
+        return totalSamples ? hits / totalSamples : 0;
+    }
+
+    bodyEl.querySelectorAll('.glyph-pick').forEach(btn => {
+        btn.addEventListener('click', () => {
+            glyph = GLYPHS[btn.dataset.glyph];
+            path = [];
+            COV_EL.textContent = 'Trace now (one stroke)';
+            drawGlyph();
+        });
+    });
+
+    CANVAS.addEventListener('pointerdown', (e) => {
+        if (!glyph) return;
+        dragging = true; path = [];
+        const r = CANVAS.getBoundingClientRect();
+        path.push({ x: e.clientX - r.left, y: e.clientY - r.top });
+        CANVAS.setPointerCapture(e.pointerId);
+    });
+    CANVAS.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const r = CANVAS.getBoundingClientRect();
+        path.push({ x: e.clientX - r.left, y: e.clientY - r.top });
+        drawGlyph();
+        const c = coverage();
+        COV_EL.textContent = `Coverage: ${(c * 100).toFixed(0)}%`;
+    });
+    CANVAS.addEventListener('pointerup', () => {
+        if (!dragging) return;
+        dragging = false;
+        const c = coverage();
+        logMinigameInput('engraver', 'trace', { glyphId: glyph.id, pathLen: path.length, coverage: c });
+        const perf = c >= 0.85 ? 'perfect' : (c >= ENGRAVER_TRACE_PASS_PCT ? 'good' : 'soft_fail');
+        const element = (c >= ENGRAVER_TRACE_PASS_PCT) ? glyph.id : null;
+        resolve({ score: Math.round(c * 100), perf, stats: { element, glyphIcon: element ? glyph.icon : null, glyphColor: element ? glyph.color : null } });
+    });
+};
+
+// ============================================================================
+// === SECTION: LAP_FLOW ===
+// ============================================================================
+
+async function startLap() {
+    if (state.lapInProgress) return;
+    if (state.gold < FORGE_COST_G) return;
+    state.gold -= FORGE_COST_G;
+    state.lapInProgress = true;
+    const ringConfig = [...state.ring];
+    state.lapCounter = (state.lapCounter || 0) + 1;
+    emit('forge_lap_started', { wave: state.wave, lap: state.lapCounter, costG: FORGE_COST_G, ringConfig });
+    refreshStartLapButton();
+    renderHud();
+    // Reset ingot stats accumulator for this lap.
+    state.lapStats = { atk: 0, crit: 0, dur: 0, element: null, perfBuckets: [], heatTag: false };
+    const lapStartTime = Date.now();
+    // Visit each cell clockwise starting from Smelter.
+    for (let i = 0; i < RING_CELLS; i++) {
+        await moveIngotToCell(i, i === 0 ? 300 : 500);  // initial drop is quicker
+        const stationId = state.ring[i];
+        if (!stationId) continue;  // truly empty (shouldn't happen for fixed cells)
+        if (stationId === 'smelter' || stationId === 'inspector') {
+            // Fixed cells: just transit, no minigame in 0.1.0.
+            continue;
+        }
+        // Station cell: pulse + (minigames added Task 5+; placeholder for now).
+        const cellEl = document.querySelector(`.ring-cell[data-cell-index="${i}"]`);
+        cellEl.classList.add('station-active');
+        await runStationMinigame(stationId, i);  // resolves immediately if not yet implemented
+        cellEl.classList.remove('station-active');
+        // Glow-then-fade.
+        await wait(STATION_GLOW_MS);
+    }
+    state.lapInProgress = false;
+    const totalDurationMs = Date.now() - lapStartTime;
+    emit('lap_complete', { wave: state.wave, lap: state.lapCounter, totalDurationMs,
+                            stationsCompleted: state.lapStats.perfBuckets.length,
+                            weaponPreview: previewWeapon(state.lapStats) });
+    showLapCompletePrompt();
+}
+
+async function runStationMinigame(stationId, cellIndex) {
+    const renderFn = MINIGAME_RENDERERS[stationId];
+    if (!renderFn) return wait(100);  // no minigame registered (fallback)
+    return openMinigame(stationId, cellIndex, renderFn);
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function previewWeapon(lapStats) {
+    return { atk: lapStats.atk, crit: lapStats.crit, dur: lapStats.dur, element: lapStats.element };
+}
+
+function showLapCompletePrompt() {
+    hideIngot();
+    const modal = document.getElementById('lap-complete-modal');
+    const preview = document.getElementById('lap-complete-preview');
+    const p = previewWeapon(state.lapStats);
+    const elementTxt = p.element ? `· ${glyphIconFor(p.element)} ${cap(p.element)}` : '';
+    preview.innerHTML = `
+        <div><strong>Preview:</strong></div>
+        <div>ATK <strong>${p.atk}</strong> · CRIT <strong>${p.crit}%</strong> · DUR <strong>${p.dur}</strong> ${elementTxt}</div>
+    `;
+    modal.style.display = 'flex';
+    document.getElementById('commit-forge-btn').onclick = () => {
+        modal.style.display = 'none';
+        commitForge();
+    };
+}
+
+// MVP adaptation: inline element→icon map. (Plan reads from GLYPHS object which is added in the Engraver task — deferred to Round 2.)
+function glyphIconFor(element) {
+    return { fire: '🔥', ice: '❄️', pierce: '✶' }[element] || '·';
+}
+
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+
+async function commitForge() {
+    const lapWeapon = buildWeaponFromLap(state.lapStats);
+    if (state.weapon) {
+        state.weapon = mergeWeapons(state.weapon, lapWeapon);
+    } else {
+        state.weapon = lapWeapon;
+    }
+    emit('forge_revealed', {
+        wave: state.wave,
+        weaponName: state.weapon.name,
+        finalStats: { atk: state.weapon.atk, crit: state.weapon.crit, dur: state.weapon.dur },
+        elementTag: state.weapon.element
+    });
+    await playForgeReveal(state.weapon);
+    emit('weapon_equipped', { heroId: 'bran', weaponName: state.weapon.name, stats: state.weapon });
+    renderAll();
+    if (!state.isBattling) startBattle();
+}
+
+// ============================================================================
+// === SECTION: WEAPON ===
+// ============================================================================
+
+// MVP adaptation: ELEMENT_VISUALS replaces the GLYPHS reference from the plan (GLYPHS ships with Engraver task in Round 2).
+const ELEMENT_VISUALS = {
+    fire:   { icon: '🔥', color: '#ff8a3d' },
+    ice:    { icon: '❄️', color: '#a8d8ff' },
+    pierce: { icon: '✶',  color: '#e0e0e0' },
+};
+
+function buildWeaponFromLap(lapStats) {
+    const quality = qualityAdjective(lapStats.perfBuckets);
+    const elementAdj = elementAdjective(lapStats.element);
+    const baseType = 'Shortsword';
+    const name = [quality, elementAdj, baseType].filter(Boolean).join(' ');
+    const ev = lapStats.element ? ELEMENT_VISUALS[lapStats.element] : null;
+    return {
+        name,
+        atk: lapStats.atk,
+        crit: Math.min(100, lapStats.crit),
+        dur: lapStats.dur,
+        element: lapStats.element,
+        elementIcon: ev ? ev.icon : null,
+        elementColor: ev ? ev.color : null,
+        layers: layerPlan(lapStats),
+    };
+}
+
+function mergeWeapons(prev, fresh) {
+    return {
+        name: fresh.name,  // re-name from latest lap quality
+        atk: prev.atk + fresh.atk,
+        crit: Math.min(100, prev.crit + fresh.crit),
+        dur: prev.dur + fresh.dur,
+        element: fresh.element || prev.element,
+        elementIcon: fresh.elementIcon || prev.elementIcon,
+        elementColor: fresh.elementColor || prev.elementColor,
+        layers: { ...prev.layers, ...fresh.layers },
+    };
+}
+
+function qualityAdjective(perfBuckets) {
+    if (perfBuckets.length === 0) return 'Plain';
+    const hasSoft = perfBuckets.some(b => b.perf === 'soft_fail');
+    const allPerfect = perfBuckets.every(b => b.perf === 'perfect');
+    const allGoodOrBetter = perfBuckets.every(b => b.perf !== 'soft_fail');
+    if (allPerfect) return 'Masterwork';
+    if (allGoodOrBetter && !hasSoft) return 'Tempered';
+    if (hasSoft && perfBuckets.some(b => b.perf === 'perfect' || b.perf === 'good')) return 'Honed';
+    return 'Crude';
+}
+
+function elementAdjective(element) {
+    return { fire: 'Flame-Etched', ice: 'Frost-Etched', pierce: 'Pierce-Etched' }[element] || '';
+}
+
+function layerPlan(lapStats) {
+    // Composite layers for sprite: base blade, tint, glyph overlay.
+    return {
+        baseTint: lapStats.dur >= 4 ? 'cool' : 'warm',  // good quench → bluer steel
+        glyph: lapStats.element,
+        sheen: lapStats.perfBuckets.length >= 3 ? 'high' : 'low',
+    };
+}
+
+// Invariants — fail in DevTools if the classifier regresses.
+console.assert(qualityAdjective([{perf:'perfect'},{perf:'perfect'}]) === 'Masterwork', 'quality: all perfect');
+console.assert(qualityAdjective([{perf:'good'},{perf:'perfect'}]) === 'Tempered', 'quality: good+perfect');
+console.assert(qualityAdjective([{perf:'soft_fail'},{perf:'perfect'}]) === 'Honed', 'quality: mixed');
+console.assert(qualityAdjective([{perf:'soft_fail'},{perf:'soft_fail'}]) === 'Crude', 'quality: all soft');
+console.assert(qualityAdjective([]) === 'Plain', 'quality: empty');
+console.assert(elementAdjective('fire') === 'Flame-Etched', 'element: fire');
+console.assert(elementAdjective(null) === '', 'element: null');
+
+// ============================================================================
+// === SECTION: SPRITE ===
+// ============================================================================
+
+function buildWeaponSpriteSvg(weapon) {
+    const tint = weapon.layers.baseTint === 'cool' ? '#a8c8e8' : '#d8b878';
+    const sheenOpacity = weapon.layers.sheen === 'high' ? 0.7 : 0.3;
+    const glyphMark = weapon.layers.glyph ? renderGlyphSvg(weapon.layers.glyph, weapon.elementColor) : '';
+    return `
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="weapon-sprite-svg">
+            <!-- blade -->
+            <polygon points="32,4 38,38 32,46 26,38" fill="${tint}" stroke="#5a3a20" stroke-width="1.2"/>
+            <!-- sheen highlight -->
+            <polygon points="32,6 33,38 32,42 31,38" fill="#fff" opacity="${sheenOpacity}"/>
+            <!-- crossguard -->
+            <rect x="20" y="44" width="24" height="4" fill="#6b4a26" rx="1"/>
+            <!-- grip -->
+            <rect x="29" y="48" width="6" height="10" fill="#3a2818" rx="1"/>
+            <!-- pommel -->
+            <circle cx="32" cy="60" r="3" fill="#c89058"/>
+            <!-- glyph etched on blade -->
+            ${glyphMark}
+        </svg>
+    `;
+}
+
+function renderGlyphSvg(glyphId, color) {
+    if (glyphId === 'fire')   return `<polygon points="32,16 35,26 29,26" fill="${color}" stroke="#fff" stroke-width="0.6" opacity="0.95"/>`;
+    if (glyphId === 'ice')    return `<g stroke="${color}" stroke-width="1.4" opacity="0.95"><line x1="28" y1="18" x2="36" y2="30"/><line x1="36" y1="18" x2="28" y2="30"/></g>`;
+    if (glyphId === 'pierce') return `<line x1="32" y1="14" x2="32" y2="34" stroke="${color}" stroke-width="1.6" opacity="0.95"/>`;
+    return '';
+}
+
+// ============================================================================
+// === SECTION: REVEAL ===
+// ============================================================================
+
+async function playForgeReveal(weapon) {
+    const modal = document.getElementById('reveal-modal');
+    const stage = modal.querySelector('.reveal-stage');
+    const flash = document.getElementById('reveal-flash');
+    const anvil = document.getElementById('reveal-anvil');
+    const particles = document.getElementById('reveal-particles');
+    const wpEl = document.getElementById('reveal-weapon');
+    const banner = document.getElementById('reveal-banner');
+    const stats = document.getElementById('reveal-stats');
+    // Reset state.
+    flash.style.opacity = 0;
+    anvil.style.opacity = 0; anvil.style.transform = 'scale(0.5) translateY(-20px)';
+    particles.innerHTML = '';
+    wpEl.style.opacity = 0; wpEl.style.transform = 'scale(0.4) translateY(20px)';
+    wpEl.innerHTML = buildWeaponSpriteSvg(weapon);
+    banner.style.opacity = 0; banner.style.transform = 'scaleX(0)';
+    banner.textContent = weapon.name;
+    stats.style.opacity = 0;
+    stats.innerHTML = `ATK <strong>${weapon.atk}</strong> · CRIT <strong>${weapon.crit}%</strong> · DUR <strong>${weapon.dur}</strong>${weapon.elementIcon ? ` · ${weapon.elementIcon} ${cap(weapon.element)}` : ''}`;
+    modal.style.display = 'flex';
+
+    // t=0.0..0.7 anvil rises
+    anvil.animate(
+        [{ opacity: 0, transform: 'scale(0.5) translateY(-30px)' }, { opacity: 1, transform: 'scale(1.0) translateY(0)' }],
+        { duration: 700, fill: 'forwards' }
+    );
+    await wait(700);
+
+    // t=0.7..1.0 hammer falls, white flash + shake
+    flash.animate([{ opacity: 0 }, { opacity: 0.85 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
+    stage.classList.add('shake');
+    await wait(380);
+    stage.classList.remove('shake');
+
+    // t=1.0..1.9 weapon rises in particle column
+    spawnSparks(particles, 18);
+    wpEl.animate(
+        [{ opacity: 0, transform: 'scale(0.4) translateY(40px)' },
+         { opacity: 1, transform: 'scale(1.0) translateY(0)' }],
+        { duration: 900, fill: 'forwards', easing: 'cubic-bezier(0.2, 0.7, 0.3, 1.1)' }
+    );
+    await wait(700);
+
+    // t=2.5..3.0 banner unfurls
+    banner.animate(
+        [{ opacity: 0, transform: 'scaleX(0)' }, { opacity: 1, transform: 'scaleX(1)' }],
+        { duration: 500, fill: 'forwards' }
+    );
+    await wait(500);
+
+    // t=3.0..3.5 stats type in
+    stats.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'forwards' });
+    await wait(500);
+
+    // t=3.5..4.0 weapon arcs to hero portrait — quick scale-down + fade
+    wpEl.animate(
+        [{ opacity: 1, transform: 'scale(1.0)' }, { opacity: 0, transform: 'scale(0.4) translate(-120px, 180px)' }],
+        { duration: 480, fill: 'forwards', easing: 'cubic-bezier(0.5, 0, 0.7, 0.4)' }
+    );
+    await wait(480);
+
+    // Snap-fit on hero card.
+    mountWeaponOnHeroCard(weapon);
+
+    modal.style.display = 'none';
+}
+
+function spawnSparks(container, count) {
+    for (let i = 0; i < count; i++) {
+        const s = document.createElement('div');
+        s.className = 'spark';
+        const dx = (Math.random() - 0.5) * 100;
+        s.style.setProperty('--dx', dx + 'px');
+        s.style.left = (40 + (Math.random() - 0.5) * 30) + 'px';
+        s.style.animationDelay = (Math.random() * 400) + 'ms';
+        container.appendChild(s);
+    }
+}
+
+// ============================================================================
+// === SECTION: HERO_CARD ===
+// ============================================================================
+
+function renderHeroes() {
+    // Squad bar — only Bran
+    const sq = document.getElementById('hero-cards');
+    sq.innerHTML = '';
+    state.heroes.forEach(h => {
+        const active = (h.id === state.activeHeroId) ? `active warrior` : '';
+        const dead = h.dead ? 'dead' : '';
+        const stats = weaponStats(h);
+        const gaugePct = h.ult || 0;
+        const gaugeReady = gaugePct >= 100 && !h.ultUsed && state.isBattling;
+        sq.innerHTML += `
+            <div class="hero-card ${active} ${dead}" onclick="selectHero('${h.id}')">
+                <div class="hero-icon">${heroIconHTML(h, 'card')}</div>
+                <div class="entity-name" style="color:var(--warrior-color); font-size:10px;">${h.name}</div>
+                ${hpBarHTML(h)}
+                <div class="hero-role" style="color:var(--warrior-color);">warrior</div>
+                <div class="weapon-mini">${h.dead ? '<span style="color:#888;">DEAD</span>' : (state.weapon ? `${stats.atk}atk` : '—')}</div>
+                <div class="ult-gauge ${gaugeReady ? 'ready' : ''}" onclick="event.stopPropagation(); tapUlt('${h.id}');">
+                    <div class="ult-fill" style="width:${gaugePct}%;"></div>
+                    <div class="ult-text">${h.ultUsed ? 'ULT USED' : (gaugeReady ? '⚡ TAP — Whirlwind' : '⚡ ULT ' + Math.floor(gaugePct) + '%')}</div>
+                </div>
+                <div class="hero-weapon-slot" id="hero-weapon-slot-${h.id}"></div>
+            </div>`;
+    });
+
+    // Battle hero view
+    const hv = document.getElementById('hero-view');
+    hv.innerHTML = '';
+    state.heroes.forEach(h => {
+        const dead = h.dead ? 'filter: grayscale(100%); opacity: 0.5;' : '';
+        hv.innerHTML += `
+            <div class="entity" data-hero-id="${h.id}" style="${dead}">
+                ${heroIconHTML(h, 'battle')}
+                ${hpBarHTML(h)}
+                <div class="entity-name" style="color:var(--warrior-color);">${h.name}</div>
+            </div>`;
+    });
+
+    // Battle button state
+    const bb = document.getElementById('battle-btn');
+    if (state.isBattling) {
+        bb.classList.add('disabled');
+        bb.innerText = '⚔️ Battling…';
+    } else {
+        bb.classList.remove('disabled');
+        bb.innerText = state.wave === BOSS_WAVE ? '⚠️ Fight Boss' : '⚔️ Start Wave ' + state.wave;
+    }
+
+    if (state.weapon) mountWeaponOnHeroCard(state.weapon);
+}
+
+function heroIconHTML(h, variant) {
+    const cls = variant === 'battle' ? 'hero-sprite-battle' : 'hero-sprite-card';
+    const bgCls = ' has-bg';
+    const safeIcon = '🛡️';
+    return `<img src="assets/heroes/bran_warrior.png" class="${cls}${bgCls}" alt="${h.name}"
+                onerror="this.outerHTML='<span style=\\"font-size:${variant === 'battle' ? 26 : 20}px\\">${safeIcon}</span>';">`;
+}
+
+function hpBarHTML(ent) {
+    const max = (ent.maxHpBase !== undefined) ? getMaxHp(ent) : ent.maxHp;
+    const pct = Math.max(0, (ent.hp / max) * 100);
+    return `<div class="hp-container">
+        <div class="hp-fill" style="width:${pct}%;"></div>
+        <div class="hp-bar-text">${Math.ceil(ent.hp)}/${Math.ceil(max)}</div>
+    </div>`;
+}
+
+function mountWeaponOnHeroCard(weapon) {
+    if (!weapon) return;
+    const slot = document.getElementById('hero-weapon-slot-bran') || document.getElementById('hero-weapon-slot');
+    if (!slot) return;
+    slot.innerHTML = buildWeaponSpriteSvg(weapon);
+    // S7 Snap-fit click — spring-easing pop.
+    slot.animate(
+        [{ transform: 'scale(0.5)', opacity: 0 }, { transform: 'scale(1.2)', opacity: 1 }, { transform: 'scale(1.0)', opacity: 1 }],
+        { duration: 320, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }
+    );
+    log(`Bran now wields ${weapon.name}.`);
+}
+
+function pulseRingCellByStation(stationId) {
+    const idx = state.ring.findIndex(s => s === stationId);
+    if (idx < 0) return;
+    const cell = document.querySelector(`.ring-cell[data-cell-index="${idx}"]`);
+    if (!cell) return;
+    cell.animate(
+        [{ boxShadow: '0 0 12px rgba(255,160,80,0.4)' },
+         { boxShadow: '0 0 30px #ffd66b, 0 0 8px #fff inset' },
+         { boxShadow: '0 0 12px rgba(255,160,80,0.4)' }],
+        { duration: 280 }
+    );
+}
+
+function flashCritStar(enemyEl) {
+    if (!enemyEl) return;
+    const star = document.createElement('div');
+    star.className = 'crit-star';
+    star.textContent = '★';
+    enemyEl.appendChild(star);
+    setTimeout(() => star.remove(), 700);
+}
+
+function burstElement(enemyEl, color) {
+    if (!enemyEl || !color) return;
+    const b = document.createElement('div');
+    b.className = 'elem-burst';
+    b.style.background = `radial-gradient(circle, ${color}, transparent 70%)`;
+    enemyEl.appendChild(b);
+    setTimeout(() => b.remove(), 500);
+}
+
+// ============================================================================
+// === SECTION: COMBAT ===
+// ============================================================================
+
+// Unique ID counter for use in VFX helpers
+let _uidSeq = 0;
+function nextUid() { return 'iv_' + (++_uidSeq); }
+
+// Level multiplier (kept for potential weapon-stat use)
+const MAX_PART_LEVEL = 5;
+const LEVEL_MULTIPLIER = [1.00, 1.50, 2.10, 2.85, 3.70];
+function levelMult(level) {
+    const idx = Math.max(0, Math.min(MAX_PART_LEVEL - 1, (level || 1) - 1));
+    return LEVEL_MULTIPLIER[idx];
+}
+
+// Enemy pools
+const NORMAL_ENEMIES = [
+    {name:'Slime', icon:'🦠'}, {name:'Goblin', icon:'👺'}, {name:'Skeleton', icon:'💀'},
+    {name:'Zombie', icon:'🧟'}, {name:'Wolf', icon:'🐺'},
+];
+const BOSS_OPTIONS = [
+    {name:'Frost Dragon', icon:'🐉', resist:'fire',  weak:'pierce'},
+    {name:'Flame Titan',  icon:'🔥', resist:'fire',  weak:'ice'},
+    {name:'Stone Golem',  icon:'🗿', resist:'pierce',weak:'fire'},
+];
+
+// weaponStats — reads from state.weapon (ForgeLoop schema: {atk, hp, crit, ultRate, tags})
+function weaponStats(hero) {
+    const w = state.weapon;
+    if (!w) return { atk: hero.atkBase, hpBonus: 0, crit: 0, ultRate: 0, tags: [] };
+    return {
+        atk: hero.atkBase + (w.atk || 0),
+        hpBonus: w.hp || 0,
+        crit: w.crit || 0,
+        ultRate: w.ultRate || 0,
+        tags: w.tags || [],
+    };
+}
+
+function getMaxHp(hero) {
+    return hero.maxHpBase + weaponStats(hero).hpBonus;
+}
+
+function clampHp(hero) {
+    const max = getMaxHp(hero);
+    if (hero.hp > max) hero.hp = max;
+}
+
+function spawnWave() {
+    const isBoss = state.wave === BOSS_WAVE;
+    state.enemies = [];
+    if (isBoss) {
+        if (!state.boss) {
+            state.boss = BOSS_OPTIONS[Math.floor(Math.random() * BOSS_OPTIONS.length)];
+        }
+        const hp = 45 + state.wave * 19;
+        state.enemies.push({ id:0, name: state.boss.name, icon: state.boss.icon, hp, maxHp: hp, isBoss:true, weak: state.boss.weak, resist: state.boss.resist });
+        showAffinityBanner();
+        emit('wave_start', { wave: state.wave, isBoss: true, bossAffinity: { weak: state.boss.weak, resist: state.boss.resist } });
+    } else {
+        const ELEM_POOL = ['fire', 'ice', 'pierce'];
+        const count = state.wave < 3 ? 2 : 3;
+        const affinityList = [];
+        for (let i = 0; i < count; i++) {
+            const e = NORMAL_ENEMIES[Math.floor(Math.random() * NORMAL_ENEMIES.length)];
+            const hp = 15 + state.wave * 8;
+            const weak = ELEM_POOL[Math.floor(Math.random() * ELEM_POOL.length)];
+            const resistPool = ELEM_POOL.filter(x => x !== weak);
+            const resist = Math.random() < 0.7 ? resistPool[Math.floor(Math.random() * resistPool.length)] : null;
+            state.enemies.push({ id: i, name: e.name, icon: e.icon, hp, maxHp: hp, isBoss: false, weak, resist });
+            affinityList.push({ weak, resist });
+        }
+        hideAffinityBanner();
+        emit('wave_start', { wave: state.wave, isBoss: false, affinities: affinityList });
+    }
+    document.getElementById('turn-display').innerText = isBoss ? '⚠️ BOSS WAVE — PREPARATION' : 'PREPARATION PHASE';
+    document.getElementById('turn-display').style.color = isBoss ? '#c0392b' : '#d35400';
+}
+
+function showAffinityBanner() {
+    const b = document.getElementById('affinity-banner');
+    b.innerHTML = `BOSS: ${state.boss.name} — Resists: ${state.boss.resist.toUpperCase()} · Weak to: ${state.boss.weak.toUpperCase()}`;
+    b.classList.add('visible');
+}
+function hideAffinityBanner() { document.getElementById('affinity-banner').classList.remove('visible'); }
+
+function startBattle() {
+    if (state.isBattling) return;
+    const bran = state.heroes.find(h => h.id === 'bran');
+    if (!bran) return;
+    state.isBattling = true;
+    state.battleStart = Date.now();
+    bran.ultUsed = false;
+    bran._burnStack = 0;
+    emit('wave_start_battle', { wave: state.wave, weapon: state.weapon });
+    document.getElementById('turn-display').innerText = '⚔️ BATTLE PHASE ⚔️';
+    document.getElementById('turn-display').style.color = '#c0392b';
+    log(`<br><b style="color:var(--hp-red);">— WAVE ${state.wave} START —</b>`);
+    renderAll();
+    state.battleTick = setInterval(battleStep, TICK_MS);
+}
+
+function battleStep() {
+    const bran = state.heroes.find(h => h.id === 'bran' && !h.dead);
+    if (!bran || state.enemies.length === 0) { endBattle(); return; }
+    const elapsed = Date.now() - state.battleStart;
+
+    // Hero attacks
+    if (state.enemies.length > 0) {
+        const stats = weaponStats(bran);
+        const livingIdxs = state.enemies.map((_, i) => i).filter(i => state.enemies[i].hp > 0);
+        if (livingIdxs.length > 0) {
+            const targetIdx = livingIdxs[Math.floor(Math.random() * livingIdxs.length)];
+            const target = state.enemies[targetIdx];
+
+            let dmg = stats.atk;
+            const isCrit = Math.random() * 100 < stats.crit;
+            if (isCrit) dmg = Math.floor(dmg * 1.6);
+
+            let affMult = 1.0;
+            if (target.weak || target.resist) {
+                stats.tags.forEach(t => {
+                    if (target.weak && t === target.weak)     affMult *= 1.8;
+                    if (target.resist && t === target.resist) affMult *= 0.5;
+                });
+            }
+            dmg = Math.floor(dmg * affMult);
+            target.hp -= dmg;
+
+            const gaugeGain = 6 + Math.floor(dmg * 0.2) + (stats.ultRate / 4);
+            if (!bran.ultUsed) bran.ult = Math.min(100, (bran.ult || 0) + gaugeGain);
+
+            const primaryTag = stats.tags.find(t => t === target.weak) || stats.tags[0] || null;
+            spawnDamagePop('enemy', targetIdx, dmg, {
+                crit: isCrit,
+                weakness: affMult > 1.0 && !isCrit,
+                resisted: affMult < 1.0 && !isCrit,
+                element: primaryTag
+            });
+            spawnElemStreak(targetIdx, primaryTag || 'basic');
+
+            // === ForgeLoop combat hooks ===
+            const tgtEl = document.querySelector(`#enemy-view .entity[data-enemy-idx="${targetIdx}"]`) || null;
+            pulseRingCellByStation('anvil');
+            if (isCrit) {
+                flashCritStar(tgtEl);
+                pulseRingCellByStation('anvil');  // extra pulse on crit
+            }
+            if (state.weapon?.element) {
+                burstElement(tgtEl, state.weapon.elementColor);
+                pulseRingCellByStation('engraver');
+            }
+
+            const fx  = isCrit ? ' <b style="color:#f1c40f">CRIT!</b>' : '';
+            const mfx = affMult > 1.0 ? ' <b style="color:#2ecc71">Weakness!</b>' : (affMult < 1.0 ? ' <span style="color:#7f8c8d">resisted</span>' : '');
+            log(`Bran's ${state.weapon?.name || 'fists'} strike ${target.name} for <b>${dmg}</b>${isCrit ? ' (★ crit)' : ''}${mfx}`);
+        }
+    }
+
+    // Resolve dead enemies
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+        if (state.enemies[i].hp <= 0) {
+            log(`💀 ${state.enemies[i].name} defeated!`);
+            state.enemies.splice(i, 1);
+        }
+    }
+
+    // Enemy attacks
+    if (state.enemies.length > 0) {
+        const baseDmg = 4 + Math.floor(state.wave * 1.4) + (state.wave === BOSS_WAVE ? 6 : 0);
+        state.enemies.forEach(e => {
+            if (e.frozen) { e.frozen = false; log(`❄️ ${e.icon} is frozen, can't attack!`); return; }
+            let actualDmg = baseDmg;
+            if (e.debuffed > 0) { actualDmg = Math.floor(baseDmg * (1 - e.debuffed)); e.debuffed = 0; }
+            bran.hp -= actualDmg;
+            spawnDamagePop('hero', 'bran', actualDmg, { enemyHit: true });
+            log(`${e.icon} hit 🛡️ for ${actualDmg}`);
+            if (bran.hp <= 0) { bran.hp = 0; bran.dead = true; log(`💀 <b style="color:#e74c3c">${bran.name} fell!</b>`); }
+        });
+    }
+
+    // Time-cap ult backstop
+    if (elapsed > ULT_TIME_CAP_MS) {
+        if (!bran.dead && !bran.ultUsed && bran.ult < 100) bran.ult = 100;
+    }
+
+    renderAll();
+}
+
+function tapUlt(heroId) {
+    if (!state.isBattling) return;
+    const h = state.heroes.find(x => x.id === heroId);
+    if (!h || h.dead || h.ultUsed) return;
+    if ((h.ult || 0) < 100) { log('⚡ Ultimate not ready'); return; }
+    emit('ult_tapped', { heroId, wave: state.wave });
+    h.ultUsed = true; h.ult = 0;
+    const stats = weaponStats(h);
+    let dmg = Math.floor(stats.atk * 3.5);
+    log(`<b style="color:var(--ult-purple);">⚡ ${h.name} unleashes Whirlwind!</b>`);
+    state.enemies.forEach((e, i) => {
+        e.hp -= dmg;
+        spawnDamagePop('enemy', i, dmg, { ult: true });
+        log(`💥 Whirlwind → ${e.icon} for ${dmg} AoE`);
+    });
+    state.enemies = state.enemies.filter(e => e.hp > 0);
+    renderAll();
+}
+
+function endBattle() {
+    clearInterval(state.battleTick);
+    state.battleTick = null;
+    state.isBattling = false;
+    const bran = state.heroes.find(h => h.id === 'bran');
+    const alive = bran && !bran.dead;
+    const battleTime = Date.now() - state.battleStart;
+
+    if (!alive) {
+        const wasBoss = state.wave === BOSS_WAVE;
+        emit('wipe', { wave: state.wave });
+        if (wasBoss) {
+            document.getElementById('retry-modal').classList.add('visible');
+        } else {
+            document.getElementById('wipe-modal').classList.add('visible');
+        }
+        emit('session_end', { reason: wasBoss ? 'boss_wipe' : 'normal_wipe', lastWave: state.wave });
+        return;
+    }
+
+    emit('wave_clear', { wave: state.wave, timeMs: battleTime, heroHpRemaining: bran ? bran.hp : 0 });
+    log(`<b style="color:#2ecc71;">🌊 WAVE ${state.wave} CLEARED!</b>`);
+
+    if (state.wave === BOSS_WAVE) {
+        const totalTime = Date.now() - state.sessionStart;
+        document.getElementById('clear-stats').innerHTML = `Time: ${(totalTime/1000).toFixed(1)}s · Wave: ${state.wave}`;
+        document.getElementById('clear-modal').classList.add('visible');
+        emit('session_end', { reason: 'stage_clear', lastWave: state.wave, totalTimeMs: totalTime });
+        return;
+    }
+
+    state.gold += WAVE_REWARD_G;
+    log(`+${WAVE_REWARD_G}🪙 reward.`);
+    state.wave++;
+
+    renderHud();
+    showForgeAgainPrompt();
+}
+
+function bossRetry() {
+    document.getElementById('retry-modal').classList.remove('visible');
+    emit('boss_retry', {});
+    state.heroes.forEach(h => { h.dead = false; h.hp = getMaxHp(h); h.ultUsed = false; });
+    state.enemies = [];
+    spawnWave();
+    log(`<b style="color:var(--gold-color);">🔧 Reforge & Retry — boss reset.</b>`);
+    renderAll();
+}
+
+function restartStage() {
+    document.getElementById('retry-modal').classList.remove('visible');
+    document.getElementById('wipe-modal').classList.remove('visible');
+    document.getElementById('clear-modal').classList.remove('visible');
+    emit('session_end', { reason: 'restart', lastWave: state.wave });
+    initGame();
+}
+
+function selectHero(id) {
+    if (state.isBattling) return;
+    const h = state.heroes.find(x => x.id === id);
+    if (!h || h.dead) return;
+    state.activeHeroId = id;
+    renderAll();
+}
+
+// --- LOG ---
+function log(msg) {
+    const ld = document.getElementById('combat-log');
+    ld.innerHTML += `<div>${msg}</div>`;
+    ld.scrollTop = ld.scrollHeight;
+}
+
+// ============================================================================
+// === SECTION: WAVE_FLOW ===
+// ============================================================================
+
+// (wave advancement logic lives in endBattle above; additional wave-flow helpers appended here in later tasks)
+
+function showForgeAgainPrompt() {
+    const modal = document.getElementById('forge-again-modal');
+    const current = document.getElementById('forge-again-current');
+    if (state.weapon) {
+        current.innerHTML = `<div>Current: <strong>${state.weapon.name}</strong></div>
+                             <div>ATK ${state.weapon.atk} · CRIT ${state.weapon.crit}% · DUR ${state.weapon.dur}${state.weapon.elementIcon ? ` · ${state.weapon.elementIcon}` : ''}</div>
+                             <div style="margin-top:8px;font-size:12px;opacity:0.8">Forge again to stack stats</div>`;
+    } else {
+        current.textContent = 'No weapon yet — forge your first one!';
+    }
+    const yes = document.getElementById('forge-again-yes');
+    const hasAnyStation = state.ring.some((s, i) => s && i !== CELL_SMELTER && i !== CELL_INSPECTOR);
+    yes.disabled = state.gold < FORGE_COST_G || !hasAnyStation;
+    yes.onclick = () => { modal.style.display = 'none'; advanceToNextWavePrep(true); };
+    document.getElementById('forge-again-no').onclick = () => { modal.style.display = 'none'; advanceToNextWavePrep(false); };
+    modal.style.display = 'flex';
+}
+
+function advanceToNextWavePrep(reforge) {
+    // state.wave was already incremented in endBattle before showForgeAgainPrompt was called.
+    if (reforge) {
+        // Re-enter forge loop with existing ring config; stats accumulate additively via mergeWeapons.
+        spawnWave();
+        startLap();
+    } else {
+        spawnWave();
+        startBattle();
+    }
+    renderAll();
+}
+
+// ============================================================================
+// === SECTION: INIT ===
+// ============================================================================
+
+function renderAll() {
+    renderHud();
+    renderRing();
+    renderTray();
+    renderHeroes();
+    renderEnemies();
+    refreshStartLapButton();
+}
+
+function renderHud() {
+    document.getElementById('gold-count').textContent = state.gold;
+    document.getElementById('wave-num').textContent = state.wave;
+}
+
+function renderEnemies() {
+    const ev = document.getElementById('enemy-view');
+    ev.innerHTML = '';
+    state.enemies.forEach((e, i) => {
+        const parts = [];
+        if (e.weak)   parts.push(`<span title="Hit with ${e.weak.toUpperCase()} for +80% dmg">W:${e.weak[0].toUpperCase()}</span>`);
+        if (e.resist) parts.push(`<span class="resist-tag" title="${e.resist.toUpperCase()} damage halved">R:${e.resist[0].toUpperCase()}</span>`);
+        const affinityRow = parts.length ? `<div class="enemy-affinity">${parts.join(' · ')}</div>` : '';
+        ev.innerHTML += `
+            <div class="entity" data-enemy-idx="${i}" ${e.isBoss ? 'style="border-color:#c0392b; box-shadow:0 0 8px #c0392b;"' : ''}>
+                <div style="font-size:22px;">${e.icon}</div>
+                ${hpBarHTML(e)}
+                <div class="entity-name">${e.name}</div>
+                ${affinityRow}
+            </div>`;
+    });
+    if (state.enemies.length === 0) ev.innerHTML = '<div style="color: var(--ornate-accent); font-weight:bold;">(Cleared)</div>';
+}
+
+// VFX helpers (retained from base)
+function _coordsRelativeToContainer(targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const container = document.getElementById('mobile-container');
+    const cRect = container.getBoundingClientRect();
+    return {
+        container,
+        left: rect.left - cRect.left + rect.width / 2,
+        top: rect.top - cRect.top,
+        height: rect.height
+    };
+}
+
+function spawnDamagePop(targetType, ident, dmg, opts) {
+    opts = opts || {};
+    let entity;
+    if (targetType === 'enemy') {
+        entity = document.querySelector(`#enemy-view .entity[data-enemy-idx="${ident}"]`);
+    } else {
+        entity = document.querySelector(`#hero-view .entity[data-hero-id="${ident}"]`);
+    }
+    if (!entity) return;
+    const c = _coordsRelativeToContainer(entity);
+    const pop = document.createElement('div');
+    let cls = 'damage-pop';
+    if (opts.crit)       cls += ' crit';
+    if (opts.weakness)   cls += ' weakness';
+    if (opts.resisted)   cls += ' resisted';
+    if (opts.element)    cls += ' elem-' + opts.element;
+    if (opts.ult)        cls += ' ult';
+    if (opts.enemyHit)   cls += ' enemy-hit';
+    pop.className = cls;
+    pop.style.position = 'absolute';
+    pop.style.left = c.left + 'px';
+    pop.style.top  = (c.top + 4) + 'px';
+    const prefix = opts.crit ? 'CRIT! ' : (opts.weakness ? '★ ' : (opts.resisted ? '~' : ''));
+    pop.innerText = prefix + Math.ceil(dmg);
+    c.container.appendChild(pop);
+    setTimeout(() => pop.remove(), 1300);
+
+    entity.classList.remove('hit-flash');
+    void entity.offsetWidth;
+    entity.classList.add('hit-flash');
+    setTimeout(() => entity.classList.remove('hit-flash'), 400);
+}
+
+function spawnElemStreak(enemyIdx, element) {
+    const entity = document.querySelector(`#enemy-view .entity[data-enemy-idx="${enemyIdx}"]`);
+    if (!entity) return;
+    const c = _coordsRelativeToContainer(entity);
+    const streak = document.createElement('div');
+    streak.className = 'elem-streak ' + (element || 'basic');
+    streak.style.position = 'absolute';
+    streak.style.left = c.left + 'px';
+    streak.style.top  = (c.top + c.height / 2 - 3) + 'px';
+    c.container.appendChild(streak);
+    setTimeout(() => streak.remove(), 600);
+}
+
+function initGame() {
+    state = freshState();
+    state.ring[CELL_SMELTER] = 'smelter';
+    state.ring[CELL_INSPECTOR] = 'inspector';
+    spawnWave();
+    renderAll();
+    refreshStartLapButton();
+    emit('session_start', { startTime: Date.now(), hero: 'bran' });
+}
+
+// One-shot DOM bindings — registered at script load, never re-registered.
+(function bindForgeUI() {
+    const startBtn = document.getElementById('start-lap-btn');
+    if (startBtn && !startBtn._bound) {
+        startBtn.addEventListener('click', startLap);
+        startBtn._bound = true;
+    }
+})();
+
+// --- BOOT ---
+window.addEventListener('DOMContentLoaded', function() {
+    initGame();
+    // Bind after DOM is ready in case bindForgeUI ran before element existed.
+    const startBtn = document.getElementById('start-lap-btn');
+    if (startBtn && !startBtn._bound) {
+        startBtn.addEventListener('click', startLap);
+        startBtn._bound = true;
+    }
+});
+
+// Session-end on page unload — attached once at module load, never re-registered.
+window.addEventListener('beforeunload', () => {
+    emit('session_end', { reason: 'page_unload', lastWave: state.wave, totalTimeMs: Date.now() - state.sessionStart });
+});
+</script>
+</body>
+</html>

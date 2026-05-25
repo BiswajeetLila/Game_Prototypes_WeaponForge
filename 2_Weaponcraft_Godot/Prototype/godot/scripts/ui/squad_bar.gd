@@ -32,6 +32,7 @@ func _ready() -> void:
 ## Routes the enemy-hit-hero juice to the matching card so each hero "reacts"
 ## visually, regardless of which one the BattleView happens to display.
 func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, _dmg: int) -> void:
+	SignalTrace.note(&"squad_bar._on_enemy_hit_hero", {"hero": hero_id, "dmg": _dmg})
 	if not JuiceConfigT.JUICE_ENABLED:
 		return
 	var card = _find_card(hero_id)

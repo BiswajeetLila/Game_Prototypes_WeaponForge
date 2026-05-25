@@ -124,10 +124,18 @@ func step() -> void:
 	if not _running:
 		return
 
+	## Sub-phase breadcrumbs let us pinpoint which segment of a tick hangs.
+	## Each write overwrites user://last_tick.txt. On crash, last value names
+	## the deepest reached point.
+	_tick_counter += 1
+	_write_breadcrumb_phase(&"tick_enter")
+
 	## 1. Heroes attack. Each alive squad member attacks one random alive enemy.
 	for h in GameState.active_heroes():
 		if h.weapon != null:
+			_write_breadcrumb_phase(StringName("tick_hero_attack:%s" % String(h.data.id)))
 			_hero_attack(h)
+	_write_breadcrumb_phase(&"after_hero_loop")
 
 	## 2. Enemies attack. Each non-frozen enemy targets one random alive hero.
 	for i in range(GameState.enemies.size()):
@@ -141,7 +149,9 @@ func step() -> void:
 		var target = _pick_target_hero()
 		if target == null:
 			break   ## squad wiped mid-tick; win/loss check below handles it
+		_write_breadcrumb_phase(StringName("tick_enemy_attack:%d->%s" % [i, String(target.data.id)]))
 		_enemy_attack(i, target)
+	_write_breadcrumb_phase(&"after_enemy_loop")
 
 	## 3. Tick down debuffs (one-turn frostbite per addendum 0.1.7 wording).
 	for i in range(GameState.enemies.size()):
@@ -152,6 +162,7 @@ func step() -> void:
 				enemy.debuffed = false
 				enemy.debuff_mult = 1.0
 				GameState.emit_signal(&"enemy_status_changed", i)
+	_write_breadcrumb_phase(&"after_status")
 
 	## 4. Win/loss.
 	if _all_enemies_dead():
@@ -161,7 +172,6 @@ func step() -> void:
 		_on_wipe()
 		return
 
-	_tick_counter += 1
 	_write_breadcrumb()
 	emit_signal(&"tick_completed")
 

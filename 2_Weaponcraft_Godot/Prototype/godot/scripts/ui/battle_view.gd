@@ -187,6 +187,9 @@ func _on_enemy_status_changed(idx: int) -> void:
 ## ---------- Damage pops ----------
 
 func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: StringName, is_crit: bool) -> void:
+	SignalTrace.note(&"battleview._on_hero_hit_enemy", {
+		"hero": _hero_id, "enemy": enemy_idx, "dmg": dmg, "src": source, "crit": is_crit
+	})
 	if enemy_idx < 0 or enemy_idx >= _enemy_row.get_child_count():
 		return
 	var card := _enemy_row.get_child(enemy_idx) as Control
@@ -204,6 +207,9 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 		profile.color, int(profile.font_pt))
 
 func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
+	SignalTrace.note(&"battleview._on_enemy_hit_hero", {
+		"enemy": _enemy_idx, "hero": hero_id, "dmg": dmg
+	})
 	var profile: Dictionary = JuiceConfigT.ENEMY_HIT_HERO
 	if JuiceConfigT.JUICE_ENABLED:
 		ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
@@ -219,6 +225,7 @@ func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
 			profile.color, int(profile.font_pt))
 
 func _on_ult_fired(_hero_id: StringName, total_dmg: int) -> void:
+	SignalTrace.note(&"battleview._on_ult_fired", {"hero": _hero_id, "total": total_dmg})
 	## Per-enemy pops already fired from hero_hit_enemy with source=&"ult".
 	## This is the summary banner-pop centered over the arena.
 	var profile: Dictionary = JuiceConfigT.PROFILES[&"ult"]

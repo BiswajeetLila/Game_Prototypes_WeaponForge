@@ -37,6 +37,8 @@ func _ready() -> void:
 	_test_wipe_only_when_all_squad_dead()
 	_test_hit_pause_caps_at_max_freeze()
 	_test_combat_step_writes_breadcrumb()
+	_test_juice_enabled_const_exists()
+	_test_breadcrumb_records_start_phase()
 	_summary()
 	_render_to_ui()
 
@@ -445,6 +447,37 @@ func _test_wipe_only_when_all_squad_dead() -> void:
 		no_wipe_with_one_alive and wiped[0] and stunt.is_dead,
 		"no_wipe=%s wiped=%s stunt_dead=%s stunt_hp=%d"
 			% [str(no_wipe_with_one_alive), str(wiped[0]), str(stunt.is_dead), stunt.hp])
+	Combat.stop()
+
+## ---------- Diag kill-switch (juice-diag-kill-switch branch) ----------
+
+func _test_juice_enabled_const_exists() -> void:
+	## Global kill-switch: setting JuiceConfig.JUICE_ENABLED = false in source
+	## causes BattleView + SquadBar to skip ScreenShake.kick / HitPause.freeze /
+	## sprite-flash / popup spawn. Lets us isolate juice as the hang culprit
+	## by flipping one constant.
+	const JuiceConfigT = preload("res://scripts/core/juice_config.gd")
+	_check("JuiceConfig.JUICE_ENABLED const exists and is bool",
+		typeof(JuiceConfigT.JUICE_ENABLED) == TYPE_BOOL,
+		"type=%d value=%s" % [typeof(JuiceConfigT.JUICE_ENABLED), str(JuiceConfigT.JUICE_ENABLED)])
+
+func _test_breadcrumb_records_start_phase() -> void:
+	## Diag enhancement: breadcrumb now records phase=start at start_wave AND
+	## phase=end after each completed tick. If a hang freezes mid-tick, the
+	## breadcrumb shows phase=start so we know step() never returned cleanly.
+	var crumb_path: String = "user://last_tick.txt"
+	if FileAccess.file_exists(crumb_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(crumb_path))
+	_fresh_session_with_weapon([])
+	Combat.start_wave(3, false)
+	var has_start: bool = false
+	if FileAccess.file_exists(crumb_path):
+		var f := FileAccess.open(crumb_path, FileAccess.READ)
+		var body: String = f.get_as_text() if f != null else ""
+		has_start = "phase=start" in body and "wave=3" in body
+	_check("breadcrumb after start_wave contains phase=start + wave=3",
+		has_start,
+		"file_exists=%s" % str(FileAccess.file_exists(crumb_path)))
 	Combat.stop()
 
 ## ---------- Hardening guards (juice-hardening branch) ----------

@@ -93,6 +93,7 @@ func start_wave(wave: int, auto_tick: bool = true) -> void:
 	_tick_counter = 0
 	GameState.set_wave(wave)
 	_spawn_enemies(wave)
+	_write_breadcrumb_phase(&"start")
 	## Reset per-fight state for every squad member (alive AND dead — dead heroes
 	## stay dead, this only clears ult_used / burn_stack tracking).
 	for h in GameState.all_heroes():
@@ -165,15 +166,19 @@ func step() -> void:
 	emit_signal(&"tick_completed")
 
 ## Writes a single-line breadcrumb with the current wave + tick to user://.
-## Called at the end of every step() that survives the win/loss check. Cheap:
-## one small file write per 1.1s tick. Survives Godot hard-hangs because the
-## OS flushes after each open/close.
+## Called at the end of every step() that survives the win/loss check.
 func _write_breadcrumb() -> void:
+	_write_breadcrumb_phase(&"end")
+
+## Phase-tagged variant for diagnostics. start_wave writes phase=start;
+## end-of-tick writes phase=end. If the breadcrumb is stuck at phase=start
+## (or phase=end on tick N) when Godot is force-killed, we know exactly
+## which tick the hang happened in.
+func _write_breadcrumb_phase(phase: StringName) -> void:
 	var f := FileAccess.open(BREADCRUMB_PATH, FileAccess.WRITE)
 	if f == null:
 		return
-	f.store_line("wave=%d tick=%d" % [_current_wave, _tick_counter])
-	## file closed implicitly when f goes out of scope
+	f.store_line("wave=%d tick=%d phase=%s" % [_current_wave, _tick_counter, String(phase)])
 
 func fire_ult(hero_id: StringName) -> bool:
 	var hero = GameState.get_hero(hero_id)

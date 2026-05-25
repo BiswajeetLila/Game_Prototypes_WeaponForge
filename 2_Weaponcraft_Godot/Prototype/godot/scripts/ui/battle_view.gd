@@ -191,9 +191,13 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 		return
 	var card := _enemy_row.get_child(enemy_idx) as Control
 	var profile: Dictionary = JuiceConfigT.profile_for(source, is_crit)
-	ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
-	HitPause.freeze(float(profile.pause))
-	_flash_sprite_in(card, float(profile.flash_dur))
+	## Always show the popup (damage feedback) — that's the read-the-number
+	## ground-truth signal players rely on. Skip shake / pause / flash when
+	## the global kill-switch is off (juice-diag flow).
+	if JuiceConfigT.JUICE_ENABLED:
+		ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
+		HitPause.freeze(float(profile.pause))
+		_flash_sprite_in(card, float(profile.flash_dur))
 	var origin: Vector2 = card.global_position + Vector2(card.size.x * 0.5, 0)
 	_spawn_pop(origin,
 		"%s%d" % [String(profile.prefix), dmg],
@@ -201,13 +205,15 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 
 func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
 	var profile: Dictionary = JuiceConfigT.ENEMY_HIT_HERO
-	ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
-	HitPause.freeze(float(profile.pause))
+	if JuiceConfigT.JUICE_ENABLED:
+		ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
+		HitPause.freeze(float(profile.pause))
 	## Only flash + pop the BattleView portrait when the hit hero is the one
 	## currently displayed (Bran in ultra-MVP). Per-card flash on every hero
 	## lives in SquadBar, which dispatches by hero_id.
 	if hero_id == &"bran":
-		_flash_sprite_in(_hero_anchor, float(profile.flash_dur))
+		if JuiceConfigT.JUICE_ENABLED:
+			_flash_sprite_in(_hero_anchor, float(profile.flash_dur))
 		var origin: Vector2 = _hero_anchor.global_position + Vector2(_hero_anchor.size.x * 0.5, 0)
 		_spawn_pop(origin, "%s%d" % [String(profile.prefix), dmg],
 			profile.color, int(profile.font_pt))

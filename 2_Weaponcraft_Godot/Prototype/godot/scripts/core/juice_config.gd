@@ -12,6 +12,12 @@
 class_name JuiceConfig
 extends Object
 
+## Global kill-switch. Set to false to bypass ScreenShake + HitPause + sprite
+## flash + popup spawn in all juice signal handlers. Use when isolating the
+## juice layer from suspected hang / crash sources. Flip back to true after
+## debugging.
+const JUICE_ENABLED: bool = true
+
 const PROFILES: Dictionary = {
 	&"basic": {
 		"shake_amp": 3.0, "shake_dur": 0.12, "pause": 0.05,

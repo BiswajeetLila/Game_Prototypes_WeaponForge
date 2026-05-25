@@ -24,6 +24,13 @@ func _ready() -> void:
 	_test_tag_count_explicit_and_derived()
 	_test_bonus_aggregation()
 	_test_check_hero_for_discoveries_fires_once()
+	_test_permafrost_double_ice()
+	_test_skewer_double_pierce()
+	_test_razor_wind_derived_crit_plus_pierce()
+	_test_hellfire_fire_plus_pierce()
+	_test_frostbite_ice_plus_pierce()
+	_test_quickdraw_derived_charge_plus_fire()
+	_test_all_eight_recipes_registered()
 	_summary()
 	_render_to_ui()
 
@@ -118,6 +125,90 @@ func _test_check_hero_for_discoveries_fires_once() -> void:
 	Recipes.check_hero_for_discoveries(hero)  ## second call: should NOT re-fire
 	_check("Inferno discovery fires exactly once on repeated check",
 		fire_count[0] == 1, "fired=%d" % fire_count[0])
+
+## ---------- New recipe cases (Stage C) ----------
+
+func _test_permafrost_double_ice() -> void:
+	## Permafrost = [ice, ice]. Frost Crown (head, ice) + r_ice (rune, ice) = fire 0, ice 2.
+	var w = WeaponT.new()
+	w.set_slot(&"head", InventoryItemT.new(40, &"h_frost_crown", 1))
+	w.set_slot(&"rune", InventoryItemT.new(41, &"r_ice", 1))
+	var active: Array = Recipes.get_active_recipes(w)
+	_check("h_frost_crown + r_ice: Permafrost triggers",
+		&"permafrost" in active and active.size() == 1,
+		"active=%s" % str(active))
+
+func _test_skewer_double_pierce() -> void:
+	## Skewer = [pierce, pierce]. Thorn Spike (head, pierce) + r_pierce (rune, pierce).
+	var w = WeaponT.new()
+	w.set_slot(&"head", InventoryItemT.new(42, &"h_thorn_spike", 1))
+	w.set_slot(&"rune", InventoryItemT.new(43, &"r_pierce", 1))
+	var active: Array = Recipes.get_active_recipes(w)
+	_check("h_thorn_spike + r_pierce: Skewer triggers",
+		&"skewer" in active and active.size() == 1,
+		"active=%s" % str(active))
+
+func _test_razor_wind_derived_crit_plus_pierce() -> void:
+	## Razor Wind = [crit, pierce]. crit is the derived tag (any part with crit > 0).
+	## p_razor_grip (hilt, crit=10, no explicit tag) + r_pierce (rune, pierce) ->
+	## explicit tags = [pierce]; derived = [crit] (crit% > 0). counts = {crit:1, pierce:1}.
+	var w = WeaponT.new()
+	w.set_slot(&"hilt", InventoryItemT.new(44, &"p_razor_grip", 1))
+	w.set_slot(&"rune", InventoryItemT.new(45, &"r_pierce", 1))
+	var counts: Dictionary = Recipes.weapon_tag_counts(w)
+	var active: Array = Recipes.get_active_recipes(w)
+	_check("p_razor_grip + r_pierce: crit derived + pierce -> Razor Wind",
+		counts.get(&"crit", 0) == 1 and counts.get(&"pierce", 0) == 1
+			and &"razor_wind" in active,
+		"counts=%s active=%s" % [str(counts), str(active)])
+
+func _test_hellfire_fire_plus_pierce() -> void:
+	## Hellfire = [fire, pierce]. Pyro Visor (head, fire) + r_pierce (rune, pierce).
+	## Also satisfies Steamburst's [fire, ice]? No — no ice. Should be Hellfire only.
+	var w = WeaponT.new()
+	w.set_slot(&"head", InventoryItemT.new(46, &"h_pyro_visor", 1))
+	w.set_slot(&"rune", InventoryItemT.new(47, &"r_pierce", 1))
+	var active: Array = Recipes.get_active_recipes(w)
+	_check("h_pyro_visor + r_pierce: Hellfire triggers",
+		&"hellfire" in active and not (&"steamburst" in active),
+		"active=%s" % str(active))
+
+func _test_frostbite_ice_plus_pierce() -> void:
+	## Frostbite = [ice, pierce]. Frost Crown (head, ice) + r_pierce (rune, pierce).
+	var w = WeaponT.new()
+	w.set_slot(&"head", InventoryItemT.new(48, &"h_frost_crown", 1))
+	w.set_slot(&"rune", InventoryItemT.new(49, &"r_pierce", 1))
+	var active: Array = Recipes.get_active_recipes(w)
+	_check("h_frost_crown + r_pierce: Frostbite triggers",
+		&"frostbite" in active and active.size() == 1,
+		"active=%s" % str(active))
+
+func _test_quickdraw_derived_charge_plus_fire() -> void:
+	## Quickdraw = [charge, fire]. charge = derived tag (any part with ult_rate > 0).
+	## Lightning Grip (hilt, ult_rate=12, no explicit tag) + r_fire (rune, fire).
+	## counts = {fire:1, charge:1}.
+	var w = WeaponT.new()
+	w.set_slot(&"hilt", InventoryItemT.new(50, &"p_lightning_grip", 1))
+	w.set_slot(&"rune", InventoryItemT.new(51, &"r_fire", 1))
+	var counts: Dictionary = Recipes.weapon_tag_counts(w)
+	var active: Array = Recipes.get_active_recipes(w)
+	_check("p_lightning_grip + r_fire: charge derived + fire -> Quickdraw",
+		counts.get(&"charge", 0) == 1 and counts.get(&"fire", 0) == 1
+			and &"quickdraw" in active,
+		"counts=%s active=%s" % [str(counts), str(active)])
+
+func _test_all_eight_recipes_registered() -> void:
+	## Sanity: all 8 recipe ids load from data/recipes/. Catches typos in file
+	## names or missing tres parse.
+	var expected := [&"steamburst", &"inferno", &"permafrost", &"skewer",
+		&"razor_wind", &"hellfire", &"frostbite", &"quickdraw"]
+	var missing: Array = []
+	for rid in expected:
+		if GameState.get_recipe_def(rid) == null:
+			missing.append(rid)
+	_check("all 8 recipes registered in GameState.recipes_by_id",
+		missing.is_empty(),
+		"missing=%s registered=%s" % [str(missing), str(GameState.recipe_ids)])
 
 ## ---------- Test helpers ----------
 

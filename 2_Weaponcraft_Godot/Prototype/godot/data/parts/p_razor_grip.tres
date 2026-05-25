@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/p_razor_grip.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"p_razor_grip"
+slot = &"hilt"
+name = "Razor Grip"
+desc = "Universal hilt with +10% crit. Enables the derived CRIT tag — pair with pierce for Razor Wind."
+icon = ExtResource("2")
+cost = 4
+atk = 3
+crit = 10

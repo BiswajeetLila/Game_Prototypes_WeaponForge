@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/vfx/merge_sparkle.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"razor_wind"
+name = "Razor Wind"
+desc = "+18% crit chance flat. Triggers from any crit-bearing part paired with a pierce tag."
+icon = ExtResource("2")
+patterns = [[&"crit", &"pierce"]]
+bonus = {
+"crit_bonus": 18
+}

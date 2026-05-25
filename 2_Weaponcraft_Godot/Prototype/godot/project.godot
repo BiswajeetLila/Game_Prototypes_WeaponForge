@@ -27,6 +27,7 @@ Shop="*res://scripts/core/shop.gd"
 Combat="*res://scripts/core/combat.gd"
 ScreenShake="*res://scripts/core/screen_shake.gd"
 HitPause="*res://scripts/core/hit_pause.gd"
+Heartbeat="*res://scripts/core/heartbeat.gd"
 
 [display]
 

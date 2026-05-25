@@ -22,9 +22,20 @@ var _decay_per_sec: float = 1.0
 var _target: Control = null
 var _origin_pos: Vector2 = Vector2.ZERO
 
+## Diagnostic counter — incremented every time _process writes target.position.
+## Tests assert this stays at 0 while trauma is 0 (idle-skip guard).
+var _set_count: int = 0
+
+## True while the target sits at origin and trauma is 0 — used to skip the
+## per-frame position write (and the Container layout cascade it triggers).
+## Set false the first time we move the target off origin; restored to true
+## when the trauma-decay tail snaps the target back to origin.
+var _at_origin: bool = true
+
 func register_target(node: Control) -> void:
 	_target = node
 	_origin_pos = node.position if node != null else Vector2.ZERO
+	_at_origin = true
 
 func kick(amplitude_px: float, duration_sec: float) -> void:
 	if _target == null:
@@ -39,10 +50,21 @@ func _process(delta: float) -> void:
 	if _target == null:
 		return
 	if _trauma <= 0.0:
-		_target.position = _origin_pos
+		## Idle skip: don't poke target.position when it's already at origin.
+		## A 60Hz `Main.position = Vector2.ZERO` write triggers a full UI tree
+		## layout cascade — exactly the kind of per-frame work the wave-2 hang
+		## reproducer pointed at.
+		if not _at_origin:
+			_target.position = _origin_pos
+			_set_count += 1
+			_at_origin = true
 		return
 	var shake: float = _trauma * _trauma * PEAK_AMPLITUDE_PX
 	_target.position = _origin_pos + Vector2(randf_range(-shake, shake), randf_range(-shake, shake))
+	_set_count += 1
+	_at_origin = false
 	_trauma = maxf(0.0, _trauma - _decay_per_sec * delta)
 	if _trauma <= 0.0:
 		_target.position = _origin_pos
+		_set_count += 1
+		_at_origin = true

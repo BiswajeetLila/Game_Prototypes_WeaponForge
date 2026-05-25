@@ -39,6 +39,8 @@ func _ready() -> void:
 	_test_combat_step_writes_breadcrumb()
 	_test_juice_enabled_const_exists()
 	_test_breadcrumb_records_start_phase()
+	_test_heartbeat_advances_per_frame()
+	_test_screen_shake_idle_skip()
 	_summary()
 	_render_to_ui()
 
@@ -448,6 +450,58 @@ func _test_wipe_only_when_all_squad_dead() -> void:
 		"no_wipe=%s wiped=%s stunt_dead=%s stunt_hp=%d"
 			% [str(no_wipe_with_one_alive), str(wiped[0]), str(stunt.is_dead), stunt.hp])
 	Combat.stop()
+
+## ---------- Hang diagnostics (juice-hang-diag branch) ----------
+
+func _test_heartbeat_advances_per_frame() -> void:
+	## Heartbeat autoload writes user://heartbeat.txt every _process tick with
+	## the current process frame count. Polling it from outside (Task Manager,
+	## another script, file watcher) reveals if main thread is stuck. If two
+	## reads 1s apart show the SAME frame number, main thread is hung.
+	const HEARTBEAT_PATH := "user://heartbeat.txt"
+	## Heartbeat writes once on _ready so this is reachable synchronously.
+	_check("Heartbeat.gd autoload writes user://heartbeat.txt",
+		FileAccess.file_exists(HEARTBEAT_PATH),
+		"path=%s" % ProjectSettings.globalize_path(HEARTBEAT_PATH))
+	if FileAccess.file_exists(HEARTBEAT_PATH):
+		var f := FileAccess.open(HEARTBEAT_PATH, FileAccess.READ)
+		var body: String = f.get_as_text() if f != null else ""
+		_check("heartbeat body contains 'frame=' token",
+			"frame=" in body, "body=%s" % body.strip_edges())
+
+func _test_screen_shake_idle_skip() -> void:
+	## ScreenShake._process must NOT mutate target.position every frame when
+	## trauma is zero. Otherwise a 60fps `Main.position = Vector2.ZERO` write
+	## triggers a Container layout cascade through the entire UI tree, which
+	## CAN be the cost driver behind the wave-2 hang.
+	## Spec: ScreenShake exposes a `_set_count` int that increments every time
+	## _process writes target.position. We register a fake target, call
+	## _process(delta) directly a few times with trauma=0, and assert
+	## _set_count never advances.
+	var stunt := Control.new()
+	add_child(stunt)
+	ScreenShake.register_target(stunt)
+	ScreenShake._at_origin = true     ## reset idle-skip flag
+	ScreenShake._set_count = 0
+	ScreenShake._trauma = 0.0
+	## Drive 5 frames manually — _process is the only path that touches the counter.
+	for _i in 5:
+		ScreenShake._process(0.016)
+	var idle_count: int = ScreenShake._set_count
+	## Now kick once and drive another frame; counter should advance.
+	ScreenShake.kick(6.0, 0.18)
+	ScreenShake._process(0.016)
+	var after_kick: int = ScreenShake._set_count
+	_check("ScreenShake idle (trauma=0) does NOT touch target.position",
+		idle_count == 0,
+		"idle_count=%d after_kick=%d" % [idle_count, after_kick])
+	_check("ScreenShake active (trauma>0) DOES touch target.position",
+		after_kick > idle_count,
+		"idle_count=%d after_kick=%d" % [idle_count, after_kick])
+	## Clean up
+	stunt.queue_free()
+	ScreenShake.register_target(null)
+	ScreenShake._trauma = 0.0
 
 ## ---------- Diag kill-switch (juice-diag-kill-switch branch) ----------
 

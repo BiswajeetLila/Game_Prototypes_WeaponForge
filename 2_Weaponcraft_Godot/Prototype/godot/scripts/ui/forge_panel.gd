@@ -1,7 +1,6 @@
 ## ForgePanel — between-wave forge moment UI.
 ##
 ## Layout (top to bottom):
-##   - TabBar (HBox of hero buttons; hidden while only 1 hero is unlocked)
 ##   - Anvil row (3 PartCards: head, hilt, rune; empty = "EMPTY")
 ##   - Active recipe chips (purple pills, populated from Recipes.get_active_recipes)
 ##   - Shop header + Reroll button (shared across all heroes)
@@ -10,9 +9,10 @@
 ##   - Inventory strip (horizontal HBox in ScrollContainer; shared, global pool)
 ##   - Start Wave button (in deployment zone — always visible)
 ##
-## The TabBar selects which hero's anvil + recipes are displayed. Shop, gold,
-## and inventory stay global — only the anvil / recipe view scopes to the
-## active tab.
+## Active hero (for anvil + recipe binding) selected by clicking a HeroCard in
+## SquadBar; Main wires SquadBar.hero_selected -> ForgePanel.set_current_hero.
+## Shop, gold, and inventory stay global — only the anvil / recipe view
+## scopes to the selected card.
 ##
 ## Signals wave_start_requested when the player taps Start Wave; Main handles
 ## advancing the wave + calling Combat.start_wave().
@@ -20,7 +20,6 @@ extends Control
 
 const PartCardScene = preload("res://scenes/PartCard.tscn")
 
-@onready var _tab_bar: HBoxContainer = %TabBar
 @onready var _anvil_row: HBoxContainer = %AnvilRow
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
 @onready var _recipe_desc: Label = %RecipeDesc
@@ -57,7 +56,6 @@ func refresh_forge_moment() -> void:
 
 func _rebuild_all() -> void:
 	_ensure_current_hero_valid()
-	_rebuild_tab_bar()
 	_rebuild_anvil()
 	_rebuild_recipe_chips()
 	_rebuild_shop()
@@ -71,9 +69,18 @@ func _ensure_current_hero_valid() -> void:
 	if not GameState.squad_order.has(_current_hero_id):
 		_current_hero_id = GameState.squad_order[0]
 
+## Public: SquadBar signals which hero is now selected; rebind anvil / recipes
+## to that hero. Called by Main wiring SquadBar.hero_selected -> this method.
+func set_current_hero(hero_id: StringName) -> void:
+	if hero_id == _current_hero_id:
+		return
+	_current_hero_id = hero_id
+	_rebuild_anvil()
+	_rebuild_recipe_chips()
+
 func _on_hero_unlocked(_hero_id: StringName) -> void:
-	## new_session unlocks &"bran" — reset to bran tab so a stale Elara/Vex
-	## selection from the prior run doesn't show an empty anvil.
+	## new_session unlocks &"bran" — reset to bran selection so a stale
+	## Elara/Vex pointer from the prior run doesn't show an empty anvil.
 	if _hero_id == &"bran":
 		_current_hero_id = &"bran"
 	_rebuild_all()
@@ -87,34 +94,6 @@ func _on_gold_changed(new_gold: int) -> void:
 	_reroll_btn.disabled = new_gold < Shop.REROLL_COST
 	_reroll_btn.text = "🔄 Reroll (🪙%d)" % Shop.REROLL_COST
 	_gold_label.text = "🪙 %d" % new_gold
-
-## ---------- Tabs ----------
-
-func _rebuild_tab_bar() -> void:
-	for child in _tab_bar.get_children():
-		child.queue_free()
-	## Hide the bar entirely while only Bran is unlocked — keeps the single-hero
-	## forge moment uncluttered.
-	if GameState.squad_order.size() <= 1:
-		_tab_bar.visible = false
-		return
-	_tab_bar.visible = true
-	for id in GameState.squad_order:
-		var hero = GameState.get_hero(id)
-		var btn := Button.new()
-		btn.text = hero.data.name if hero != null else str(id)
-		btn.disabled = (id == _current_hero_id)
-		var tab_id: StringName = id
-		btn.pressed.connect(func(): _on_tab_pressed(tab_id))
-		_tab_bar.add_child(btn)
-
-func _on_tab_pressed(hero_id: StringName) -> void:
-	if hero_id == _current_hero_id:
-		return
-	_current_hero_id = hero_id
-	_rebuild_tab_bar()
-	_rebuild_anvil()
-	_rebuild_recipe_chips()
 
 ## ---------- Anvil ----------
 

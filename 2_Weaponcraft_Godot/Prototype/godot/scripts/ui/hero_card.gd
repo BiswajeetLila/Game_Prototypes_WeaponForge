@@ -6,6 +6,11 @@
 ## (e.g., on new_session — SquadBar fully rebuilds anyway).
 extends PanelContainer
 
+## Emitted when the user clicks anywhere on the card except the ULT button.
+## SquadBar relays this to ForgePanel so the clicked hero becomes the active
+## forge tab.
+signal selected(hero_id: StringName)
+
 @onready var _portrait: TextureRect = %Portrait
 @onready var _name_label: Label = %NameLabel
 @onready var _hp_bar: ProgressBar = %HpBar
@@ -15,6 +20,8 @@ extends PanelContainer
 
 var _hero_id: StringName = &""
 var _ult_pulse_tween: Tween = null
+var _is_selected: bool = false
+var _selected_style: StyleBoxFlat = null
 
 func setup(hero_id: StringName) -> void:
 	_hero_id = hero_id
@@ -29,8 +36,49 @@ func _ready() -> void:
 	GameState.hero_ult_changed.connect(_on_ult_changed)
 	GameState.weapon_changed.connect(_on_weapon_changed)
 	_ult_btn.pressed.connect(_on_ult_btn_pressed)
+	gui_input.connect(_on_gui_input)
+	_build_styles()
+	_apply_selection_style()
 	if _hero_id != &"":
 		_refresh_all()
+
+func _build_styles() -> void:
+	## Selected card: light parchment fill + gold border so it pops vs theme
+	## default. Unselected cards revert to theme default (no override).
+	_selected_style = StyleBoxFlat.new()
+	_selected_style.bg_color = Color("fbecca")        ## light parchment
+	_selected_style.border_color = Color("d4a017")    ## gold
+	_selected_style.border_width_left = 3
+	_selected_style.border_width_top = 3
+	_selected_style.border_width_right = 3
+	_selected_style.border_width_bottom = 3
+	_selected_style.corner_radius_top_left = 6
+	_selected_style.corner_radius_top_right = 6
+	_selected_style.corner_radius_bottom_left = 6
+	_selected_style.corner_radius_bottom_right = 6
+	_selected_style.content_margin_left = 4
+	_selected_style.content_margin_right = 4
+	_selected_style.content_margin_top = 4
+	_selected_style.content_margin_bottom = 4
+
+func set_selected(is_selected: bool) -> void:
+	_is_selected = is_selected
+	if _selected_style == null:
+		## Called before _ready — defer.
+		ready.connect(_apply_selection_style, CONNECT_ONE_SHOT)
+		return
+	_apply_selection_style()
+
+func _apply_selection_style() -> void:
+	if _is_selected and _selected_style != null:
+		add_theme_stylebox_override(&"panel", _selected_style)
+	else:
+		remove_theme_stylebox_override(&"panel")
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _hero_id != &"":
+			emit_signal(&"selected", _hero_id)
 
 func _hero():
 	return GameState.get_hero(_hero_id)

@@ -35,6 +35,8 @@ func _ready() -> void:
 	_test_fire_ult_meteor_aoe_plus_burn_on_primary()
 	_test_fire_ult_shadowstep_single_target_3x_crit_flag()
 	_test_wipe_only_when_all_squad_dead()
+	_test_hit_pause_caps_at_max_freeze()
+	_test_combat_step_writes_breadcrumb()
 	_summary()
 	_render_to_ui()
 
@@ -443,6 +445,51 @@ func _test_wipe_only_when_all_squad_dead() -> void:
 		no_wipe_with_one_alive and wiped[0] and stunt.is_dead,
 		"no_wipe=%s wiped=%s stunt_dead=%s stunt_hp=%d"
 			% [str(no_wipe_with_one_alive), str(wiped[0]), str(stunt.is_dead), stunt.hp])
+	Combat.stop()
+
+## ---------- Hardening guards (juice-hardening branch) ----------
+
+func _test_hit_pause_caps_at_max_freeze() -> void:
+	## Crash-prevention: a runaway chain (Steamburst + Skewer + Hellfire all
+	## landing in one tick) could call HitPause.freeze many times. Each call
+	## should be clamped to HitPause.MAX_FREEZE_SEC so the wall-clock window
+	## cannot extend unboundedly.
+	## Spec: HitPause exposes a const MAX_FREEZE_SEC (recommend 0.2). Any
+	## freeze(seconds) where seconds > MAX_FREEZE_SEC clamps to that ceiling.
+	## We assert by inspecting _pending_until_ms after a large freeze request.
+	HitPause._pending_until_ms = -1   ## reset whatever previous tests left
+	var t0: int = Time.get_ticks_msec()
+	HitPause.freeze(5.0)              ## absurd 5s pause request
+	var window_ms: int = HitPause._pending_until_ms - t0
+	var cap_ms: int = int(HitPause.MAX_FREEZE_SEC * 1000.0)
+	_check("HitPause.freeze(5.0) clamps to MAX_FREEZE_SEC ceiling",
+		window_ms <= cap_ms + 50,   ## +50ms slack for the wall-clock skew
+		"window_ms=%d cap_ms=%d MAX_FREEZE_SEC=%.2f" % [window_ms, cap_ms, HitPause.MAX_FREEZE_SEC])
+	## Restore so subsequent tests start clean.
+	HitPause._pending_until_ms = -1
+	Engine.time_scale = 1.0
+
+func _test_combat_step_writes_breadcrumb() -> void:
+	## Crash diagnostics: every Combat.step() should write user://last_tick.txt
+	## with wave + tick counter. If Godot hard-crashes again, the file is the
+	## bread-crumb showing the last completed tick. Spec: file contents are a
+	## single line "wave=<n> tick=<n>".
+	var crumb_path: String = "user://last_tick.txt"
+	## Wipe any prior breadcrumb so we're not reading stale state.
+	if FileAccess.file_exists(crumb_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(crumb_path))
+	_fresh_session_with_weapon([])
+	Combat.start_wave(2, false)
+	_force_enemies([{"hp": 9999, "name": "lone"}])
+	Combat.step()
+	_check("Combat.step() writes user://last_tick.txt breadcrumb",
+		FileAccess.file_exists(crumb_path),
+		"path=%s" % ProjectSettings.globalize_path(crumb_path))
+	if FileAccess.file_exists(crumb_path):
+		var f := FileAccess.open(crumb_path, FileAccess.READ)
+		var body: String = f.get_as_text() if f != null else ""
+		_check("breadcrumb body contains wave=2",
+			"wave=2" in body, "body=%s" % body.strip_edges())
 	Combat.stop()
 
 func _test_time_cap_force_fills_ult() -> void:

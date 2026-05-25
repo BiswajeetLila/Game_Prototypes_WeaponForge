@@ -66,6 +66,12 @@ var _tick_timer: Timer
 var _time_cap_timer: Timer
 var _running: bool = false
 var _current_wave: int = 0
+var _tick_counter: int = 0
+
+## Crash diagnostics breadcrumb path. Combat.step() writes the current wave +
+## tick count here at the END of every tick. If Godot hard-hangs, this file
+## tells the next session exactly where we were.
+const BREADCRUMB_PATH: String = "user://last_tick.txt"
 
 func _ready() -> void:
 	_tick_timer = Timer.new()
@@ -84,6 +90,7 @@ func _ready() -> void:
 
 func start_wave(wave: int, auto_tick: bool = true) -> void:
 	_current_wave = wave
+	_tick_counter = 0
 	GameState.set_wave(wave)
 	_spawn_enemies(wave)
 	## Reset per-fight state for every squad member (alive AND dead — dead heroes
@@ -153,7 +160,20 @@ func step() -> void:
 		_on_wipe()
 		return
 
+	_tick_counter += 1
+	_write_breadcrumb()
 	emit_signal(&"tick_completed")
+
+## Writes a single-line breadcrumb with the current wave + tick to user://.
+## Called at the end of every step() that survives the win/loss check. Cheap:
+## one small file write per 1.1s tick. Survives Godot hard-hangs because the
+## OS flushes after each open/close.
+func _write_breadcrumb() -> void:
+	var f := FileAccess.open(BREADCRUMB_PATH, FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_line("wave=%d tick=%d" % [_current_wave, _tick_counter])
+	## file closed implicitly when f goes out of scope
 
 func fire_ult(hero_id: StringName) -> bool:
 	var hero = GameState.get_hero(hero_id)

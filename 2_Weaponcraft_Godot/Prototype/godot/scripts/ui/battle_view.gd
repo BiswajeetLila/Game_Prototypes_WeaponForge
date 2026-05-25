@@ -15,8 +15,29 @@ extends Control
 const POP_LIFETIME: float = 0.9
 const POP_RISE_PX: float = 38.0
 const FLASH_BOOST: Color = Color(1.8, 1.8, 1.8, 1.0)
+const MAX_POPS: int = 8
 
 const JuiceConfigT = preload("res://scripts/core/juice_config.gd")
+
+## ---------- Popup cap helper ----------
+##
+## CRITICAL: do NOT replace this with `while layer.get_child_count() > max_pops:
+##                                         layer.get_child(0).queue_free()`.
+## queue_free() is DEFERRED — the freed node remains in the scene tree until
+## the end of the current frame. The while-loop's get_child_count() therefore
+## NEVER decrements, and the loop spins forever calling queue_free on the
+## same node every iteration. This bug previously froze the engine main
+## thread + accumulated 21+ GB of Variant-wrapper garbage from the hot
+## get_child(0) calls before the user task-killed Godot. See test in
+## scripts/dev/test_combat.gd:_test_cap_pop_layer_terminates_bounded.
+##
+## The fix is a bounded for-loop that always terminates.
+static func cap_pop_layer(layer: Control, max_pops: int) -> void:
+	if layer == null:
+		return
+	var excess: int = layer.get_child_count() - max_pops
+	for i in range(maxi(0, excess)):
+		layer.get_child(i).queue_free()
 
 @onready var _hero_portrait: TextureRect = %HeroPortrait
 @onready var _enemy_row: HBoxContainer = %EnemyRow
@@ -245,9 +266,7 @@ func _spawn_pop(origin: Vector2, text: String, color: Color, font_pt: int) -> vo
 	_pops_layer.add_child(label)
 	label.global_position = origin
 	## Cap concurrent popups so the layer stays readable.
-	const MAX_POPS: int = 8
-	while _pops_layer.get_child_count() > MAX_POPS:
-		_pops_layer.get_child(0).queue_free()
+	cap_pop_layer(_pops_layer, MAX_POPS)
 	## Pop-in then drift-up + fade.
 	label.scale = Vector2(0.4, 0.4)
 	label.pivot_offset = Vector2.ZERO

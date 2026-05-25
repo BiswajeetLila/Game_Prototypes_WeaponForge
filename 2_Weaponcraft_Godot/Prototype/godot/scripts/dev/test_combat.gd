@@ -41,6 +41,8 @@ func _ready() -> void:
 	_test_breadcrumb_records_start_phase()
 	_test_heartbeat_advances_per_frame()
 	_test_screen_shake_idle_skip()
+	_test_cap_pop_layer_terminates_bounded()
+	_test_cap_pop_layer_below_max_is_noop()
 	_summary()
 	_render_to_ui()
 
@@ -450,6 +452,49 @@ func _test_wipe_only_when_all_squad_dead() -> void:
 		"no_wipe=%s wiped=%s stunt_dead=%s stunt_hp=%d"
 			% [str(no_wipe_with_one_alive), str(wiped[0]), str(stunt.is_dead), stunt.hp])
 	Combat.stop()
+
+## ---------- Popup cap infinite-loop fix (popup-cap-infinite-loop-fix) ----------
+
+const BattleViewT = preload("res://scripts/ui/battle_view.gd")
+
+func _test_cap_pop_layer_terminates_bounded() -> void:
+	## Root-cause repro: the original cap was
+	##     while layer.get_child_count() > MAX:
+	##         layer.get_child(0).queue_free()
+	## queue_free is deferred — get_child_count doesn't drop inside the loop —
+	## so this spins forever the moment popups exceed MAX. We now use a
+	## bounded for-loop. Test: with 20 children + MAX=8, cap must return
+	## within 50ms wall-clock (real fix returns in microseconds; the buggy
+	## version hangs the process indefinitely).
+	var layer := Control.new()
+	add_child(layer)
+	for i in 20:
+		layer.add_child(Label.new())
+	var t0: int = Time.get_ticks_msec()
+	BattleViewT.cap_pop_layer(layer, 8)
+	var elapsed: int = Time.get_ticks_msec() - t0
+	_check("cap_pop_layer terminates within 50ms with 20 children + MAX=8",
+		elapsed < 50, "elapsed=%dms" % elapsed)
+	## After one frame yield, queue_free flushes and child count drops to MAX.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var final_count: int = layer.get_child_count()
+	_check("cap_pop_layer leaves exactly MAX children after frame yield",
+		final_count == 8, "final_count=%d" % final_count)
+	layer.queue_free()
+
+func _test_cap_pop_layer_below_max_is_noop() -> void:
+	## Cap with N < MAX should be a no-op.
+	var layer := Control.new()
+	add_child(layer)
+	for i in 5:
+		layer.add_child(Label.new())
+	BattleViewT.cap_pop_layer(layer, 8)
+	## No frame yield needed — nothing got queue_freed.
+	_check("cap_pop_layer with 5 children + MAX=8 keeps all 5",
+		layer.get_child_count() == 5,
+		"count=%d" % layer.get_child_count())
+	layer.queue_free()
 
 ## ---------- Hang diagnostics (juice-hang-diag branch) ----------
 

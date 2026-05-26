@@ -37,7 +37,7 @@ const REROLL_COST: int = 2
 ## Heal potion injection — appears in shop slot 4 on potion-waves.
 ## A potion-wave is any wave where (wave-1) % 3 == 0 (W1, W4, W7, W10, ...).
 const POTION_PART_ID: StringName = &"c_heal_potion"
-const POTION_HEAL_FRACTION: float = 0.5  ## 50% of max_hp restored per hero on use.
+const POTION_HEAL_FRACTION: float = 0.15  ## 15% of max_hp per hero (nerfed from 0.50; potion was OP).
 
 ## Public so the UI can grey-out the reroll button.
 func can_afford_reroll() -> bool:

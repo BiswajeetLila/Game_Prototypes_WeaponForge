@@ -36,7 +36,7 @@ func _ready() -> void:
 	_test_potion_absent_on_w8()
 	_test_potion_absent_on_w9()
 	_test_potion_not_in_eligible_pool()
-	_test_potion_buy_heals_all_alive_50pct()
+	_test_potion_buy_heals_all_alive_15pct()
 	_test_potion_buy_skips_dead_heroes()
 	_test_potion_buy_caps_at_max_hp()
 	_test_potion_buy_blocked_when_gold_short()
@@ -263,7 +263,7 @@ func _test_potion_not_in_eligible_pool() -> void:
 	_check("potion NOT in regular eligible pool (only via injection)",
 		not (POTION_ID in eligible), "")
 
-func _test_potion_buy_heals_all_alive_50pct() -> void:
+func _test_potion_buy_heals_all_alive_15pct() -> void:
 	GameState.new_session()
 	GameState.unlock_hero(&"elara")
 	GameState.unlock_hero(&"vex")
@@ -279,11 +279,12 @@ func _test_potion_buy_heals_all_alive_50pct() -> void:
 	var b_hp = GameState.get_hero(&"bran").hp
 	var e_hp = GameState.get_hero(&"elara").hp
 	var v_hp = GameState.get_hero(&"vex").hp
-	var expected_b = 1 + int(floor(float(bran_max) * 0.5))
-	var expected_e = 1 + int(floor(float(elara_max) * 0.5))
-	var expected_v = 1 + int(floor(float(vex_max) * 0.5))
+	## Nerfed from 0.50 to 0.15 — potion was OP at full half-restore.
+	var expected_b = 1 + int(floor(float(bran_max) * 0.15))
+	var expected_e = 1 + int(floor(float(elara_max) * 0.15))
+	var expected_v = 1 + int(floor(float(vex_max) * 0.15))
 	var ok = ok_buy and b_hp == expected_b and e_hp == expected_e and v_hp == expected_v
-	_check("potion buy heals all alive heroes by floor(max_hp * 0.5)",
+	_check("potion buy heals all alive heroes by floor(max_hp * 0.15)",
 		ok, "buy=%s bran=%d/%d (expect %d) elara=%d/%d (expect %d) vex=%d/%d (expect %d)" %
 			[str(ok_buy), b_hp, bran_max, expected_b, e_hp, elara_max, expected_e, v_hp, vex_max, expected_v])
 

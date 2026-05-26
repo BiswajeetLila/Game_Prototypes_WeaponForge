@@ -20,8 +20,10 @@ extends Control
 
 ## Hero unlock thresholds — wave on which clearing triggers the unlock banner.
 ## Authoritative source; the _on_wave_cleared match block reads these.
-const ELARA_UNLOCK_WAVE: int = 2
-const VEX_UNLOCK_WAVE: int = 4
+## Retimed per forge-ux-balance-w10: Elara W2->W3, Vex W4->W6 — gives 3 solo
+## Bran waves to learn basics, 3 dual-hero waves, then trio for W7-10.
+const ELARA_UNLOCK_WAVE: int = 3
+const VEX_UNLOCK_WAVE: int = 6
 
 @onready var _forge: Control = %ForgePanel
 @onready var _squad_bar: Control = %SquadBar
@@ -58,13 +60,13 @@ func _on_wave_cleared(wave: int) -> void:
 	if JuiceConfig.JUICE_ENABLED:
 		ScreenShake.kick(JuiceConfig.WAVE_CLEAR.shake_amp, JuiceConfig.WAVE_CLEAR.shake_dur)
 
-	## Per-hero unlocks: wave 2 -> Elara (mage), wave 4 -> Vex (rogue).
+	## Per-hero unlocks: Elara at ELARA_UNLOCK_WAVE clear, Vex at VEX_UNLOCK_WAVE.
 	## Banner fires 0.7s later so it doesn't pile under the wave-clear banner.
 	match wave:
-		2:
+		ELARA_UNLOCK_WAVE:
 			GameState.unlock_hero(&"elara")
 			_show_unlock_banner_delayed(&"elara", "✨ ELARA JOINS — MAGE", Color(0.85, 0.55, 1))
-		4:
+		VEX_UNLOCK_WAVE:
 			GameState.unlock_hero(&"vex")
 			_show_unlock_banner_delayed(&"vex", "✨ VEX JOINS — ROGUE", Color(0.55, 0.85, 1))
 

@@ -47,6 +47,7 @@ func _ready() -> void:
 	_test_juiceconfig_ult_meteor_has_burst_texture()
 	_test_juiceconfig_basic_has_no_burst()
 	_test_screen_flash_has_public_flash_method()
+	_test_herocard_has_hp_delta_bar()
 	_summary()
 	_render_to_ui()
 
@@ -310,6 +311,14 @@ func _test_screen_flash_has_public_flash_method() -> void:
 	_check("ScreenFlash has public flash() method",
 		ok, "has_method('flash') = %s" % str(ok))
 	sf.queue_free()
+
+func _test_herocard_has_hp_delta_bar() -> void:
+	var card = _build_bran_card()
+	var delta = card.find_child("HpBarDelta", true, false)
+	_check("HeroCard has HpBarDelta (red trail behind HpBar)",
+		delta != null and delta is ProgressBar,
+		"got %s" % str(delta))
+	card.queue_free()
 
 ## ---------- Test helpers ----------
 

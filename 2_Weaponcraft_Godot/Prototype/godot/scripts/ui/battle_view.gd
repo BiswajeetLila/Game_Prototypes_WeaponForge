@@ -123,13 +123,30 @@ func _make_enemy_card(idx: int) -> Control:
 	sprite.texture = enemy.get("sprite")
 	v.add_child(sprite)
 
+	## Juice PR2: HpBar + HpBarDelta inside a Control slot. Delta is the red
+	## trail behind the main bar showing damage just taken.
+	var hp_slot := Control.new()
+	hp_slot.name = "HpSlot"
+	hp_slot.custom_minimum_size = Vector2(0, 8)
+	v.add_child(hp_slot)
+
+	var hp_delta := ProgressBar.new()
+	hp_delta.name = "HpBarDelta"
+	hp_delta.max_value = float(enemy.max_hp)
+	hp_delta.value = float(enemy.hp)
+	hp_delta.show_percentage = false
+	hp_delta.modulate = Color(0.882, 0.231, 0.231, 0.85)
+	hp_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_slot.add_child(hp_delta)
+	hp_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+
 	var hp_bar := ProgressBar.new()
 	hp_bar.name = "HpBar"
 	hp_bar.max_value = float(enemy.max_hp)
 	hp_bar.value = float(enemy.hp)
 	hp_bar.show_percentage = false
-	hp_bar.custom_minimum_size = Vector2(0, 8)
-	v.add_child(hp_bar)
+	hp_slot.add_child(hp_bar)
+	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 
 	var hp_text := Label.new()
 	hp_text.name = "HpText"
@@ -175,9 +192,20 @@ func _on_enemy_hp_changed(idx: int) -> void:
 		return
 	var card := _enemy_row.get_child(idx) as Control
 	var enemy: Dictionary = GameState.enemies[idx]
-	var bar := card.get_node_or_null("HpBar") as ProgressBar
+	var bar := card.find_child("HpBar", true, false) as ProgressBar
 	if bar != null:
 		_tween_bar(bar, float(enemy.hp))
+	## Juice PR2: HP delta lags behind the main bar — Quart-In catchup after
+	## a brief hold. On heal, snap forward immediately so the red trail only
+	## ever shows damage just taken.
+	var delta := card.find_child("HpBarDelta", true, false) as ProgressBar
+	if delta != null:
+		if float(enemy.hp) >= delta.value:
+			delta.value = float(enemy.hp)
+		else:
+			var t := create_tween()
+			t.tween_interval(0.25)
+			t.tween_property(delta, "value", float(enemy.hp), 0.20).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	var txt := card.get_node_or_null("HpText") as Label
 	if txt != null:
 		txt.text = "%d/%d" % [enemy.hp, enemy.max_hp]

@@ -36,6 +36,14 @@ var _is_flipped: bool = false
 var _back_panel: PanelContainer = null
 var _info_overlay: Control = null
 
+## HP delta bar — red trail behind the main HpBar. Holds the prior HP for
+## 250 ms then catches up over 200 ms (Quart-In). Built programmatically on
+## _ready by wrapping the existing HpBar in a Control + adding a sibling.
+const HP_DELTA_COLOR := Color(0.882, 0.231, 0.231, 0.85)
+const HP_DELTA_HOLD: float = 0.25
+const HP_DELTA_CATCHUP: float = 0.20
+var _hp_bar_delta: ProgressBar = null
+
 func setup(hero_id: StringName) -> void:
 	_hero_id = hero_id
 	## Wait until the scene's ready before touching @onready node refs.
@@ -53,8 +61,38 @@ func _ready() -> void:
 	_build_styles()
 	_apply_selection_style()
 	_build_info_btn()
+	_build_hp_delta_bar()
 	if _hero_id != &"":
 		_refresh_all()
+
+## Juice PR2: wraps the existing HpBar in a Control slot + adds an HpBarDelta
+## sibling drawn behind the main bar. Both share PRESET_FULL_RECT inside the
+## slot so they overlap pixel-for-pixel.
+func _build_hp_delta_bar() -> void:
+	if _hp_bar == null or _hp_bar_delta != null:
+		return
+	var parent: Node = _hp_bar.get_parent()
+	if parent == null:
+		return
+	var idx: int = _hp_bar.get_index()
+	var bar_min: Vector2 = _hp_bar.custom_minimum_size
+	var slot := Control.new()
+	slot.name = "HpSlot"
+	slot.custom_minimum_size = bar_min
+	parent.add_child(slot)
+	parent.move_child(slot, idx)
+	_hp_bar.reparent(slot)
+	_hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	_hp_bar_delta = ProgressBar.new()
+	_hp_bar_delta.name = "HpBarDelta"
+	_hp_bar_delta.max_value = _hp_bar.max_value
+	_hp_bar_delta.value = _hp_bar.value
+	_hp_bar_delta.show_percentage = false
+	_hp_bar_delta.modulate = HP_DELTA_COLOR
+	_hp_bar_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.add_child(_hp_bar_delta)
+	slot.move_child(_hp_bar_delta, 0)  ## drawn first -> behind HpBar
+	_hp_bar_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 
 func _build_styles() -> void:
 	## Selected card: light parchment fill + gold border so it pops vs theme
@@ -111,6 +149,9 @@ func _refresh_all() -> void:
 	_name_label.text = hero.data.name if hero.data != null else "?"
 	_hp_bar.max_value = float(hero.max_hp)
 	_hp_bar.value = float(hero.hp)
+	if _hp_bar_delta != null:
+		_hp_bar_delta.max_value = float(hero.max_hp)
+		_hp_bar_delta.value = float(hero.hp)
 	_hp_text.text = "%d / %d" % [hero.hp, hero.max_hp]
 	_ult_bar.max_value = float(Combat.ULT_GAUGE_MAX)
 	_ult_bar.value = float(hero.ult_gauge)
@@ -178,8 +219,24 @@ func _on_hp_changed(hero_id: StringName) -> void:
 		return
 	_hp_bar.max_value = float(hero.max_hp)
 	_tween_bar(_hp_bar, float(hero.hp))
+	_tween_hp_delta(float(hero.hp), float(hero.max_hp))
 	_hp_text.text = "%d / %d" % [hero.hp, hero.max_hp]
 	modulate = Color(0.5, 0.5, 0.5, 0.8) if hero.is_dead else Color.WHITE
+
+## Juice PR2: HP delta bar lags behind the main bar — holds the prior value
+## for HP_DELTA_HOLD, then catches up over HP_DELTA_CATCHUP (Quart-In). On
+## heals (target > current delta), snap delta forward immediately so the red
+## trail only ever shows damage just taken, never green-over-red.
+func _tween_hp_delta(target: float, max_value: float) -> void:
+	if _hp_bar_delta == null:
+		return
+	_hp_bar_delta.max_value = max_value
+	if target >= _hp_bar_delta.value:
+		_hp_bar_delta.value = target
+		return
+	var t := create_tween()
+	t.tween_interval(HP_DELTA_HOLD)
+	t.tween_property(_hp_bar_delta, "value", target, HP_DELTA_CATCHUP).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 
 func _on_ult_changed(hero_id: StringName) -> void:
 	if hero_id != _hero_id:

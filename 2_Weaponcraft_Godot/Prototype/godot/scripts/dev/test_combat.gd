@@ -43,6 +43,17 @@ func _ready() -> void:
 	_test_screen_shake_idle_skip()
 	_test_cap_pop_layer_terminates_bounded()
 	_test_cap_pop_layer_below_max_is_noop()
+	## Balance pass.
+	_test_total_waves_is_10()
+	_test_bran_hp_base_120()
+	_test_elara_hp_base_90()
+	_test_vex_hp_base_75()
+	_test_partdata_default_cost_4()
+	_test_h_iron_edge_cost_4()
+	_test_p_steel_grip_cost_4()
+	_test_r_pierce_cost_4()
+	_test_elara_unlock_wave_constant_3()
+	_test_vex_unlock_wave_constant_6()
 	_summary()
 	_render_to_ui()
 
@@ -635,6 +646,68 @@ func _test_time_cap_force_fills_ult() -> void:
 		GameState.hero.ult_gauge == Combat.ULT_GAUGE_MAX,
 		"gauge=%.1f" % GameState.hero.ult_gauge)
 	Combat.stop()
+
+## ---------- Balance pass (forge-ux-balance-w10 branch) ----------
+
+func _test_total_waves_is_10() -> void:
+	_check("GameState.TOTAL_WAVES == 10",
+		GameState.TOTAL_WAVES == 10,
+		"got %d" % GameState.TOTAL_WAVES)
+
+func _test_bran_hp_base_120() -> void:
+	var data = GameState.heroes_by_id.get(&"bran")
+	_check("Bran HeroData.hp_base == 120",
+		data != null and data.hp_base == 120,
+		"got %d" % (data.hp_base if data else -1))
+
+func _test_elara_hp_base_90() -> void:
+	var data = GameState.heroes_by_id.get(&"elara")
+	_check("Elara HeroData.hp_base == 90",
+		data != null and data.hp_base == 90,
+		"got %d" % (data.hp_base if data else -1))
+
+func _test_vex_hp_base_75() -> void:
+	var data = GameState.heroes_by_id.get(&"vex")
+	_check("Vex HeroData.hp_base == 75",
+		data != null and data.hp_base == 75,
+		"got %d" % (data.hp_base if data else -1))
+
+func _test_partdata_default_cost_4() -> void:
+	const PartDataT = preload("res://scripts/data/part_data.gd")
+	var fresh = PartDataT.new()
+	_check("PartData() default cost == 4",
+		fresh.cost == 4,
+		"got %d" % fresh.cost)
+
+func _test_h_iron_edge_cost_4() -> void:
+	var def = GameState.get_part_def(&"h_iron_edge")
+	_check("h_iron_edge.cost == 4 (default inherited)",
+		def != null and def.cost == 4,
+		"got %s" % str(def.cost if def else "null"))
+
+func _test_p_steel_grip_cost_4() -> void:
+	var def = GameState.get_part_def(&"p_steel_grip")
+	_check("p_steel_grip.cost == 4 (default inherited)",
+		def != null and def.cost == 4,
+		"got %s" % str(def.cost if def else "null"))
+
+func _test_r_pierce_cost_4() -> void:
+	var def = GameState.get_part_def(&"r_pierce")
+	_check("r_pierce.cost == 4 (explicit override)",
+		def != null and def.cost == 4,
+		"got %s" % str(def.cost if def else "null"))
+
+func _test_elara_unlock_wave_constant_3() -> void:
+	const MainT = preload("res://scripts/ui/main.gd")
+	var v = MainT.ELARA_UNLOCK_WAVE
+	_check("Main.ELARA_UNLOCK_WAVE == 3",
+		v == 3, "got %s" % str(v))
+
+func _test_vex_unlock_wave_constant_6() -> void:
+	const MainT = preload("res://scripts/ui/main.gd")
+	var v = MainT.VEX_UNLOCK_WAVE
+	_check("Main.VEX_UNLOCK_WAVE == 6",
+		v == 6, "got %s" % str(v))
 
 ## ---------- Test helpers ----------
 

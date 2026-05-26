@@ -26,6 +26,7 @@ func _ready() -> void:
 	_test_shop_buy_round_trip()
 	_test_buy_with_insufficient_gold_refunded()
 	_test_level_multiplier_table()
+	_test_weapon_level_mult_mirrors_merge()
 	_summary()
 	_render_to_ui()
 
@@ -156,10 +157,21 @@ func _test_buy_with_insufficient_gold_refunded() -> void:
 		"ok=%s gold=%d" % [str(ok), GameState.gold])
 
 func _test_level_multiplier_table() -> void:
-	_check("level_multiplier L1 = 1.00", abs(Merge.level_multiplier(1) - 1.00) < 0.001, "")
-	_check("level_multiplier L5 = 3.70", abs(Merge.level_multiplier(5) - 3.70) < 0.001, "")
+	## Slow-curve target post-balance pass: L5 = 2.75 (was 3.70).
+	_check("level_multiplier L1 = 1.00", abs(Merge.level_multiplier(1) - 1.00) < 0.001, "got %.3f" % Merge.level_multiplier(1))
+	_check("level_multiplier L2 = 1.35", abs(Merge.level_multiplier(2) - 1.35) < 0.001, "got %.3f" % Merge.level_multiplier(2))
+	_check("level_multiplier L3 = 1.80", abs(Merge.level_multiplier(3) - 1.80) < 0.001, "got %.3f" % Merge.level_multiplier(3))
+	_check("level_multiplier L4 = 2.30", abs(Merge.level_multiplier(4) - 2.30) < 0.001, "got %.3f" % Merge.level_multiplier(4))
+	_check("level_multiplier L5 = 2.75", abs(Merge.level_multiplier(5) - 2.75) < 0.001, "got %.3f" % Merge.level_multiplier(5))
 	_check("level_multiplier clamps L0 -> L1", abs(Merge.level_multiplier(0) - 1.00) < 0.001, "")
-	_check("level_multiplier clamps L99 -> L5", abs(Merge.level_multiplier(99) - 3.70) < 0.001, "")
+	_check("level_multiplier clamps L99 -> L5", abs(Merge.level_multiplier(99) - 2.75) < 0.001, "")
+
+func _test_weapon_level_mult_mirrors_merge() -> void:
+	## Weapon.gd carries a hot-path copy of LEVEL_MULT. Mirror test prevents drift.
+	const WeaponT2 = preload("res://scripts/data/weapon.gd")
+	var ok = WeaponT2.LEVEL_MULT == Merge.LEVEL_MULT
+	_check("Weapon.LEVEL_MULT == Merge.LEVEL_MULT (mirror lockstep)",
+		ok, "weapon=%s merge=%s" % [str(WeaponT2.LEVEL_MULT), str(Merge.LEVEL_MULT)])
 
 ## ---------- Test helpers ----------
 

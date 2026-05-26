@@ -22,6 +22,26 @@ func _ready() -> void:
 	_test_reroll_deducts_two_gold()
 	_test_reroll_blocked_when_gold_short()
 	_test_shop_changed_signal_emits()
+	## Heal potion (consumable) cases.
+	_test_potion_partdata_exists_with_flag()
+	_test_regular_parts_not_consumable()
+	_test_potion_appears_on_w1()
+	_test_potion_appears_on_w4()
+	_test_potion_appears_on_w7()
+	_test_potion_appears_on_w10()
+	_test_potion_absent_on_w2()
+	_test_potion_absent_on_w3()
+	_test_potion_absent_on_w5()
+	_test_potion_absent_on_w6()
+	_test_potion_absent_on_w8()
+	_test_potion_absent_on_w9()
+	_test_potion_not_in_eligible_pool()
+	_test_potion_buy_heals_all_alive_50pct()
+	_test_potion_buy_skips_dead_heroes()
+	_test_potion_buy_caps_at_max_hp()
+	_test_potion_buy_blocked_when_gold_short()
+	_test_potion_buy_does_not_call_merge()
+	_test_potion_buy_does_not_enter_inventory()
 	_summary()
 	_render_to_ui()
 
@@ -133,6 +153,213 @@ func _test_shop_changed_signal_emits() -> void:
 	GameState.shop_changed.disconnect(cb)
 	_check("shop_changed fires once per refresh",
 		count[0] == 2, "count=%d" % count[0])
+
+## ---------- Heal potion cases ----------
+
+const POTION_ID: StringName = &"c_heal_potion"
+
+func _shop_contains_potion() -> bool:
+	for pid in GameState.shop_parts:
+		if pid == POTION_ID:
+			return true
+	return false
+
+func _set_wave(w: int) -> void:
+	GameState.wave = w
+	GameState.emit_signal(&"wave_changed", w)
+
+func _test_potion_partdata_exists_with_flag() -> void:
+	var def = GameState.get_part_def(POTION_ID)
+	if def == null:
+		_check("c_heal_potion PartData exists with is_consumable=true",
+			false, "c_heal_potion.tres not loaded")
+		return
+	var v = def.get(&"is_consumable")
+	_check("c_heal_potion PartData exists with is_consumable=true",
+		v == true, "is_consumable=%s" % str(v))
+
+func _test_regular_parts_not_consumable() -> void:
+	var def = GameState.get_part_def(&"h_iron_edge")
+	if def == null:
+		_check("h_iron_edge is_consumable=false", false, "missing")
+		return
+	var v = def.get(&"is_consumable")
+	## Field may be absent (legacy) or false (post-feature). Both acceptable for non-consumables.
+	_check("regular part h_iron_edge is_consumable=false (or absent)",
+		v == false or v == null, "is_consumable=%s" % str(v))
+
+func _test_potion_appears_on_w1() -> void:
+	GameState.new_session()  ## wave=1
+	Shop.refresh(true)
+	_check("potion appears on W1 (potion-wave)",
+		_shop_contains_potion(), "shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_appears_on_w4() -> void:
+	GameState.new_session()
+	_set_wave(4)
+	Shop.refresh(true)
+	_check("potion appears on W4 (potion-wave)",
+		_shop_contains_potion(), "shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_appears_on_w7() -> void:
+	GameState.new_session()
+	_set_wave(7)
+	Shop.refresh(true)
+	_check("potion appears on W7 (potion-wave)",
+		_shop_contains_potion(), "shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_appears_on_w10() -> void:
+	GameState.new_session()
+	_set_wave(10)
+	Shop.refresh(true)
+	_check("potion appears on W10 (potion-wave)",
+		_shop_contains_potion(), "shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_absent_on_w2() -> void:
+	GameState.new_session()
+	_set_wave(2)
+	Shop.refresh(true)
+	_check("potion ABSENT on W2 (non-potion-wave)",
+		not _shop_contains_potion(), "shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_absent_on_w3() -> void:
+	GameState.new_session()
+	_set_wave(3)
+	Shop.refresh(true)
+	_check("potion ABSENT on W3", not _shop_contains_potion(),
+		"shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_absent_on_w5() -> void:
+	GameState.new_session()
+	_set_wave(5)
+	Shop.refresh(true)
+	_check("potion ABSENT on W5", not _shop_contains_potion(),
+		"shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_absent_on_w6() -> void:
+	GameState.new_session()
+	_set_wave(6)
+	Shop.refresh(true)
+	_check("potion ABSENT on W6", not _shop_contains_potion(),
+		"shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_absent_on_w8() -> void:
+	GameState.new_session()
+	_set_wave(8)
+	Shop.refresh(true)
+	_check("potion ABSENT on W8", not _shop_contains_potion(),
+		"shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_absent_on_w9() -> void:
+	GameState.new_session()
+	_set_wave(9)
+	Shop.refresh(true)
+	_check("potion ABSENT on W9", not _shop_contains_potion(),
+		"shop=%s" % str(GameState.shop_parts))
+
+func _test_potion_not_in_eligible_pool() -> void:
+	GameState.new_session()
+	var eligible: Array = Shop._eligible_part_ids()
+	_check("potion NOT in regular eligible pool (only via injection)",
+		not (POTION_ID in eligible), "")
+
+func _test_potion_buy_heals_all_alive_50pct() -> void:
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.gold = 10
+	## Damage all heroes to hp=1.
+	for h in GameState.active_heroes():
+		h.hp = 1
+	GameState.shop_parts = [POTION_ID, null, null, null, null]
+	var bran_max = GameState.get_hero(&"bran").max_hp
+	var elara_max = GameState.get_hero(&"elara").max_hp
+	var vex_max = GameState.get_hero(&"vex").max_hp
+	var ok_buy = Shop.buy(0)
+	var b_hp = GameState.get_hero(&"bran").hp
+	var e_hp = GameState.get_hero(&"elara").hp
+	var v_hp = GameState.get_hero(&"vex").hp
+	var expected_b = 1 + int(floor(float(bran_max) * 0.5))
+	var expected_e = 1 + int(floor(float(elara_max) * 0.5))
+	var expected_v = 1 + int(floor(float(vex_max) * 0.5))
+	var ok = ok_buy and b_hp == expected_b and e_hp == expected_e and v_hp == expected_v
+	_check("potion buy heals all alive heroes by floor(max_hp * 0.5)",
+		ok, "buy=%s bran=%d/%d (expect %d) elara=%d/%d (expect %d) vex=%d/%d (expect %d)" %
+			[str(ok_buy), b_hp, bran_max, expected_b, e_hp, elara_max, expected_e, v_hp, vex_max, expected_v])
+
+func _test_potion_buy_skips_dead_heroes() -> void:
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.gold = 10
+	for h in GameState.all_heroes():
+		h.hp = 1
+	## Kill Elara.
+	var elara = GameState.get_hero(&"elara")
+	elara.hp = 0
+	elara.is_dead = true
+	GameState.shop_parts = [POTION_ID, null, null, null, null]
+	Shop.buy(0)
+	var b_hp = GameState.get_hero(&"bran").hp
+	var e_hp = elara.hp
+	var v_hp = GameState.get_hero(&"vex").hp
+	_check("potion buy skips dead heroes (Elara stays at hp=0)",
+		b_hp > 1 and e_hp == 0 and v_hp > 1,
+		"bran=%d elara=%d vex=%d" % [b_hp, e_hp, v_hp])
+
+func _test_potion_buy_caps_at_max_hp() -> void:
+	GameState.new_session()
+	GameState.gold = 10
+	var bran = GameState.get_hero(&"bran")
+	bran.hp = bran.max_hp - 1
+	GameState.shop_parts = [POTION_ID, null, null, null, null]
+	Shop.buy(0)
+	_check("potion buy clamps hp to max_hp (no over-heal)",
+		bran.hp == bran.max_hp,
+		"hp=%d max=%d" % [bran.hp, bran.max_hp])
+
+func _test_potion_buy_blocked_when_gold_short() -> void:
+	GameState.new_session()
+	GameState.gold = 2  ## potion cost = 5
+	GameState.emit_signal(&"gold_changed", 2)
+	var bran = GameState.get_hero(&"bran")
+	bran.hp = 1
+	GameState.shop_parts = [POTION_ID, null, null, null, null]
+	var ok = Shop.buy(0)
+	_check("potion buy blocked when gold < 5 (no heal, slot kept)",
+		not ok and GameState.gold == 2 and bran.hp == 1 and GameState.shop_parts[0] == POTION_ID,
+		"ok=%s gold=%d hp=%d slot0=%s" % [str(ok), GameState.gold, bran.hp, str(GameState.shop_parts[0])])
+
+func _test_potion_buy_does_not_call_merge() -> void:
+	## Potion shouldn't be added to inventory and shouldn't equip on anyone.
+	GameState.new_session()
+	GameState.gold = 10
+	var bran = GameState.get_hero(&"bran")
+	bran.hp = 1
+	var inv_size_before: int = GameState.inventory.size()
+	var slot_before = bran.weapon.get_slot(&"head")
+	GameState.shop_parts = [POTION_ID, null, null, null, null]
+	Shop.buy(0)
+	_check("potion buy does NOT route through Merge (no equip)",
+		GameState.inventory.size() == inv_size_before and bran.weapon.get_slot(&"head") == slot_before,
+		"inv_delta=%d head_changed=%s" % [GameState.inventory.size() - inv_size_before, str(bran.weapon.get_slot(&"head") != slot_before)])
+
+func _test_potion_buy_does_not_enter_inventory() -> void:
+	## Same as above but assert explicitly that no InventoryItem with consumable
+	## part_id was created.
+	GameState.new_session()
+	GameState.gold = 10
+	var bran = GameState.get_hero(&"bran")
+	bran.hp = 1
+	GameState.shop_parts = [POTION_ID, null, null, null, null]
+	Shop.buy(0)
+	var any_potion_inv = false
+	for item in GameState.inventory:
+		if item.part_id == POTION_ID:
+			any_potion_inv = true
+			break
+	_check("potion NEVER enters inventory after buy",
+		not any_potion_inv, "")
 
 ## ---------- Test helpers ----------
 

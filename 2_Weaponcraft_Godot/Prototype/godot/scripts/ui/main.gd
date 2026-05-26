@@ -18,6 +18,11 @@
 ##   ult fire.
 extends Control
 
+## Hero unlock thresholds — wave on which clearing triggers the unlock banner.
+## Authoritative source; the _on_wave_cleared match block reads these.
+const ELARA_UNLOCK_WAVE: int = 2
+const VEX_UNLOCK_WAVE: int = 4
+
 @onready var _forge: Control = %ForgePanel
 @onready var _squad_bar: Control = %SquadBar
 @onready var _reset_btn: Button = %ResetBtn

@@ -316,7 +316,7 @@ func _test_herocard_has_hp_delta_bar() -> void:
 	var card = _build_bran_card()
 	var delta = card.find_child("HpBarDelta", true, false)
 	_check("HeroCard has HpBarDelta (red trail behind HpBar)",
-		delta != null and delta is ProgressBar,
+		delta != null and delta is ColorRect,
 		"got %s" % str(delta))
 	card.queue_free()
 

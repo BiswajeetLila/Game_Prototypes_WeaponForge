@@ -123,50 +123,39 @@ func _make_enemy_card(idx: int) -> Control:
 	sprite.texture = enemy.get("sprite")
 	v.add_child(sprite)
 
-	## Juice PR2: HpBar + HpBarDelta inside a Control slot. Delta is the red
-	## trail behind the main bar showing damage just taken. HpBar's background
-	## is transparent so the delta fill underneath shows where HpBar value
-	## has shrunk past delta value.
+	## Juice PR2: HpBar + ColorRect HpBarDelta inside a Control slot. Delta is
+	## the red trail behind the main bar showing damage just taken. Delta sized
+	## by anchor_right = hp_ratio so it tracks the exact same horizontal extent
+	## as HpBar's fill, with full slot height vertically. ColorRect (not a
+	## second ProgressBar) bypasses theme fill content_margin quirks that made
+	## a sibling ProgressBar paint at a different height than HpBar fill.
 	var hp_slot := Control.new()
 	hp_slot.name = "HpSlot"
 	hp_slot.custom_minimum_size = Vector2(0, 8)
 	v.add_child(hp_slot)
 
-	## Build HpBar first so we can mirror its theme fill margins onto the delta.
+	var hp_delta := ColorRect.new()
+	hp_delta.name = "HpBarDelta"
+	hp_delta.color = Color(0.882, 0.231, 0.231, 0.95)
+	hp_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_slot.add_child(hp_delta)
+	hp_delta.anchor_left = 0.0
+	hp_delta.anchor_top = 0.0
+	hp_delta.anchor_right = (float(enemy.hp) / float(enemy.max_hp)) if enemy.max_hp > 0 else 1.0
+	hp_delta.anchor_bottom = 1.0
+	hp_delta.offset_left = 0
+	hp_delta.offset_top = 0
+	hp_delta.offset_right = 0
+	hp_delta.offset_bottom = 0
+
 	var hp_bar := ProgressBar.new()
 	hp_bar.name = "HpBar"
 	hp_bar.max_value = float(enemy.max_hp)
 	hp_bar.value = float(enemy.hp)
 	hp_bar.show_percentage = false
 	hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
-
-	var hp_delta := ProgressBar.new()
-	hp_delta.name = "HpBarDelta"
-	hp_delta.max_value = float(enemy.max_hp)
-	hp_delta.value = float(enemy.hp)
-	hp_delta.show_percentage = false
-	hp_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var delta_fill := StyleBoxFlat.new()
-	delta_fill.bg_color = Color(0.882, 0.231, 0.231, 0.95)
-	delta_fill.corner_radius_top_left = 2
-	delta_fill.corner_radius_top_right = 2
-	delta_fill.corner_radius_bottom_left = 2
-	delta_fill.corner_radius_bottom_right = 2
-	## Add HpBar to the tree so its theme stylebox is resolvable, then mirror
-	## the theme fill content_margins so delta paints at the same visible rect.
 	hp_slot.add_child(hp_bar)
 	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
-	var ref_fill: StyleBox = hp_bar.get_theme_stylebox(&"fill")
-	if ref_fill != null:
-		delta_fill.content_margin_top = ref_fill.get_content_margin(SIDE_TOP)
-		delta_fill.content_margin_bottom = ref_fill.get_content_margin(SIDE_BOTTOM)
-		delta_fill.content_margin_left = ref_fill.get_content_margin(SIDE_LEFT)
-		delta_fill.content_margin_right = ref_fill.get_content_margin(SIDE_RIGHT)
-	hp_delta.add_theme_stylebox_override(&"fill", delta_fill)
-	hp_delta.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
-	hp_slot.add_child(hp_delta)
-	hp_slot.move_child(hp_delta, 0)  ## drawn first -> behind HpBar
-	hp_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 
 	var hp_text := Label.new()
 	hp_text.name = "HpText"
@@ -217,15 +206,17 @@ func _on_enemy_hp_changed(idx: int) -> void:
 		_tween_bar(bar, float(enemy.hp))
 	## Juice PR2: HP delta lags behind the main bar — Quart-In catchup after
 	## a brief hold. On heal, snap forward immediately so the red trail only
-	## ever shows damage just taken.
-	var delta := card.find_child("HpBarDelta", true, false) as ProgressBar
-	if delta != null:
-		if float(enemy.hp) >= delta.value:
-			delta.value = float(enemy.hp)
+	## ever shows damage just taken. Delta is a ColorRect; 'value' encoded as
+	## anchor_right = hp_ratio.
+	var delta := card.find_child("HpBarDelta", true, false) as ColorRect
+	if delta != null and enemy.max_hp > 0:
+		var target_ratio: float = clampf(float(enemy.hp) / float(enemy.max_hp), 0.0, 1.0)
+		if target_ratio >= delta.anchor_right:
+			delta.anchor_right = target_ratio
 		else:
 			var t := create_tween()
 			t.tween_interval(0.25)
-			t.tween_property(delta, "value", float(enemy.hp), 0.20).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+			t.tween_property(delta, "anchor_right", target_ratio, 0.20).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 	var txt := card.get_node_or_null("HpText") as Label
 	if txt != null:
 		txt.text = "%d/%d" % [enemy.hp, enemy.max_hp]

@@ -39,10 +39,16 @@ var _info_overlay: Control = null
 ## HP delta bar — red trail behind the main HpBar. Holds the prior HP for
 ## 250 ms then catches up over 200 ms (Quart-In). Built programmatically on
 ## _ready by wrapping the existing HpBar in a Control + adding a sibling.
-const HP_DELTA_COLOR := Color(0.882, 0.231, 0.231, 0.85)
+const HP_DELTA_COLOR := Color(0.882, 0.231, 0.231, 0.95)
 const HP_DELTA_HOLD: float = 0.25
 const HP_DELTA_CATCHUP: float = 0.20
-var _hp_bar_delta: ProgressBar = null
+## ColorRect-based delta (not a ProgressBar) — anchored to fill the same
+## rect as HpBar's fill, width driven by anchor_right = delta_ratio.
+## Bypasses ProgressBar theme content_margin / fill StyleBox quirks that
+## made the prior ProgressBar-based delta paint at a different height than
+## the main HpBar fill.
+var _hp_bar_delta: ColorRect = null
+var _hp_bar_delta_max: float = 1.0
 
 func setup(hero_id: StringName) -> void:
 	_hero_id = hero_id
@@ -79,50 +85,41 @@ func _build_hp_delta_bar() -> void:
 	var slot := Control.new()
 	slot.name = "HpSlot"
 	slot.custom_minimum_size = bar_min
+	## Mirror HpBar's layout flags so the slot occupies the same VBox row as
+	## the original HpBar did (was getting stretched ~16 px tall by 5 siblings
+	## sharing SIZE_FILL space — collapsing to 10 broke other children too).
+	slot.size_flags_horizontal = _hp_bar.size_flags_horizontal
+	slot.size_flags_vertical = _hp_bar.size_flags_vertical
 	parent.add_child(slot)
 	parent.move_child(slot, idx)
 	_hp_bar.reparent(slot)
 	_hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
-	## Transparent background so the delta bar underneath shows through where
-	## HpBar's fill has shrunk. Without this, HpBar's default StyleBox bg
-	## paints over the delta and the red trail is invisible.
+	## Transparent HpBar background so the ColorRect-based delta drawn behind
+	## reads through where HpBar's fill has shrunk past delta value.
 	_hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
-	_hp_bar_delta = ProgressBar.new()
+	## Delta is a ColorRect (not a ProgressBar). Anchored top+bottom to fill the
+	## slot height EXACTLY. Width driven by anchor_right = delta_value/max.
+	## ColorRect paints flat -> no theme inset / margin / corner-radius / fill
+	## StyleBox rendering quirks that made the prior ProgressBar-based delta
+	## paint at a different height than HpBar's themed fill.
+	_hp_bar_delta = ColorRect.new()
 	_hp_bar_delta.name = "HpBarDelta"
-	_hp_bar_delta.max_value = _hp_bar.max_value
-	_hp_bar_delta.value = _hp_bar.value
-	_hp_bar_delta.show_percentage = false
+	_hp_bar_delta.color = HP_DELTA_COLOR
 	_hp_bar_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	## Match HpBar's actual size_flags so the slot sizes identically when
-	## VBox stretches children (StatVBox has 5 SIZE_FILL siblings -> slot
-	## gets ~16 px tall, not the 10 px custom_minimum). Without this mirror
-	## the slot collapses or expands differently than the original HpBar.
-	slot.size_flags_horizontal = _hp_bar.size_flags_horizontal
-	slot.size_flags_vertical = _hp_bar.size_flags_vertical
-	_hp_bar_delta.size_flags_horizontal = _hp_bar.size_flags_horizontal
-	_hp_bar_delta.size_flags_vertical = _hp_bar.size_flags_vertical
-	## Delta gets a SOLID red fill StyleBox (independent of theme) so it shows
-	## clearly behind the main bar. Mirror HpBar's theme fill content_margins
-	## so the delta paints at the SAME visible rect — without this, delta
-	## fills the full slot while HpBar's default theme fill inset by ~2 px
-	## creates a height mismatch (red strip wider top/bottom than green).
-	var delta_fill := StyleBoxFlat.new()
-	delta_fill.bg_color = HP_DELTA_COLOR
-	delta_fill.corner_radius_top_left = 2
-	delta_fill.corner_radius_top_right = 2
-	delta_fill.corner_radius_bottom_left = 2
-	delta_fill.corner_radius_bottom_right = 2
-	var ref_fill: StyleBox = _hp_bar.get_theme_stylebox(&"fill")
-	if ref_fill != null:
-		delta_fill.content_margin_top = ref_fill.get_content_margin(SIDE_TOP)
-		delta_fill.content_margin_bottom = ref_fill.get_content_margin(SIDE_BOTTOM)
-		delta_fill.content_margin_left = ref_fill.get_content_margin(SIDE_LEFT)
-		delta_fill.content_margin_right = ref_fill.get_content_margin(SIDE_RIGHT)
-	_hp_bar_delta.add_theme_stylebox_override(&"fill", delta_fill)
-	_hp_bar_delta.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
+	_hp_bar_delta_max = float(_hp_bar.max_value)
 	slot.add_child(_hp_bar_delta)
 	slot.move_child(_hp_bar_delta, 0)  ## drawn first -> behind HpBar
-	_hp_bar_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	## Anchor TL (0,0) -> BL (anchor_right driven, 1). Top + bottom anchors
+	## both 0..1 give full slot height. Left anchor stays 0, right anchor =
+	## ratio so the rect width tracks delta value.
+	_hp_bar_delta.anchor_left = 0.0
+	_hp_bar_delta.anchor_top = 0.0
+	_hp_bar_delta.anchor_right = float(_hp_bar.value) / float(_hp_bar.max_value) if _hp_bar.max_value > 0 else 1.0
+	_hp_bar_delta.anchor_bottom = 1.0
+	_hp_bar_delta.offset_left = 0
+	_hp_bar_delta.offset_top = 0
+	_hp_bar_delta.offset_right = 0
+	_hp_bar_delta.offset_bottom = 0
 
 func _build_styles() -> void:
 	## Selected card: light parchment fill + gold border so it pops vs theme
@@ -179,9 +176,9 @@ func _refresh_all() -> void:
 	_name_label.text = hero.data.name if hero.data != null else "?"
 	_hp_bar.max_value = float(hero.max_hp)
 	_hp_bar.value = float(hero.hp)
-	if _hp_bar_delta != null:
-		_hp_bar_delta.max_value = float(hero.max_hp)
-		_hp_bar_delta.value = float(hero.hp)
+	if _hp_bar_delta != null and hero.max_hp > 0:
+		_hp_bar_delta_max = float(hero.max_hp)
+		_hp_bar_delta.anchor_right = clampf(float(hero.hp) / float(hero.max_hp), 0.0, 1.0)
 	_hp_text.text = "%d / %d" % [hero.hp, hero.max_hp]
 	_ult_bar.max_value = float(Combat.ULT_GAUGE_MAX)
 	_ult_bar.value = float(hero.ult_gauge)
@@ -257,16 +254,21 @@ func _on_hp_changed(hero_id: StringName) -> void:
 ## for HP_DELTA_HOLD, then catches up over HP_DELTA_CATCHUP (Quart-In). On
 ## heals (target > current delta), snap delta forward immediately so the red
 ## trail only ever shows damage just taken, never green-over-red.
+##
+## Delta is a ColorRect; its 'value' is encoded as anchor_right = ratio of
+## value/max_value. Tweening anchor_right is identical to tweening
+## ProgressBar.value visually but avoids theme/fill rendering quirks.
 func _tween_hp_delta(target: float, max_value: float) -> void:
-	if _hp_bar_delta == null:
+	if _hp_bar_delta == null or max_value <= 0:
 		return
-	_hp_bar_delta.max_value = max_value
-	if target >= _hp_bar_delta.value:
-		_hp_bar_delta.value = target
+	_hp_bar_delta_max = max_value
+	var target_ratio: float = clampf(target / max_value, 0.0, 1.0)
+	if target_ratio >= _hp_bar_delta.anchor_right:
+		_hp_bar_delta.anchor_right = target_ratio
 		return
 	var t := create_tween()
 	t.tween_interval(HP_DELTA_HOLD)
-	t.tween_property(_hp_bar_delta, "value", target, HP_DELTA_CATCHUP).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	t.tween_property(_hp_bar_delta, "anchor_right", target_ratio, HP_DELTA_CATCHUP).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 
 func _on_ult_changed(hero_id: StringName) -> void:
 	if hero_id != _hero_id:

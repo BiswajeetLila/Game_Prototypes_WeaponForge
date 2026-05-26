@@ -20,6 +20,13 @@ extends Control
 
 const PartCardScene = preload("res://scenes/PartCard.tscn")
 
+## Reroll button styling — muted orange per user feedback ('Reroll also
+## needs to be different color, maybe muted orange').
+const REROLL_BG     := Color(0.776, 0.502, 0.235, 1)  ## muted orange
+const REROLL_HOVER  := Color(0.851, 0.580, 0.314, 1)  ## lighter on hover
+const REROLL_BORDER := Color(0.388, 0.235, 0.075, 1)  ## dark burnt-orange
+const REROLL_TEXT   := Color(1.000, 0.965, 0.871, 1)  ## warm white
+
 @onready var _anvil_row: HBoxContainer = %AnvilRow
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
 @onready var _recipe_desc: Label = %RecipeDesc
@@ -41,8 +48,30 @@ func _ready() -> void:
 	GameState.gold_changed.connect(_on_gold_changed)
 	GameState.hero_unlocked.connect(_on_hero_unlocked)
 	_reroll_btn.pressed.connect(_on_reroll_pressed)
+	_apply_reroll_style()
 	_start_wave_btn.pressed.connect(func(): emit_signal(&"wave_start_requested"))
 	_rebuild_all()
+
+func _apply_reroll_style() -> void:
+	var sb_normal := StyleBoxFlat.new()
+	sb_normal.bg_color = REROLL_BG
+	sb_normal.border_color = REROLL_BORDER
+	sb_normal.border_width_left = 2
+	sb_normal.border_width_top = 2
+	sb_normal.border_width_right = 2
+	sb_normal.border_width_bottom = 2
+	sb_normal.corner_radius_top_left = 6
+	sb_normal.corner_radius_top_right = 6
+	sb_normal.corner_radius_bottom_left = 6
+	sb_normal.corner_radius_bottom_right = 6
+	var sb_hover := sb_normal.duplicate() as StyleBoxFlat
+	sb_hover.bg_color = REROLL_HOVER
+	_reroll_btn.add_theme_stylebox_override(&"normal", sb_normal)
+	_reroll_btn.add_theme_stylebox_override(&"hover", sb_hover)
+	_reroll_btn.add_theme_stylebox_override(&"pressed", sb_normal)
+	_reroll_btn.add_theme_stylebox_override(&"focus", sb_normal)
+	_reroll_btn.add_theme_color_override(&"font_color", REROLL_TEXT)
+	_reroll_btn.add_theme_color_override(&"font_hover_color", REROLL_TEXT)
 
 ## ---------- Public ----------
 

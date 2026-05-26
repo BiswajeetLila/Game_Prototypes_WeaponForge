@@ -18,8 +18,15 @@ signal selected(hero_id: StringName)
 @onready var _ult_bar: ProgressBar = %UltBar
 @onready var _ult_btn: Button = %UltBtn
 
+## Ult-ready button styling — static yellow per user feedback
+## ('PLEASE don't have the ult keep increasing/decreasing in size, just have it
+## there, with a yellow color maybe').
+const ULT_READY_BG     := Color(0.949, 0.776, 0.137, 1)  ## saturated yellow
+const ULT_READY_HOVER  := Color(1.000, 0.851, 0.243, 1)  ## lighter on hover
+const ULT_READY_BORDER := Color(0.451, 0.337, 0.063, 1)  ## dark amber outline
+const ULT_READY_TEXT   := Color(0.176, 0.110, 0.059, 1)  ## near-black text
+
 var _hero_id: StringName = &""
-var _ult_pulse_tween: Tween = null
 var _is_selected: bool = false
 var _selected_style: StyleBoxFlat = null
 
@@ -108,22 +115,42 @@ func _refresh_ult_btn() -> void:
 	_ult_btn.disabled = not ready_now
 	_ult_btn.text = ("🌀 %s" % hero.data.ult_name) if ready_now else ("ULT %d%%" % int(hero.ult_gauge))
 	if ready_now and was_disabled:
-		_start_ult_pulse()
+		_apply_ult_ready_style()
 	elif not ready_now:
-		_stop_ult_pulse()
+		_clear_ult_ready_style()
 
-func _start_ult_pulse() -> void:
-	_stop_ult_pulse()
-	_ult_btn.pivot_offset = _ult_btn.size * 0.5
-	_ult_pulse_tween = create_tween().set_loops()
-	_ult_pulse_tween.tween_property(_ult_btn, "scale", Vector2(1.08, 1.08), 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_ult_pulse_tween.tween_property(_ult_btn, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-func _stop_ult_pulse() -> void:
-	if _ult_pulse_tween != null and _ult_pulse_tween.is_running():
-		_ult_pulse_tween.kill()
-	_ult_pulse_tween = null
+## Static yellow stylebox override when ult is ready. Replaces the prior
+## looping scale-pulse tween (was distracting per user feedback).
+func _apply_ult_ready_style() -> void:
 	_ult_btn.scale = Vector2.ONE
+	var sb_normal := StyleBoxFlat.new()
+	sb_normal.bg_color = ULT_READY_BG
+	sb_normal.border_color = ULT_READY_BORDER
+	sb_normal.border_width_left = 2
+	sb_normal.border_width_top = 2
+	sb_normal.border_width_right = 2
+	sb_normal.border_width_bottom = 2
+	sb_normal.corner_radius_top_left = 6
+	sb_normal.corner_radius_top_right = 6
+	sb_normal.corner_radius_bottom_left = 6
+	sb_normal.corner_radius_bottom_right = 6
+	var sb_hover := sb_normal.duplicate() as StyleBoxFlat
+	sb_hover.bg_color = ULT_READY_HOVER
+	_ult_btn.add_theme_stylebox_override(&"normal", sb_normal)
+	_ult_btn.add_theme_stylebox_override(&"hover", sb_hover)
+	_ult_btn.add_theme_stylebox_override(&"pressed", sb_normal)
+	_ult_btn.add_theme_stylebox_override(&"focus", sb_normal)
+	_ult_btn.add_theme_color_override(&"font_color", ULT_READY_TEXT)
+	_ult_btn.add_theme_color_override(&"font_hover_color", ULT_READY_TEXT)
+
+func _clear_ult_ready_style() -> void:
+	_ult_btn.scale = Vector2.ONE
+	_ult_btn.remove_theme_stylebox_override(&"normal")
+	_ult_btn.remove_theme_stylebox_override(&"hover")
+	_ult_btn.remove_theme_stylebox_override(&"pressed")
+	_ult_btn.remove_theme_stylebox_override(&"focus")
+	_ult_btn.remove_theme_color_override(&"font_color")
+	_ult_btn.remove_theme_color_override(&"font_hover_color")
 
 func _tween_bar(bar: ProgressBar, target: float) -> void:
 	var t := create_tween()

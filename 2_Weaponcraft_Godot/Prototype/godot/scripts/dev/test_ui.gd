@@ -11,11 +11,13 @@ const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
 const ForgePanelScene = preload("res://scenes/ForgePanel.tscn")
 const PartCardScene = preload("res://scenes/PartCard.tscn")
 
-## Expected tier-rim colours. Mirrored from PartCard once that commit lands.
+## Expected tier-rim colours. New scheme (no rainbow): bronze / silver / emerald
+## / platinum / gold. L5 is static gold per user feedback.
 const EXPECTED_RIM_BRONZE   := Color(0.420, 0.255, 0.137, 1)
 const EXPECTED_RIM_SILVER   := Color(0.753, 0.753, 0.753, 1)
-const EXPECTED_RIM_GOLD     := Color(0.949, 0.722, 0.133, 1)
+const EXPECTED_RIM_EMERALD  := Color(0.200, 0.750, 0.400, 1)
 const EXPECTED_RIM_PLATINUM := Color(0.898, 0.890, 0.890, 1)
+const EXPECTED_RIM_GOLD     := Color(0.949, 0.722, 0.133, 1)
 
 var _passed: int = 0
 var _failed: int = 0
@@ -27,9 +29,9 @@ func _ready() -> void:
 	_test_anvil_labels_visible()
 	_test_partcard_rim_l1_bronze()
 	_test_partcard_rim_l2_silver()
-	_test_partcard_rim_l3_gold()
+	_test_partcard_rim_l3_emerald()
 	_test_partcard_rim_l4_platinum()
-	_test_partcard_rim_l5_has_tween()
+	_test_partcard_rim_l5_gold_static()
 	_test_partcard_rim_width_scales()
 	_summary()
 	_render_to_ui()
@@ -95,11 +97,11 @@ func _test_partcard_rim_l2_silver() -> void:
 		"got %s" % str(sb.border_color if sb else null))
 	card.queue_free()
 
-func _test_partcard_rim_l3_gold() -> void:
+func _test_partcard_rim_l3_emerald() -> void:
 	var card = _build_card_at_level(3)
 	var sb = card.get_theme_stylebox(&"panel")
-	var ok = sb != null and sb.border_color.is_equal_approx(EXPECTED_RIM_GOLD)
-	_check("L3 rim colour = gold", ok,
+	var ok = sb != null and sb.border_color.is_equal_approx(EXPECTED_RIM_EMERALD)
+	_check("L3 rim colour = emerald", ok,
 		"got %s" % str(sb.border_color if sb else null))
 	card.queue_free()
 
@@ -111,12 +113,12 @@ func _test_partcard_rim_l4_platinum() -> void:
 		"got %s" % str(sb.border_color if sb else null))
 	card.queue_free()
 
-func _test_partcard_rim_l5_has_tween() -> void:
+func _test_partcard_rim_l5_gold_static() -> void:
 	var card = _build_card_at_level(5)
-	var tween_ref = card.get(&"_rim_tween")
-	var ok = tween_ref != null and tween_ref is Tween and tween_ref.is_running()
-	_check("L5 card has active _rim_tween (rainbow cycle)", ok,
-		"tween=%s" % str(tween_ref))
+	var sb = card.get_theme_stylebox(&"panel")
+	var ok = sb != null and sb.border_color.is_equal_approx(EXPECTED_RIM_GOLD)
+	_check("L5 rim colour = gold (static, no rainbow tween)", ok,
+		"got %s" % str(sb.border_color if sb else null))
 	card.queue_free()
 
 func _test_partcard_rim_width_scales() -> void:

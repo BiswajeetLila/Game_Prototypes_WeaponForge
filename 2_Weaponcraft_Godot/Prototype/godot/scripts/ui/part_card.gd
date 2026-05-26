@@ -39,21 +39,12 @@ const TEXT_LIGHT_COST := Color(1, 0.871, 0.337, 1)
 
 ## Tier rim — overrides the per-element border based on _level. Layers cleanly
 ## on top of element-tinted backgrounds (bg stays element-driven, border
-## becomes tier-driven). L5 animates through a rainbow cycle via _rim_tween.
+## becomes tier-driven). Static colors only (no animation) per user feedback.
 const RIM_BRONZE   := Color(0.420, 0.255, 0.137, 1)
 const RIM_SILVER   := Color(0.753, 0.753, 0.753, 1)
-const RIM_GOLD     := Color(0.949, 0.722, 0.133, 1)
+const RIM_EMERALD  := Color(0.200, 0.750, 0.400, 1)
 const RIM_PLATINUM := Color(0.898, 0.890, 0.890, 1)
-
-## L5 rainbow stops — looped via _rim_tween. ~0.33 s per segment, ~2 s total cycle.
-const RAINBOW_STOPS: Array = [
-	Color(1.00, 0.40, 0.40),  ## red
-	Color(1.00, 0.75, 0.30),  ## orange
-	Color(1.00, 1.00, 0.40),  ## yellow
-	Color(0.40, 1.00, 0.50),  ## green
-	Color(0.40, 0.80, 1.00),  ## blue
-	Color(0.80, 0.40, 1.00),  ## purple
-]
+const RIM_GOLD     := Color(0.949, 0.722, 0.133, 1)
 
 ## Potion / consumable visual identity. Parchment green to read as a heal
 ## item against the bronze/fire/ice part palette.
@@ -79,9 +70,6 @@ var _payload                  ## shop_idx:int OR InventoryItem OR slot_name:Stri
 var _part_id: StringName = &""
 var _level: int = 1
 var _current_uid: int = -1
-
-## Active rainbow Tween for L5 rim cycling. Killed on every refresh + exit.
-var _rim_tween: Tween = null
 
 signal clicked(card, mode: StringName, payload)
 
@@ -155,9 +143,6 @@ func _refresh() -> void:
 ## Overlays parchment-green bg + dark-green border on top of the element
 ## styled panel. Skips tier rim (potions are always single-use, not levelled).
 func _apply_potion_style_overlay() -> void:
-	if _rim_tween != null and _rim_tween.is_valid():
-		_rim_tween.kill()
-	_rim_tween = null
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = POTION_BG
 	sb.border_color = POTION_BORDER
@@ -173,11 +158,6 @@ func _apply_potion_style_overlay() -> void:
 	_element_badge.visible = false
 
 func _apply_element_style(tag: StringName) -> void:
-	## Kill any prior L5 rainbow tween — fresh refresh resets the rim.
-	if _rim_tween != null and _rim_tween.is_valid():
-		_rim_tween.kill()
-	_rim_tween = null
-
 	## Card bg, element badge, and text colors swap together per element.
 	var bg := BRONZE_BG
 	var badge_color := Color.TRANSPARENT
@@ -216,11 +196,6 @@ func _apply_element_style(tag: StringName) -> void:
 	sb.corner_radius_bottom_left = 8
 	sb.corner_radius_bottom_right = 8
 	add_theme_stylebox_override(&"panel", sb)
-	## L5: spawn looping rainbow cycle through the stylebox border.
-	if _level >= 5:
-		_rim_tween = create_tween().set_loops()
-		for c in RAINBOW_STOPS:
-			_rim_tween.tween_property(sb, "border_color", c, 0.33)
 	## Element badge.
 	if badge_text == "":
 		_element_badge.visible = false
@@ -247,21 +222,15 @@ func _tier_rim_color() -> Color:
 	match _level:
 		1: return RIM_BRONZE
 		2: return RIM_SILVER
-		3: return RIM_GOLD
+		3: return RIM_EMERALD
 		4: return RIM_PLATINUM
-		_: return RIM_GOLD  ## L5 starts here, tween takes over on next frames
+		_: return RIM_GOLD  ## L5 and above
 
 func _tier_rim_width() -> int:
 	match _level:
 		1, 2: return 2
 		3, 4: return 3
 		_:    return 4
-
-func _exit_tree() -> void:
-	## Defensive: kill any active rim tween before the node leaves the tree.
-	if _rim_tween != null and _rim_tween.is_valid():
-		_rim_tween.kill()
-	_rim_tween = null
 
 func _render_stats(def: PartData) -> void:
 	var mult: float = Merge.level_multiplier(_level)

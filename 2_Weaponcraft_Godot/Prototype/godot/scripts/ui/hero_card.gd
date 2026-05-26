@@ -41,6 +41,7 @@ var _info_overlay: Control = null
 ## _ready by wrapping the existing HpBar in a Control + adding a sibling.
 const HP_DELTA_COLOR := Color(0.882, 0.231, 0.231, 0.95)
 const HP_FILL_GREEN  := Color(0.388, 0.745, 0.345, 1.0)
+const HP_CONTAINER   := Color(0.196, 0.137, 0.098, 1.0)  ## dark umber — shows damage taken
 const HP_DELTA_HOLD: float = 0.25
 const HP_DELTA_CATCHUP: float = 0.20
 ## ColorRect-based delta (not a ProgressBar) — anchored to fill the same
@@ -96,8 +97,17 @@ func _build_hp_delta_bar() -> void:
 	_hp_bar.reparent(slot)
 	_hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	## Transparent HpBar background so the ColorRect-based delta drawn behind
-	## reads through where HpBar's fill has shrunk past delta value.
+	## reads through where HpBar's fill has shrunk past delta value. Container
+	## ColorRect below all this gives the missing-HP region a dark colour
+	## so the player can read how much damage was taken (full-bar reference).
 	_hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
+	var container := ColorRect.new()
+	container.name = "HpBarContainer"
+	container.color = HP_CONTAINER
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.add_child(container)
+	slot.move_child(container, 0)  ## drawn first -> behind delta + bar
+	container.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	## Override HpBar's fill with a margin-free StyleBoxFlat. The default
 	## theme fill has expand_margin / content_margin that make it draw outside
 	## the slot rect — when the ColorRect delta sits inside slot bounds,
@@ -122,7 +132,7 @@ func _build_hp_delta_bar() -> void:
 	_hp_bar_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hp_bar_delta_max = float(_hp_bar.max_value)
 	slot.add_child(_hp_bar_delta)
-	slot.move_child(_hp_bar_delta, 0)  ## drawn first -> behind HpBar
+	slot.move_child(_hp_bar_delta, 1)  ## above container, below HpBar fill
 	## Anchor TL (0,0) -> BL (anchor_right driven, 1). Top + bottom anchors
 	## both 0..1 give full slot height. Left anchor stays 0, right anchor =
 	## ratio so the rect width tracks delta value.

@@ -134,6 +134,15 @@ func _make_enemy_card(idx: int) -> Control:
 	hp_slot.custom_minimum_size = Vector2(0, 8)
 	v.add_child(hp_slot)
 
+	## Container — dark backdrop so the missing-HP region reads as 'damage
+	## taken' rather than blending into the arena bg.
+	var hp_container := ColorRect.new()
+	hp_container.name = "HpBarContainer"
+	hp_container.color = Color(0.196, 0.137, 0.098, 1.0)
+	hp_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_slot.add_child(hp_container)
+	hp_container.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+
 	var hp_delta := ColorRect.new()
 	hp_delta.name = "HpBarDelta"
 	hp_delta.color = Color(1.0, 0.30, 0.30, 1.0)  ## bright red — damage trail

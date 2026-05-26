@@ -11,8 +11,9 @@
 class_name Weapon
 extends RefCounted
 
-## Per-level stat multiplier (merge_mechanic.md): L1..L5.
-const LEVEL_MULT: Array = [1.00, 1.50, 2.10, 2.85, 3.70]
+## Per-level stat multiplier (merge_mechanic.md): L1..L5. Hot-path mirror of
+## Merge.LEVEL_MULT; test_weapon_level_mult_mirrors_merge locks drift.
+const LEVEL_MULT: Array = [1.00, 1.35, 1.80, 2.30, 2.75]
 
 ## Three slots. Each is either an InventoryItem (RefCounted) or null.
 var head = null

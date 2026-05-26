@@ -32,8 +32,11 @@ extends Node
 const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
 
 ## L1..L5 multiplier table — see merge_mechanic.md. Mirrored on Weapon for the
-## hot-path read; this copy is the canonical source.
-const LEVEL_MULT: Array = [1.00, 1.50, 2.10, 2.85, 3.70]
+## hot-path read; this copy is the canonical source. Slow curve per
+## forge-ux-balance-w10: leveling rewards remain but don't trivialise late
+## game vs recipes / crit / affinity. Mirror is locked by
+## test_weapon_level_mult_mirrors_merge.
+const LEVEL_MULT: Array = [1.00, 1.35, 1.80, 2.30, 2.75]
 
 ## Returns the stat multiplier for a 1-indexed level.
 func level_multiplier(level: int) -> float:

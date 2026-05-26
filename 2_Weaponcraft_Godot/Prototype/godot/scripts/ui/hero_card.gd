@@ -97,6 +97,22 @@ func _build_hp_delta_bar() -> void:
 	## Transparent HpBar background so the ColorRect-based delta drawn behind
 	## reads through where HpBar's fill has shrunk past delta value.
 	_hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
+	## Override HpBar's fill with a margin-free StyleBoxFlat. The default
+	## theme fill has expand_margin / content_margin that make it draw outside
+	## the slot rect — when the ColorRect delta sits inside slot bounds,
+	## green ends up taller than red. Custom StyleBox = exact-rect render,
+	## both bars match visually.
+	var ref_fill = _hp_bar.get_theme_stylebox(&"fill")
+	var hp_fill := StyleBoxFlat.new()
+	if ref_fill is StyleBoxFlat:
+		hp_fill.bg_color = ref_fill.bg_color
+	else:
+		hp_fill.bg_color = Color(0.388, 0.745, 0.345, 1)  ## fallback green
+	hp_fill.corner_radius_top_left = 2
+	hp_fill.corner_radius_top_right = 2
+	hp_fill.corner_radius_bottom_left = 2
+	hp_fill.corner_radius_bottom_right = 2
+	_hp_bar.add_theme_stylebox_override(&"fill", hp_fill)
 	## Delta is a ColorRect (not a ProgressBar). Anchored top+bottom to fill the
 	## slot height EXACTLY. Width driven by anchor_right = delta_value/max.
 	## ColorRect paints flat -> no theme inset / margin / corner-radius / fill

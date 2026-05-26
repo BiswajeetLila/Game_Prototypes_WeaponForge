@@ -36,7 +36,8 @@ func _ready() -> void:
 	_test_partcard_rim_width_scales()
 	_test_herocard_starts_unflipped()
 	_test_herocard_has_info_icon()
-	_test_herocard_body_click_flips()
+	_test_herocard_body_click_unselected_only_selects_no_flip()
+	_test_herocard_body_click_selected_flips()
 	_test_herocard_ult_btn_does_not_flip()
 	_test_herocard_unflips_when_back_clicked()
 	_test_herocard_back_shows_ult_desc()
@@ -166,19 +167,33 @@ func _test_herocard_has_info_icon() -> void:
 		icon != null, "InfoIcon not found")
 	card.queue_free()
 
-func _test_herocard_body_click_flips() -> void:
+func _test_herocard_body_click_unselected_only_selects_no_flip() -> void:
+	## First click on an un-selected card just selects — does NOT flip.
 	var card = _build_bran_card()
-	## Synthesize a left-mouse click on the card body and route via _on_gui_input.
 	if not card.has_method(&"_on_gui_input"):
 		_check("HeroCard exposes _on_gui_input", false, "")
 		card.queue_free()
 		return
+	card.set_selected(false)
 	var ev := InputEventMouseButton.new()
 	ev.button_index = MOUSE_BUTTON_LEFT
 	ev.pressed = true
 	card._on_gui_input(ev)
 	var v = card.get(&"_is_flipped")
-	_check("card-body click flips card",
+	_check("first click on un-selected card selects only (no flip)",
+		v == false, "is_flipped=%s" % str(v))
+	card.queue_free()
+
+func _test_herocard_body_click_selected_flips() -> void:
+	## Second click on an already-selected card flips to ult info.
+	var card = _build_bran_card()
+	card.set_selected(true)
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	card._on_gui_input(ev)
+	var v = card.get(&"_is_flipped")
+	_check("click on already-selected card flips it",
 		v == true, "is_flipped=%s" % str(v))
 	card.queue_free()
 

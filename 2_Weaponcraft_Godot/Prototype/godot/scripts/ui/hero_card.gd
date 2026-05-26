@@ -92,11 +92,12 @@ func _apply_selection_style() -> void:
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if _hero_id != &"":
+			## Two-step: first click on an un-selected card just selects it
+			## (SquadBar drives _is_selected via set_selected after the signal).
+			## A second click on the already-selected card flips to ult info.
+			var was_selected: bool = _is_selected
 			emit_signal(&"selected", _hero_id)
-			## Card-body click also flips to ult info. Selection + flip happen
-			## together so the player sees the new hero's ult while ForgePanel
-			## switches to them. Click anywhere on the flipped back to revert.
-			if not _is_flipped:
+			if was_selected and not _is_flipped:
 				_flip()
 
 func _hero():

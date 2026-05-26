@@ -63,7 +63,7 @@ var recipe_ids: Array = []
 ## ---------- Per-run state ----------
 
 const STARTING_GOLD: int = 20
-const TOTAL_WAVES: int = 5  ## Phase 2: 5 waves, no boss. Heroes unlock at wave 2 + 4 clear.
+const TOTAL_WAVES: int = 10  ## forge-ux-balance-w10: bumped from 5; bosses still deferred to Stage D.
 
 var wave: int = 1
 var gold: int = STARTING_GOLD

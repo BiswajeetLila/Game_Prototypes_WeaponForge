@@ -37,6 +37,24 @@ const TEXT_LIGHT_NAME := Color(1, 0.965, 0.871, 1)
 const TEXT_LIGHT_STAT := Color(0.682, 1, 0.671, 1)
 const TEXT_LIGHT_COST := Color(1, 0.871, 0.337, 1)
 
+## Tier rim — overrides the per-element border based on _level. Layers cleanly
+## on top of element-tinted backgrounds (bg stays element-driven, border
+## becomes tier-driven). L5 animates through a rainbow cycle via _rim_tween.
+const RIM_BRONZE   := Color(0.420, 0.255, 0.137, 1)
+const RIM_SILVER   := Color(0.753, 0.753, 0.753, 1)
+const RIM_GOLD     := Color(0.949, 0.722, 0.133, 1)
+const RIM_PLATINUM := Color(0.898, 0.890, 0.890, 1)
+
+## L5 rainbow stops — looped via _rim_tween. ~0.33 s per segment, ~2 s total cycle.
+const RAINBOW_STOPS: Array = [
+	Color(1.00, 0.40, 0.40),  ## red
+	Color(1.00, 0.75, 0.30),  ## orange
+	Color(1.00, 1.00, 0.40),  ## yellow
+	Color(0.40, 1.00, 0.50),  ## green
+	Color(0.40, 0.80, 1.00),  ## blue
+	Color(0.80, 0.40, 1.00),  ## purple
+]
+
 ## ---------- Node refs ----------
 
 @onready var _icon: TextureRect = %Icon
@@ -56,6 +74,9 @@ var _payload                  ## shop_idx:int OR InventoryItem OR slot_name:Stri
 var _part_id: StringName = &""
 var _level: int = 1
 var _current_uid: int = -1
+
+## Active rainbow Tween for L5 rim cycling. Killed on every refresh + exit.
+var _rim_tween: Tween = null
 
 signal clicked(card, mode: StringName, payload)
 
@@ -125,9 +146,13 @@ func _refresh() -> void:
 	tooltip_text = "%s (L%d)\n%s" % [def.name, _level, def.desc]
 
 func _apply_element_style(tag: StringName) -> void:
+	## Kill any prior L5 rainbow tween — fresh refresh resets the rim.
+	if _rim_tween != null and _rim_tween.is_valid():
+		_rim_tween.kill()
+	_rim_tween = null
+
 	## Card bg, element badge, and text colors swap together per element.
 	var bg := BRONZE_BG
-	var border := BRONZE_BORDER
 	var badge_color := Color.TRANSPARENT
 	var badge_text := ""
 	var text_name := TEXT_DARK_NAME
@@ -136,7 +161,6 @@ func _apply_element_style(tag: StringName) -> void:
 	match tag:
 		&"fire":
 			bg = FIRE_BG
-			border = FIRE_BORDER
 			badge_color = FIRE_ACCENT
 			badge_text = "FIRE"
 			text_name = TEXT_LIGHT_NAME
@@ -144,7 +168,6 @@ func _apply_element_style(tag: StringName) -> void:
 			text_cost = TEXT_LIGHT_COST
 		&"ice":
 			bg = ICE_BG
-			border = ICE_BORDER
 			badge_color = ICE_ACCENT
 			badge_text = "ICE"
 			text_name = TEXT_LIGHT_NAME
@@ -152,19 +175,25 @@ func _apply_element_style(tag: StringName) -> void:
 			text_cost = TEXT_LIGHT_COST
 		_:
 			pass
-	## Card bg.
+	## Card bg. Border = tier rim (level-driven, replaces former element border).
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = bg
-	sb.border_color = border
-	sb.border_width_left = 2
-	sb.border_width_top = 2
-	sb.border_width_right = 2
-	sb.border_width_bottom = 2
+	var rim_w: int = _tier_rim_width()
+	sb.border_color = _tier_rim_color()
+	sb.border_width_left = rim_w
+	sb.border_width_top = rim_w
+	sb.border_width_right = rim_w
+	sb.border_width_bottom = rim_w
 	sb.corner_radius_top_left = 8
 	sb.corner_radius_top_right = 8
 	sb.corner_radius_bottom_left = 8
 	sb.corner_radius_bottom_right = 8
 	add_theme_stylebox_override(&"panel", sb)
+	## L5: spawn looping rainbow cycle through the stylebox border.
+	if _level >= 5:
+		_rim_tween = create_tween().set_loops()
+		for c in RAINBOW_STOPS:
+			_rim_tween.tween_property(sb, "border_color", c, 0.33)
 	## Element badge.
 	if badge_text == "":
 		_element_badge.visible = false
@@ -186,6 +215,26 @@ func _apply_element_style(tag: StringName) -> void:
 	_name_label.add_theme_color_override(&"font_color", text_name)
 	_stat_label.add_theme_color_override(&"font_color", text_stat)
 	_cost_label.add_theme_color_override(&"font_color", text_cost)
+
+func _tier_rim_color() -> Color:
+	match _level:
+		1: return RIM_BRONZE
+		2: return RIM_SILVER
+		3: return RIM_GOLD
+		4: return RIM_PLATINUM
+		_: return RIM_GOLD  ## L5 starts here, tween takes over on next frames
+
+func _tier_rim_width() -> int:
+	match _level:
+		1, 2: return 2
+		3, 4: return 3
+		_:    return 4
+
+func _exit_tree() -> void:
+	## Defensive: kill any active rim tween before the node leaves the tree.
+	if _rim_tween != null and _rim_tween.is_valid():
+		_rim_tween.kill()
+	_rim_tween = null
 
 func _render_stats(def: PartData) -> void:
 	var mult: float = Merge.level_multiplier(_level)

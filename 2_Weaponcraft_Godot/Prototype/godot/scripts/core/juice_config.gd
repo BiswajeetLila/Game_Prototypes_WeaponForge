@@ -18,6 +18,13 @@ extends Object
 ## debugging.
 const JUICE_ENABLED: bool = true
 
+## Juice PR2: burst_texture preload-keyed per profile drives the element
+## particle pop on tagged hits. Absent / null = no burst (warrior basic
+## hits, skewer pierce, etc.). BattleView spawns a one-shot TextureRect
+## using this texture on each tagged enemy strike.
+const VFX_ICE_SHARD: Texture2D = preload("res://assets/generated/vfx/ice_shard.png")
+const VFX_FIRE_PUFF: Texture2D = preload("res://assets/generated/vfx/fire_puff.png")
+
 const PROFILES: Dictionary = {
 	&"basic": {
 		"shake_amp": 3.0, "shake_dur": 0.12, "pause": 0.05,
@@ -30,6 +37,7 @@ const PROFILES: Dictionary = {
 	&"steamburst": {
 		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
 		"font_pt": 18, "color": Color("7ec5ff"), "prefix": "", "flash_dur": 0.06,
+		"burst_texture": VFX_ICE_SHARD,
 	},
 	&"skewer": {
 		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
@@ -38,6 +46,7 @@ const PROFILES: Dictionary = {
 	&"hellfire": {
 		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
 		"font_pt": 18, "color": Color("ff8a4d"), "prefix": "", "flash_dur": 0.06,
+		"burst_texture": VFX_FIRE_PUFF,
 	},
 	&"ult": {
 		"shake_amp": 10.0, "shake_dur": 0.35, "pause": 0.18,
@@ -46,6 +55,7 @@ const PROFILES: Dictionary = {
 	&"ult_meteor": {
 		"shake_amp": 10.0, "shake_dur": 0.35, "pause": 0.18,
 		"font_pt": 28, "color": Color("ff7ab0"), "prefix": "🌀 ", "flash_dur": 0.10,
+		"burst_texture": VFX_FIRE_PUFF,
 	},
 	&"ult_shadowstep": {
 		"shake_amp": 10.0, "shake_dur": 0.35, "pause": 0.18,

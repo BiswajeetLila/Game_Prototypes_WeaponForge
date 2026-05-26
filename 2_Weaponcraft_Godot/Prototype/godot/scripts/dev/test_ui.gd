@@ -41,6 +41,12 @@ func _ready() -> void:
 	_test_herocard_ult_btn_does_not_flip()
 	_test_herocard_unflips_when_back_clicked()
 	_test_herocard_back_shows_ult_desc()
+	## Juice PR2: element bursts + crit flash API.
+	_test_juiceconfig_steamburst_has_burst_texture()
+	_test_juiceconfig_hellfire_has_burst_texture()
+	_test_juiceconfig_ult_meteor_has_burst_texture()
+	_test_juiceconfig_basic_has_no_burst()
+	_test_screen_flash_has_public_flash_method()
 	_summary()
 	_render_to_ui()
 
@@ -261,6 +267,49 @@ func _all_descendants(node: Node) -> Array:
 		out.append(c)
 		out.append_array(_all_descendants(c))
 	return out
+
+## ---------- Juice PR2 surface ----------
+
+const JuiceConfigT = preload("res://scripts/core/juice_config.gd")
+const ScreenFlashT = preload("res://scripts/ui/screen_flash.gd")
+
+func _test_juiceconfig_steamburst_has_burst_texture() -> void:
+	var p = JuiceConfigT.PROFILES[&"steamburst"]
+	var tex = p.get("burst_texture")
+	_check("juice steamburst.burst_texture is a Texture2D",
+		tex != null and tex is Texture2D,
+		"got %s" % str(tex))
+
+func _test_juiceconfig_hellfire_has_burst_texture() -> void:
+	var p = JuiceConfigT.PROFILES[&"hellfire"]
+	var tex = p.get("burst_texture")
+	_check("juice hellfire.burst_texture is a Texture2D",
+		tex != null and tex is Texture2D,
+		"got %s" % str(tex))
+
+func _test_juiceconfig_ult_meteor_has_burst_texture() -> void:
+	var p = JuiceConfigT.PROFILES[&"ult_meteor"]
+	var tex = p.get("burst_texture")
+	_check("juice ult_meteor.burst_texture is a Texture2D",
+		tex != null and tex is Texture2D,
+		"got %s" % str(tex))
+
+func _test_juiceconfig_basic_has_no_burst() -> void:
+	## Non-tagged basic hit has no element burst (key may be absent or null).
+	var p = JuiceConfigT.PROFILES[&"basic"]
+	var tex = p.get("burst_texture")
+	_check("juice basic.burst_texture absent / null (no element)",
+		tex == null,
+		"got %s" % str(tex))
+
+func _test_screen_flash_has_public_flash_method() -> void:
+	## Public flash(color, alpha, duration) method for crit + future custom flashes.
+	var sf = ScreenFlashT.new()
+	add_child(sf)
+	var ok = sf.has_method("flash")
+	_check("ScreenFlash has public flash() method",
+		ok, "has_method('flash') = %s" % str(ok))
+	sf.queue_free()
 
 ## ---------- Test helpers ----------
 

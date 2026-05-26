@@ -136,7 +136,7 @@ func _make_enemy_card(idx: int) -> Control:
 
 	var hp_delta := ColorRect.new()
 	hp_delta.name = "HpBarDelta"
-	hp_delta.color = Color(0.882, 0.231, 0.231, 0.95)
+	hp_delta.color = Color(1.0, 0.30, 0.30, 1.0)  ## bright red — damage trail
 	hp_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hp_slot.add_child(hp_delta)
 	hp_delta.anchor_left = 0.0
@@ -157,11 +157,12 @@ func _make_enemy_card(idx: int) -> Control:
 	hp_slot.add_child(hp_bar)
 	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	## Override fill with margin-free StyleBoxFlat so it renders at exact-rect
-	## and matches the ColorRect delta sibling pixel-for-pixel. Hardcoded green
-	## (not theme-sampled — at this construction phase the card isn't in the
-	## main scene yet so theme resolution returns Godot's default stylebox).
+	## and matches the ColorRect delta sibling pixel-for-pixel. DEEP RED
+	## (not green like the hero HP) — green reads as 'ally / good', enemy
+	## HP should read as threat. Damage trail (HpBarDelta above) is bright
+	## red so the contrast 'deep -> bright' still signals damage taken.
 	var hp_fill := StyleBoxFlat.new()
-	hp_fill.bg_color = Color(0.388, 0.745, 0.345, 1.0)
+	hp_fill.bg_color = Color(0.55, 0.10, 0.10, 1.0)
 	hp_fill.corner_radius_top_left = 2
 	hp_fill.corner_radius_top_right = 2
 	hp_fill.corner_radius_bottom_left = 2

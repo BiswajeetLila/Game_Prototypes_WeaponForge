@@ -132,6 +132,14 @@ func _make_enemy_card(idx: int) -> Control:
 	hp_slot.custom_minimum_size = Vector2(0, 8)
 	v.add_child(hp_slot)
 
+	## Build HpBar first so we can mirror its theme fill margins onto the delta.
+	var hp_bar := ProgressBar.new()
+	hp_bar.name = "HpBar"
+	hp_bar.max_value = float(enemy.max_hp)
+	hp_bar.value = float(enemy.hp)
+	hp_bar.show_percentage = false
+	hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
+
 	var hp_delta := ProgressBar.new()
 	hp_delta.name = "HpBarDelta"
 	hp_delta.max_value = float(enemy.max_hp)
@@ -144,19 +152,21 @@ func _make_enemy_card(idx: int) -> Control:
 	delta_fill.corner_radius_top_right = 2
 	delta_fill.corner_radius_bottom_left = 2
 	delta_fill.corner_radius_bottom_right = 2
+	## Add HpBar to the tree so its theme stylebox is resolvable, then mirror
+	## the theme fill content_margins so delta paints at the same visible rect.
+	hp_slot.add_child(hp_bar)
+	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	var ref_fill: StyleBox = hp_bar.get_theme_stylebox(&"fill")
+	if ref_fill != null:
+		delta_fill.content_margin_top = ref_fill.get_content_margin(SIDE_TOP)
+		delta_fill.content_margin_bottom = ref_fill.get_content_margin(SIDE_BOTTOM)
+		delta_fill.content_margin_left = ref_fill.get_content_margin(SIDE_LEFT)
+		delta_fill.content_margin_right = ref_fill.get_content_margin(SIDE_RIGHT)
 	hp_delta.add_theme_stylebox_override(&"fill", delta_fill)
 	hp_delta.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
 	hp_slot.add_child(hp_delta)
+	hp_slot.move_child(hp_delta, 0)  ## drawn first -> behind HpBar
 	hp_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)
-
-	var hp_bar := ProgressBar.new()
-	hp_bar.name = "HpBar"
-	hp_bar.max_value = float(enemy.max_hp)
-	hp_bar.value = float(enemy.hp)
-	hp_bar.show_percentage = false
-	hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
-	hp_slot.add_child(hp_bar)
-	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 
 	var hp_text := Label.new()
 	hp_text.name = "HpText"

@@ -93,15 +93,31 @@ func _build_hp_delta_bar() -> void:
 	_hp_bar_delta.value = _hp_bar.value
 	_hp_bar_delta.show_percentage = false
 	_hp_bar_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	## Match HpBar's actual size_flags so the slot sizes identically when
+	## VBox stretches children (StatVBox has 5 SIZE_FILL siblings -> slot
+	## gets ~16 px tall, not the 10 px custom_minimum). Without this mirror
+	## the slot collapses or expands differently than the original HpBar.
+	slot.size_flags_horizontal = _hp_bar.size_flags_horizontal
+	slot.size_flags_vertical = _hp_bar.size_flags_vertical
+	_hp_bar_delta.size_flags_horizontal = _hp_bar.size_flags_horizontal
+	_hp_bar_delta.size_flags_vertical = _hp_bar.size_flags_vertical
 	## Delta gets a SOLID red fill StyleBox (independent of theme) so it shows
-	## clearly behind the main bar. Background transparent so slot panel shows
-	## past delta.value.
+	## clearly behind the main bar. Mirror HpBar's theme fill content_margins
+	## so the delta paints at the SAME visible rect — without this, delta
+	## fills the full slot while HpBar's default theme fill inset by ~2 px
+	## creates a height mismatch (red strip wider top/bottom than green).
 	var delta_fill := StyleBoxFlat.new()
 	delta_fill.bg_color = HP_DELTA_COLOR
 	delta_fill.corner_radius_top_left = 2
 	delta_fill.corner_radius_top_right = 2
 	delta_fill.corner_radius_bottom_left = 2
 	delta_fill.corner_radius_bottom_right = 2
+	var ref_fill: StyleBox = _hp_bar.get_theme_stylebox(&"fill")
+	if ref_fill != null:
+		delta_fill.content_margin_top = ref_fill.get_content_margin(SIDE_TOP)
+		delta_fill.content_margin_bottom = ref_fill.get_content_margin(SIDE_BOTTOM)
+		delta_fill.content_margin_left = ref_fill.get_content_margin(SIDE_LEFT)
+		delta_fill.content_margin_right = ref_fill.get_content_margin(SIDE_RIGHT)
 	_hp_bar_delta.add_theme_stylebox_override(&"fill", delta_fill)
 	_hp_bar_delta.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
 	slot.add_child(_hp_bar_delta)

@@ -83,13 +83,27 @@ func _build_hp_delta_bar() -> void:
 	parent.move_child(slot, idx)
 	_hp_bar.reparent(slot)
 	_hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	## Transparent background so the delta bar underneath shows through where
+	## HpBar's fill has shrunk. Without this, HpBar's default StyleBox bg
+	## paints over the delta and the red trail is invisible.
+	_hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
 	_hp_bar_delta = ProgressBar.new()
 	_hp_bar_delta.name = "HpBarDelta"
 	_hp_bar_delta.max_value = _hp_bar.max_value
 	_hp_bar_delta.value = _hp_bar.value
 	_hp_bar_delta.show_percentage = false
-	_hp_bar_delta.modulate = HP_DELTA_COLOR
 	_hp_bar_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	## Delta gets a SOLID red fill StyleBox (independent of theme) so it shows
+	## clearly behind the main bar. Background transparent so slot panel shows
+	## past delta.value.
+	var delta_fill := StyleBoxFlat.new()
+	delta_fill.bg_color = HP_DELTA_COLOR
+	delta_fill.corner_radius_top_left = 2
+	delta_fill.corner_radius_top_right = 2
+	delta_fill.corner_radius_bottom_left = 2
+	delta_fill.corner_radius_bottom_right = 2
+	_hp_bar_delta.add_theme_stylebox_override(&"fill", delta_fill)
+	_hp_bar_delta.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
 	slot.add_child(_hp_bar_delta)
 	slot.move_child(_hp_bar_delta, 0)  ## drawn first -> behind HpBar
 	_hp_bar_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)

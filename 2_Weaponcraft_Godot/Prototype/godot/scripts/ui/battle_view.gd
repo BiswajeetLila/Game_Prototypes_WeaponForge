@@ -124,7 +124,9 @@ func _make_enemy_card(idx: int) -> Control:
 	v.add_child(sprite)
 
 	## Juice PR2: HpBar + HpBarDelta inside a Control slot. Delta is the red
-	## trail behind the main bar showing damage just taken.
+	## trail behind the main bar showing damage just taken. HpBar's background
+	## is transparent so the delta fill underneath shows where HpBar value
+	## has shrunk past delta value.
 	var hp_slot := Control.new()
 	hp_slot.name = "HpSlot"
 	hp_slot.custom_minimum_size = Vector2(0, 8)
@@ -135,8 +137,15 @@ func _make_enemy_card(idx: int) -> Control:
 	hp_delta.max_value = float(enemy.max_hp)
 	hp_delta.value = float(enemy.hp)
 	hp_delta.show_percentage = false
-	hp_delta.modulate = Color(0.882, 0.231, 0.231, 0.85)
 	hp_delta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var delta_fill := StyleBoxFlat.new()
+	delta_fill.bg_color = Color(0.882, 0.231, 0.231, 0.95)
+	delta_fill.corner_radius_top_left = 2
+	delta_fill.corner_radius_top_right = 2
+	delta_fill.corner_radius_bottom_left = 2
+	delta_fill.corner_radius_bottom_right = 2
+	hp_delta.add_theme_stylebox_override(&"fill", delta_fill)
+	hp_delta.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
 	hp_slot.add_child(hp_delta)
 	hp_delta.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 
@@ -145,6 +154,7 @@ func _make_enemy_card(idx: int) -> Control:
 	hp_bar.max_value = float(enemy.max_hp)
 	hp_bar.value = float(enemy.hp)
 	hp_bar.show_percentage = false
+	hp_bar.add_theme_stylebox_override(&"background", StyleBoxEmpty.new())
 	hp_slot.add_child(hp_bar)
 	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 

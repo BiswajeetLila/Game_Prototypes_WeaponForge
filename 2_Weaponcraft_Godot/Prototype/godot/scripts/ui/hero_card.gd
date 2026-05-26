@@ -30,6 +30,11 @@ var _hero_id: StringName = &""
 var _is_selected: bool = false
 var _selected_style: StyleBoxFlat = null
 
+## Flip-to-info state. Out-of-combat ult-btn click flips the card to show
+## the hero's stats + ult description; clicking the back unflips.
+var _is_flipped: bool = false
+var _back_panel: PanelContainer = null
+
 func setup(hero_id: StringName) -> void:
 	_hero_id = hero_id
 	## Wait until the scene's ready before touching @onready node refs.
@@ -42,6 +47,11 @@ func _ready() -> void:
 	GameState.hero_hp_changed.connect(_on_hp_changed)
 	GameState.hero_ult_changed.connect(_on_ult_changed)
 	GameState.weapon_changed.connect(_on_weapon_changed)
+	## Refresh ult btn when wave boundary crosses so the in-combat / out-of-combat
+	## button mode (fire-ult vs flip-to-info) updates at the right moment.
+	GameState.wave_changed.connect(func(_w): _refresh_ult_btn())
+	GameState.wave_cleared.connect(func(_w): _refresh_ult_btn())
+	GameState.squad_wiped.connect(func(): _refresh_ult_btn())
 	_ult_btn.pressed.connect(_on_ult_btn_pressed)
 	gui_input.connect(_on_gui_input)
 	_build_styles()
@@ -109,7 +119,16 @@ func _refresh_ult_btn() -> void:
 	if hero == null:
 		_ult_btn.disabled = true
 		_ult_btn.text = "—"
+		_clear_ult_ready_style()
 		return
+	## Out-of-combat: button is always clickable (unless hero dead) and shows
+	## the ult name as a 'tap for info' affordance — clicking flips the card.
+	if not Combat.is_running():
+		_ult_btn.disabled = hero.is_dead
+		_ult_btn.text = "ℹ %s" % hero.data.ult_name
+		_clear_ult_ready_style()
+		return
+	## In-combat: existing fire-ult behaviour.
 	var ready_now: bool = hero.ult_gauge >= Combat.ULT_GAUGE_MAX and not hero.ult_used and not hero.is_dead
 	var was_disabled: bool = _ult_btn.disabled
 	_ult_btn.disabled = not ready_now
@@ -184,8 +203,102 @@ func _on_weapon_changed(hero_id: StringName) -> void:
 	_refresh_all()
 
 func _on_ult_btn_pressed() -> void:
-	if _hero_id != &"":
-		Combat.fire_ult(_hero_id)
+	if _hero_id == &"":
+		return
+	## Out-of-combat: flip card to show stats + ult info.
+	if not Combat.is_running():
+		_toggle_flip()
+		return
+	Combat.fire_ult(_hero_id)
+
+## ---------- Flip-to-info ----------
+
+func _build_back_panel(hero) -> void:
+	if _back_panel != null or hero == null or hero.data == null:
+		return
+	_back_panel = PanelContainer.new()
+	_back_panel.name = "BackPanel"
+	_back_panel.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	_back_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_back_panel.gui_input.connect(_on_back_panel_input)
+	_back_panel.visible = false
+
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.157, 0.094, 0.063, 0.97)
+	sb.border_color = Color(0.949, 0.722, 0.133, 1)
+	sb.border_width_left = 2
+	sb.border_width_top = 2
+	sb.border_width_right = 2
+	sb.border_width_bottom = 2
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_left = 6
+	sb.corner_radius_bottom_right = 6
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 4
+	_back_panel.add_theme_stylebox_override(&"panel", sb)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override(&"separation", 1)
+	_back_panel.add_child(vbox)
+
+	var stat_l := Label.new()
+	stat_l.text = "ATK %d  •  HP %d" % [hero.data.atk_base, hero.data.hp_base]
+	stat_l.add_theme_color_override(&"font_color", Color(0.961, 0.902, 0.784, 1))
+	stat_l.add_theme_font_size_override(&"font_size", 9)
+	vbox.add_child(stat_l)
+
+	var ult_name_l := Label.new()
+	ult_name_l.text = "ULT: %s" % hero.data.ult_name
+	ult_name_l.add_theme_color_override(&"font_color", Color(0.949, 0.776, 0.137, 1))
+	ult_name_l.add_theme_font_size_override(&"font_size", 11)
+	vbox.add_child(ult_name_l)
+
+	var desc_l := Label.new()
+	desc_l.text = hero.data.ult_desc
+	desc_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_l.add_theme_color_override(&"font_color", Color(0.961, 0.902, 0.784, 1))
+	desc_l.add_theme_font_size_override(&"font_size", 9)
+	desc_l.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(desc_l)
+
+	var hint_l := Label.new()
+	hint_l.text = "(tap to flip back)"
+	hint_l.add_theme_color_override(&"font_color", Color(0.659, 0.604, 0.502, 1))
+	hint_l.add_theme_font_size_override(&"font_size", 7)
+	hint_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(hint_l)
+
+	add_child(_back_panel)
+
+func _on_back_panel_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_unflip()
+		accept_event()
+
+func _toggle_flip() -> void:
+	if _is_flipped:
+		_unflip()
+	else:
+		_flip()
+
+func _flip() -> void:
+	var hero = _hero()
+	if hero == null:
+		return
+	if _back_panel == null:
+		_build_back_panel(hero)
+	if _back_panel == null:
+		return
+	_back_panel.visible = true
+	_is_flipped = true
+
+func _unflip() -> void:
+	if _back_panel != null:
+		_back_panel.visible = false
+	_is_flipped = false
 
 ## ---------- Juice ----------
 

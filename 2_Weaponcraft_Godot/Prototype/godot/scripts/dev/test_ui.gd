@@ -10,6 +10,7 @@ extends Control
 const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
 const ForgePanelScene = preload("res://scenes/ForgePanel.tscn")
 const PartCardScene = preload("res://scenes/PartCard.tscn")
+const HeroCardScene = preload("res://scenes/HeroCard.tscn")
 
 ## Expected tier-rim colours. New scheme (no rainbow): bronze / silver / emerald
 ## / platinum / gold. L5 is static gold per user feedback.
@@ -33,6 +34,11 @@ func _ready() -> void:
 	_test_partcard_rim_l4_platinum()
 	_test_partcard_rim_l5_gold_static()
 	_test_partcard_rim_width_scales()
+	_test_herocard_starts_unflipped()
+	_test_herocard_flips_on_ult_click_out_of_combat()
+	_test_herocard_does_not_flip_during_combat()
+	_test_herocard_unflips_when_back_clicked()
+	_test_herocard_back_shows_ult_desc()
 	_summary()
 	_render_to_ui()
 
@@ -134,6 +140,107 @@ func _test_partcard_rim_width_scales() -> void:
 	l1.queue_free()
 	l3.queue_free()
 	l5.queue_free()
+
+## ---------- HeroCard flip cases ----------
+
+func _build_bran_card():
+	GameState.new_session()  ## bran unlocked
+	Combat.stop()            ## ensure out of combat
+	var card = HeroCardScene.instantiate()
+	add_child(card)
+	card.setup(&"bran")
+	return card
+
+func _test_herocard_starts_unflipped() -> void:
+	var card = _build_bran_card()
+	var v = card.get(&"_is_flipped")
+	_check("HeroCard starts with _is_flipped = false",
+		v == false, "got %s" % str(v))
+	card.queue_free()
+
+func _test_herocard_flips_on_ult_click_out_of_combat() -> void:
+	var card = _build_bran_card()
+	var ult_btn = card.find_child("UltBtn", true, false)
+	if ult_btn == null:
+		_check("UltBtn exists", false, "")
+		card.queue_free()
+		return
+	## Out-of-combat ult btn must be clickable (not disabled) so the player
+	## can flip-for-info even when ult isn't ready.
+	if ult_btn.disabled:
+		_check("UltBtn enabled out of combat (so flip is reachable)",
+			false, "btn was disabled")
+		card.queue_free()
+		return
+	ult_btn.pressed.emit()
+	var v = card.get(&"_is_flipped")
+	_check("out-of-combat ult-btn click flips card",
+		v == true, "is_flipped=%s" % str(v))
+	card.queue_free()
+
+func _test_herocard_does_not_flip_during_combat() -> void:
+	GameState.new_session()
+	var card = HeroCardScene.instantiate()
+	add_child(card)
+	card.setup(&"bran")
+	Combat.start_wave(1, false)  ## sets _running=true without auto-tick
+	## Manually fire the ult btn handler via direct call (simulating click in combat).
+	if card.has_method(&"_on_ult_btn_pressed"):
+		card._on_ult_btn_pressed()
+	var v = card.get(&"_is_flipped")
+	_check("in-combat ult-btn click does NOT flip (fires ult instead)",
+		v == false, "is_flipped=%s" % str(v))
+	Combat.stop()
+	card.queue_free()
+
+func _test_herocard_unflips_when_back_clicked() -> void:
+	var card = _build_bran_card()
+	## Force flipped state directly, then simulate the back-panel unflip path.
+	if card.has_method(&"_toggle_flip"):
+		card._toggle_flip()
+	var v_after_flip = card.get(&"_is_flipped")
+	if v_after_flip != true:
+		_check("setup: card flipped before unflip test", false,
+			"is_flipped=%s" % str(v_after_flip))
+		card.queue_free()
+		return
+	if card.has_method(&"_unflip"):
+		card._unflip()
+	var v = card.get(&"_is_flipped")
+	_check("clicking flipped card unflips it",
+		v == false, "is_flipped=%s" % str(v))
+	card.queue_free()
+
+func _test_herocard_back_shows_ult_desc() -> void:
+	var card = _build_bran_card()
+	if card.has_method(&"_toggle_flip"):
+		card._toggle_flip()
+	var back = card.find_child("BackPanel", true, false)
+	if back == null:
+		_check("HeroCard back panel exists when flipped", false, "BackPanel not found")
+		card.queue_free()
+		return
+	## Bran's ult is 'Whirlwind' with desc 'AoE all alive enemies for atk * 3.5'.
+	var contains_ult_name = false
+	var contains_ult_desc = false
+	for child in _all_descendants(back):
+		if child is Label:
+			var t: String = child.text
+			if "Whirlwind" in t:
+				contains_ult_name = true
+			if "AoE" in t or "atk" in t:
+				contains_ult_desc = true
+	_check("back panel shows ult name + ult desc",
+		contains_ult_name and contains_ult_desc,
+		"name=%s desc=%s" % [str(contains_ult_name), str(contains_ult_desc)])
+	card.queue_free()
+
+func _all_descendants(node: Node) -> Array:
+	var out: Array = []
+	for c in node.get_children():
+		out.append(c)
+		out.append_array(_all_descendants(c))
+	return out
 
 ## ---------- Test helpers ----------
 

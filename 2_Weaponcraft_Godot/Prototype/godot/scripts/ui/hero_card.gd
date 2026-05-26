@@ -30,10 +30,11 @@ var _hero_id: StringName = &""
 var _is_selected: bool = false
 var _selected_style: StyleBoxFlat = null
 
-## Flip-to-info state. Out-of-combat ult-btn click flips the card to show
-## the hero's stats + ult description; clicking the back unflips.
+## Flip-to-info state. Card-body click flips to show stats + ult description;
+## clicking the back unflips. ⓘ icon top-right is the visual affordance.
 var _is_flipped: bool = false
 var _back_panel: PanelContainer = null
+var _info_overlay: Control = null
 
 func setup(hero_id: StringName) -> void:
 	_hero_id = hero_id
@@ -47,15 +48,11 @@ func _ready() -> void:
 	GameState.hero_hp_changed.connect(_on_hp_changed)
 	GameState.hero_ult_changed.connect(_on_ult_changed)
 	GameState.weapon_changed.connect(_on_weapon_changed)
-	## Refresh ult btn when wave boundary crosses so the in-combat / out-of-combat
-	## button mode (fire-ult vs flip-to-info) updates at the right moment.
-	GameState.wave_changed.connect(func(_w): _refresh_ult_btn())
-	GameState.wave_cleared.connect(func(_w): _refresh_ult_btn())
-	GameState.squad_wiped.connect(func(): _refresh_ult_btn())
 	_ult_btn.pressed.connect(_on_ult_btn_pressed)
 	gui_input.connect(_on_gui_input)
 	_build_styles()
 	_apply_selection_style()
+	_build_info_btn()
 	if _hero_id != &"":
 		_refresh_all()
 
@@ -96,6 +93,11 @@ func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if _hero_id != &"":
 			emit_signal(&"selected", _hero_id)
+			## Card-body click also flips to ult info. Selection + flip happen
+			## together so the player sees the new hero's ult while ForgePanel
+			## switches to them. Click anywhere on the flipped back to revert.
+			if not _is_flipped:
+				_flip()
 
 func _hero():
 	return GameState.get_hero(_hero_id)
@@ -121,14 +123,6 @@ func _refresh_ult_btn() -> void:
 		_ult_btn.text = "—"
 		_clear_ult_ready_style()
 		return
-	## Out-of-combat: button is always clickable (unless hero dead) and shows
-	## the ult name as a 'tap for info' affordance — clicking flips the card.
-	if not Combat.is_running():
-		_ult_btn.disabled = hero.is_dead
-		_ult_btn.text = "ℹ %s" % hero.data.ult_name
-		_clear_ult_ready_style()
-		return
-	## In-combat: existing fire-ult behaviour.
 	var ready_now: bool = hero.ult_gauge >= Combat.ULT_GAUGE_MAX and not hero.ult_used and not hero.is_dead
 	var was_disabled: bool = _ult_btn.disabled
 	_ult_btn.disabled = not ready_now
@@ -203,15 +197,38 @@ func _on_weapon_changed(hero_id: StringName) -> void:
 	_refresh_all()
 
 func _on_ult_btn_pressed() -> void:
-	if _hero_id == &"":
-		return
-	## Out-of-combat: flip card to show stats + ult info.
-	if not Combat.is_running():
-		_toggle_flip()
-		return
-	Combat.fire_ult(_hero_id)
+	if _hero_id != &"":
+		Combat.fire_ult(_hero_id)
 
 ## ---------- Flip-to-info ----------
+
+## Builds a transparent full-rect overlay containing the ⓘ icon anchored to
+## the top-right. Overlay + icon both use mouse_filter=IGNORE so clicks pass
+## through to the card-body gui_input handler (which flips). The icon is
+## purely a visual cue that the card is tappable for info.
+func _build_info_btn() -> void:
+	if _info_overlay != null:
+		return
+	_info_overlay = Control.new()
+	_info_overlay.name = "InfoOverlay"
+	_info_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_info_overlay.set_anchors_preset(Control.PRESET_FULL_RECT, true)
+	add_child(_info_overlay)
+
+	var icon := Label.new()
+	icon.name = "InfoIcon"
+	icon.text = "ⓘ"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.add_theme_font_size_override(&"font_size", 13)
+	icon.add_theme_color_override(&"font_color", Color(0.961, 0.902, 0.784, 0.75))
+	icon.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.6))
+	icon.add_theme_constant_override(&"outline_size", 3)
+	_info_overlay.add_child(icon)
+	icon.set_anchors_preset(Control.PRESET_TOP_RIGHT, true)
+	icon.offset_left = -16
+	icon.offset_right = -2
+	icon.offset_top = 1
+	icon.offset_bottom = 16
 
 func _build_back_panel(hero) -> void:
 	if _back_panel != null or hero == null or hero.data == null:

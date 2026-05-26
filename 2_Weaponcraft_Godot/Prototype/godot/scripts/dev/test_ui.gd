@@ -35,8 +35,9 @@ func _ready() -> void:
 	_test_partcard_rim_l5_gold_static()
 	_test_partcard_rim_width_scales()
 	_test_herocard_starts_unflipped()
-	_test_herocard_flips_on_ult_click_out_of_combat()
-	_test_herocard_does_not_flip_during_combat()
+	_test_herocard_has_info_icon()
+	_test_herocard_body_click_flips()
+	_test_herocard_ult_btn_does_not_flip()
 	_test_herocard_unflips_when_back_clicked()
 	_test_herocard_back_shows_ult_desc()
 	_summary()
@@ -158,39 +159,43 @@ func _test_herocard_starts_unflipped() -> void:
 		v == false, "got %s" % str(v))
 	card.queue_free()
 
-func _test_herocard_flips_on_ult_click_out_of_combat() -> void:
+func _test_herocard_has_info_icon() -> void:
 	var card = _build_bran_card()
-	var ult_btn = card.find_child("UltBtn", true, false)
-	if ult_btn == null:
-		_check("UltBtn exists", false, "")
+	var icon = card.find_child("InfoIcon", true, false)
+	_check("HeroCard has InfoIcon (top-right ⓘ visual)",
+		icon != null, "InfoIcon not found")
+	card.queue_free()
+
+func _test_herocard_body_click_flips() -> void:
+	var card = _build_bran_card()
+	## Synthesize a left-mouse click on the card body and route via _on_gui_input.
+	if not card.has_method(&"_on_gui_input"):
+		_check("HeroCard exposes _on_gui_input", false, "")
 		card.queue_free()
 		return
-	## Out-of-combat ult btn must be clickable (not disabled) so the player
-	## can flip-for-info even when ult isn't ready.
-	if ult_btn.disabled:
-		_check("UltBtn enabled out of combat (so flip is reachable)",
-			false, "btn was disabled")
-		card.queue_free()
-		return
-	ult_btn.pressed.emit()
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	card._on_gui_input(ev)
 	var v = card.get(&"_is_flipped")
-	_check("out-of-combat ult-btn click flips card",
+	_check("card-body click flips card",
 		v == true, "is_flipped=%s" % str(v))
 	card.queue_free()
 
-func _test_herocard_does_not_flip_during_combat() -> void:
+func _test_herocard_ult_btn_does_not_flip() -> void:
+	## Ult btn is fire-only now (reverted from prior flip-via-ult-btn design).
+	## Confirm clicking the ult btn handler does NOT flip the card, regardless
+	## of combat state.
 	GameState.new_session()
+	Combat.stop()
 	var card = HeroCardScene.instantiate()
 	add_child(card)
 	card.setup(&"bran")
-	Combat.start_wave(1, false)  ## sets _running=true without auto-tick
-	## Manually fire the ult btn handler via direct call (simulating click in combat).
 	if card.has_method(&"_on_ult_btn_pressed"):
 		card._on_ult_btn_pressed()
 	var v = card.get(&"_is_flipped")
-	_check("in-combat ult-btn click does NOT flip (fires ult instead)",
+	_check("ult-btn click does NOT flip card (fire-only)",
 		v == false, "is_flipped=%s" % str(v))
-	Combat.stop()
 	card.queue_free()
 
 func _test_herocard_unflips_when_back_clicked() -> void:

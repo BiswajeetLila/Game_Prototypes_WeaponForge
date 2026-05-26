@@ -222,6 +222,11 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 		ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
 		HitPause.freeze(float(profile.pause))
 		_flash_sprite_in(card, float(profile.flash_dur))
+		## Juice PR2: element particle burst on tagged hits (Steamburst -> ice_shard,
+		## Hellfire / ult_meteor -> fire_puff). Non-tagged profiles omit the key.
+		var burst_tex = profile.get("burst_texture")
+		if burst_tex != null and burst_tex is Texture2D:
+			_spawn_burst(card, burst_tex)
 	var origin: Vector2 = card.global_position + Vector2(card.size.x * 0.5, 0)
 	_spawn_pop(origin,
 		"%s%d" % [String(profile.prefix), dmg],
@@ -253,6 +258,31 @@ func _on_ult_fired(_hero_id: StringName, total_dmg: int) -> void:
 	var origin: Vector2 = _enemy_row.global_position + Vector2(_enemy_row.size.x * 0.5, 0)
 	_spawn_pop(origin, "%s%d" % [String(profile.prefix), total_dmg],
 		profile.color, int(profile.font_pt) + 4)
+
+## Juice PR2: spawn a one-shot element-burst sprite at the enemy card's
+## screen-center. Parents to BattleView root with top_level=true so the
+## PanelContainer's child-sorter ignores the burst (no layout overhead). Tween
+## scale 0.6 -> 1.4 + alpha 1 -> 0 over 0.4s, then queue_free.
+func _spawn_burst(card: Control, tex: Texture2D) -> void:
+	var burst := TextureRect.new()
+	burst.set_meta(&"burst", true)
+	burst.texture = tex
+	burst.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	burst.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	burst.size = Vector2(48, 48)
+	burst.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	burst.z_index = 80
+	burst.top_level = true
+	add_child(burst)
+	var center: Vector2 = card.global_position + card.size * 0.5
+	burst.global_position = center - burst.size * 0.5
+	burst.pivot_offset = burst.size * 0.5
+	burst.scale = Vector2(0.6, 0.6)
+	burst.modulate.a = 1.0
+	var t := create_tween().set_parallel(true)
+	t.tween_property(burst, "scale", Vector2(1.4, 1.4), 0.40).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(burst, "modulate:a", 0.0, 0.40)
+	t.chain().tween_callback(burst.queue_free)
 
 func _spawn_pop(origin: Vector2, text: String, color: Color, font_pt: int) -> void:
 	var label := Label.new()

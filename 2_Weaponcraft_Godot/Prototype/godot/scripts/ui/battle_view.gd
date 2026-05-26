@@ -157,13 +157,11 @@ func _make_enemy_card(idx: int) -> Control:
 	hp_slot.add_child(hp_bar)
 	hp_bar.set_anchors_preset(Control.PRESET_FULL_RECT, true)
 	## Override fill with margin-free StyleBoxFlat so it renders at exact-rect
-	## and matches the ColorRect delta sibling pixel-for-pixel.
-	var ref_fill = hp_bar.get_theme_stylebox(&"fill")
+	## and matches the ColorRect delta sibling pixel-for-pixel. Hardcoded green
+	## (not theme-sampled — at this construction phase the card isn't in the
+	## main scene yet so theme resolution returns Godot's default stylebox).
 	var hp_fill := StyleBoxFlat.new()
-	if ref_fill is StyleBoxFlat:
-		hp_fill.bg_color = ref_fill.bg_color
-	else:
-		hp_fill.bg_color = Color(0.388, 0.745, 0.345, 1)
+	hp_fill.bg_color = Color(0.388, 0.745, 0.345, 1.0)
 	hp_fill.corner_radius_top_left = 2
 	hp_fill.corner_radius_top_right = 2
 	hp_fill.corner_radius_bottom_left = 2

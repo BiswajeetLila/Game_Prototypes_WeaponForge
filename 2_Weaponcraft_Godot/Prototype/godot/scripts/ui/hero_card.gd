@@ -40,6 +40,7 @@ var _info_overlay: Control = null
 ## 250 ms then catches up over 200 ms (Quart-In). Built programmatically on
 ## _ready by wrapping the existing HpBar in a Control + adding a sibling.
 const HP_DELTA_COLOR := Color(0.882, 0.231, 0.231, 0.95)
+const HP_FILL_GREEN  := Color(0.388, 0.745, 0.345, 1.0)
 const HP_DELTA_HOLD: float = 0.25
 const HP_DELTA_CATCHUP: float = 0.20
 ## ColorRect-based delta (not a ProgressBar) — anchored to fill the same
@@ -101,13 +102,10 @@ func _build_hp_delta_bar() -> void:
 	## theme fill has expand_margin / content_margin that make it draw outside
 	## the slot rect — when the ColorRect delta sits inside slot bounds,
 	## green ends up taller than red. Custom StyleBox = exact-rect render,
-	## both bars match visually.
-	var ref_fill = _hp_bar.get_theme_stylebox(&"fill")
+	## both bars match visually. Hardcoded green (not theme-sampled) for
+	## deterministic color on both HeroCard + BattleView enemy bars.
 	var hp_fill := StyleBoxFlat.new()
-	if ref_fill is StyleBoxFlat:
-		hp_fill.bg_color = ref_fill.bg_color
-	else:
-		hp_fill.bg_color = Color(0.388, 0.745, 0.345, 1)  ## fallback green
+	hp_fill.bg_color = HP_FILL_GREEN
 	hp_fill.corner_radius_top_left = 2
 	hp_fill.corner_radius_top_right = 2
 	hp_fill.corner_radius_bottom_left = 2

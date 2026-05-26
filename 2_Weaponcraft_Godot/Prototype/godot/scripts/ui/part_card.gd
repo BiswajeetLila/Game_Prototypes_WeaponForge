@@ -55,6 +55,11 @@ const RAINBOW_STOPS: Array = [
 	Color(0.80, 0.40, 1.00),  ## purple
 ]
 
+## Potion / consumable visual identity. Parchment green to read as a heal
+## item against the bronze/fire/ice part palette.
+const POTION_BG     := Color(0.502, 0.722, 0.439, 1)
+const POTION_BORDER := Color(0.165, 0.392, 0.157, 1)
+
 ## ---------- Node refs ----------
 
 @onready var _icon: TextureRect = %Icon
@@ -140,10 +145,32 @@ func _refresh() -> void:
 	_slot_label.text = String(def.slot).to_upper()
 	_slot_badge.visible = true
 	_apply_element_style(def.tag)
+	if def.is_consumable:
+		_apply_potion_style_overlay()
 	_render_stats(def)
 	_render_cost(def)
 	_render_level_badge()
-	tooltip_text = "%s (L%d)\n%s" % [def.name, _level, def.desc]
+	tooltip_text = "%s\n%s" % [def.name, def.desc] if def.is_consumable else "%s (L%d)\n%s" % [def.name, _level, def.desc]
+
+## Overlays parchment-green bg + dark-green border on top of the element
+## styled panel. Skips tier rim (potions are always single-use, not levelled).
+func _apply_potion_style_overlay() -> void:
+	if _rim_tween != null and _rim_tween.is_valid():
+		_rim_tween.kill()
+	_rim_tween = null
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = POTION_BG
+	sb.border_color = POTION_BORDER
+	sb.border_width_left = 2
+	sb.border_width_top = 2
+	sb.border_width_right = 2
+	sb.border_width_bottom = 2
+	sb.corner_radius_top_left = 8
+	sb.corner_radius_top_right = 8
+	sb.corner_radius_bottom_left = 8
+	sb.corner_radius_bottom_right = 8
+	add_theme_stylebox_override(&"panel", sb)
+	_element_badge.visible = false
 
 func _apply_element_style(tag: StringName) -> void:
 	## Kill any prior L5 rainbow tween — fresh refresh resets the rim.

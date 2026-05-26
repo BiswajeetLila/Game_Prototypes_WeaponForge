@@ -37,3 +37,7 @@ extends Resource
 ## Explicit element tag: "fire", "ice", "pierce", or "" for none.
 ## Derived tags ("crit", "charge") are computed from stats, not stored here.
 @export var tag: StringName = &""
+
+## Consumable items (e.g. heal potion) skip the Merge / inventory pipeline.
+## Shop.buy short-circuits to a one-shot effect handler when this is true.
+@export var is_consumable: bool = false

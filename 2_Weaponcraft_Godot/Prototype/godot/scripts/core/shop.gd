@@ -34,6 +34,11 @@ extends Node
 const SHOP_SIZE: int = 5
 const REROLL_COST: int = 2
 
+## Heal potion injection — appears in shop slot 4 on potion-waves.
+## A potion-wave is any wave where (wave-1) % 3 == 0 (W1, W4, W7, W10, ...).
+const POTION_PART_ID: StringName = &"c_heal_potion"
+const POTION_HEAL_FRACTION: float = 0.5  ## 50% of max_hp restored per hero on use.
+
 ## Public so the UI can grey-out the reroll button.
 func can_afford_reroll() -> bool:
 	return GameState.gold >= REROLL_COST
@@ -66,6 +71,14 @@ func buy(slot_idx: int, hero_id: StringName = &"") -> bool:
 		return false
 	if GameState.gold < def.cost:
 		return false
+	## Consumable short-circuit — does NOT route through Merge / inventory.
+	if def.is_consumable:
+		if not GameState.spend_gold(def.cost):
+			return false
+		_consume_potion(def)
+		GameState.shop_parts[slot_idx] = null
+		GameState.emit_signal(&"shop_changed")
+		return true
 	if not GameState.spend_gold(def.cost):
 		return false
 	## Hand off to Merge — it decides level-up vs new L1 + per-hero priority.
@@ -81,6 +94,18 @@ func buy(slot_idx: int, hero_id: StringName = &"") -> bool:
 	return true
 
 ## ---------- Internals ----------
+
+## Heal all alive heroes by floor(max_hp * POTION_HEAL_FRACTION), clamped to
+## max_hp. Dead heroes skipped (active_heroes filters them). Emits
+## hero_hp_changed per hero so the squad bar refreshes.
+func _consume_potion(_def) -> void:
+	for h in GameState.active_heroes():
+		var heal: int = int(floor(float(h.max_hp) * POTION_HEAL_FRACTION))
+		h.hp = clampi(h.hp + heal, 0, h.max_hp)
+		GameState.emit_signal(&"hero_hp_changed", h.data.id)
+
+func _is_potion_wave() -> bool:
+	return (GameState.wave - 1) % 3 == 0
 
 func _roll_shop() -> Array:
 	var eligible: Array = _eligible_part_ids()
@@ -107,6 +132,10 @@ func _roll_shop() -> Array:
 	else:
 		for i in SHOP_SIZE:
 			out.append(eligible[randi() % eligible.size()])
+	## Potion-wave injection: replace last slot with the heal potion. Preserves
+	## the head/hilt/rune slot-coverage guarantee in slots 0-2.
+	if _is_potion_wave():
+		out[SHOP_SIZE - 1] = POTION_PART_ID
 	return out
 
 func _eligible_part_ids() -> Array:
@@ -114,6 +143,9 @@ func _eligible_part_ids() -> Array:
 	for pid in GameState.part_ids:
 		var def = GameState.get_part_def(pid)
 		if def == null:
+			continue
+		## Consumables never enter the random pool — only via injection.
+		if def.is_consumable:
 			continue
 		if def.cls == &"universal" or _class_unlocked(def.cls):
 			out.append(pid)

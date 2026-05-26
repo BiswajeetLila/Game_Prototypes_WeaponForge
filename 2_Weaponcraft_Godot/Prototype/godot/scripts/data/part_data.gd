@@ -24,8 +24,9 @@ extends Resource
 ## Rarity: "common", "rare", "epic", "legendary". Same-rarity-only merge.
 @export var rarity: StringName = &"common"
 
-## Shop cost in gold.
-@export var cost: int = 3
+## Shop cost in gold. Default 4 per forge-ux-balance-w10; explicit overrides
+## in individual .tres files take precedence.
+@export var cost: int = 4
 
 ## Flat stats contributed when equipped at L1. Level multiplier scales these.
 @export var atk: int = 0

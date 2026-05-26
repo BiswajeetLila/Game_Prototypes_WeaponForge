@@ -10,6 +10,6 @@ slot = &"rune"
 name = "Pierce Rune"
 desc = "Adds PIERCE tag and +3 ATK. Combines with fire / ice / crit / charge for Hellfire / Frostbite / Razor Wind / Skewer."
 icon = ExtResource("2")
-cost = 3
+cost = 4
 atk = 3
 tag = &"pierce"

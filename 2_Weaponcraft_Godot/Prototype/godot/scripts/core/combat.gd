@@ -330,7 +330,11 @@ func _hero_attack(hero) -> void:
 	var final_dmg: int = int(floor(dmg))
 	enemy.hp = maxi(0, enemy.hp - final_dmg)
 	GameState.emit_signal(&"enemy_hp_changed", target_idx)
-	emit_signal(&"hero_hit_enemy", hero.data.id, target_idx, final_dmg, &"basic", is_crit)
+	## Tag stack-burn hits with the &"inferno" source so the juice layer
+	## fires the fire_puff burst + bigger popup. Falls back to &"basic" for
+	## normal hits.
+	var hit_source: StringName = &"inferno" if hero.burn_stack > 0 else &"basic"
+	emit_signal(&"hero_hit_enemy", hero.data.id, target_idx, final_dmg, hit_source, is_crit)
 	_log_hero_hit(hero, enemy, final_dmg, is_crit)
 
 	## Ult gauge fill (Quickdraw multiplies via ult_boost).

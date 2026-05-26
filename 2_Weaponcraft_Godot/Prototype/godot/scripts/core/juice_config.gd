@@ -33,6 +33,7 @@ const PROFILES: Dictionary = {
 	&"basic_crit": {
 		"shake_amp": 6.0, "shake_dur": 0.18, "pause": 0.10,
 		"font_pt": 26, "color": Color("ff6040"), "prefix": "⚡ ", "flash_dur": 0.07,
+		"burst_texture": VFX_FIRE_PUFF,
 	},
 	&"steamburst": {
 		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
@@ -42,15 +43,22 @@ const PROFILES: Dictionary = {
 	&"skewer": {
 		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
 		"font_pt": 18, "color": Color("9fe0ff"), "prefix": "", "flash_dur": 0.06,
+		"burst_texture": VFX_ICE_SHARD,
 	},
 	&"hellfire": {
 		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
 		"font_pt": 18, "color": Color("ff8a4d"), "prefix": "", "flash_dur": 0.06,
 		"burst_texture": VFX_FIRE_PUFF,
 	},
+	&"inferno": {
+		"shake_amp": 4.0, "shake_dur": 0.14, "pause": 0.06,
+		"font_pt": 20, "color": Color("ff7a3a"), "prefix": "🔥 ", "flash_dur": 0.06,
+		"burst_texture": VFX_FIRE_PUFF,
+	},
 	&"ult": {
 		"shake_amp": 10.0, "shake_dur": 0.35, "pause": 0.18,
 		"font_pt": 28, "color": Color("cb8aff"), "prefix": "🌀 ", "flash_dur": 0.10,
+		"burst_texture": VFX_FIRE_PUFF,
 	},
 	&"ult_meteor": {
 		"shake_amp": 10.0, "shake_dur": 0.35, "pause": 0.18,
@@ -60,6 +68,7 @@ const PROFILES: Dictionary = {
 	&"ult_shadowstep": {
 		"shake_amp": 10.0, "shake_dur": 0.35, "pause": 0.18,
 		"font_pt": 32, "color": Color("a86bff"), "prefix": "⚡🌀 ", "flash_dur": 0.12,
+		"burst_texture": VFX_ICE_SHARD,
 	},
 }
 

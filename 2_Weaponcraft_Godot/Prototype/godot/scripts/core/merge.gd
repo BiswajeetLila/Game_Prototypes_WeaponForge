@@ -105,17 +105,25 @@ func equip_from_inventory(item, hero_id: StringName = &"") -> bool:
 	if def == null:
 		return false
 
-	## Same-partId target already in slot? Try level-up instead of equip.
+	## Same-partId target already in slot? Merge OR swap depending on levels.
+	## Bug fix: previously called current.level_up() unconditionally which
+	## consumed any higher-level inventory source to bump current by +1 —
+	## destroying L5 items if user clicked L5 inv onto L1 slot. Now:
+	##   - if item.level > current.level: SWAP (preserve the higher-level item)
+	##   - elif current.level < CAP:       MERGE (consume source, bump current)
+	##   - else (current at cap, item lower-or-equal): SWAP via fall-through
 	var current = hero.weapon.get_slot(def.slot)
-	if current != null and current.part_id == item.part_id and current.level < InventoryItemT.LEVEL_CAP:
-		current.level_up()
-		## Remove the source from inventory — it's consumed.
-		GameState.inventory.erase(item)
-		GameState.emit_signal(&"inventory_changed")
-		_on_equipped_changed(hero)
-		return true
+	if current != null and current.part_id == item.part_id:
+		if item.level <= current.level and current.level < InventoryItemT.LEVEL_CAP:
+			current.level_up()
+			GameState.inventory.erase(item)
+			GameState.emit_signal(&"inventory_changed")
+			_on_equipped_changed(hero)
+			return true
+		## Otherwise fall through to swap branch below — preserves the
+		## higher-level item in the slot OR handles current-at-cap.
 
-	## Different partId in slot — swap. Old goes to inventory.
+	## Different partId in slot — OR same-partId swap. Old goes to inventory.
 	if current != null:
 		GameState.inventory.append(current)
 	hero.weapon.set_slot(def.slot, item)

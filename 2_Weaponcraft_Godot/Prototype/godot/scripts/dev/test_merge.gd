@@ -27,6 +27,9 @@ func _ready() -> void:
 	_test_buy_with_insufficient_gold_refunded()
 	_test_level_multiplier_table()
 	_test_weapon_level_mult_mirrors_merge()
+	_test_equip_from_inv_swaps_when_source_higher_level()
+	_test_equip_from_inv_swaps_when_source_higher_mid_levels()
+	_test_equip_from_inv_merges_when_source_lower_or_equal()
 	_summary()
 	_render_to_ui()
 
@@ -165,6 +168,56 @@ func _test_level_multiplier_table() -> void:
 	_check("level_multiplier L5 = 2.75", abs(Merge.level_multiplier(5) - 2.75) < 0.001, "got %.3f" % Merge.level_multiplier(5))
 	_check("level_multiplier clamps L0 -> L1", abs(Merge.level_multiplier(0) - 1.00) < 0.001, "")
 	_check("level_multiplier clamps L99 -> L5", abs(Merge.level_multiplier(99) - 2.75) < 0.001, "")
+
+func _test_equip_from_inv_swaps_when_source_higher_level() -> void:
+	## Gamebreaking bug repro: slot has L1 same-partId, inventory has L5,
+	## clicking the L5 inventory item should SWAP (slot -> L5, inv -> L1),
+	## NOT consume the L5 to bump L1 to L2.
+	GameState.new_session()
+	var slot_item = InventoryItemT.new(GameState.next_uid(), &"r_fire", 1)
+	GameState.hero.weapon.set_slot(&"rune", slot_item)
+	var inv_item = InventoryItemT.new(GameState.next_uid(), &"r_fire", 5)
+	GameState.inventory.append(inv_item)
+	var ok: bool = Merge.equip_from_inventory(inv_item)
+	var equipped = GameState.hero.weapon.get_slot(&"rune")
+	var inv_after = GameState.inventory
+	_check("L5 inv onto L1 slot: SWAP (slot=L5, inv=L1) — no L5 destruction",
+		ok and equipped == inv_item and equipped.level == 5
+			and inv_after.size() == 1 and inv_after[0] == slot_item and inv_after[0].level == 1,
+		"ok=%s slot_level=%d inv_size=%d inv0_level=%d"
+			% [str(ok), equipped.level if equipped else -1,
+				inv_after.size(), inv_after[0].level if inv_after.size() > 0 else -1])
+
+func _test_equip_from_inv_swaps_when_source_higher_mid_levels() -> void:
+	## Generalisation: slot L2, inventory L3 same partId -> swap (preserve L3).
+	GameState.new_session()
+	var slot_item = InventoryItemT.new(GameState.next_uid(), &"r_fire", 2)
+	GameState.hero.weapon.set_slot(&"rune", slot_item)
+	var inv_item = InventoryItemT.new(GameState.next_uid(), &"r_fire", 3)
+	GameState.inventory.append(inv_item)
+	Merge.equip_from_inventory(inv_item)
+	var equipped = GameState.hero.weapon.get_slot(&"rune")
+	var inv_after = GameState.inventory
+	_check("L3 inv onto L2 slot: SWAP (slot=L3, inv=L2)",
+		equipped == inv_item and equipped.level == 3
+			and inv_after.size() == 1 and inv_after[0].level == 2,
+		"slot_level=%d inv0_level=%d"
+			% [equipped.level if equipped else -1, inv_after[0].level if inv_after.size() > 0 else -1])
+
+func _test_equip_from_inv_merges_when_source_lower_or_equal() -> void:
+	## Existing merge behaviour: source.level <= current.level AND current<CAP -> merge.
+	## Slot L3, inventory L1 -> slot becomes L4, source consumed.
+	GameState.new_session()
+	var slot_item = InventoryItemT.new(GameState.next_uid(), &"r_fire", 3)
+	GameState.hero.weapon.set_slot(&"rune", slot_item)
+	var inv_item = InventoryItemT.new(GameState.next_uid(), &"r_fire", 1)
+	GameState.inventory.append(inv_item)
+	Merge.equip_from_inventory(inv_item)
+	var equipped = GameState.hero.weapon.get_slot(&"rune")
+	_check("L1 inv onto L3 slot: MERGE (slot=L4, source consumed)",
+		equipped == slot_item and equipped.level == 4 and GameState.inventory.is_empty(),
+		"slot_level=%d inv_size=%d"
+			% [equipped.level if equipped else -1, GameState.inventory.size()])
 
 func _test_weapon_level_mult_mirrors_merge() -> void:
 	## Weapon.gd carries a hot-path copy of LEVEL_MULT. Mirror test prevents drift.

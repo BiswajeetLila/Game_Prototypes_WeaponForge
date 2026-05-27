@@ -63,7 +63,11 @@ var recipe_ids: Array = []
 ## ---------- Per-run state ----------
 
 const STARTING_GOLD: int = 20
-const TOTAL_WAVES: int = 10  ## forge-ux-balance-w10: bumped from 5; bosses still deferred to Stage D.
+const TOTAL_WAVES: int = 15  ## Stage D — 15-wave stage with bosses at W5/W10/W15.
+
+## Boss waves trigger the ReforgeRetryModal on wipe + telegraph banner pre-wave +
+## boss-only spawn (1 enemy via id lookup). Keep in sync with boss tres ids.
+const BOSS_WAVES: Array = [5, 10, 15]
 
 var wave: int = 1
 var gold: int = STARTING_GOLD
@@ -190,6 +194,21 @@ func any_alive() -> bool:
 		if h != null and not h.is_dead:
 			return true
 	return false
+
+## Stage D — Reforge & Retry path. On wipe at a boss wave (5/10/15), the
+## ReforgeRetryModal calls this to resurrect every squad member at full HP
+## and clear per-fight tracking. Gold, inventory, recipe codex, and current
+## wave are NOT reset — only the heroes are restored so the player can
+## re-equip and re-engage the same boss fight.
+func revive_squad_for_retry() -> void:
+	for h in all_heroes():
+		h.is_dead = false
+		h.hp = h.max_hp
+		h.ult_used = false
+		h.burn_stack = 0
+		h.last_target_name = &""
+		emit_signal("hero_hp_changed", h.data.id)
+		emit_signal("hero_ult_changed", h.data.id)
 
 ## Instantiates a HeroState from the catalog, appends to squad_order, marks the
 ## hero's class as unlocked (widens shop pool), and emits hero_unlocked.

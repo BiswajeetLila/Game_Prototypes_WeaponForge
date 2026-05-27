@@ -57,10 +57,20 @@ const ULT_FILL_PER_RATE: float = 0.25   ## == ult_rate / 4
 const TAG_POOL: Array = [&"fire", &"ice", &"pierce"]
 const RESIST_CHANCE: float = 0.7
 
+## Stage D — boss roster keyed by wave. _spawn_enemies looks up the id and
+## spawns exactly one boss enemy when the current wave matches.
+const BOSS_BY_WAVE: Dictionary = {
+	5: &"boss_slime_king",
+	10: &"boss_iron_golem",
+	15: &"boss_arcane_lich",
+}
+
 signal tick_completed
 signal hero_hit_enemy(hero_id: StringName, enemy_idx: int, dmg: int, source: StringName, is_crit: bool)
 signal enemy_hit_hero(enemy_idx: int, hero_id: StringName, dmg: int)
 signal ult_fired(hero_id: StringName, total_dmg: int)
+## Stage D — pre-wave banner. Main listens and displays before Combat.start_wave.
+signal boss_telegraph(text: String)
 
 var _tick_timer: Timer
 var _time_cap_timer: Timer
@@ -152,6 +162,25 @@ func step() -> void:
 		_write_breadcrumb_phase(StringName("tick_enemy_attack:%d->%s" % [i, String(target.data.id)]))
 		_enemy_attack(i, target)
 	_write_breadcrumb_phase(&"after_enemy_loop")
+
+	## 2.5 Stage D — boss tick hooks. Dispatched on enemy.id; non-boss enemies
+	## skip the match block entirely. Hooks may mutate enemy.atk (lich phase 1),
+	## damage all alive heroes (golem AoE / lich phase 2 AoE), or restore boss
+	## hp (slime king heal).
+	for i in range(GameState.enemies.size()):
+		var boss = GameState.enemies[i]
+		if not bool(boss.get(&"is_boss", false)):
+			continue
+		if boss.hp <= 0:
+			continue
+		match boss.id:
+			&"boss_slime_king":
+				_boss_tick_slime_king(i, boss)
+			&"boss_iron_golem":
+				_boss_tick_iron_golem(i, boss)
+			&"boss_arcane_lich":
+				_boss_tick_arcane_lich(i, boss)
+	_write_breadcrumb_phase(&"after_boss_hooks")
 
 	## 3. Tick down debuffs (one-turn frostbite per addendum 0.1.7 wording).
 	for i in range(GameState.enemies.size()):
@@ -400,7 +429,12 @@ func _enemy_attack(enemy_idx: int, hero) -> void:
 	var enemy = GameState.enemies[enemy_idx]
 	if hero == null or hero.is_dead:
 		return
-	var base_dmg: int = 4 + int(floor(float(_current_wave) * 1.4))
+	## Stage D — enemy ATK precedence: enemy.atk (set at spawn from base_atk()
+	## or, for bosses, from def.atk_override + per-phase mutation). Falls back
+	## to base_atk(_current_wave) when force_enemies tests didn't set the field.
+	var base_dmg: int = int(enemy.get(&"atk", 0))
+	if base_dmg <= 0:
+		base_dmg = base_atk(_current_wave)
 	if enemy.get(&"debuffed", false):
 		base_dmg = int(floor(float(base_dmg) * float(enemy.get(&"debuff_mult", 1.0))))
 	hero.hp = maxi(0, hero.hp - base_dmg)
@@ -424,13 +458,31 @@ func _spawn_enemies(wave: int) -> void:
 		push_warning("Combat._spawn_enemies: no enemy catalog")
 		GameState.emit_signal(&"enemies_spawned")
 		return
+	## Stage D — boss waves spawn exactly 1 boss via id lookup; non-boss
+	## enemies are filtered from the random pool so they only roll on normal
+	## waves.
+	if BOSS_BY_WAVE.has(wave):
+		_spawn_boss(wave)
+		GameState.emit_signal(&"enemies_spawned")
+		return
+	var atk_for_wave: int = base_atk(wave)
+	var hp_mult: float = _wave_hp_mult(wave)
+	var non_boss_pool: Array = []
+	for eid in GameState.enemy_ids:
+		var d = GameState.get_enemy_def(eid)
+		if d != null and not d.is_boss:
+			non_boss_pool.append(eid)
+	if non_boss_pool.is_empty():
+		push_warning("Combat._spawn_enemies: no non-boss enemies in catalog")
+		GameState.emit_signal(&"enemies_spawned")
+		return
 	var count: int = 2 + (randi() % 2)   ## 2 or 3 enemies per addendum
 	for i in count:
-		var enemy_id = GameState.enemy_ids[randi() % GameState.enemy_ids.size()]
+		var enemy_id = non_boss_pool[randi() % non_boss_pool.size()]
 		var def = GameState.get_enemy_def(enemy_id)
 		if def == null:
 			continue
-		var hp: int = def.hp_base + def.hp_per_wave * wave
+		var hp: int = int(floor(float(def.hp_base + def.hp_per_wave * wave) * hp_mult))
 		var weak: StringName = TAG_POOL[randi() % TAG_POOL.size()]
 		var resist: StringName = &""
 		if randf() < RESIST_CHANCE:
@@ -450,8 +502,74 @@ func _spawn_enemies(wave: int) -> void:
 			"debuffed": false,
 			"debuff_dur": 0,
 			"debuff_mult": 1.0,
+			"is_boss": false,
+			"atk": atk_for_wave,
+			"phase_1_applied": false,
+			"phase_2_applied": false,
 		})
 	GameState.emit_signal(&"enemies_spawned")
+
+## Stage D — boss spawn. Single enemy, hand-tuned stats, telegraph banner.
+func _spawn_boss(wave: int) -> void:
+	var boss_id: StringName = BOSS_BY_WAVE[wave]
+	var def = GameState.get_enemy_def(boss_id)
+	if def == null:
+		push_error("Combat._spawn_boss: missing tres for %s" % boss_id)
+		return
+	GameState.enemies.append({
+		&"id": boss_id,
+		"name": def.name,
+		"hp": def.hp_base,
+		"max_hp": def.hp_base,
+		"weak": def.weak_tag,
+		"resist": def.resist_tag,
+		"sprite": def.sprite,
+		"frozen": false,
+		"debuffed": false,
+		"debuff_dur": 0,
+		"debuff_mult": 1.0,
+		"is_boss": true,
+		"atk": def.atk_override,
+		"phase_1_applied": false,
+		"phase_2_applied": false,
+	})
+	var banner: String = "👑 %s" % def.name.to_upper()
+	var weak_str: String = String(def.weak_tag)
+	var resist_str: String = String(def.resist_tag)
+	var parts: Array = []
+	if weak_str != "":
+		parts.append("weak: %s" % weak_str)
+	if resist_str != "":
+		parts.append("resist: %s" % resist_str)
+	if not parts.is_empty():
+		banner += "  •  " + "  /  ".join(parts)
+	emit_signal(&"boss_telegraph", banner)
+
+## Stage D — tier-scaled enemy ATK curve. Replaces the old single-line
+## `4 + floor(wave*1.4)` formula with bands matching the 15-wave plan.
+func base_atk(wave: int) -> int:
+	if wave <= 3:
+		return 4 + int(floor(float(wave) * 1.2))
+	if wave <= 6:
+		return 5 + int(floor(float(wave) * 1.3))
+	if wave <= 9:
+		return 6 + int(floor(float(wave) * 1.3))
+	if wave <= 12:
+		return 7 + int(floor(float(wave) * 1.4))
+	return 8 + int(floor(float(wave) * 1.5))
+
+## Stage D — softened tutorial / peaked finale HP curve. Multiplier applied to
+## non-boss enemy hp at spawn. Bosses have fixed hp_base (no curve).
+func _wave_hp_mult(wave: int) -> float:
+	if wave <= 3:
+		return 0.85
+	if wave <= 6:
+		return 1.00
+	if wave <= 9:
+		return 1.10
+	if wave <= 12:
+		return 1.20
+	return 1.30
 
 ## ---------- Helpers ----------
 
@@ -485,11 +603,80 @@ func _time_cap_already_fired() -> bool:
 			return false
 	return true
 
+## ---------- Stage D — boss tick hooks ----------
+
+## Slime King — heals +8 hp every 3rd tick while > 50% max HP. Falls silent
+## once chipped below the threshold so the player gets a "the king is dying"
+## momentum window.
+const SLIME_KING_HEAL: int = 8
+const SLIME_KING_TICK_INTERVAL: int = 3
+
+func _boss_tick_slime_king(idx: int, boss) -> void:
+	if _tick_counter % SLIME_KING_TICK_INTERVAL != 0:
+		return
+	if boss.hp <= int(boss.max_hp) / 2:
+		return
+	boss.hp = mini(int(boss.max_hp), boss.hp + SLIME_KING_HEAL)
+	GameState.emit_signal(&"enemy_hp_changed", idx)
+
+## Iron Golem — every 4th tick, AoE pulse hits all alive heroes for 70% of
+## the golem's current atk. Lands in ADDITION to the regular single-target
+## attack on the same tick (raises the stakes when squad is undermanned).
+const GOLEM_TICK_INTERVAL: int = 4
+const GOLEM_AOE_RATIO: float = 0.7
+
+func _boss_tick_iron_golem(idx: int, boss) -> void:
+	if _tick_counter % GOLEM_TICK_INTERVAL != 0:
+		return
+	var aoe_dmg: int = int(floor(float(boss.atk) * GOLEM_AOE_RATIO))
+	if aoe_dmg <= 0:
+		return
+	for h in GameState.active_heroes():
+		_boss_strike_hero(idx, h, aoe_dmg)
+
+## Arcane Lich — multi-phase. Phase 1 at <66% HP: +20% atk (one-shot). Phase 2
+## at <33% HP: one-time AoE for 50% of each alive hero's max HP. Both flags
+## live on the enemy dict (set at spawn from `_force_enemies` defaults or
+## `_spawn_boss`).
+const LICH_PHASE_1_RATIO: float = 0.66
+const LICH_PHASE_1_ATK_MULT: float = 1.2
+const LICH_PHASE_2_RATIO: float = 0.33
+const LICH_PHASE_2_AOE_RATIO: float = 0.5
+
+func _boss_tick_arcane_lich(idx: int, boss) -> void:
+	var hp_ratio: float = float(boss.hp) / float(boss.max_hp)
+	if hp_ratio < LICH_PHASE_1_RATIO and not bool(boss.get(&"phase_1_applied", false)):
+		boss.atk = int(floor(float(boss.atk) * LICH_PHASE_1_ATK_MULT))
+		boss.phase_1_applied = true
+	if hp_ratio < LICH_PHASE_2_RATIO and not bool(boss.get(&"phase_2_applied", false)):
+		boss.phase_2_applied = true
+		for h in GameState.active_heroes():
+			var dmg: int = int(floor(float(h.max_hp) * LICH_PHASE_2_AOE_RATIO))
+			_boss_strike_hero(idx, h, dmg)
+
+## Shared damage path for boss-special attacks (golem AoE / lich phase 2 AoE).
+## Mirrors _enemy_attack's death-notification + signal contract minus the
+## debuff multiplier (specials ignore Frostbite-style debuffs).
+func _boss_strike_hero(boss_idx: int, hero, dmg: int) -> void:
+	if hero == null or hero.is_dead:
+		return
+	hero.hp = maxi(0, hero.hp - dmg)
+	var killed: bool = false
+	if hero.hp <= 0 and not hero.is_dead:
+		hero.is_dead = true
+		killed = true
+	GameState.emit_signal(&"hero_hp_changed", hero.data.id)
+	emit_signal(&"enemy_hit_hero", boss_idx, hero.data.id, dmg)
+	if killed:
+		GameState.emit_signal(&"hero_died", hero.data.id)
+
 ## ---------- End-of-state hooks ----------
 
 func _on_wave_cleared() -> void:
 	stop()
 	var gold_award: int = 5 + _current_wave * 2
+	if BOSS_BY_WAVE.has(_current_wave):
+		gold_award *= 2   ## Stage D — boss gold reward doubled
 	GameState.add_gold(gold_award)
 	GameState.emit_signal(&"wave_cleared", _current_wave)
 	if _current_wave >= GameState.TOTAL_WAVES:

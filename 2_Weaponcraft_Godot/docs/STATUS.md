@@ -1,6 +1,6 @@
 # WeaponCraft — Single Source of Truth (STATUS)
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-06-01
 **Maintainer:** keep this doc current; it is the canonical entry point for the project.
 
 > **If you read one file, read this one.** It points to everything else and states what is done, planned, and remaining.
@@ -37,6 +37,10 @@ Plan-mode scratch files live in `C:/Users/Biswa/.claude/plans/` (session artifac
 - **Pre-mortem** — 19 failure modes (FM-1→19) with mitigations + 7 quarterly threat trackers (W1-W7).
 - **SSR text bundle** — all 5 artifacts authored (135w core / 170w meta / 55w store / 280w first-5min / 340w D1-D14).
 - **Repo consolidation** — design spec + research docs committed to main; Stage D merged.
+- **101 concept doc** — `docs/101-WeaponCraft-Concept.md` in team template format (RICOCHET structure). ~95% of RICOCHET template completeness.
+- **AI-Leverage Inventory** — design spec §23.1 (pipeline accel table, ~1.6× multiplier).
+- **Bran 5-tier portrait test render** — `docs/research/portrait-tier-test/bran_5tier_evolution.png`. Awaits 20-Honkai-player eval gate (FM-19).
+- **P1a STARTED (TDD)** — `WeaponData` unitary schema: get_atk/get_hp + ★-tier scaling (+5%/tier) + Forge Math (apply_forge_part: same-tier +50%, one-higher instant, lower no-op). **10/10 tests green** (`scripts/data/weapon_data.gd`, `scripts/dev/test_weapon_data.gd`, `scenes/dev/TestWeaponData.tscn`). Headless runner established.
 
 ### Key locked decisions (full log in design spec)
 
@@ -63,12 +67,14 @@ Plan-mode scratch files live in `C:/Users/Biswa/.claude/plans/` (session artifac
 ## 4. PLANNED (design locked, not built)
 
 ### Pre-flight gates (before Phase 1 implementation)
-- [ ] Bran 5-tier portrait nano-banana test render → 20 Honkai-player eval → lock 5 or fall to 3-tier (FM-19)
+- [x] Branch for impl work created → `weaponcraft-godot/wittle-inversion-phase1` (merged to main 2026-06-01)
+- [~] Bran 5-tier portrait nano-banana test render done → **awaits 20-Honkai-player eval** → lock 5 or fall to 3-tier (FM-19)
 - [ ] USPTO/EUIPO trademark check on "Catalyst" (FM-17) → confirm or fall to Alloy/Confluence/Reaction/Harmonic
-- [ ] Branch rename for impl work → `weaponcraft-godot/wittle-inversion-phase1`
 
 ### Phase 1 implementation (~24.5 sprints / ~6 months)
-P1a data schema → P1b Forge Wheel Phase 0 → P1c Forge Draft → P1d Mastery+Affinity+portraits → P1e Catalyst → P1f Hot Paladin cinematic → P1g hero missions Q1-Q3 → P1h skin shop → P1i balance → P1j SSR+playtest → P1k pre-mortem patches → P1l Discord pre-launch. (Detail: design spec §23.)
+- **P1a — IN PROGRESS.** WeaponData unitary schema done (get_atk/hp, ★ scaling, Forge Math 3 cases, 10 tests green). **Remaining P1a:** Forge Math diff≥2 bank cases · `skill_card_data.gd` · drop sockets from legacy `weapon.gd` · migrate `combat.gd`+`GameState` to WeaponData · re-run full 144-suite for regression.
+- Then: P1b Forge Wheel Phase 0 → P1c Forge Draft → P1d Mastery+Affinity+portraits → P1e Catalyst → P1f Hot Paladin cinematic → P1g hero missions Q1-Q3 → P1h skin shop → P1i balance → P1j SSR+playtest → P1k pre-mortem patches → P1l Discord pre-launch. (Detail: design spec §23.)
+- **First-10-min vertical slice = P1a + P1b + P1c + P1f.**
 
 ### Exit gates (any 2 of 3): D1≥35% + FM-8 dual-anchor ≥6/10 both axes / ad CPI -20% vs Wittle / 10h internal self-play.
 ### Kill triggers: D1<30% / satisfaction<6/10 / no creative within 30% Wittle CPI / FM-8 probe <6/10 either axis.
@@ -97,8 +103,8 @@ P1a data schema → P1b Forge Wheel Phase 0 → P1c Forge Draft → P1d Mastery+
 
 ## 6. Repo / branch state
 
-- **main** = single source of truth. Contains design spec v2.2 + research + Stage D + this STATUS.
-- Active feature branch for next work: create `weaponcraft-godot/wittle-inversion-phase1` from main.
+- **main** = single source of truth. Contains design spec v2.2.1 + research + Stage D + concept doc + AI-leverage + P1a (phase1 merged 2026-06-01).
+- **`weaponcraft-godot/wittle-inversion-phase1`** = active dev branch (P1a). Merged to main 2026-06-01 but kept open for continued P1a work. Resume here.
 - `feature/2_v0.2.0-gacha-synergies` = old WeaponCraft_Base HTML prototype (pre-Godot pivot). Left intact on remote; not merged. Abandoned direction.
 - Multiple `claude/*` + `.claude/worktrees/*` exist from parallel sessions — left alone (may be live in other windows). Harness auto-cleans stale ones.
 

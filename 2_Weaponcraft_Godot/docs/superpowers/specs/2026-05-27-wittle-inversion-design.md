@@ -955,6 +955,38 @@ Phase 2 (daily challenge modes, Prestige Skins evaluation, hero #4-#7 mission ch
 
 ---
 
+## 23.1 AI-Leverage Inventory
+
+[v2.2 addition — mirrors RICOCHET §12. Estimated **~1.6× pipeline multiplier** on Phase-1+ timeline.]
+
+### Where AI accelerates
+
+| Pipeline | Tool class | Acceleration | Notes |
+|---|---|---|---|
+| Hero portraits (5-tier × 7 heroes = 35; 3-tier fallback = 21) | nano-banana cheap-tier | 4× | **Proven** — Bran 5-tier test render shipped at ~$0.04/image (`docs/research/portrait-tier-test/`) |
+| Weapon icons (15 launch + part variants) | nano-banana style-locked | 5× | Single style-lock prompt template per class |
+| Enemy + boss sprites | nano-banana + rembg + crop | 4× | Pipeline already in production (Stage D bosses, 3-hero roster) |
+| Hero dialogue (mission chains + skin pools) | LLM script + human-review QA | 4× | QA pipeline mandatory per FM-13; AI-TTS (ElevenLabs) optional v1.x |
+| Localization (15 languages) | LLM translation + human review | 4× | Music-only ad creative keeps loc cheap |
+| Combat / economy balance | self-play bots | 2× | Quality, not speed — surfaces per-class win-rate skew |
+| VFX particles + SFX | procedural + AI audio (Stable Audio / ElevenLabs) | 2× | Catalyst-compound + ability-transform VFX |
+| Marketing creative variants | image/video-gen pipeline | 3× | Feeds the UA creative-pillar set |
+| UI mockup iteration | Figma MCP + image-gen | 1.5× | Forge Wheel + Forge Draft frames |
+
+### Where AI does NOT help
+
+- Combat game-feel tuning (juice, hit-pause, ult timing — bespoke playtest-driven)
+- Forge-UX feel (slot-machine cadence, Forge Draft pick-speed — human design + A/B)
+- Monetization economics (ARPU/LTV/pity tuning — telemetry, not gen-AI)
+- Live-ops event + balance design
+- The inversion bet itself (strategic, not a pipeline)
+
+### Cost-policy note
+
+All art defaults to **nano-banana cheap-tier** (~$0.04/image) per the project cost policy. Premium tiers (nano-banana-pro ~$0.24) only on explicit per-asset approval. The 35-portrait + 15-weapon-icon + enemy-sprite launch set is achievable for well under $10 in raw generation cost.
+
+---
+
 ## 24. Risk Register
 
 | Risk | Mitigation | Owner |
@@ -1006,6 +1038,7 @@ Phase 2 (daily challenge modes, Prestige Skins evaluation, hero #4-#7 mission ch
 | Version | Date | Notes |
 |---|---|---|
 | 2.1 | 2026-05-27 | Initial design spec from grill output + 7-mode pre-mortem with V2 mitigations (FM-1 through FM-7) + 8 additional FMs (FM-8 through FM-15) |
+| 2.2.1 | 2026-05-31 | Added §23.1 AI-Leverage Inventory (pipeline-acceleration table + "where AI does not help" + cost-policy note; ~1.6× multiplier estimate). |
 | 2.2 | 2026-05-28 | Post-competitor-research integration: (1) Resonance → Catalyst global rename per Habby term-ownership, (2) Tier 0-3 Forge Wheel replaced by 2-Phase model with part-upgrade mechanics, (3) audience profile sharpened to Habby ∩ anime-curious gamer (Sensor Tower data), (4) fragile assumption two-layer reframed (equipment-gacha precedented, story-locked roster unprecedented, combination = moat), (5) launch quest scope 70 → 21, (6) skin-dialogue deferred to v1.x with SSR-test-gated re-evaluation, (7) Honkai-tier portrait 5-tier test-gated with 3-tier fallback, (8) +4 FMs (16-19) and +7 W-tier threats added to risk register, (9) Discord pre-launch strategy added to implementation plan |
 
 ---

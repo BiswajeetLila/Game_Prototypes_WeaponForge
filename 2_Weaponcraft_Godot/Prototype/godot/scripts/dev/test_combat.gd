@@ -44,7 +44,7 @@ func _ready() -> void:
 	_test_cap_pop_layer_terminates_bounded()
 	_test_cap_pop_layer_below_max_is_noop()
 	## Balance pass.
-	_test_total_waves_is_10()
+	_test_total_waves_is_15()
 	_test_bran_hp_base_120()
 	_test_elara_hp_base_90()
 	_test_vex_hp_base_75()
@@ -54,6 +54,23 @@ func _ready() -> void:
 	_test_r_pierce_cost_4()
 	_test_elara_unlock_wave_constant_3()
 	_test_vex_unlock_wave_constant_6()
+	## Stage D — bosses + retry + 15-wave balance.
+	_test_enemy_data_is_boss_default_false()
+	_test_boss_slime_king_tres_loads()
+	_test_boss_iron_golem_tres_loads()
+	_test_boss_arcane_lich_tres_loads()
+	_test_revive_squad_for_retry_resets_all()
+	_test_wave_hp_mult_curve()
+	_test_base_atk_tier_scaled()
+	_test_boss_spawn_W5_single_slime_king()
+	_test_boss_spawn_W10_single_iron_golem()
+	_test_boss_spawn_W15_single_arcane_lich()
+	_test_boss_wave_gold_doubled()
+	_test_slime_king_heals_8_above_50pct()
+	_test_slime_king_no_heal_below_50pct()
+	_test_iron_golem_aoe_every_4_ticks()
+	_test_arcane_lich_phase1_atk_bump_below_66pct()
+	_test_arcane_lich_phase2_aoe_below_33pct()
 	_summary()
 	_render_to_ui()
 
@@ -76,7 +93,7 @@ func _force_enemies(specs: Array) -> void:
 			&"id": s.get(&"id", &"slime"),
 			"name": s.get("name", "Test_%d" % GameState.enemies.size()),
 			"hp": int(s.get("hp", 50)),
-			"max_hp": int(s.get("hp", 50)),
+			"max_hp": int(s.get("max_hp", s.get("hp", 50))),
 			"weak": s.get("weak", &""),
 			"resist": s.get("resist", &""),
 			"sprite": null,
@@ -84,6 +101,10 @@ func _force_enemies(specs: Array) -> void:
 			"debuffed": false,
 			"debuff_dur": 0,
 			"debuff_mult": 1.0,
+			"is_boss": bool(s.get("is_boss", false)),
+			"atk": int(s.get("atk", 0)),
+			"phase_1_applied": bool(s.get("phase_1_applied", false)),
+			"phase_2_applied": bool(s.get("phase_2_applied", false)),
 		})
 
 ## ---------- Cases ----------
@@ -302,15 +323,15 @@ func _test_inferno_stack_burn_resets_on_target_switch() -> void:
 func _test_enemy_attacks_hero_for_wave_scaled_dmg() -> void:
 	_fresh_session_with_weapon([])
 	Combat.start_wave(3, false)
-	## Replace spawned enemies with exactly 1 known enemy so we can predict dmg.
+	## Replace spawned enemies with exactly 1 known enemy. Atk left at 0 so
+	## _enemy_attack falls back to Combat.base_atk(_current_wave).
 	_force_enemies([{"hp": 9999, "weak": &"", "resist": &""}])
 	var hp_before: int = GameState.hero.hp
 	Combat.step()
-	## Enemy dmg = 4 + floor(3*1.4) = 4 + 4 = 8 per turn from one enemy.
-	## (Bran also attacks the enemy, doesn't matter for the hero-hp check.)
+	## Stage D tier-scaled base_atk at W3 = 4 + floor(3*1.2) = 7.
 	var dmg: int = hp_before - GameState.hero.hp
-	_check("enemy hits hero for 4 + floor(wave*1.4) = 8 at wave 3",
-		dmg == 8, "dmg=%d" % dmg)
+	_check("enemy hits hero for base_atk(3) = 7",
+		dmg == 7, "dmg=%d" % dmg)
 	Combat.stop()
 
 func _test_hero_death_emits_wipe() -> void:
@@ -649,9 +670,9 @@ func _test_time_cap_force_fills_ult() -> void:
 
 ## ---------- Balance pass (forge-ux-balance-w10 branch) ----------
 
-func _test_total_waves_is_10() -> void:
-	_check("GameState.TOTAL_WAVES == 10",
-		GameState.TOTAL_WAVES == 10,
+func _test_total_waves_is_15() -> void:
+	_check("GameState.TOTAL_WAVES == 15",
+		GameState.TOTAL_WAVES == 15,
 		"got %d" % GameState.TOTAL_WAVES)
 
 func _test_bran_hp_base_120() -> void:
@@ -708,6 +729,282 @@ func _test_vex_unlock_wave_constant_6() -> void:
 	var v = MainT.VEX_UNLOCK_WAVE
 	_check("Main.VEX_UNLOCK_WAVE == 6",
 		v == 6, "got %s" % str(v))
+
+## ---------- Stage D — bosses + retry + 15-wave balance ----------
+
+const EnemyDataT = preload("res://scripts/data/enemy_data.gd")
+
+func _test_enemy_data_is_boss_default_false() -> void:
+	var fresh = EnemyDataT.new()
+	var v = fresh.get(&"is_boss")
+	_check("EnemyData() default is_boss == false (bool)",
+		typeof(v) == TYPE_BOOL and v == false,
+		"type=%d value=%s" % [typeof(v), str(v)])
+
+func _test_boss_slime_king_tres_loads() -> void:
+	var def = GameState.get_enemy_def(&"boss_slime_king")
+	var ok: bool = def != null \
+		and def.hp_base == 220 \
+		and bool(def.get(&"is_boss")) == true \
+		and int(def.get(&"atk_override")) == 18
+	_check("boss_slime_king tres: hp=220 atk=18 is_boss=true",
+		ok, "def=%s" % str(def))
+
+func _test_boss_iron_golem_tres_loads() -> void:
+	var def = GameState.get_enemy_def(&"boss_iron_golem")
+	var ok: bool = def != null \
+		and def.hp_base == 480 \
+		and bool(def.get(&"is_boss")) == true \
+		and int(def.get(&"atk_override")) == 28
+	_check("boss_iron_golem tres: hp=480 atk=28 is_boss=true",
+		ok, "def=%s" % str(def))
+
+func _test_boss_arcane_lich_tres_loads() -> void:
+	var def = GameState.get_enemy_def(&"boss_arcane_lich")
+	var ok: bool = def != null \
+		and def.hp_base == 850 \
+		and bool(def.get(&"is_boss")) == true \
+		and int(def.get(&"atk_override")) == 36
+	_check("boss_arcane_lich tres: hp=850 atk=36 is_boss=true",
+		ok, "def=%s" % str(def))
+
+func _test_revive_squad_for_retry_resets_all() -> void:
+	## Sets up Bran + Elara + Vex, kills everyone, calls revive helper, asserts
+	## all heroes back at max_hp / not dead / ult_used cleared / burn cleared,
+	## while gold + wave + inventory untouched.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	for h in GameState.all_heroes():
+		h.hp = 0
+		h.is_dead = true
+		h.ult_used = true
+		h.burn_stack = 2
+		h.last_target_name = &"junk"
+	GameState.gold = 42
+	GameState.wave = 5
+	var dummy_uid: int = GameState.next_uid()
+	GameState.inventory.append(InventoryItemT.new(dummy_uid, &"h_iron_edge", 3))
+	var inv_size_before: int = GameState.inventory.size()
+	if not GameState.has_method(&"revive_squad_for_retry"):
+		_check("GameState.revive_squad_for_retry exists", false, "method missing")
+		return
+	GameState.revive_squad_for_retry()
+	var all_revived: bool = true
+	for h in GameState.all_heroes():
+		if h.is_dead or h.hp != h.max_hp or h.ult_used or h.burn_stack != 0 or h.last_target_name != &"":
+			all_revived = false
+	var preserved: bool = GameState.gold == 42 \
+		and GameState.wave == 5 \
+		and GameState.inventory.size() == inv_size_before
+	_check("revive_squad_for_retry: heroes full HP + gold/wave/inv preserved",
+		all_revived and preserved,
+		"revived=%s gold=%d wave=%d inv=%d" % [str(all_revived), GameState.gold, GameState.wave, GameState.inventory.size()])
+
+func _test_wave_hp_mult_curve() -> void:
+	if not Combat.has_method(&"_wave_hp_mult"):
+		_check("Combat._wave_hp_mult exists", false, "method missing")
+		return
+	## Bands: 1-3 -> 0.85, 4-6 -> 1.00, 7-9 -> 1.10, 10-12 -> 1.20, 13-15 -> 1.30.
+	var samples = [
+		[1, 0.85], [2, 0.85], [3, 0.85],
+		[4, 1.00], [5, 1.00], [6, 1.00],
+		[7, 1.10], [8, 1.10], [9, 1.10],
+		[10, 1.20], [11, 1.20], [12, 1.20],
+		[13, 1.30], [14, 1.30], [15, 1.30],
+	]
+	var all_ok: bool = true
+	var bad: String = ""
+	for s in samples:
+		var w: int = s[0]
+		var expected: float = s[1]
+		var got: float = Combat._wave_hp_mult(w)
+		if abs(got - expected) > 0.001:
+			all_ok = false
+			bad = "W%d got %.2f expected %.2f" % [w, got, expected]
+			break
+	_check("Combat._wave_hp_mult curve matches band table",
+		all_ok, bad)
+
+func _test_base_atk_tier_scaled() -> void:
+	if not Combat.has_method(&"base_atk"):
+		_check("Combat.base_atk exists", false, "method missing")
+		return
+	## Per plan: W1=5 W2=6 W3=7 / W4=10 W5=11 W6=12 / W7=15 W8=16 W9=17 /
+	##           W10=21 W11=22 W12=23 / W13=27 W14=29 W15=30.
+	var expected: Array = [-1, 5, 6, 7, 10, 11, 12, 15, 16, 17, 21, 22, 23, 27, 29, 30]
+	var all_ok: bool = true
+	var bad: String = ""
+	for w in range(1, 16):
+		var got: int = Combat.base_atk(w)
+		if got != expected[w]:
+			all_ok = false
+			bad = "W%d got %d expected %d" % [w, got, expected[w]]
+			break
+	_check("Combat.base_atk tier-scaled matches plan",
+		all_ok, bad)
+
+func _test_boss_spawn_W5_single_slime_king() -> void:
+	GameState.new_session()
+	Combat.start_wave(5, false)
+	var n: int = GameState.enemies.size()
+	var first = GameState.enemies[0] if n > 0 else null
+	var ok: bool = n == 1 \
+		and first != null \
+		and first.get(&"id") == &"boss_slime_king" \
+		and bool(first.get(&"is_boss", false)) == true
+	_check("W5 spawns exactly 1 boss_slime_king w/ is_boss=true",
+		ok, "n=%d first=%s" % [n, str(first)])
+	Combat.stop()
+
+func _test_boss_spawn_W10_single_iron_golem() -> void:
+	GameState.new_session()
+	Combat.start_wave(10, false)
+	var n: int = GameState.enemies.size()
+	var first = GameState.enemies[0] if n > 0 else null
+	var ok: bool = n == 1 \
+		and first != null \
+		and first.get(&"id") == &"boss_iron_golem" \
+		and bool(first.get(&"is_boss", false)) == true
+	_check("W10 spawns exactly 1 boss_iron_golem w/ is_boss=true",
+		ok, "n=%d first=%s" % [n, str(first)])
+	Combat.stop()
+
+func _test_boss_spawn_W15_single_arcane_lich() -> void:
+	GameState.new_session()
+	Combat.start_wave(15, false)
+	var n: int = GameState.enemies.size()
+	var first = GameState.enemies[0] if n > 0 else null
+	var ok: bool = n == 1 \
+		and first != null \
+		and first.get(&"id") == &"boss_arcane_lich" \
+		and bool(first.get(&"is_boss", false)) == true
+	_check("W15 spawns exactly 1 boss_arcane_lich w/ is_boss=true",
+		ok, "n=%d first=%s" % [n, str(first)])
+	Combat.stop()
+
+func _test_boss_wave_gold_doubled() -> void:
+	## At W5 boss kill: gold reward = (5 + 5*2) * 2 = 30.
+	_fresh_session_with_weapon([])
+	GameState.gold = 0
+	GameState.emit_signal(&"gold_changed", 0)
+	GameState.set_wave(5)
+	Combat.start_wave(5, false)
+	_force_enemies([{"id": &"boss_slime_king", "hp": 1, "max_hp": 220, "is_boss": true, "atk": 18}])
+	Combat.step()
+	_check("boss wave (W5) clears for (5+5*2)*2 = 30 gold",
+		GameState.gold == 30, "gold=%d" % GameState.gold)
+	Combat.stop()
+
+func _test_slime_king_heals_8_above_50pct() -> void:
+	## Boss at hp=200/max=220 (~91%). Bran (atk 6) deals 6/tick. After 3 ticks
+	## without heal: 200-18=182. Heal on tick 3 (counter %3 == 0) restores +8.
+	## Expected end hp = 190.
+	_fresh_session_with_weapon([])
+	GameState.set_wave(5)
+	Combat.start_wave(5, false)
+	_force_enemies([{"id": &"boss_slime_king", "hp": 200, "max_hp": 220, "is_boss": true, "atk": 18, "weak": &"", "resist": &""}])
+	GameState.hero.hp = 9999
+	GameState.hero.max_hp = 9999
+	for _i in 3:
+		Combat.step()
+	var end_hp: int = GameState.enemies[0].hp
+	_check("slime_king heals +8 on tick 3 while hp > 50%%",
+		end_hp == 190, "hp=%d (expected 190 = 200-18+8)" % end_hp)
+	Combat.stop()
+
+func _test_slime_king_no_heal_below_50pct() -> void:
+	## Boss at hp=80/max=220 (~36%). Bran 6/tick. After 3 ticks: 80-18 = 62, no heal.
+	_fresh_session_with_weapon([])
+	GameState.set_wave(5)
+	Combat.start_wave(5, false)
+	_force_enemies([{"id": &"boss_slime_king", "hp": 80, "max_hp": 220, "is_boss": true, "atk": 18, "weak": &"", "resist": &""}])
+	GameState.hero.hp = 9999
+	GameState.hero.max_hp = 9999
+	for _i in 3:
+		Combat.step()
+	var end_hp: int = GameState.enemies[0].hp
+	_check("slime_king does NOT heal at hp <= 50%%",
+		end_hp == 62, "hp=%d (expected 62 = 80-18, no heal)" % end_hp)
+	Combat.stop()
+
+func _test_iron_golem_aoe_every_4_ticks() -> void:
+	## 3-hero squad. Golem atk=28. Normal single-target hits 1 hero/tick for 28.
+	## On tick 4, golem fires AoE: all 3 alive heroes take floor(28*0.7) = 19.
+	## Sum hero hp loss after 4 ticks = 28*4 (single) + 19*3 (AoE on t4) = 112 + 57 = 169.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	## Boost hero HP so no one dies from AoE+attacks (would skew the sum).
+	for h in GameState.all_heroes():
+		h.max_hp = 9999
+		h.hp = 9999
+	GameState.set_wave(10)
+	Combat.start_wave(10, false)
+	_force_enemies([{"id": &"boss_iron_golem", "hp": 9999, "max_hp": 480, "is_boss": true, "atk": 28, "weak": &"", "resist": &""}])
+	var max_snapshot: Array = []
+	for h in GameState.all_heroes():
+		max_snapshot.append(h.hp)
+	for _i in 4:
+		Combat.step()
+	var total_loss: int = 0
+	var idx: int = 0
+	for h in GameState.all_heroes():
+		total_loss += max_snapshot[idx] - h.hp
+		idx += 1
+	_check("iron_golem AoE on tick 4: total hero hp loss == 169",
+		total_loss == 169, "loss=%d (expected 169)" % total_loss)
+	Combat.stop()
+
+func _test_arcane_lich_phase1_atk_bump_below_66pct() -> void:
+	## Lich at hp=510/max=850 (60% < 66%). On first tick, phase 1 fires: atk goes
+	## floor(36*1.2) = 43. Persists on subsequent ticks (one-shot via phase_1_applied).
+	_fresh_session_with_weapon([])
+	GameState.set_wave(15)
+	Combat.start_wave(15, false)
+	_force_enemies([{"id": &"boss_arcane_lich", "hp": 510, "max_hp": 850, "is_boss": true, "atk": 36, "weak": &"", "resist": &""}])
+	GameState.hero.hp = 9999
+	GameState.hero.max_hp = 9999
+	Combat.step()
+	var atk_after_t1: int = GameState.enemies[0].atk
+	Combat.step()
+	var atk_after_t2: int = GameState.enemies[0].atk
+	_check("arcane_lich phase 1 (<66%%): atk floor(36*1.2)=43, persists",
+		atk_after_t1 == 43 and atk_after_t2 == 43,
+		"atk_t1=%d atk_t2=%d (expected 43,43)" % [atk_after_t1, atk_after_t2])
+	Combat.stop()
+
+func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
+	## Lich at hp=255/max=850 (30% < 33%). phase_1_applied=true (skip phase 1).
+	## Elara + Vex pre-killed so single-target attack lands on Bran. On tick 1
+	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.5).
+	## Bran alone: takes 43 (single) + 60 (AoE = floor(120*0.5)) = 103 hp loss.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	var bran = GameState.get_hero(&"bran")
+	var elara = GameState.get_hero(&"elara")
+	var vex = GameState.get_hero(&"vex")
+	elara.hp = 0; elara.is_dead = true
+	vex.hp = 0; vex.is_dead = true
+	var bran_start: int = bran.hp
+	GameState.set_wave(15)
+	Combat.start_wave(15, false)
+	_force_enemies([{
+		"id": &"boss_arcane_lich",
+		"hp": 255,
+		"max_hp": 850,
+		"is_boss": true,
+		"atk": 43,
+		"phase_1_applied": true,
+		"weak": &"",
+		"resist": &"",
+	}])
+	Combat.step()
+	var bran_loss: int = bran_start - bran.hp
+	_check("arcane_lich phase 2 (<33%%): Bran-solo loses 43 (single) + 60 (AoE 50%%) = 103",
+		bran_loss == 103, "loss=%d (expected 103)" % bran_loss)
+	Combat.stop()
 
 ## ---------- Test helpers ----------
 

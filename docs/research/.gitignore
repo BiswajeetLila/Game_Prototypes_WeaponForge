@@ -1,0 +1,21 @@
+# Heavy raw-capture research artifacts — version the synthesized .md only.
+# Raw inputs (video, review dumps, scraped HTML) live local-only; recover from
+# source pipelines if needed. Keeps the repo lean.
+
+# Raw video captures (~800MB of input.mp4 etc)
+**/Video Analysis/
+*.mp4
+*.mov
+*.mkv
+*.webm
+
+# Raw review scrape dumps (synthesized into *.md analysis packs)
+**/Play Store Reviews/**
+*.jsonl
+*.csv
+
+# Raw scraped storefront HTML
+**/Web Sources/**
+*.html
+
+# Keep: *.md (all synthesis docs), *.png (mockups), small *.json metadata

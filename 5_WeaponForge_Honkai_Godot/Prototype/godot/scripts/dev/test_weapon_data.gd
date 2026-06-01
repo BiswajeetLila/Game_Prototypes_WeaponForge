@@ -24,6 +24,11 @@ func _ready() -> void:
 	_test_forge_part_same_tier_advances_half()
 	_test_forge_part_one_tier_higher_upgrades_instantly()
 	_test_forge_part_lower_tier_no_progress()
+	_test_forge_part_two_tiers_higher_instant_plus_bank()
+	_test_forge_part_three_tiers_higher_banks_half_no_instant()
+	_test_forge_part_three_tiers_higher_two_parts_reach_target()
+	_test_forge_part_four_tiers_higher_banks_third()
+	_test_forge_part_four_tiers_higher_three_parts_reach_target()
 	_summary()
 	_render_to_ui()
 	## Headless auto-quit with exit code = failure count (0 = all green).
@@ -81,6 +86,59 @@ func _test_forge_part_lower_tier_no_progress() -> void:
 	_check("lower-tier part: no upgrade", upgraded == false, "upgraded=%s" % upgraded)
 	_check("lower-tier part: progress unchanged at 0", is_equal_approx(w.forge_progress, 0.0),
 		"progress=%f" % w.forge_progress)
+
+func _test_forge_part_two_tiers_higher_instant_plus_bank() -> void:
+	## Forge Math diff==2 (spec §9): Common(0) weapon + Epic(2) part ->
+	## instant upgrade STRAIGHT to Epic(2), AND bank 50% toward Legendary(3).
+	var w = WeaponDataT.new()
+	w.rarity_idx = 0
+	var upgraded: bool = w.apply_forge_part(2)
+	_check("diff==2 part: upgraded", upgraded == true, "upgraded=%s" % upgraded)
+	_check("diff==2 part: instant jump to Epic(2)", w.rarity_idx == 2, "rarity_idx=%d" % w.rarity_idx)
+	_check("diff==2 part: 50%% banked toward Legendary(3)", is_equal_approx(w.forge_progress, 0.5),
+		"progress=%f" % w.forge_progress)
+
+func _test_forge_part_three_tiers_higher_banks_half_no_instant() -> void:
+	## Forge Math diff==3 (spec §9): Common(0) + Legendary(3) part -> NO instant
+	## upgrade; bank 50% toward Y(3). Need 2 such parts to reach Y.
+	var w = WeaponDataT.new()
+	w.rarity_idx = 0
+	var upgraded: bool = w.apply_forge_part(3)
+	_check("diff==3 part: no instant upgrade", upgraded == false, "upgraded=%s" % upgraded)
+	_check("diff==3 part: rarity unchanged (still Common)", w.rarity_idx == 0, "rarity_idx=%d" % w.rarity_idx)
+	_check("diff==3 part: 50%% banked", is_equal_approx(w.forge_progress, 0.5), "progress=%f" % w.forge_progress)
+
+func _test_forge_part_three_tiers_higher_two_parts_reach_target() -> void:
+	## Forge Math diff==3 x2: two Legendary(3) parts on a Common(0) weapon
+	## fill the bank and reach Legendary(3).
+	var w = WeaponDataT.new()
+	w.rarity_idx = 0
+	w.apply_forge_part(3)                       ## 50% banked, still Common
+	var upgraded: bool = w.apply_forge_part(3)  ## second part fills -> upgrade
+	_check("diff==3 x2: second part upgrades", upgraded == true, "upgraded=%s" % upgraded)
+	_check("diff==3 x2: reached Legendary(3)", w.rarity_idx == 3, "rarity_idx=%d" % w.rarity_idx)
+
+func _test_forge_part_four_tiers_higher_banks_third() -> void:
+	## Forge Math diff==4 (spec §9): Common(0) + Mythic(4) part -> bank 1/3 toward
+	## Y(4), no instant upgrade. Need 3 such parts to reach Y.
+	var w = WeaponDataT.new()
+	w.rarity_idx = 0
+	var upgraded: bool = w.apply_forge_part(4)
+	_check("diff==4 part: no instant upgrade", upgraded == false, "upgraded=%s" % upgraded)
+	_check("diff==4 part: rarity unchanged", w.rarity_idx == 0, "rarity_idx=%d" % w.rarity_idx)
+	_check("diff==4 part: 1/3 banked", is_equal_approx(w.forge_progress, 1.0 / 3.0),
+		"progress=%f" % w.forge_progress)
+
+func _test_forge_part_four_tiers_higher_three_parts_reach_target() -> void:
+	## Forge Math diff==4 x3: three Mythic(4) parts on a Common(0) weapon
+	## fill the bank and reach Mythic(4).
+	var w = WeaponDataT.new()
+	w.rarity_idx = 0
+	w.apply_forge_part(4)                       ## 1/3
+	w.apply_forge_part(4)                       ## 2/3
+	var upgraded: bool = w.apply_forge_part(4)  ## 3/3 -> upgrade
+	_check("diff==4 x3: third part upgrades", upgraded == true, "upgraded=%s" % upgraded)
+	_check("diff==4 x3: reached Mythic(4)", w.rarity_idx == 4, "rarity_idx=%d" % w.rarity_idx)
 
 ## ---------- Test helpers ----------
 

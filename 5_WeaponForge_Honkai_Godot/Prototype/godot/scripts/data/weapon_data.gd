@@ -49,11 +49,14 @@ func get_hp() -> int:
 ## weapon's rarity tier increased. Class-match is enforced by the caller; this
 ## operates purely on rarity indices.
 ##
-## Implemented cases (minimal, TDD-driven):
-##   part < weapon   -> no contribution (caller refunds as essence)
-##   part == weapon  -> +50% progress; upgrade when progress reaches 100%
-##   part >  weapon  -> instant +1 tier, progress reset
-## TODO(next cycle): diff==2 instant+bank-50%, diff==3 bank-50%, diff==4 bank-33%.
+## Cases by diff = part_idx - rarity_idx (spec §9 ladder, 0..4):
+##   diff <  0  -> no contribution (caller refunds as essence)
+##   diff == 0  -> +50% progress; upgrade when progress reaches 100%
+##   diff == 1  -> instant single-tier upgrade to the part's tier, no bank
+##   diff == 2  -> instant jump straight to the part's tier + 50% banked toward the next
+##   diff == 3  -> no instant upgrade; bank 1/2 toward the part's tier (2 parts reach it)
+##   diff == 4  -> no instant upgrade; bank 1/3 toward the part's tier (3 parts reach it)
+const _FORGE_FILL: float = 1.0 - 0.000001  ## float-safe completion threshold (handles 3×(1/3))
 func apply_forge_part(part_idx: int) -> bool:
 	var diff: int = part_idx - rarity_idx
 	if diff < 0:
@@ -65,7 +68,20 @@ func apply_forge_part(part_idx: int) -> bool:
 			forge_progress -= 1.0
 			return true
 		return false
-	## diff >= 1: at least one tier higher -> instant single-tier upgrade.
-	rarity_idx += 1
-	forge_progress = 0.0
-	return true
+	if diff == 1:
+		rarity_idx = part_idx
+		forge_progress = 0.0
+		return true
+	if diff == 2:
+		rarity_idx = part_idx
+		forge_progress = 0.5
+		return true
+	## diff >= 3: large gap. No instant upgrade — bank fractional progress toward the
+	## part's tier (Y). Assumes a run of same-rarity parts (the spec §9 banking model).
+	var inc: float = 0.5 if diff == 3 else (1.0 / 3.0)
+	forge_progress += inc
+	if forge_progress >= _FORGE_FILL:
+		rarity_idx = part_idx
+		forge_progress = 0.0
+		return true
+	return false

@@ -29,6 +29,11 @@ func _ready() -> void:
 	_test_forge_part_three_tiers_higher_two_parts_reach_target()
 	_test_forge_part_four_tiers_higher_banks_third()
 	_test_forge_part_four_tiers_higher_three_parts_reach_target()
+	_test_get_crit_flat()
+	_test_get_ult_rate_flat()
+	_test_get_all_tags_rune_and_derived()
+	_test_get_all_tags_empty_when_plain()
+	_test_get_hp_bonus_aliases_get_hp()
 	_summary()
 	_render_to_ui()
 	## Headless auto-quit with exit code = failure count (0 = all green).
@@ -139,6 +144,69 @@ func _test_forge_part_four_tiers_higher_three_parts_reach_target() -> void:
 	var upgraded: bool = w.apply_forge_part(4)  ## 3/3 -> upgrade
 	_check("diff==4 x3: third part upgrades", upgraded == true, "upgraded=%s" % upgraded)
 	_check("diff==4 x3: reached Mythic(4)", w.rarity_idx == 4, "rarity_idx=%d" % w.rarity_idx)
+
+## ---------- Combat-interface accessors (Stage 1: make WeaponData a drop-in for the
+## legacy socket weapon's combat surface; combat.gd reads these four off hero.weapon) ----------
+
+func _test_get_crit_flat() -> void:
+	## crit% is a flat weapon property — NOT star-scaled (legacy crit came from parts,
+	## not star-up; scaling crit% would inflate it absurdly).
+	var w = WeaponDataT.new()
+	if not w.has_method(&"get_crit"):
+		_check("WeaponData has get_crit()", false, "method missing (RED)")
+		return
+	w.base_crit = 15
+	w.star_tier = 5
+	_check("get_crit() returns flat base_crit (no star scaling)", w.get_crit() == 15,
+		"got %d" % w.get_crit())
+
+func _test_get_ult_rate_flat() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method(&"get_ult_rate"):
+		_check("WeaponData has get_ult_rate()", false, "method missing (RED)")
+		return
+	w.base_ult_rate = 20
+	w.star_tier = 5
+	_check("get_ult_rate() returns flat base_ult_rate (no star scaling)", w.get_ult_rate() == 20,
+		"got %d" % w.get_ult_rate())
+
+func _test_get_all_tags_rune_and_derived() -> void:
+	## Mirrors legacy Weapon.get_all_tags(): explicit element tag (the baked rune) plus
+	## derived "crit" (any crit%) and "charge" (any ult_rate%).
+	var w = WeaponDataT.new()
+	if not w.has_method(&"get_all_tags"):
+		_check("WeaponData has get_all_tags()", false, "method missing (RED)")
+		return
+	w.rune = &"fire"
+	w.base_crit = 10
+	w.base_ult_rate = 5
+	var tags: Array = w.get_all_tags()
+	_check("get_all_tags has rune element 'fire'", &"fire" in tags, "tags=%s" % str(tags))
+	_check("get_all_tags derives 'crit' from crit%%", &"crit" in tags, "tags=%s" % str(tags))
+	_check("get_all_tags derives 'charge' from ult_rate%%", &"charge" in tags, "tags=%s" % str(tags))
+	_check("get_all_tags size == 3 (rune+crit+charge)", tags.size() == 3, "tags=%s" % str(tags))
+
+func _test_get_all_tags_empty_when_plain() -> void:
+	## No rune, no crit, no ult_rate -> no tags.
+	var w = WeaponDataT.new()
+	if not w.has_method(&"get_all_tags"):
+		_check("WeaponData has get_all_tags()", false, "method missing (RED)")
+		return
+	_check("plain weapon: get_all_tags empty", w.get_all_tags().is_empty(),
+		"tags=%s" % str(w.get_all_tags()))
+
+func _test_get_hp_bonus_aliases_get_hp() -> void:
+	## HeroState.refresh_max_hp() calls weapon.get_hp_bonus(); expose it as an alias of
+	## get_hp() so WeaponData drops into the legacy hp-bonus call site unchanged.
+	var w = WeaponDataT.new()
+	if not w.has_method(&"get_hp_bonus"):
+		_check("WeaponData has get_hp_bonus()", false, "method missing (RED)")
+		return
+	w.base_hp = 200
+	w.star_tier = 3
+	_check("get_hp_bonus() == 220 (★3 of 200)", w.get_hp_bonus() == 220, "got %d" % w.get_hp_bonus())
+	_check("get_hp_bonus() aliases get_hp()", w.get_hp_bonus() == w.get_hp(),
+		"bonus=%d hp=%d" % [w.get_hp_bonus(), w.get_hp()])
 
 ## ---------- Test helpers ----------
 

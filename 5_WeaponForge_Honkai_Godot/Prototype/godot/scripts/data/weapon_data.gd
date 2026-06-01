@@ -22,6 +22,10 @@ extends Resource
 ## ---------- Stats ----------
 @export var base_atk: int = 0
 @export var base_hp: int = 0
+## Combat-interface stats — flat, NOT star-scaled (mirror the legacy socket weapon's
+## crit% / ult-fill%; scaling crit% by star tier would inflate it absurdly).
+@export var base_crit: int = 0       ## crit chance %, 0-100
+@export var base_ult_rate: int = 0   ## ult-gauge fill bonus %
 
 ## ---------- Star-up (spec Q4: 10 tiers, +5% stats per tier) ----------
 @export var star_tier: int = 1                  ## 1..10
@@ -43,6 +47,33 @@ func get_atk() -> int:
 
 func get_hp() -> int:
 	return int(floor(float(base_hp) * _star_mult()))
+
+## ---------- Combat interface (drop-in for the legacy socket weapon) ----------
+## combat.gd reads get_atk/get_crit/get_ult_rate/get_all_tags off hero.weapon, and
+## HeroState.refresh_max_hp() reads get_hp_bonus. Stage 1 adds these so WeaponData can
+## stand in for the legacy Weapon's combat surface (the actual switch is a later stage).
+
+func get_crit() -> int:
+	return base_crit
+
+func get_ult_rate() -> int:
+	return base_ult_rate
+
+## Alias of get_hp() — HeroState calls weapon.get_hp_bonus() on the legacy weapon.
+func get_hp_bonus() -> int:
+	return get_hp()
+
+## Explicit element tag (the baked rune) + derived "crit"/"charge" tags. Mirrors
+## legacy Weapon.get_all_tags(); a unitary weapon contributes a single element tag.
+func get_all_tags() -> Array:
+	var out: Array = []
+	if rune != &"":
+		out.append(rune)
+	if get_crit() > 0:
+		out.append(&"crit")
+	if get_ult_rate() > 0:
+		out.append(&"charge")
+	return out
 
 ## ---------- Forge Math (Phase-1 part-pull) ----------
 ## Apply a pulled part of rarity `part_idx` to this weapon. Returns true if the

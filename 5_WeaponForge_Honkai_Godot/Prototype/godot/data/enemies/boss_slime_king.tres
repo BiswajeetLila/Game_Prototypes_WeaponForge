@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"boss_slime_king"
+name = "Slime King"
+hp_base = 220
+hp_per_wave = 0
+dmg_base = 0
+dmg_per_wave = 0.0
+is_boss = true
+atk_override = 18
+weak_tag = &"ice"
+resist_tag = &""

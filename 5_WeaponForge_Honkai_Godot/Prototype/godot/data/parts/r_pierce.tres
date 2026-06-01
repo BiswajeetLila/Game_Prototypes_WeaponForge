@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/r_pierce.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"r_pierce"
+slot = &"rune"
+name = "Pierce Rune"
+desc = "Adds PIERCE tag and +3 ATK. Combines with fire / ice / crit / charge for Hellfire / Frostbite / Razor Wind / Skewer."
+icon = ExtResource("2")
+cost = 4
+atk = 3
+tag = &"pierce"

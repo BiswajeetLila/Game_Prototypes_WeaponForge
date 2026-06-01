@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/vfx/fire_puff.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"quickdraw"
+name = "Quickdraw"
+desc = "Ult gauge fills 30% faster. Triggers from any ult_rate-bearing part paired with a fire tag."
+icon = ExtResource("2")
+patterns = [[&"charge", &"fire"]]
+bonus = {
+"ult_boost": 0.30
+}

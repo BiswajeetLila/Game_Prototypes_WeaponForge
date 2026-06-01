@@ -15,3 +15,9 @@ dist-build/
 
 # Note: AI-generated PNG assets (heroes, mockups) ARE tracked — they're part of the prototype.
 .gstack/
+
+# Godot 4 — engine import cache (regenerated on open; large, must not be tracked).
+# Note: per-asset *.import sidecars and *.uid files ARE tracked (UID stability); only
+# the .godot/ cache dir and Mono build output are ignored.
+.godot/
+.mono/

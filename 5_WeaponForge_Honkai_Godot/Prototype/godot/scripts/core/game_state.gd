@@ -54,12 +54,14 @@ var parts_by_id: Dictionary = {}      ## StringName -> PartData
 var heroes_by_id: Dictionary = {}     ## StringName -> HeroData
 var enemies_by_id: Dictionary = {}    ## StringName -> EnemyData
 var recipes_by_id: Dictionary = {}    ## StringName -> RecipeData
+var weapons_by_id: Dictionary = {}    ## StringName -> WeaponData (pull catalog, increment #2)
 
 ## Ordered ids for stable iteration / shop pool. Untyped Array — Dictionary.keys()
 ## returns Array, not Array[StringName].
 var part_ids: Array = []
 var enemy_ids: Array = []
 var recipe_ids: Array = []
+var weapon_ids: Array = []
 
 ## ---------- Per-run state ----------
 
@@ -130,10 +132,12 @@ func _load_catalogs() -> void:
 	heroes_by_id = _load_dir("res://data/heroes/", "HeroData")
 	enemies_by_id = _load_dir("res://data/enemies/", "EnemyData")
 	recipes_by_id = _load_dir("res://data/recipes/", "RecipeData")
+	weapons_by_id = _load_dir("res://data/weapons/", "WeaponData")
 
 	part_ids = parts_by_id.keys()
 	enemy_ids = enemies_by_id.keys()
 	recipe_ids = recipes_by_id.keys()
+	weapon_ids = weapons_by_id.keys()
 
 func _load_dir(dir_path: String, _expect_class: String) -> Dictionary:
 	var out: Dictionary = {}

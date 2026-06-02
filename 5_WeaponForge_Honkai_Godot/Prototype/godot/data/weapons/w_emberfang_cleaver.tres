@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_emberfang_cleaver"
+name = "Emberfang Cleaver"
+cls = &"warrior"
+ability = "Cleave"
+rune = &"fire"
+base_atk = 18
+base_hp = 25
+base_crit = 5
+base_ult_rate = 5

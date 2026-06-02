@@ -28,6 +28,7 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 4
@@ -38,6 +39,7 @@ layout_mode = 2
 
 [node name="BattleView" parent="VBox" instance=ExtResource("3")]
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="SquadBar" parent="VBox" instance=ExtResource("4")]
 unique_name_in_owner = true

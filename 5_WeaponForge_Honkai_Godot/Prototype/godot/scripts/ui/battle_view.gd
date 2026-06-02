@@ -46,9 +46,20 @@ static func cap_pop_layer(layer: Control, max_pops: int) -> void:
 @onready var _hero_anchor: Control = %HeroAnchor
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
 
+var _hero_column: VBoxContainer = null
+var _hero_sprites: Dictionary = {}   ## hero_id -> TextureRect
+
 func _ready() -> void:
-	if GameState.hero != null and GameState.hero.data != null:
-		_hero_portrait.texture = GameState.hero.data.portrait
+	## Full squad renders in the arena (legacy single-portrait hidden).
+	_hero_portrait.visible = false
+	_hero_anchor.custom_minimum_size = Vector2(60, 176)
+	_hero_column = VBoxContainer.new()
+	_hero_column.add_theme_constant_override(&"separation", 8)
+	_hero_column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_hero_anchor.add_child(_hero_column)
+	GameState.hero_unlocked.connect(func(_id): _rebuild_hero_column())
+	GameState.hero_hp_changed.connect(_on_hero_vitals_changed)
+	_rebuild_hero_column()
 	GameState.enemies_spawned.connect(_rebuild_enemy_row)
 	GameState.enemy_hp_changed.connect(_on_enemy_hp_changed)
 	GameState.enemy_status_changed.connect(_on_enemy_status_changed)
@@ -59,6 +70,29 @@ func _ready() -> void:
 	Combat.ult_fired.connect(_on_ult_fired)
 	_rebuild_enemy_row()
 	_rebuild_recipe_chips(&"bran")
+
+func _rebuild_hero_column() -> void:
+	for c in _hero_column.get_children():
+		c.queue_free()
+	_hero_sprites.clear()
+	for id in GameState.squad_order:
+		var h = GameState.get_hero(id)
+		if h == null or h.data == null:
+			continue
+		var tr := TextureRect.new()
+		tr.custom_minimum_size = Vector2(48, 48)
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr.texture = h.data.portrait
+		_hero_column.add_child(tr)
+		_hero_sprites[id] = tr
+
+func _on_hero_vitals_changed(hero_id: StringName) -> void:
+	var tr = _hero_sprites.get(hero_id)
+	var h = GameState.get_hero(hero_id)
+	if tr == null or h == null:
+		return
+	tr.modulate = Color(0.35, 0.35, 0.35) if h.is_dead else Color(1, 1, 1)
 
 func _rebuild_recipe_chips(_hero_id: StringName) -> void:
 	for child in _recipe_chips.get_children():

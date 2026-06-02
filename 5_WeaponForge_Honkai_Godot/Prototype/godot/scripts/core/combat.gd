@@ -142,7 +142,7 @@ func step() -> void:
 
 	## 1. Heroes attack. Each alive squad member attacks one random alive enemy.
 	for h in GameState.active_heroes():
-		if h.weapon != null:
+		if h.has_weapon():
 			_write_breadcrumb_phase(StringName("tick_hero_attack:%s" % String(h.data.id)))
 			_hero_attack(h)
 	_write_breadcrumb_phase(&"after_hero_loop")
@@ -225,7 +225,7 @@ func fire_ult(hero_id: StringName) -> bool:
 		return false
 	if hero.ult_gauge < ULT_GAUGE_MAX:
 		return false
-	if hero.weapon == null:
+	if not hero.has_weapon():
 		return false
 	var alive: Array = _alive_enemy_indices()
 	if alive.is_empty():
@@ -256,7 +256,7 @@ func fire_ult(hero_id: StringName) -> bool:
 
 func _ult_whirlwind(hero, alive: Array) -> int:
 	## Warrior Whirlwind = AoE all alive enemies × ult_atk_multiplier.
-	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
+	var total_atk: int = hero.data.atk_base + hero.eff_atk()
 	var ult_atk: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
 	var total: int = 0
 	for idx in alive:
@@ -272,7 +272,7 @@ func _ult_meteor(hero, alive: Array) -> int:
 	## to the highest-HP enemy (capped by stack_cap; effectively no-op unless
 	## the caster has Inferno equipped for the stack_burn payoff). The narrow
 	## scope avoids refactoring burn to per-(hero, enemy).
-	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
+	var total_atk: int = hero.data.atk_base + hero.eff_atk()
 	var ult_atk: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
 	var primary_idx: int = _highest_hp_idx(alive)
 	var primary = GameState.enemies[primary_idx]
@@ -295,7 +295,7 @@ func _ult_shadowstep(hero, alive: Array) -> int:
 	## is_crit=true is emitted on the hit signal for VFX / future recipe hooks,
 	## but does NOT additionally multiply by CRIT_MULT — locking the ult damage
 	## ceiling at the multiplier alone (3× by default).
-	var total_atk: int = hero.data.atk_base + hero.weapon.get_atk()
+	var total_atk: int = hero.data.atk_base + hero.eff_atk()
 	var dmg: int = int(floor(float(total_atk) * float(hero.data.ult_atk_multiplier)))
 	var target_idx: int = _highest_hp_idx(alive)
 	var enemy = GameState.enemies[target_idx]
@@ -325,10 +325,10 @@ func _hero_attack(hero) -> void:
 
 	## Total atk = hero baseAtk + sum of part contributions (matches prototype's
 	## weaponStats(hero) formula). weapon.get_atk() alone is parts-only.
-	var stats_atk: int = hero.data.atk_base + hero.weapon.get_atk()
-	var stats_crit: int = hero.weapon.get_crit()
-	var stats_ultrate: int = hero.weapon.get_ult_rate()
-	var weapon_tags: Array = hero.weapon.get_all_tags()
+	var stats_atk: int = hero.data.atk_base + hero.eff_atk()
+	var stats_crit: int = hero.eff_crit()
+	var stats_ultrate: int = hero.eff_ult_rate()
+	var weapon_tags: Array = hero.eff_tags()
 	var bonuses: Dictionary = Recipes.get_recipe_bonuses(hero)
 
 	## Crit (Razor Wind adds flat crit_bonus to the % roll).

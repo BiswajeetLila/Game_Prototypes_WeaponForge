@@ -16,7 +16,13 @@ var hp: int = 0
 var max_hp: int = 0       ## recomputed from data.hp_base + weapon.get_hp_bonus()
 var is_dead: bool = false
 
-var weapon = null         ## Weapon
+var weapon = null         ## Weapon (legacy 3-socket aggregator — recipes/shop/merge still ride it)
+
+## Pulled WeaponData (bridge #1). Null = pure legacy behavior. When equipped it
+## REPLACES the socket weapon's combat contribution (atk/crit/ult_rate/hp/tags)
+## under STAT_SOURCE_AUTO — never stacked on top (additive double-stacking would
+## poison playtest balance signal; ADDITIVE exists only as an explicit debug mode).
+var weapon_data = null    ## WeaponData
 
 ## Persistent ult gauge 0..100. Carries across waves.
 var ult_gauge: float = 0.0
@@ -34,12 +40,66 @@ func _init(p_data) -> void:
 	hp = max_hp
 
 func refresh_max_hp() -> void:
-	var bonus: int = weapon.get_hp_bonus() if weapon != null else 0
-	var new_max: int = data.hp_base + bonus
-	var delta: int = new_max - max_hp
-	max_hp = new_max
-	## Equipping +HP raises current HP by the same amount; unequipping clamps down.
-	hp = clampi(hp + delta, 0, max_hp)
+	var new_max: int = data.hp_base + eff_hp_bonus()
+	if weapon_data != null:
+		## weapon_data path (entry contract #2): recompute max, CLAMP current,
+		## NEVER refill — blocks the equip-swap free-heal exploit.
+		max_hp = new_max
+		hp = clampi(hp, 0, max_hp)
+	else:
+		## Legacy socket path keeps its deliberate historical behavior:
+		## equipping +HP raises current HP by the same amount; unequipping clamps.
+		var delta: int = new_max - max_hp
+		max_hp = new_max
+		hp = clampi(hp + delta, 0, max_hp)
+
+## Equip/unequip a pulled WeaponData (null = unequip). HP transition always uses
+## the clamp rule in BOTH directions: no refill on equip, no delta-damage on unequip.
+func equip_weapon_data(wd) -> void:
+	weapon_data = wd
+	max_hp = data.hp_base + eff_hp_bonus()
+	hp = clampi(hp, 0, max_hp)
+
+## ---------- Effective combat stats (the bridge combat.gd reads) ----------
+## Source selection per GameState.combat_stat_source:
+##   AUTO        -> weapon_data if equipped, else legacy sockets (replacement)
+##   LEGACY_ONLY / PULLED_ONLY -> forced single source (playtest signal isolation)
+##   ADDITIVE    -> both summed (explicitly experimental)
+
+func has_weapon() -> bool:
+	return weapon != null or weapon_data != null
+
+func eff_atk() -> int:
+	return _pick(weapon.get_atk() if weapon != null else 0,
+		weapon_data.get_atk() if weapon_data != null else 0)
+
+func eff_crit() -> int:
+	return _pick(weapon.get_crit() if weapon != null else 0,
+		weapon_data.get_crit() if weapon_data != null else 0)
+
+func eff_ult_rate() -> int:
+	return _pick(weapon.get_ult_rate() if weapon != null else 0,
+		weapon_data.get_ult_rate() if weapon_data != null else 0)
+
+func eff_hp_bonus() -> int:
+	return _pick(weapon.get_hp_bonus() if weapon != null else 0,
+		weapon_data.get_hp_bonus() if weapon_data != null else 0)
+
+func eff_tags() -> Array:
+	return _pick(weapon.get_all_tags() if weapon != null else [],
+		weapon_data.get_all_tags() if weapon_data != null else [])
+
+## Selector shared by all eff_* reads. `+` sums ints and concatenates tag Arrays.
+func _pick(legacy_val, pulled_val):
+	match GameState.combat_stat_source:
+		GameState.STAT_SOURCE_LEGACY_ONLY:
+			return legacy_val
+		GameState.STAT_SOURCE_PULLED_ONLY:
+			return pulled_val
+		GameState.STAT_SOURCE_ADDITIVE:
+			return legacy_val + pulled_val
+		_:
+			return pulled_val if weapon_data != null else legacy_val
 
 func reset_for_fight() -> void:
 	ult_used = false

@@ -28,7 +28,8 @@ signal gold_changed(new_gold: int)
 signal wave_changed(new_wave: int)
 signal shop_changed                       ## shop_parts mutated
 signal inventory_changed                  ## inventory mutated
-signal weapon_changed(hero_id: StringName) ## any of head/hilt/rune mutated
+signal weapon_changed(hero_id: StringName) ## any of head/hilt/rune mutated (LEGACY sockets)
+signal weapon_data_changed(hero_id: StringName) ## pulled WeaponData equipped/unequipped (bridge #1)
 signal hero_hp_changed(hero_id: StringName)
 signal hero_ult_changed(hero_id: StringName)
 signal recipe_discovered(recipe_id: StringName)
@@ -71,6 +72,17 @@ const BOSS_WAVES: Array = [5, 10, 15]
 
 var wave: int = 1
 var gold: int = STARTING_GOLD
+
+## ---------- Combat stat source (bridge #1 debug toggle, entry contract #3) ----------
+## AUTO = weapon_data replaces sockets when equipped (default, ships).
+## LEGACY_ONLY / PULLED_ONLY isolate one source for playtest signal; PULLED_ONLY
+## also zeroes legacy recipe bonuses (see Recipes.get_recipe_bonuses).
+## ADDITIVE sums both — explicitly experimental, never the playtest default.
+const STAT_SOURCE_AUTO: int = 0
+const STAT_SOURCE_LEGACY_ONLY: int = 1
+const STAT_SOURCE_PULLED_ONLY: int = 2
+const STAT_SOURCE_ADDITIVE: int = 3
+var combat_stat_source: int = STAT_SOURCE_AUTO
 
 ## ---------- Roster ----------
 ##
@@ -153,6 +165,7 @@ func new_session() -> void:
 	pending_discoveries = []
 	combat_log = []
 	_next_uid = 1
+	combat_stat_source = STAT_SOURCE_AUTO
 
 	heroes = {}
 	squad_order = []
@@ -232,6 +245,18 @@ func unlock_hero(hero_id: StringName) -> void:
 	emit_signal("weapon_changed", hero_id)
 	emit_signal("hero_hp_changed", hero_id)
 	emit_signal("hero_ult_changed", hero_id)
+
+## Equip (or unequip with null) a pulled WeaponData on a hero. HP follows the
+## clamp-never-refill rule (HeroState.equip_weapon_data). Emits weapon_data_changed
+## — the legacy weapon_changed signal still means SOCKETS mutated.
+func equip_weapon_data(hero_id: StringName, wd) -> bool:
+	var h = heroes.get(hero_id)
+	if h == null:
+		return false
+	h.equip_weapon_data(wd)
+	emit_signal("weapon_data_changed", hero_id)
+	emit_signal("hero_hp_changed", hero_id)
+	return true
 
 ## ---------- Catalog lookups ----------
 

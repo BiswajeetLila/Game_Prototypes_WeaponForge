@@ -93,6 +93,11 @@ func get_active_recipes(weapon) -> Array:
 
 func get_recipe_bonuses(hero) -> Dictionary:
 	var bonuses: Dictionary = {}
+	## Bridge #1 (entry contract #3): recipes ride the LEGACY sockets until Forge
+	## Draft replaces them. In PULLED_ONLY playtest isolation the socket pathway —
+	## including its recipe bonuses — must contribute nothing.
+	if GameState.combat_stat_source == GameState.STAT_SOURCE_PULLED_ONLY:
+		return bonuses
 	if hero == null or hero.weapon == null:
 		return bonuses
 	for recipe_id in get_active_recipes(hero.weapon):

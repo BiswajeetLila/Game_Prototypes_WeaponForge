@@ -32,6 +32,7 @@ func _ready() -> void:
 	_check("AccountState script exists at " + SCRIPT_PATH, _Account != null, "not found")
 	if _Account != null:
 		_test_starting_gems()
+		_test_reset_account()
 		_test_gems_add_spend()
 		_test_pull_cost_constant()
 		_test_acquire_weapon_duplicates_catalog()
@@ -161,9 +162,10 @@ func _test_version_mismatch_rejected() -> void:
 
 func _test_corrupt_payload_rejected() -> void:
 	var b = _Account.new()
-	_check("missing-keys payload rejected", b.load_from_dict({"version": 1}) == false, "accepted")
+	var v: int = _Account.SAVE_VERSION
+	_check("missing-keys payload rejected", b.load_from_dict({"version": v}) == false, "accepted")
 	_check("non-dict weapon entry rejected",
-		b.load_from_dict({"version": 1, "gems": 5, "weapons": ["junk"], "equipped": {}}) == false, "accepted")
+		b.load_from_dict({"version": v, "gems": 5, "weapons": ["junk"], "equipped": {}}) == false, "accepted")
 	b.free()
 
 func _test_disk_round_trip() -> void:
@@ -185,13 +187,29 @@ func _test_disk_round_trip() -> void:
 ## ---------- Run integration ----------
 
 func _test_wave_clear_earnings() -> void:
-	## Starting values (test plan: testers should afford >=2 pulls/session; if not,
-	## raise GEMS_PER_WAVE). Boss waves (5/10/15) pay the +25 bonus.
+	## Tuned after first playtest (owner stuck at 45 gems, ~7 runs per pull):
+	## 25/wave + 75 boss bonus -> a full 15-wave run pays 600 = 2 pulls/run.
 	var a = _Account.new()
 	a._on_wave_cleared(2)
-	_check("normal wave pays 15", a.gems == 615, "gems=%d" % a.gems)
+	_check("normal wave pays 25", a.gems == 625, "gems=%d" % a.gems)
 	a._on_wave_cleared(5)
-	_check("boss wave pays 15+25", a.gems == 655, "gems=%d" % a.gems)
+	_check("boss wave pays 25+75", a.gems == 725, "gems=%d" % a.gems)
+	a.free()
+
+func _test_reset_account() -> void:
+	## Playtest hygiene: Home's debug reset returns the account to first-boot state.
+	var a = _Account.new()
+	if not a.has_method(&"reset_account"):
+		_check("AccountState has reset_account()", false, "method missing (RED)")
+		a.free()
+		return
+	a.gems = 45
+	a.acquire_weapon(_make_catalog_weapon())
+	a.equip(&"bran", 0)
+	a.reset_account()
+	_check("reset restores starting gems", a.gems == 600, "gems=%d" % a.gems)
+	_check("reset clears owned weapons", a.owned_weapons.is_empty(), "size=%d" % a.owned_weapons.size())
+	_check("reset clears equipped map", a.equipped.is_empty(), "size=%d" % a.equipped.size())
 	a.free()
 
 func _test_run_reset_does_not_touch_account() -> void:

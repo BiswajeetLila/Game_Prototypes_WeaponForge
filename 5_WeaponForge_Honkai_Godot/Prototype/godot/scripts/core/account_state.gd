@@ -24,11 +24,14 @@ const WeaponDataT = preload("res://scripts/data/weapon_data.gd")
 signal gems_changed(new_gems: int)
 signal owned_weapons_changed
 
-const SAVE_VERSION: int = 1
+## v2: invalidates saves written by the pre-game-frame loop (owner playtest got
+## stranded at 45 gems from a deprecated-flow save). Old versions load as fresh.
+const SAVE_VERSION: int = 2
 const SAVE_PATH: String = "user://account.json"
 const STARTING_GEMS: int = 600
-const GEMS_PER_WAVE: int = 15
-const GEMS_BOSS_BONUS: int = 25
+## Tuned after first playtest: full 15-wave run = 25*15 + 75*3 = 600 = 2 pulls.
+const GEMS_PER_WAVE: int = 25
+const GEMS_BOSS_BONUS: int = 75
 const PULL_COST: int = 300
 
 var gems: int = STARTING_GEMS
@@ -72,6 +75,16 @@ func _on_wave_cleared(wave: int) -> void:
 	if wave in GameState.BOSS_WAVES:
 		amount += GEMS_BOSS_BONUS
 	add_gems(amount)
+	autosave()
+
+## Playtest hygiene: wipe back to first-boot state (fresh gems, no weapons) and
+## persist it. Home exposes this as a small debug button.
+func reset_account() -> void:
+	gems = STARTING_GEMS
+	owned_weapons = []
+	equipped = {}
+	gems_changed.emit(gems)
+	owned_weapons_changed.emit()
 	autosave()
 
 ## Persist after meaningful account mutations (pull, wave earn). Headless-gated so

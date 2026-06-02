@@ -43,6 +43,17 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override(&"font_size", 30)
 	v.add_child(title)
 
+	## Debug: wipe the account back to first-boot (fresh 600 gems + starter grant).
+	var reset := Button.new()
+	reset.text = "reset account (debug)"
+	reset.add_theme_font_size_override(&"font_size", 9)
+	reset.modulate = Color(1, 1, 1, 0.45)
+	reset.pressed.connect(func():
+		AccountState.reset_account()
+		_grant_starter_if_first_boot()
+		_refresh())
+	v.add_child(reset)
+
 	_gems_label = Label.new()
 	_gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_gems_label.add_theme_font_size_override(&"font_size", 18)
@@ -95,7 +106,10 @@ func _grant_starter_if_first_boot() -> void:
 
 func _refresh() -> void:
 	_gems_label.text = "💎 %d gems" % AccountState.gems
-	_pull_btn.disabled = AccountState.gems < AccountState.PULL_COST
+	var broke: bool = AccountState.gems < AccountState.PULL_COST
+	_pull_btn.disabled = broke
+	_pull_btn.text = ("⚒ FORGE WHEEL — need 300💎 (clear waves to earn!)" if broke
+		else "⚒ FORGE WHEEL — PULL WEAPON (300💎)")
 	for child in _roster_box.get_children():
 		child.queue_free()
 	for id in ROSTER_IDS:

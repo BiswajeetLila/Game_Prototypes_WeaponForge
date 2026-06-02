@@ -76,3 +76,36 @@ P1c (Forge Draft) + P1e (Catalyst) are built.
 - `scripts/core/recipes.gd:56` — `weapon.get_all_tags()` → recipe bonuses
 - `scripts/core/merge.gd`, `scripts/core/shop.gd:157`, `scripts/ui/forge_panel.gd` — socket consumers
 - Test contract: `test_combat.gd` (`_fresh_session_with_weapon`), `test_recipes.gd` (14× `WeaponT.new()`+`set_slot`), `test_merge.gd` (16 socket tests), `test_shop.gd` (slot coverage)
+
+## Entry contracts (from the 2026-06-01 codex gate review — write these BEFORE implementing P0/#1)
+
+These are specs, not code. Each must be written (and where marked, test-first) before its
+increment starts. Source: final gate review, 6×P1 + 5×P2; the two committed-code P1s
+(bank targeting, Mythic cap) were fixed same-day in `weapon_data.gd` — the rest live here.
+
+1. **P0 persistence contract.** Define account-vs-run state split (`GameState.new_session()`
+   currently wipes everything; only currency is run-scoped `gold`). Specify: save schema +
+   version field, what persists (owned WeaponData instances incl. `star_tier`/`rarity_idx`/
+   `forge_progress`/`forge_target_idx` — all exported now —, equipped-per-hero id, `gems`),
+   load timing (before first scene), restart/corrupt-save behavior. Owned weapons are runtime
+   `duplicate(true)` instances — never the catalog `.tres` (shared-Resource mutation).
+2. **HP semantics contract (test-first).** Current behavior is DELIBERATE free-heal:
+   `hero_state.gd` `refresh_max_hp()` does `hp = clampi(hp + delta, 0, max_hp)` ("equipping
+   +HP raises current HP"). The plan's clamp-never-refill rule is a BEHAVIOR CHANGE: write
+   the failing test first, update any legacy tests that assert +delta, and decide whether
+   the change applies to legacy sockets too or only weapon_data equips. Blocks the
+   equip-swap free-heal exploit.
+3. **Debug-toggle isolation contract.** `pulled-only` mode must zero legacy recipe bonuses
+   too (recipes read sockets and feed combat damage) — otherwise FM-1 playtest signal is
+   polluted. Modes: legacy-only / pulled-only (sockets contribute NOTHING incl. recipes) /
+   additive (explicitly experimental).
+4. **Catalog tuning curve.** "First equip never a downgrade" needs a defined comparison
+   point: socket-kitted hero at wave W with merge level L, recipes included or excluded.
+   Pick the curve before authoring catalog `.tres` stats; record the numbers next to it.
+5. **Validation hardening (before catalog/.tres authoring ships).** Clamp/validate
+   `base_crit`, `base_ult_rate`, `star_tier` (1..10), `rarity_idx` (0..4) on WeaponData;
+   tighten `SkillCardData.is_valid()` (rarity range, non-empty effect per card type) before
+   draft cards enter a catalog.
+6. **Forge bank retarget UX.** Code rule (implemented): the bank is target-exclusive; a
+   different-tier banking part RESETS the bank. Pull/dupe UI (increment #3) must warn
+   before a resetting apply. Revisit ratio-conversion only if playtests hate the reset.

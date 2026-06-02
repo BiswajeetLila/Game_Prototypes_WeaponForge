@@ -108,12 +108,12 @@ Plan-mode scratch files live in `C:/Users/Biswa/.claude/plans/` (session artifac
 
 ## 6. Repo / branch state
 
-- **main** = single source of truth. Contains design spec v2.2.1 + research + Stage D + concept doc + AI-leverage + P1a (phase1 merged 2026-06-01).
-- **`weaponcraft-godot/wittle-inversion-phase1`** = active dev branch (P1a). Merged to main 2026-06-01 but kept open for continued P1a work. Resume here.
+- **`weaponcraft-godot/wittle-inversion-phase1`** = ACTIVE dev branch. **Work from here, not main.** Contains the session-2 work: the `5_WeaponForge_Honkai_Godot` fork, all P1a increments, and the migration/handoff docs. Pushed to origin; **NOT merged to main — merge is gated on owner review** (explicit hold, 2026-06-01).
+- **main** = source of truth only up to `e958745` (early P1a: WeaponData first cycles, merged 2026-06-01). main does NOT contain the fork or anything after it. Do not base new work on main until the pending merge lands.
 - `feature/2_v0.2.0-gacha-synergies` = old WeaponCraft_Base HTML prototype (pre-Godot pivot). Left intact on remote; not merged. Abandoned direction.
 - Multiple `claude/*` + `.claude/worktrees/*` exist from parallel sessions — left alone (may be live in other windows). Harness auto-cleans stale ones.
 
 ### Engine / run
-- Godot 4.6.2 Mono. Project: `2_Weaponcraft_Godot/Prototype/godot/project.godot`. F5 to run.
+- Godot 4.6.2 Mono. **Active project: `5_WeaponForge_Honkai_Godot/Prototype/godot/project.godot`** (F5 to run). `2_Weaponcraft_Godot/...` is the FROZEN playtester build — open it only to demo, never to develop (see its root `FROZEN-2026-06-01.md`).
 - `.import` files are TRACKED (Godot 4 UID stability). Autosave churn on them is noise — discard, don't commit (K-12).
-- Tests: 4 dev scenes (TestCombat/TestRecipes/TestShop/TestMerge), 144/144 green.
+- Tests: 7 dev scenes — TestCombat/TestRecipes/TestShop/TestMerge/TestUi (144 core, need `--quit-after` headless) + TestWeaponData/TestSkillCardData (self-quitting, exit code = fail count). Headless gotchas (cold-clone `--import` pass, quit behavior): `docs/handoffs/2026-06-01-session-handoff-p1a-fork.md`.

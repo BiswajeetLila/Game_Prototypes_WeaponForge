@@ -66,7 +66,10 @@ var weapon_ids: Array = []
 ## ---------- Per-run state ----------
 
 const STARTING_GOLD: int = 20
-const TOTAL_WAVES: int = 15  ## Stage D — 15-wave stage with bosses at W5/W10/W15.
+const TOTAL_WAVES: int = 15  ## Legacy Stage-D ceiling (combat scaling/tests). Runs end earlier:
+## A run is ONE stage — 4 waves + the boss on wave 5 (Wittle shape). HUD and the
+## battle flow read this; boss kill -> victory -> Home. Stage rotation later.
+const RUN_FINAL_WAVE: int = 5
 
 ## Boss waves trigger the ReforgeRetryModal on wipe + telegraph banner pre-wave +
 ## boss-only spawn (1 enemy via id lookup). Keep in sync with boss tres ids.

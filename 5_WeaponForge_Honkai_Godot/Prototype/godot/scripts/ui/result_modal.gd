@@ -25,13 +25,13 @@ func open(kind: StringName) -> void:
 		&"wipe":
 			_title.text = "💀 WIPE"
 			_title.add_theme_color_override(&"font_color", Color("ff5555"))
-			_subtitle.text = "Bran fell at wave %d." % GameState.wave
-			_btn.text = "↺ Try Again"
+			_subtitle.text = "Squad fell at wave %d." % GameState.wave
+			_btn.text = "⌂ Home"
 		&"clear":
-			_title.text = "🏆 STAGE CLEAR"
+			_title.text = "🏆 BOSS DOWN"
 			_title.add_theme_color_override(&"font_color", Color("ffd700"))
-			_subtitle.text = "All %d waves cleared." % GameState.TOTAL_WAVES
-			_btn.text = "▶ Play Again"
+			_subtitle.text = "Run complete — +%d💎 banked." % AccountState.RUN_VICTORY_BONUS
+			_btn.text = "⌂ Home"
 		_:
 			_title.text = "?"
 			_subtitle.text = ""

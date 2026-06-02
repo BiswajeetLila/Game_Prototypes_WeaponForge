@@ -36,9 +36,9 @@ const VEX_UNLOCK_WAVE: int = 6
 
 const DraftModalScript = preload("res://scripts/ui/draft_modal.gd")
 
-## A run is ONE stage: 4 waves + the boss on wave 5. Boss kill ends the run
-## (victory -> home). Stage rotation (golem/lich, scaling) comes next pass.
-const RUN_FINAL_WAVE: int = 5
+## A run is ONE stage: 4 waves + the boss on wave 5 (GameState.RUN_FINAL_WAVE
+## is the single source; HUD reads it too). Boss kill -> victory -> home.
+const RUN_FINAL_WAVE: int = GameState.RUN_FINAL_WAVE
 
 var _draft_modal: ColorRect = null
 

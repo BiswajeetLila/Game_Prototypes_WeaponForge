@@ -26,6 +26,11 @@ func _ready() -> void:
 		_test_apply_atk_card()
 		_test_apply_hp_card_no_heal()
 		_test_apply_invalid_rejected()
+		_test_kill_meter_fills_and_signals()
+		_test_kill_meter_overflow_banks()
+		_test_kill_meter_wave_baseline_reset()
+		_test_kill_meter_run_reset()
+		_test_apply_increments_hero_card_count()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -118,6 +123,85 @@ func _test_apply_invalid_rejected() -> void:
 	var junk = _draft().make_card(&"atk_flat", &"nobody_home")
 	_check("card tagged to unknown hero rejected", _draft().apply(junk) == false, "accepted")
 	_check("rejected applies change nothing", h.eff_atk() == before, "eff=%d" % h.eff_atk())
+
+## ---------- Kill meter (W1 — Wittle-style: ~5 kills fill the bar -> draft) ----------
+
+var _meter_changed_count: int = 0
+var _meter_full_count: int = 0
+
+func _on_meter_changed(_k: int, _n: int) -> void:
+	_meter_changed_count += 1
+
+func _on_meter_full() -> void:
+	_meter_full_count += 1
+
+func _meter_guard() -> bool:
+	if not _draft().has_method(&"sync_dead_count"):
+		_check("ForgeDraft has kill meter (sync_dead_count)", false, "method missing (RED)")
+		return false
+	return true
+
+func _test_kill_meter_fills_and_signals() -> void:
+	if not _meter_guard():
+		return
+	var d = _draft()
+	d.reset_run()
+	_meter_changed_count = 0
+	_meter_full_count = 0
+	d.meter_changed.connect(_on_meter_changed)
+	d.meter_full.connect(_on_meter_full)
+	d.sync_dead_count(2)                       ## 2 enemies died this wave
+	_check("2 kills -> meter 2", d.meter_kills == 2, "meter=%d" % d.meter_kills)
+	_check("meter_changed fired", _meter_changed_count == 1, "count=%d" % _meter_changed_count)
+	_check("not full at 2/5", _meter_full_count == 0, "full fired early")
+	d.sync_dead_count(2)                       ## same dead count -> no new kills
+	_check("repeat sync adds nothing", d.meter_kills == 2, "meter=%d" % d.meter_kills)
+	d.sync_dead_count(5)                       ## 3 more kills -> 5 total
+	_check("5 kills -> full fired once", _meter_full_count == 1 and d.meter_kills == 5,
+		"full=%d meter=%d" % [_meter_full_count, d.meter_kills])
+	d.meter_changed.disconnect(_on_meter_changed)
+	d.meter_full.disconnect(_on_meter_full)
+
+func _test_kill_meter_overflow_banks() -> void:
+	if not _meter_guard():
+		return
+	var d = _draft()
+	d.reset_run()
+	d.sync_dead_count(6)                       ## burst: 6 kills at once
+	_check("burst counts all kills", d.meter_kills == 6, "meter=%d" % d.meter_kills)
+	d.consume_draft()
+	_check("consume banks the overflow kill", d.meter_kills == 1, "meter=%d" % d.meter_kills)
+
+func _test_kill_meter_wave_baseline_reset() -> void:
+	if not _meter_guard():
+		return
+	var d = _draft()
+	d.reset_run()
+	d.sync_dead_count(3)                       ## wave A: 3 dead
+	d.reset_wave_baseline()                    ## wave B spawns (dead count starts over)
+	d.sync_dead_count(2)                       ## wave B: 2 dead
+	_check("kills accumulate across waves (3+2)", d.meter_kills == 5, "meter=%d" % d.meter_kills)
+
+func _test_kill_meter_run_reset() -> void:
+	if not _meter_guard():
+		return
+	var d = _draft()
+	d.reset_run()
+	d.sync_dead_count(4)
+	d.reset_run()
+	_check("run reset zeroes the meter", d.meter_kills == 0, "meter=%d" % d.meter_kills)
+	d.sync_dead_count(1)
+	_check("baseline also reset with the run", d.meter_kills == 1, "meter=%d" % d.meter_kills)
+
+func _test_apply_increments_hero_card_count() -> void:
+	var h = _fresh()
+	if not ("run_card_count" in h):
+		_check("HeroState has run_card_count", false, "property missing (RED)")
+		return
+	_draft().apply(_draft().make_card(&"atk_flat", &"bran"))
+	_draft().apply(_draft().make_card(&"crit", &"bran"))
+	_check("two applied cards -> run_card_count 2 (pips)", h.run_card_count == 2,
+		"count=%d" % h.run_card_count)
 
 ## ---------- Test helpers ----------
 

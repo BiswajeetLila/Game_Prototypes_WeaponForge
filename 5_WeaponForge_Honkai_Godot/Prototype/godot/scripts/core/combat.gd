@@ -103,6 +103,7 @@ func start_wave(wave: int, auto_tick: bool = true) -> void:
 	_tick_counter = 0
 	GameState.set_wave(wave)
 	_spawn_enemies(wave)
+	ForgeDraft.reset_wave_baseline()   ## kill meter: new wave's dead-count starts at 0
 	_write_breadcrumb_phase(&"start")
 	## Reset per-fight state for every squad member (alive AND dead — dead heroes
 	## stay dead, this only clears ult_used / burn_stack tracking).
@@ -193,6 +194,9 @@ func step() -> void:
 				GameState.emit_signal(&"enemy_status_changed", i)
 	_write_breadcrumb_phase(&"after_status")
 
+	## 3.5 Kill meter: report current dead-count; ForgeDraft diffs per-wave.
+	ForgeDraft.sync_dead_count(_dead_enemy_count())
+
 	## 4. Win/loss.
 	if _all_enemies_dead():
 		_on_wave_cleared()
@@ -246,6 +250,7 @@ func fire_ult(hero_id: StringName) -> bool:
 	hero.ult_gauge = 0.0
 	GameState.emit_signal(&"hero_ult_changed", hero_id)
 	emit_signal(&"ult_fired", hero_id, total_dmg)
+	ForgeDraft.sync_dead_count(_dead_enemy_count())   ## ult kills feed the meter too
 	GameState.append_combat_log("[color=aa66ff]🌀 %s — %d total[/color]" % [hero.data.ult_name, total_dmg])
 
 	if _all_enemies_dead():
@@ -671,6 +676,13 @@ func _boss_strike_hero(boss_idx: int, hero, dmg: int) -> void:
 		GameState.emit_signal(&"hero_died", hero.data.id)
 
 ## ---------- End-of-state hooks ----------
+
+func _dead_enemy_count() -> int:
+	var dead: int = 0
+	for e in GameState.enemies:
+		if int(e.hp) <= 0:
+			dead += 1
+	return dead
 
 func _on_wave_cleared() -> void:
 	stop()

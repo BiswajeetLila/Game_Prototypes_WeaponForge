@@ -41,6 +41,9 @@ const DraftModalScript = preload("res://scripts/ui/draft_modal.gd")
 const RUN_FINAL_WAVE: int = GameState.RUN_FINAL_WAVE
 
 var _draft_modal: ColorRect = null
+var _pending_next_wave: int = -1
+var _kill_bar: ProgressBar = null
+var _strip_labels: Dictionary = {}
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -68,6 +71,8 @@ func _ready() -> void:
 	_draft_modal = DraftModalScript.new()
 	modal_layer.add_child(_draft_modal)
 	_draft_modal.card_picked.connect(_on_draft_picked)
+	ForgeDraft.meter_full.connect(_on_meter_full)
+	_build_battle_overlay(modal_layer)
 	_start_run()
 
 ## Fresh run: the FULL squad enters with their account-loaded weapons
@@ -80,6 +85,8 @@ func _start_run() -> void:
 		var w = AccountState.get_equipped(id)
 		if w != null:
 			GameState.equip_weapon_data(id, w)
+	ForgeDraft.reset_run()
+	_refresh_strip()
 	_begin_wave(1)
 
 func _begin_wave(wave: int) -> void:
@@ -97,21 +104,40 @@ func _on_wave_cleared(wave: int) -> void:
 	if JuiceConfig.JUICE_ENABLED:
 		ScreenShake.kick(JuiceConfig.WAVE_CLEAR.shake_amp, JuiceConfig.WAVE_CLEAR.shake_dur)
 
-	## THE LOOP: run ends at the boss (Wittle stage shape). Kill the boss ->
-	## victory -> home. Otherwise: Forge Draft (3 cards), pick -> next wave auto.
+	## THE LOOP: run ends at the boss. Otherwise waves chain AUTOMATICALLY —
+	## drafts are kill-gated (meter_full), not wave-gated.
 	if wave >= RUN_FINAL_WAVE:
+		if _draft_modal.visible:
+			_draft_modal.visible = false   ## run over — a pending pick is moot
 		AccountState.award_victory()
 		_notifications.show_banner("🏆 BOSS DOWN  +%d💎" % AccountState.RUN_VICTORY_BONUS,
 			Color(1, 0.85, 0.2), 1.6)
 		_result_modal.open(&"clear")
 		return
+	var next_wave: int = wave + 1
+	if _draft_modal.visible:
+		_pending_next_wave = next_wave   ## wave ended on the filling kill: pick first
+		return
+	GameState.set_wave(next_wave)
+	_begin_wave(next_wave)
+
+## Kill meter filled: pause the fight (mid-wave) and offer the pick.
+func _on_meter_full() -> void:
+	if _draft_modal.visible:
+		return
+	Combat.stop()
 	_draft_modal.open(ForgeDraft.deal(3))
 
 func _on_draft_picked(card) -> void:
 	ForgeDraft.apply(card)
-	var next_wave: int = GameState.wave + 1
-	GameState.set_wave(next_wave)
-	_begin_wave(next_wave)
+	ForgeDraft.consume_draft()
+	if _pending_next_wave > 0:
+		var w: int = _pending_next_wave
+		_pending_next_wave = -1
+		GameState.set_wave(w)
+		_begin_wave(w)
+	else:
+		Combat.resume()   ## mid-wave pick: fight on, same enemies
 
 func _on_stage_cleared() -> void:
 	_notifications.show_banner("🏆 STAGE CLEAR", Color(1, 0.85, 0.2), 1.8)
@@ -153,6 +179,59 @@ func _on_hero_died(hero_id: StringName) -> void:
 	if hero == null:
 		return
 	_notifications.show_banner("💔 %s FALLS" % hero.data.name.to_upper(), Color(1, 0.55, 0.55), 1.0)
+
+## ---------- Battle overlay: kill bar + per-hero weapon strip (W3) ----------
+## Explicit viewport sizing — runtime Controls under a CanvasLayer don't lay
+## out from anchor presets alone (the draft-modal 0x0 lesson).
+
+func _build_battle_overlay(layer: CanvasLayer) -> void:
+	var vp: Vector2 = get_viewport_rect().size
+
+	## Kill bar under the wave banner: fills per enemy killed, gold when full.
+	_kill_bar = ProgressBar.new()
+	_kill_bar.min_value = 0
+	_kill_bar.max_value = ForgeDraft.KILLS_PER_DRAFT
+	_kill_bar.value = 0
+	_kill_bar.show_percentage = false
+	_kill_bar.position = Vector2(110.0, 54.0)
+	_kill_bar.size = Vector2(vp.x - 220.0, 10.0)
+	layer.add_child(_kill_bar)
+	ForgeDraft.meter_changed.connect(_on_meter_changed_ui)
+
+	## Weapon strip: three columns under the portraits — weapon, ATK, upgrade pips.
+	var strip := HBoxContainer.new()
+	strip.position = Vector2(0.0, vp.y - 44.0)
+	strip.size = Vector2(vp.x, 40.0)
+	strip.add_theme_constant_override(&"separation", 6)
+	layer.add_child(strip)
+	for id in [&"bran", &"elara", &"vex"]:
+		var l := Label.new()
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.add_theme_font_size_override(&"font_size", 11)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		strip.add_child(l)
+		_strip_labels[id] = l
+	GameState.weapon_data_changed.connect(func(_h): _refresh_strip())
+	ForgeDraft.draft_applied.connect(func(_c): _refresh_strip())
+
+func _on_meter_changed_ui(kills: int, needed: int) -> void:
+	if _kill_bar == null:
+		return
+	_kill_bar.value = mini(kills, needed)
+	_kill_bar.modulate = Color(1.0, 0.85, 0.2) if kills >= needed else Color(1, 1, 1)
+
+func _refresh_strip() -> void:
+	for id in _strip_labels:
+		var l: Label = _strip_labels[id]
+		var hero = GameState.get_hero(id)
+		if hero == null:
+			l.text = ""
+			continue
+		var weapon_str: String = "— no weapon"
+		if hero.weapon_data != null:
+			weapon_str = "⚔ %s  ATK %d" % [hero.weapon_data.name, hero.eff_atk()]
+		var pips: int = clampi(hero.run_card_count, 0, 3)
+		l.text = "%s\n%s%s" % [weapon_str, "●".repeat(pips), "○".repeat(3 - pips)]
 
 ## Battle over (or HOME button): back to the meta layer.
 func _on_back_home() -> void:

@@ -37,6 +37,8 @@ var burn_stack: int = 0
 ## the equipped weapon's contribution and die with the run (heroes are recreated
 ## by GameState.new_session()). Keys mirror SkillCardData stat-card effects.
 var run_mods: Dictionary = {}
+## Cards applied to this hero this run — drives the upgrade pips under the portrait.
+var run_card_count: int = 0
 
 func _init(p_data) -> void:
 	data = p_data

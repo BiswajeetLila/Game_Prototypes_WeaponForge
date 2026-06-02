@@ -17,6 +17,46 @@ const SkillCardDataT = preload("res://scripts/data/skill_card_data.gd")
 
 signal draft_ready(cards: Array)
 signal draft_applied(card)
+signal meter_changed(kills: int, needed: int)
+signal meter_full
+
+## ---------- Kill meter (Wittle-style draft pacing) ----------
+## The draft no longer fires every wave: enemy kills fill a bar; KILLS_PER_DRAFT
+## kills -> meter_full -> battle pauses for a 3-card pick -> consume_draft()
+## banks any overflow kills toward the next bar.
+## Numbers Policy starting value: 5 (waves spawn 2-3 enemies -> ~11 kills/run
+## -> ~2 drafts per run). If picks feel sparse in playtest, drop to 4 first.
+const KILLS_PER_DRAFT: int = 5
+
+var meter_kills: int = 0
+var _dead_baseline: int = 0
+
+## Combat reports the CURRENT dead-enemy count after each tick/ult; we diff
+## against the per-wave baseline so every kill counts exactly once.
+func sync_dead_count(dead_now: int) -> void:
+	var delta: int = dead_now - _dead_baseline
+	if delta <= 0:
+		return
+	_dead_baseline = dead_now
+	meter_kills += delta
+	meter_changed.emit(meter_kills, KILLS_PER_DRAFT)
+	if meter_kills >= KILLS_PER_DRAFT:
+		meter_full.emit()
+
+## Called after the player picks a card: spend one bar, keep overflow kills.
+func consume_draft() -> void:
+	meter_kills = maxi(0, meter_kills - KILLS_PER_DRAFT)
+	meter_changed.emit(meter_kills, KILLS_PER_DRAFT)
+
+## New wave spawned: its dead-count starts from zero (kills keep accumulating).
+func reset_wave_baseline() -> void:
+	_dead_baseline = 0
+
+## New run: empty bar.
+func reset_run() -> void:
+	meter_kills = 0
+	_dead_baseline = 0
+	meter_changed.emit(meter_kills, KILLS_PER_DRAFT)
 
 const AXES: Array = [&"atk_flat", &"atk_pct", &"crit", &"ult_rate", &"hp_flat"]
 const AXIS_VALUES: Dictionary = {
@@ -74,6 +114,7 @@ func apply(card) -> bool:
 		return false
 	for key in card.effect:
 		hero.apply_run_mod(key, card.effect[key])
+	hero.run_card_count += 1
 	GameState.append_combat_log("[color=ffcc66]🃏 %s — %s (%s)[/color]"
 		% [hero.data.name, card.name, card.desc])
 	draft_applied.emit(card)

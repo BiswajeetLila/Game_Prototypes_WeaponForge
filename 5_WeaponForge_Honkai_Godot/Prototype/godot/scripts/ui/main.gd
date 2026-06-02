@@ -60,8 +60,13 @@ func _ready() -> void:
 	## shop/forge. The legacy ForgePanel stays in the scene for the old test
 	## suites but is hidden in play.
 	_forge.visible = false
+	## Modal lives on its own CanvasLayer: viewport-relative full-rect sizing
+	## (as a plain child of Main it laid out 0x0) + guaranteed top-most draw.
+	var modal_layer := CanvasLayer.new()
+	modal_layer.layer = 100
+	add_child(modal_layer)
 	_draft_modal = DraftModalScript.new()
-	add_child(_draft_modal)
+	modal_layer.add_child(_draft_modal)
 	_draft_modal.card_picked.connect(_on_draft_picked)
 	_start_run()
 

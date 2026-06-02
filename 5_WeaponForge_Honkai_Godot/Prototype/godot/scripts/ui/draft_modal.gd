@@ -14,14 +14,15 @@ var _row: HBoxContainer = null
 
 func _ready() -> void:
 	color = Color(0.02, 0.02, 0.06, 0.88)
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	visible = false
 
 	var center := VBoxContainer.new()
-	center.set_anchors_preset(Control.PRESET_CENTER)
+	center.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	center.offset_left = -190.0
 	center.offset_right = 190.0
 	center.offset_top = -140.0
+	center.offset_bottom = 140.0
 	center.add_theme_constant_override(&"separation", 12)
 	add_child(center)
 
@@ -49,6 +50,10 @@ func open(cards: Array) -> void:
 		btn.clip_text = false
 		btn.pressed.connect(_on_pick.bind(card))
 		_row.add_child(btn)
+	## Belt + braces: runtime-built Controls under a CanvasLayer have laid out
+	## 0x0 despite full-rect anchors — force the rect from the viewport.
+	position = Vector2.ZERO
+	size = get_viewport_rect().size
 	visible = true
 
 func _on_pick(card) -> void:

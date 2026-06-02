@@ -72,6 +72,15 @@ func _on_wave_cleared(wave: int) -> void:
 	if wave in GameState.BOSS_WAVES:
 		amount += GEMS_BOSS_BONUS
 	add_gems(amount)
+	autosave()
+
+## Persist after meaningful account mutations (pull, wave earn). Headless-gated so
+## test suites never write user://account.json — the save/load round-trip itself
+## is covered by explicit-path tests.
+func autosave() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	save_to_disk(SAVE_PATH)
 
 ## ---------- Owned weapons ----------
 

@@ -77,6 +77,7 @@ func pull() -> Dictionary:
 	}
 	GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d[/color]"
 		% [hero.data.name, owned.name, result.old_atk, result.new_atk])
+	AccountState.autosave()
 	pull_completed.emit(result)
 	return result
 

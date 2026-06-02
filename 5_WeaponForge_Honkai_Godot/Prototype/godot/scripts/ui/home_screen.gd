@@ -11,6 +11,7 @@ const ROSTER_IDS: Array = [&"bran", &"elara", &"vex"]
 
 var _gems_label: Label = null
 var _pull_btn: Button = null
+var _battle_btn: Button = null
 var _roster_box: VBoxContainer = null
 
 func _ready() -> void:
@@ -86,12 +87,11 @@ func _build_ui() -> void:
 	odds.modulate = Color(1, 1, 1, 0.55)
 	v.add_child(odds)
 
-	var battle_btn := Button.new()
-	battle_btn.text = "⚔ START BATTLE"
-	battle_btn.custom_minimum_size = Vector2(0, 64)
-	battle_btn.add_theme_font_size_override(&"font_size", 22)
-	battle_btn.pressed.connect(_on_battle_pressed)
-	v.add_child(battle_btn)
+	_battle_btn = Button.new()
+	_battle_btn.custom_minimum_size = Vector2(0, 64)
+	_battle_btn.add_theme_font_size_override(&"font_size", 22)
+	_battle_btn.pressed.connect(_on_battle_pressed)
+	v.add_child(_battle_btn)
 
 func _grant_starter_if_first_boot() -> void:
 	if not AccountState.owned_weapons.is_empty():
@@ -105,7 +105,8 @@ func _grant_starter_if_first_boot() -> void:
 	GameState.append_combat_log("⚒ Starter weapon granted: Emberfang Cleaver → Bran")
 
 func _refresh() -> void:
-	_gems_label.text = "💎 %d gems" % AccountState.gems
+	_gems_label.text = "💎 %d gems   ·   🏰 Stage %d" % [AccountState.gems, AccountState.current_stage]
+	_battle_btn.text = "⚔ START BATTLE — STAGE %d" % AccountState.current_stage
 	var broke: bool = AccountState.gems < AccountState.PULL_COST
 	_pull_btn.disabled = broke
 	_pull_btn.text = ("⚒ FORGE WHEEL — need 300💎 (clear waves to earn!)" if broke

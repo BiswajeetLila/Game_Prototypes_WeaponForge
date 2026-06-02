@@ -85,8 +85,10 @@ func _start_run() -> void:
 		var w = AccountState.get_equipped(id)
 		if w != null:
 			GameState.equip_weapon_data(id, w)
+	GameState.run_stage = AccountState.current_stage
 	ForgeDraft.reset_run()
 	_refresh_strip()
+	_notifications.show_banner("🏰 STAGE %d" % GameState.run_stage, Color(0.8, 0.9, 1.0), 1.2)
 	_begin_wave(1)
 
 func _begin_wave(wave: int) -> void:
@@ -110,8 +112,9 @@ func _on_wave_cleared(wave: int) -> void:
 		if _draft_modal.visible:
 			_draft_modal.visible = false   ## run over — a pending pick is moot
 		AccountState.award_victory()
-		_notifications.show_banner("🏆 BOSS DOWN  +%d💎" % AccountState.RUN_VICTORY_BONUS,
-			Color(1, 0.85, 0.2), 1.6)
+		AccountState.advance_stage()
+		_notifications.show_banner("🏆 STAGE %d CLEAR  +%d💎" % [GameState.run_stage,
+			AccountState.RUN_VICTORY_BONUS], Color(1, 0.85, 0.2), 1.6)
 		_result_modal.open(&"clear")
 		return
 	var next_wave: int = wave + 1

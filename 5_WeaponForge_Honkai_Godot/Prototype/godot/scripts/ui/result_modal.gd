@@ -28,9 +28,10 @@ func open(kind: StringName) -> void:
 			_subtitle.text = "Squad fell at wave %d." % GameState.wave
 			_btn.text = "⌂ Home"
 		&"clear":
-			_title.text = "🏆 BOSS DOWN"
+			_title.text = "🏆 STAGE %d CLEAR" % GameState.run_stage
 			_title.add_theme_color_override(&"font_color", Color("ffd700"))
-			_subtitle.text = "Run complete — +%d💎 banked." % AccountState.RUN_VICTORY_BONUS
+			_subtitle.text = "+%d💎 banked.  Next: Stage %d." % [AccountState.RUN_VICTORY_BONUS,
+				AccountState.current_stage]
 			_btn.text = "⌂ Home"
 		_:
 			_title.text = "?"

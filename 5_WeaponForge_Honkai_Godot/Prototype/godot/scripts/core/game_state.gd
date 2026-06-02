@@ -77,6 +77,9 @@ const BOSS_WAVES: Array = [5, 10, 15]
 
 var wave: int = 1
 var gold: int = STARTING_GOLD
+## Which account stage this RUN is fighting (set by Main from AccountState at
+## battle start; reset to 1 by new_session so test sessions stay neutral).
+var run_stage: int = 1
 
 ## ---------- Combat stat source (bridge #1 debug toggle, entry contract #3) ----------
 ## AUTO = weapon_data replaces sockets when equipped (default, ships).
@@ -173,6 +176,7 @@ func new_session() -> void:
 	combat_log = []
 	_next_uid = 1
 	combat_stat_source = STAT_SOURCE_AUTO
+	run_stage = 1
 
 	heroes = {}
 	squad_order = []

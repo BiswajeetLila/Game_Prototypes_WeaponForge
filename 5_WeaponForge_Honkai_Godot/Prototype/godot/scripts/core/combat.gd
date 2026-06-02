@@ -65,6 +65,24 @@ const BOSS_BY_WAVE: Dictionary = {
 	15: &"boss_arcane_lich",
 }
 
+## ---------- Stage rotation (S2) ----------
+## A run is one stage (GameState.RUN_FINAL_WAVE). The boss rotates per stage and
+## enemies scale up; STAGE 1 MULTIPLIERS ARE EXACTLY 1.0 so the legacy balance
+## numbers (and the 57-test combat contract) are untouched.
+## Numbers Policy starting values: HP +40%/stage, ATK +25%/stage. Test plan:
+## stage 2 should be losable with a starter weapon and winnable after 1-2 pulls;
+## if it's a wall, drop ATK growth to +15% first.
+const STAGE_BOSS_ROTATION: Array = [&"boss_slime_king", &"boss_iron_golem", &"boss_arcane_lich"]
+
+func stage_hp_mult(stage: int) -> float:
+	return 1.0 + 0.4 * float(maxi(stage, 1) - 1)
+
+func stage_atk_mult(stage: int) -> float:
+	return 1.0 + 0.25 * float(maxi(stage, 1) - 1)
+
+func boss_for_stage(stage: int) -> StringName:
+	return STAGE_BOSS_ROTATION[(maxi(stage, 1) - 1) % STAGE_BOSS_ROTATION.size()]
+
 signal tick_completed
 signal hero_hit_enemy(hero_id: StringName, enemy_idx: int, dmg: int, source: StringName, is_crit: bool)
 signal enemy_hit_hero(enemy_idx: int, hero_id: StringName, dmg: int)
@@ -470,8 +488,8 @@ func _spawn_enemies(wave: int) -> void:
 		_spawn_boss(wave)
 		GameState.emit_signal(&"enemies_spawned")
 		return
-	var atk_for_wave: int = base_atk(wave)
-	var hp_mult: float = _wave_hp_mult(wave)
+	var atk_for_wave: int = int(floor(float(base_atk(wave)) * stage_atk_mult(GameState.run_stage)))
+	var hp_mult: float = _wave_hp_mult(wave) * stage_hp_mult(GameState.run_stage)
 	var non_boss_pool: Array = []
 	for eid in GameState.enemy_ids:
 		var d = GameState.get_enemy_def(eid)
@@ -515,17 +533,21 @@ func _spawn_enemies(wave: int) -> void:
 	GameState.emit_signal(&"enemies_spawned")
 
 ## Stage D — boss spawn. Single enemy, hand-tuned stats, telegraph banner.
+## The run-final wave's boss rotates per stage; legacy waves 10/15 keep the map.
 func _spawn_boss(wave: int) -> void:
 	var boss_id: StringName = BOSS_BY_WAVE[wave]
+	if wave == GameState.RUN_FINAL_WAVE:
+		boss_id = boss_for_stage(GameState.run_stage)
 	var def = GameState.get_enemy_def(boss_id)
 	if def == null:
 		push_error("Combat._spawn_boss: missing tres for %s" % boss_id)
 		return
+	var boss_hp: int = int(floor(float(def.hp_base) * stage_hp_mult(GameState.run_stage)))
 	GameState.enemies.append({
 		&"id": boss_id,
 		"name": def.name,
-		"hp": def.hp_base,
-		"max_hp": def.hp_base,
+		"hp": boss_hp,
+		"max_hp": boss_hp,
 		"weak": def.weak_tag,
 		"resist": def.resist_tag,
 		"sprite": def.sprite,
@@ -534,7 +556,7 @@ func _spawn_boss(wave: int) -> void:
 		"debuff_dur": 0,
 		"debuff_mult": 1.0,
 		"is_boss": true,
-		"atk": def.atk_override,
+		"atk": int(floor(float(def.atk_override) * stage_atk_mult(GameState.run_stage))),
 		"phase_1_applied": false,
 		"phase_2_applied": false,
 	})

@@ -25,7 +25,7 @@ func _on_gold_changed(new_gold: int) -> void:
 	_gold_label.text = "🪙 %d" % new_gold
 
 func _on_wave_changed(new_wave: int) -> void:
-	_wave_label.text = "WAVE %d/%d" % [new_wave, GameState.RUN_FINAL_WAVE]
+	_wave_label.text = "S%d · WAVE %d/%d" % [GameState.run_stage, new_wave, GameState.RUN_FINAL_WAVE]
 
 func _on_codex_badge_changed(discovered: int, total: int) -> void:
 	_codex_btn.text = "CODEX %d/%d" % [discovered, total]

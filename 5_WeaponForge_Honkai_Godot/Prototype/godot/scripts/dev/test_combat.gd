@@ -71,6 +71,10 @@ func _ready() -> void:
 	_test_iron_golem_aoe_every_4_ticks()
 	_test_arcane_lich_phase1_atk_bump_below_66pct()
 	_test_arcane_lich_phase2_aoe_below_33pct()
+	## Stage rotation (S2).
+	_test_stage_mults_neutral_at_stage_1()
+	_test_stage_mults_scale()
+	_test_boss_rotation_by_stage()
 	_summary()
 	_render_to_ui()
 
@@ -1032,3 +1036,36 @@ func _render_to_ui() -> void:
 	label.offset_left = 12
 	label.offset_top = 12
 	add_child(label)
+
+## ---------- Stage rotation (S2 — stage 1 must equal today's numbers exactly) ----------
+
+func _test_stage_mults_neutral_at_stage_1() -> void:
+	if not Combat.has_method(&"stage_hp_mult"):
+		_check("Combat has stage scaling helpers", false, "missing (RED)")
+		return
+	_check("stage 1 HP mult exactly 1.0", is_equal_approx(Combat.stage_hp_mult(1), 1.0),
+		"mult=%f" % Combat.stage_hp_mult(1))
+	_check("stage 1 ATK mult exactly 1.0", is_equal_approx(Combat.stage_atk_mult(1), 1.0),
+		"mult=%f" % Combat.stage_atk_mult(1))
+
+func _test_stage_mults_scale() -> void:
+	if not Combat.has_method(&"stage_hp_mult"):
+		_check("Combat has stage scaling (scale)", false, "missing (RED)")
+		return
+	_check("stage 3 HP mult 1.8 (1 + 0.4*2)", is_equal_approx(Combat.stage_hp_mult(3), 1.8),
+		"mult=%f" % Combat.stage_hp_mult(3))
+	_check("stage 3 ATK mult 1.5 (1 + 0.25*2)", is_equal_approx(Combat.stage_atk_mult(3), 1.5),
+		"mult=%f" % Combat.stage_atk_mult(3))
+
+func _test_boss_rotation_by_stage() -> void:
+	if not Combat.has_method(&"boss_for_stage"):
+		_check("Combat has boss_for_stage", false, "missing (RED)")
+		return
+	_check("stage 1 boss = slime king", Combat.boss_for_stage(1) == &"boss_slime_king",
+		"got %s" % Combat.boss_for_stage(1))
+	_check("stage 2 boss = iron golem", Combat.boss_for_stage(2) == &"boss_iron_golem",
+		"got %s" % Combat.boss_for_stage(2))
+	_check("stage 3 boss = arcane lich", Combat.boss_for_stage(3) == &"boss_arcane_lich",
+		"got %s" % Combat.boss_for_stage(3))
+	_check("stage 4 cycles to slime king", Combat.boss_for_stage(4) == &"boss_slime_king",
+		"got %s" % Combat.boss_for_stage(4))

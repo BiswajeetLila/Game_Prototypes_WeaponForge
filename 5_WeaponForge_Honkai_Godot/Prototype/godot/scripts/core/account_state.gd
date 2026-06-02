@@ -39,6 +39,9 @@ const PULL_COST: int = 300
 var gems: int = STARTING_GEMS
 var owned_weapons: Array = []      ## Array[WeaponData] — runtime instances, never catalog refs
 var equipped: Dictionary = {}      ## StringName hero_id -> int index into owned_weapons
+## Account progression: which stage the next battle is. Victory advances it,
+## defeat doesn't. Bosses rotate + enemies scale per stage (Combat helpers).
+var current_stage: int = 1
 
 ## All WeaponData fields that round-trip through a save. Self-contained snapshot.
 const _WEAPON_FIELDS: Array = [
@@ -84,12 +87,18 @@ func award_victory() -> void:
 	add_gems(RUN_VICTORY_BONUS)
 	autosave()
 
+## Victory also advances account progression to the next stage.
+func advance_stage() -> void:
+	current_stage += 1
+	autosave()
+
 ## Playtest hygiene: wipe back to first-boot state (fresh gems, no weapons) and
 ## persist it. Home exposes this as a small debug button.
 func reset_account() -> void:
 	gems = STARTING_GEMS
 	owned_weapons = []
 	equipped = {}
+	current_stage = 1
 	gems_changed.emit(gems)
 	owned_weapons_changed.emit()
 	autosave()
@@ -136,7 +145,7 @@ func to_save_dict() -> Dictionary:
 	var eq: Dictionary = {}
 	for k in equipped:
 		eq[String(k)] = equipped[k]
-	return {"version": SAVE_VERSION, "gems": gems, "weapons": ws, "equipped": eq}
+	return {"version": SAVE_VERSION, "gems": gems, "stage": current_stage, "weapons": ws, "equipped": eq}
 
 ## Validate-then-commit: returns false on ANY structural problem without touching
 ## current state, so a corrupt save can never half-apply.
@@ -162,6 +171,7 @@ func load_from_dict(d: Dictionary) -> bool:
 			return false
 		new_equipped[StringName(k)] = idx
 	gems = int(d["gems"])
+	current_stage = maxi(1, int(d.get("stage", 1)))   ## optional key: older v2 saves -> stage 1
 	owned_weapons = new_weapons
 	equipped = new_equipped
 	gems_changed.emit(gems)

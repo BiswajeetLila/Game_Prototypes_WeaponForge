@@ -43,6 +43,7 @@ func _ready() -> void:
 		_test_disk_round_trip()
 		_test_wave_clear_earnings()
 		_test_victory_bonus()
+		_test_stage_persistence()
 		_test_run_reset_does_not_touch_account()
 	_summary()
 	_render_to_ui()
@@ -224,6 +225,33 @@ func _test_reset_account() -> void:
 	_check("reset clears owned weapons", a.owned_weapons.is_empty(), "size=%d" % a.owned_weapons.size())
 	_check("reset clears equipped map", a.equipped.is_empty(), "size=%d" % a.equipped.size())
 	a.free()
+
+func _test_stage_persistence() -> void:
+	## S1: stage is ACCOUNT progression — victory advances, defeat doesn't,
+	## survives save/load, and old saves without the key start at stage 1.
+	var a = _Account.new()
+	if not ("current_stage" in a):
+		_check("AccountState has current_stage", false, "property missing (RED)")
+		a.free()
+		return
+	_check("fresh account at stage 1", a.current_stage == 1, "stage=%d" % a.current_stage)
+	a.advance_stage()
+	_check("victory advances stage", a.current_stage == 2, "stage=%d" % a.current_stage)
+	var d: Dictionary = a.to_save_dict()
+	var b = _Account.new()
+	b.load_from_dict(d)
+	_check("stage survives save round-trip", b.current_stage == 2, "stage=%d" % b.current_stage)
+	var legacy: Dictionary = a.to_save_dict()
+	legacy.erase("stage")
+	var c = _Account.new()
+	var ok: bool = c.load_from_dict(legacy)
+	_check("save without stage key loads at stage 1", ok and c.current_stage == 1,
+		"ok=%s stage=%d" % [ok, c.current_stage])
+	a.reset_account()
+	_check("reset returns to stage 1", a.current_stage == 1, "stage=%d" % a.current_stage)
+	a.free()
+	b.free()
+	c.free()
 
 func _test_run_reset_does_not_touch_account() -> void:
 	## THE account-vs-run boundary: restarting a run must not reset gems/weapons.

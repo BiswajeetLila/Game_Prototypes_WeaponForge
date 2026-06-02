@@ -61,17 +61,26 @@ func pull() -> Dictionary:
 	var owned = AccountState.acquire_weapon(catalog_pick)
 	var hero_id: StringName = _first_hero_of_class(catalog_pick.cls)
 	var hero = GameState.get_hero(hero_id)
-	var old_atk: int = hero.data.atk_base + hero.eff_atk()
-	GameState.equip_weapon_data(hero_id, owned)
-	AccountState.equip(hero_id, AccountState.owned_weapons.size() - 1)
+	var old_atk: int = (hero.data.atk_base + hero.eff_atk()) if hero != null else 0
+	## Armory model: only auto-equip an EMPTY-HANDED hero. Never overwrite the
+	## player's chosen loadout — otherwise the pull lands on the bench.
+	var auto_equipped: bool = false
+	if AccountState.get_equipped(hero_id) == null:
+		auto_equipped = AccountState.equip(hero_id, AccountState.owned_weapons.size() - 1)
+		if auto_equipped and hero != null:
+			GameState.equip_weapon_data(hero_id, owned)
 	var result: Dictionary = {
 		"weapon": owned,
 		"hero_id": hero_id,
+		"auto_equipped": auto_equipped,
 		"old_atk": old_atk,
-		"new_atk": hero.data.atk_base + hero.eff_atk(),
+		"new_atk": (hero.data.atk_base + hero.eff_atk()) if hero != null else 0,
 	}
-	GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d[/color]"
-		% [hero.data.name, owned.name, result.old_atk, result.new_atk])
+	if auto_equipped and hero != null:
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d[/color]"
+			% [hero.data.name, owned.name, result.old_atk, result.new_atk])
+	else:
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s → Armory[/color]" % owned.name)
 	AccountState.autosave()
 	pull_completed.emit(result)
 	return result
@@ -142,7 +151,10 @@ func show_reveal(result: Dictionary) -> void:
 	_reveal_name.modulate = c
 	_reveal_meta.text = "%s · %s · for %s" % [String(w.cls).capitalize(), String(w.rune).capitalize(),
 		String(result.hero_id).capitalize()]
-	_reveal_delta.text = "ATK %d → %d" % [result.old_atk, result.new_atk]
+	if bool(result.get("auto_equipped", false)):
+		_reveal_delta.text = "ATK %d → %d" % [result.old_atk, result.new_atk]
+	else:
+		_reveal_delta.text = "→ Sent to Armory — equip at Home"
 	_reveal.visible = true
 	## Rarity flash: overlay blinks in from the rarity color, settles to dark.
 	_reveal.color = Color(c.r, c.g, c.b, 0.55)

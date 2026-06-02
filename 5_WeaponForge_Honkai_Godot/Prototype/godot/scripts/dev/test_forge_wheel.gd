@@ -35,6 +35,7 @@ func _ready() -> void:
 		_test_pull_happy_path()
 		_test_pull_insufficient_gems()
 		_test_pull_class_filtered_to_unlocked()
+		_test_second_pull_goes_to_bench()
 		_test_pull_signal()
 	_summary()
 	_render_to_ui()
@@ -116,6 +117,23 @@ func _test_pull_class_filtered_to_unlocked() -> void:
 			all_warrior = false
 			break
 	_check("10 pulls, all warrior-class (locked classes excluded)", all_warrior, "non-warrior pulled")
+
+func _test_second_pull_goes_to_bench() -> void:
+	## Armory model: pulls only auto-equip an EMPTY-HANDED hero. A second pull
+	## must never overwrite the player's chosen loadout — it lands on the bench.
+	_fresh(600)
+	var first: Dictionary = _wheel().pull()
+	_reset_gems_only(600)
+	var second: Dictionary = _wheel().pull()
+	_check("first pull auto-equipped", bool(first.get("auto_equipped", false)), "false")
+	_check("second pull NOT auto-equipped", bool(second.get("auto_equipped", true)) == false, "true")
+	_check("hero still holds the FIRST weapon", AccountState.get_equipped(&"bran") == first.weapon,
+		"overwritten")
+	_check("second weapon owned (bench)", AccountState.owned_weapons.size() == 2,
+		"size=%d" % AccountState.owned_weapons.size())
+
+func _reset_gems_only(gems: int) -> void:
+	AccountState.gems = gems
 
 func _test_pull_signal() -> void:
 	_fresh(600)

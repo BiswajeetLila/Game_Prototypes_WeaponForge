@@ -44,6 +44,9 @@ func _ready() -> void:
 		_test_wave_clear_earnings()
 		_test_victory_bonus()
 		_test_stage_persistence()
+		_test_unequip_returns_weapon_to_bench()
+		_test_equip_rejects_class_mismatch()
+		_test_swap_between_owned_weapons()
 		_test_run_reset_does_not_touch_account()
 	_summary()
 	_render_to_ui()
@@ -252,6 +255,62 @@ func _test_stage_persistence() -> void:
 	a.free()
 	b.free()
 	c.free()
+
+## ---------- Armory equip rules (H1) ----------
+
+func _mage_weapon() -> Resource:
+	var w = WeaponDataT.new()
+	w.id = &"w_test_stave"
+	w.name = "Test Stave"
+	w.cls = &"mage"
+	w.base_atk = 16
+	return w
+
+func _test_unequip_returns_weapon_to_bench() -> void:
+	var a = _Account.new()
+	if not a.has_method(&"unequip"):
+		_check("AccountState has unequip()", false, "method missing (RED)")
+		a.free()
+		return
+	a.acquire_weapon(_make_catalog_weapon())
+	a.equip(&"bran", 0)
+	var ok: bool = a.unequip(&"bran")
+	_check("unequip succeeds", ok, "false")
+	_check("hero has nothing equipped after unequip", a.get_equipped(&"bran") == null, "still equipped")
+	_check("weapon stays OWNED (bench, not deleted)", a.owned_weapons.size() == 1,
+		"size=%d" % a.owned_weapons.size())
+	_check("unequip with nothing equipped is a no-op false", a.unequip(&"bran") == false, "true")
+	a.free()
+
+func _test_equip_rejects_class_mismatch() -> void:
+	var a = _Account.new()
+	if not a.has_method(&"unequip"):
+		_check("AccountState has class guard (gate)", false, "method missing (RED)")
+		a.free()
+		return
+	a.acquire_weapon(_mage_weapon())
+	var ok_wrong: bool = a.equip(&"bran", 0)          ## mage stave on the warrior
+	_check("mage weapon on Bran rejected", ok_wrong == false, "accepted")
+	_check("nothing equipped after rejected equip", a.get_equipped(&"bran") == null, "equipped")
+	var ok_right: bool = a.equip(&"elara", 0)         ## mage stave on the mage
+	_check("mage weapon on Elara accepted", ok_right, "rejected")
+	a.free()
+
+func _test_swap_between_owned_weapons() -> void:
+	var a = _Account.new()
+	if not a.has_method(&"unequip"):
+		_check("AccountState has swap path (gate)", false, "method missing (RED)")
+		a.free()
+		return
+	a.acquire_weapon(_make_catalog_weapon())          ## idx 0 (warrior)
+	a.acquire_weapon(_make_catalog_weapon())          ## idx 1 (warrior)
+	a.equip(&"bran", 0)
+	var ok: bool = a.equip(&"bran", 1)                ## re-equip = swap
+	_check("re-equip swaps to the new weapon", ok and a.get_equipped(&"bran") == a.owned_weapons[1],
+		"ok=%s" % ok)
+	_check("displaced weapon still owned (bench)", a.owned_weapons.size() == 2,
+		"size=%d" % a.owned_weapons.size())
+	a.free()
 
 func _test_run_reset_does_not_touch_account() -> void:
 	## THE account-vs-run boundary: restarting a run must not reset gems/weapons.

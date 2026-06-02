@@ -123,10 +123,24 @@ func acquire_weapon(catalog_weapon) -> Resource:
 	owned_weapons_changed.emit()
 	return inst
 
+## Equip is CLASS-MATCHED (spec §9 pillar): a weapon only fits heroes of its
+## class. Re-equipping swaps; the displaced weapon stays owned (bench).
 func equip(hero_id: StringName, owned_idx: int) -> bool:
 	if owned_idx < 0 or owned_idx >= owned_weapons.size():
 		return false
+	var hero_def = GameState.heroes_by_id.get(hero_id)
+	if hero_def == null or owned_weapons[owned_idx].cls != hero_def.cls:
+		return false
 	equipped[hero_id] = owned_idx
+	autosave()
+	return true
+
+## Send a hero's weapon back to the bench (stays owned).
+func unequip(hero_id: StringName) -> bool:
+	if not equipped.has(hero_id):
+		return false
+	equipped.erase(hero_id)
+	autosave()
 	return true
 
 ## Returns the equipped WeaponData instance for a hero, or null.

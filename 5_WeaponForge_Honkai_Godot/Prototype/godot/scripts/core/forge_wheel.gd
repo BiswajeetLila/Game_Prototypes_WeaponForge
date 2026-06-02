@@ -27,8 +27,6 @@ const RARITY_COLORS: Array = [
 ]
 
 var _ui_layer: CanvasLayer = null
-var _gems_label: Label = null
-var _pull_btn: Button = null
 var _reveal: ColorRect = null
 var _reveal_title: Label = null
 var _reveal_name: Label = null
@@ -38,10 +36,7 @@ var _reveal_delta: Label = null
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	_build_debug_ui()
-	AccountState.gems_changed.connect(func(_g): _refresh_ui())
-	GameState.wave_changed.connect(func(_w): _refresh_ui())
-	_refresh_ui()
+	_build_reveal_ui()
 
 ## ---------- Pull service ----------
 
@@ -88,36 +83,12 @@ func _first_hero_of_class(cls: StringName) -> StringName:
 			return id
 	return &""
 
-## ---------- Debug UI (visual sessions only) ----------
+## ---------- Reveal overlay (visual sessions only; HomeScreen calls show_reveal) ----------
 
-func _build_debug_ui() -> void:
+func _build_reveal_ui() -> void:
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.layer = 50
 	add_child(_ui_layer)
-
-	var panel := VBoxContainer.new()
-	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	panel.offset_left = -190.0
-	panel.offset_top = 8.0
-	panel.offset_right = -8.0
-	panel.add_theme_constant_override(&"separation", 4)
-	_ui_layer.add_child(panel)
-
-	_gems_label = Label.new()
-	_gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	panel.add_child(_gems_label)
-
-	_pull_btn = Button.new()
-	_pull_btn.text = "⚒ PULL  (300💎)"
-	_pull_btn.pressed.connect(_on_pull_pressed)
-	panel.add_child(_pull_btn)
-
-	var odds := Label.new()
-	odds.text = "Equal odds, your classes only"
-	odds.add_theme_font_size_override(&"font_size", 10)
-	odds.modulate = Color(1, 1, 1, 0.6)
-	odds.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	panel.add_child(odds)
 
 	## Full-screen reveal overlay (hidden until a pull resolves).
 	_reveal = ColorRect.new()
@@ -158,20 +129,10 @@ func _build_debug_ui() -> void:
 	dismiss.pressed.connect(func(): _reveal.visible = false)
 	center.add_child(dismiss)
 
-func _refresh_ui() -> void:
-	if _gems_label == null:
+## Public: HomeScreen (and later the spin cinematic) calls this after pull().
+func show_reveal(result: Dictionary) -> void:
+	if _reveal == null:
 		return
-	_gems_label.text = "💎 %d" % AccountState.gems
-	_pull_btn.disabled = not can_pull()
-
-func _on_pull_pressed() -> void:
-	var result: Dictionary = pull()
-	_refresh_ui()
-	if result.is_empty():
-		return
-	_show_reveal(result)
-
-func _show_reveal(result: Dictionary) -> void:
 	var w = result.weapon
 	var rarity: int = clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)
 	var c: Color = RARITY_COLORS[rarity]

@@ -43,6 +43,11 @@ func _ready() -> void:
 		_test_toggle_additive()
 		_test_toggle_pulled_only_zeroes_recipes()
 		_test_equip_signal()
+		_test_run_mods_default_zero()
+		_test_run_mods_atk_flat_and_pct()
+		_test_run_mods_crit_ult()
+		_test_run_mods_hp_raises_max_keeps_current()
+		_test_run_mods_reset_on_new_session()
 	if "combat_stat_source" in GameState:
 		GameState.combat_stat_source = GameState.STAT_SOURCE_AUTO
 	_summary()
@@ -181,6 +186,65 @@ func _test_equip_signal() -> void:
 func _on_wd_changed(hero_id: StringName) -> void:
 	_signal_count += 1
 	_signal_hero = hero_id
+
+## ---------- Run-scoped draft mods (R1 — Wittle-style per-run perk upgrades) ----------
+## Forge Draft picks write run_mods on the hero; they stack ON TOP of the equipped
+## weapon's contribution and reset every run (heroes are recreated by new_session).
+## Formula: eff_atk = floor(weapon_atk * (1 + atk_pct)) + atk_flat; crit/ult add;
+## hp_flat raises max under the clamp rule (no refill).
+
+func _test_run_mods_default_zero() -> void:
+	var h = _fresh_hero()
+	if not ("run_mods" in h):
+		_check("HeroState has run_mods", false, "property missing (RED)")
+		return
+	GameState.equip_weapon_data(&"bran", _pulled())     ## atk 30
+	_check("zero mods leave eff_atk untouched", h.eff_atk() == 30, "eff=%d" % h.eff_atk())
+
+func _test_run_mods_atk_flat_and_pct() -> void:
+	var h = _fresh_hero()
+	if not ("run_mods" in h):
+		_check("HeroState has run_mods (atk)", false, "property missing (RED)")
+		return
+	GameState.equip_weapon_data(&"bran", _pulled())     ## atk 30
+	h.apply_run_mod(&"atk_flat", 6)
+	_check("atk_flat +6: eff_atk 36", h.eff_atk() == 36, "eff=%d" % h.eff_atk())
+	h.apply_run_mod(&"atk_pct", 0.5)
+	_check("atk_pct +50%: floor(30*1.5)+6 = 51", h.eff_atk() == 51, "eff=%d" % h.eff_atk())
+
+func _test_run_mods_crit_ult() -> void:
+	var h = _fresh_hero()
+	if not ("run_mods" in h):
+		_check("HeroState has run_mods (crit/ult)", false, "property missing (RED)")
+		return
+	GameState.equip_weapon_data(&"bran", _pulled())     ## crit 7, ult 9
+	h.apply_run_mod(&"crit", 5)
+	h.apply_run_mod(&"ult_rate", 4)
+	_check("crit mod adds: 7+5", h.eff_crit() == 12, "crit=%d" % h.eff_crit())
+	_check("ult mod adds: 9+4", h.eff_ult_rate() == 13, "ult=%d" % h.eff_ult_rate())
+
+func _test_run_mods_hp_raises_max_keeps_current() -> void:
+	var h = _fresh_hero()
+	if not ("run_mods" in h):
+		_check("HeroState has run_mods (hp)", false, "property missing (RED)")
+		return
+	GameState.equip_weapon_data(&"bran", _pulled(30, 50))   ## max = base+50
+	var max_before: int = h.max_hp
+	var hp_before: int = h.hp
+	h.apply_run_mod(&"hp_flat", 20)
+	_check("hp_flat raises max by 20", h.max_hp == max_before + 20,
+		"max=%d want %d" % [h.max_hp, max_before + 20])
+	_check("hp_flat never refills current", h.hp == hp_before, "hp=%d" % h.hp)
+
+func _test_run_mods_reset_on_new_session() -> void:
+	var h = _fresh_hero()
+	if not ("run_mods" in h):
+		_check("HeroState has run_mods (reset)", false, "property missing (RED)")
+		return
+	h.apply_run_mod(&"atk_flat", 99)
+	var h2 = _fresh_hero()                              ## new_session recreates heroes
+	_check("new run starts with zero mods", h2.eff_atk() == 0 and h2.run_mods[&"atk_flat"] == 0,
+		"eff=%d flat=%d" % [h2.eff_atk(), h2.run_mods[&"atk_flat"]])
 
 ## ---------- Test helpers ----------
 

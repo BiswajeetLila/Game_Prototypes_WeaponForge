@@ -34,11 +34,15 @@ const VEX_UNLOCK_WAVE: int = 6
 @onready var _reforge_retry_modal: Control = %ReforgeRetryModal
 @onready var _notifications: Control = %Notifications
 
+const DraftModalScript = preload("res://scripts/ui/draft_modal.gd")
+
+var _draft_modal: ColorRect = null
+
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
-	_forge.wave_start_requested.connect(_on_wave_start_requested)
+	_reset_btn.text = "⌂ HOME"
 	_hud.codex_pressed.connect(_codex_modal.open)
-	_result_modal.restart_requested.connect(_on_reset_pressed)
+	_result_modal.restart_requested.connect(_on_back_home)
 	_reforge_retry_modal.retry_requested.connect(_on_retry_pressed)
 	_reforge_retry_modal.give_up_requested.connect(_on_give_up_pressed)
 	GameState.wave_cleared.connect(_on_wave_cleared)
@@ -46,17 +50,33 @@ func _ready() -> void:
 	GameState.squad_wiped.connect(_on_squad_wiped)
 	GameState.hero_died.connect(_on_hero_died)
 	Combat.boss_telegraph.connect(_on_boss_telegraph)
-	_squad_bar.hero_selected.connect(_forge.set_current_hero)
 	ScreenShake.register_target(self)
-	_open_forge_moment()
+	## NEW FLOW (GDD loop): the meta layer (pulls/equip) lives on the Home
+	## screen. Battle = waves + post-wave Forge Draft only — no between-wave
+	## shop/forge. The legacy ForgePanel stays in the scene for the old test
+	## suites but is hidden in play.
+	_forge.visible = false
+	_draft_modal = DraftModalScript.new()
+	add_child(_draft_modal)
+	_draft_modal.card_picked.connect(_on_draft_picked)
+	_start_run()
 
-func _open_forge_moment() -> void:
-	Shop.refresh(true)
-	_forge.refresh_forge_moment()
+## Fresh run: the FULL squad enters with their account-loaded weapons
+## (pull at Home -> fight with what you forged).
+func _start_run() -> void:
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	for id in GameState.squad_order:
+		var w = AccountState.get_equipped(id)
+		if w != null:
+			GameState.equip_weapon_data(id, w)
+	_begin_wave(1)
 
-func _on_wave_start_requested() -> void:
-	_notifications.show_banner("⚔ WAVE %d" % GameState.wave, Color(1, 0.9, 0.6), 1.0)
-	Combat.start_wave(GameState.wave)
+func _begin_wave(wave: int) -> void:
+	_notifications.show_banner("⚔ WAVE %d" % wave, Color(1, 0.9, 0.6), 1.0)
+	await get_tree().create_timer(0.8).timeout
+	Combat.start_wave(wave)
 
 func _on_wave_cleared(wave: int) -> void:
 	var reward: int = 5 + wave * 2
@@ -68,41 +88,18 @@ func _on_wave_cleared(wave: int) -> void:
 	if JuiceConfig.JUICE_ENABLED:
 		ScreenShake.kick(JuiceConfig.WAVE_CLEAR.shake_amp, JuiceConfig.WAVE_CLEAR.shake_dur)
 
-	## Per-hero unlocks: Elara at ELARA_UNLOCK_WAVE clear, Vex at VEX_UNLOCK_WAVE.
-	## Card fires 0.7s later so it doesn't pile under the wave-clear card.
-	match wave:
-		ELARA_UNLOCK_WAVE:
-			GameState.unlock_hero(&"elara")
-			_show_unlock_card_delayed(&"elara", Color(0.85, 0.55, 1))
-		VEX_UNLOCK_WAVE:
-			GameState.unlock_hero(&"vex")
-			_show_unlock_card_delayed(&"vex", Color(0.55, 0.85, 1))
-
 	if wave >= GameState.TOTAL_WAVES:
 		return
-	GameState.set_wave(wave + 1)
-	_open_forge_moment()
+	## Forge Draft (spec §10): 3 cards post-wave, 5 after a boss wave. Combat is
+	## already stopped (Combat._on_wave_cleared). Pick -> apply -> next wave.
+	var count: int = 5 if wave in GameState.BOSS_WAVES else 3
+	_draft_modal.open(ForgeDraft.deal(count))
 
-## Hero-unlock card with name + class + ult description, then auto-focuses
-## the ForgePanel to the new hero so the player can immediately equip them.
-## Per user feedback: 'have their card come up with a short description ...
-## and then focus to that cards char so that i can put items on her.'
-const UNLOCK_PRE_DELAY: float = 0.7   ## let wave-clear card settle first
-const UNLOCK_CARD_DUR:  float = 1.8   ## card lifetime
-const UNLOCK_POST_GAP:  float = 0.15  ## small breath after fade before focus shift
-
-func _show_unlock_card_delayed(hero_id: StringName, accent: Color) -> void:
-	await get_tree().create_timer(UNLOCK_PRE_DELAY).timeout
-	var data = GameState.heroes_by_id.get(hero_id)
-	if data == null:
-		return
-	var class_str: String = String(data.cls).to_upper()
-	var subtitle: String = "%s  •  %s\n%s" % [class_str, data.ult_name, data.ult_desc]
-	_notifications.show_card("✨ %s JOINS" % String(data.name).to_upper(), subtitle, accent, UNLOCK_CARD_DUR)
-	## Wait card lifetime + post-gap, then switch ForgePanel to this hero.
-	await get_tree().create_timer(UNLOCK_CARD_DUR + UNLOCK_POST_GAP).timeout
-	if _forge != null and _forge.has_method(&"set_current_hero"):
-		_forge.set_current_hero(hero_id)
+func _on_draft_picked(card) -> void:
+	ForgeDraft.apply(card)
+	var next_wave: int = GameState.wave + 1
+	GameState.set_wave(next_wave)
+	_begin_wave(next_wave)
 
 func _on_stage_cleared() -> void:
 	_notifications.show_banner("🏆 STAGE CLEAR", Color(1, 0.85, 0.2), 1.8)
@@ -120,12 +117,12 @@ func _on_squad_wiped() -> void:
 		return
 	_result_modal.open(&"wipe")
 
-## Stage D — Reforge & Retry path. Revive squad, leave inventory + gold +
-## wave untouched, reopen the forge for the same boss wave.
+## Reforge & Retry path. Revive squad and re-fight the same boss wave
+## (run mods + equipped weapons untouched).
 func _on_retry_pressed() -> void:
 	Combat.stop()
 	GameState.revive_squad_for_retry()
-	_open_forge_moment()
+	_begin_wave(GameState.wave)
 
 ## Stage D — Give Up routes through to the standard wipe result modal.
 func _on_give_up_pressed() -> void:
@@ -145,7 +142,10 @@ func _on_hero_died(hero_id: StringName) -> void:
 		return
 	_notifications.show_banner("💔 %s FALLS" % hero.data.name.to_upper(), Color(1, 0.55, 0.55), 1.0)
 
-func _on_reset_pressed() -> void:
+## Battle over (or HOME button): back to the meta layer.
+func _on_back_home() -> void:
 	Combat.stop()
-	GameState.new_session()
-	_open_forge_moment()
+	get_tree().change_scene_to_file("res://scenes/Home.tscn")
+
+func _on_reset_pressed() -> void:
+	_on_back_home()

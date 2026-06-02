@@ -12,7 +12,7 @@ config_version=5
 
 config/name="WeaponCraft Godot Ultra-MVP"
 config/description="Ultra-MVP port of WeaponCraft (BASE-A1 0.1.9 reference) to Godot 4.4. Validates the Godot + MCP + Kenney art pipeline + Crafting Juice core hook (merge L1-L5 + 2 recipes Steamburst/Inferno + Codex + First-Discovery overlay). 1 hero (Bran), 3 waves, 5 parts, no boss, no retry."
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/Home.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -31,6 +31,7 @@ Heartbeat="*res://scripts/core/heartbeat.gd"
 SignalTrace="*res://scripts/core/signal_trace.gd"
 AccountState="*res://scripts/core/account_state.gd"
 ForgeWheel="*res://scripts/core/forge_wheel.gd"
+ForgeDraft="*res://scripts/core/forge_draft.gd"
 
 [debug]
 

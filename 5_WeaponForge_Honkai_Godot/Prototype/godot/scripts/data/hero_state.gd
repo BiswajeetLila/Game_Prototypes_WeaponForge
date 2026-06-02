@@ -33,11 +33,25 @@ var ult_used: bool = false
 var last_target_name: StringName = &""
 var burn_stack: int = 0
 
+## Run-scoped Forge Draft mods (R1). Wittle-style perk picks stack here ON TOP of
+## the equipped weapon's contribution and die with the run (heroes are recreated
+## by GameState.new_session()). Keys mirror SkillCardData stat-card effects.
+var run_mods: Dictionary = {}
+
 func _init(p_data) -> void:
 	data = p_data
 	weapon = WeaponT.new()
 	max_hp = data.hp_base
 	hp = max_hp
+	run_mods = {&"atk_flat": 0, &"atk_pct": 0.0, &"crit": 0, &"ult_rate": 0, &"hp_flat": 0}
+
+## Apply one draft-card stat effect. hp_flat raises MAX under the clamp rule —
+## a draft buff never heals and never damages, on either weapon path.
+func apply_run_mod(key: StringName, value) -> void:
+	run_mods[key] = run_mods.get(key, 0) + value
+	if key == &"hp_flat":
+		max_hp = data.hp_base + eff_hp_bonus()
+		hp = clampi(hp, 0, max_hp)
 
 func refresh_max_hp() -> void:
 	var new_max: int = data.hp_base + eff_hp_bonus()
@@ -70,20 +84,22 @@ func has_weapon() -> bool:
 	return weapon != null or weapon_data != null
 
 func eff_atk() -> int:
-	return _pick(weapon.get_atk() if weapon != null else 0,
+	var base: int = _pick(weapon.get_atk() if weapon != null else 0,
 		weapon_data.get_atk() if weapon_data != null else 0)
+	return int(floor(float(base) * (1.0 + float(run_mods.get(&"atk_pct", 0.0))))) \
+		+ int(run_mods.get(&"atk_flat", 0))
 
 func eff_crit() -> int:
 	return _pick(weapon.get_crit() if weapon != null else 0,
-		weapon_data.get_crit() if weapon_data != null else 0)
+		weapon_data.get_crit() if weapon_data != null else 0) + int(run_mods.get(&"crit", 0))
 
 func eff_ult_rate() -> int:
 	return _pick(weapon.get_ult_rate() if weapon != null else 0,
-		weapon_data.get_ult_rate() if weapon_data != null else 0)
+		weapon_data.get_ult_rate() if weapon_data != null else 0) + int(run_mods.get(&"ult_rate", 0))
 
 func eff_hp_bonus() -> int:
 	return _pick(weapon.get_hp_bonus() if weapon != null else 0,
-		weapon_data.get_hp_bonus() if weapon_data != null else 0)
+		weapon_data.get_hp_bonus() if weapon_data != null else 0) + int(run_mods.get(&"hp_flat", 0))
 
 func eff_tags() -> Array:
 	return _pick(weapon.get_all_tags() if weapon != null else [],

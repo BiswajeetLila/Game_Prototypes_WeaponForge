@@ -29,6 +29,11 @@ ScreenShake="*res://scripts/core/screen_shake.gd"
 HitPause="*res://scripts/core/hit_pause.gd"
 Heartbeat="*res://scripts/core/heartbeat.gd"
 SignalTrace="*res://scripts/core/signal_trace.gd"
+AccountState="*res://scripts/core/account_state.gd"
+
+[debug]
+
+file_logging/enable_file_logging=true
 
 [display]
 
@@ -37,12 +42,6 @@ window/size/viewport_height=800
 window/size/window_width_override=420
 window/size/window_height_override=800
 window/stretch/mode="canvas_items"
-
-[debug]
-
-file_logging/enable_file_logging=true
-file_logging/enable_file_logging.pc=true
-file_logging/enable_file_logging.pc=true
 
 [dotnet]
 

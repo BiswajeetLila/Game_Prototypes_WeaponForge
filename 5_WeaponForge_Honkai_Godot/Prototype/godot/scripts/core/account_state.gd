@@ -29,9 +29,11 @@ signal owned_weapons_changed
 const SAVE_VERSION: int = 2
 const SAVE_PATH: String = "user://account.json"
 const STARTING_GEMS: int = 600
-## Tuned after first playtest: full 15-wave run = 25*15 + 75*3 = 600 = 2 pulls.
+## Run = 4 waves + boss (Wittle stage shape; boss kill ends the run). Cleared run
+## pays 4*25 + (25+75) + 100 victory = 300 = exactly one pull per victory.
 const GEMS_PER_WAVE: int = 25
 const GEMS_BOSS_BONUS: int = 75
+const RUN_VICTORY_BONUS: int = 100
 const PULL_COST: int = 300
 
 var gems: int = STARTING_GEMS
@@ -75,6 +77,11 @@ func _on_wave_cleared(wave: int) -> void:
 	if wave in GameState.BOSS_WAVES:
 		amount += GEMS_BOSS_BONUS
 	add_gems(amount)
+	autosave()
+
+## Boss kill = run victory. Pays the clear bonus and persists.
+func award_victory() -> void:
+	add_gems(RUN_VICTORY_BONUS)
 	autosave()
 
 ## Playtest hygiene: wipe back to first-boot state (fresh gems, no weapons) and

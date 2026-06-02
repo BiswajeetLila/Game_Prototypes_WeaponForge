@@ -42,6 +42,7 @@ func _ready() -> void:
 		_test_corrupt_payload_rejected()
 		_test_disk_round_trip()
 		_test_wave_clear_earnings()
+		_test_victory_bonus()
 		_test_run_reset_does_not_touch_account()
 	_summary()
 	_render_to_ui()
@@ -194,6 +195,18 @@ func _test_wave_clear_earnings() -> void:
 	_check("normal wave pays 25", a.gems == 625, "gems=%d" % a.gems)
 	a._on_wave_cleared(5)
 	_check("boss wave pays 25+75", a.gems == 725, "gems=%d" % a.gems)
+	a.free()
+
+func _test_victory_bonus() -> void:
+	## Boss kill ends the run (Wittle stage shape): victory pays +100 so a cleared
+	## run totals 4*25 + (25+75) + 100 = 300 = exactly one pull.
+	var a = _Account.new()
+	if not a.has_method(&"award_victory"):
+		_check("AccountState has award_victory()", false, "method missing (RED)")
+		a.free()
+		return
+	a.award_victory()
+	_check("victory pays +100", a.gems == 700, "gems=%d" % a.gems)
 	a.free()
 
 func _test_reset_account() -> void:

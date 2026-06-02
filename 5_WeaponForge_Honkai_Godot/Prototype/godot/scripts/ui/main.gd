@@ -36,6 +36,10 @@ const VEX_UNLOCK_WAVE: int = 6
 
 const DraftModalScript = preload("res://scripts/ui/draft_modal.gd")
 
+## A run is ONE stage: 4 waves + the boss on wave 5. Boss kill ends the run
+## (victory -> home). Stage rotation (golem/lich, scaling) comes next pass.
+const RUN_FINAL_WAVE: int = 5
+
 var _draft_modal: ColorRect = null
 
 func _ready() -> void:
@@ -88,12 +92,15 @@ func _on_wave_cleared(wave: int) -> void:
 	if JuiceConfig.JUICE_ENABLED:
 		ScreenShake.kick(JuiceConfig.WAVE_CLEAR.shake_amp, JuiceConfig.WAVE_CLEAR.shake_dur)
 
-	if wave >= GameState.TOTAL_WAVES:
+	## THE LOOP: run ends at the boss (Wittle stage shape). Kill the boss ->
+	## victory -> home. Otherwise: Forge Draft (3 cards), pick -> next wave auto.
+	if wave >= RUN_FINAL_WAVE:
+		AccountState.award_victory()
+		_notifications.show_banner("🏆 BOSS DOWN  +%d💎" % AccountState.RUN_VICTORY_BONUS,
+			Color(1, 0.85, 0.2), 1.6)
+		_result_modal.open(&"clear")
 		return
-	## Forge Draft (spec §10): 3 cards post-wave, 5 after a boss wave. Combat is
-	## already stopped (Combat._on_wave_cleared). Pick -> apply -> next wave.
-	var count: int = 5 if wave in GameState.BOSS_WAVES else 3
-	_draft_modal.open(ForgeDraft.deal(count))
+	_draft_modal.open(ForgeDraft.deal(3))
 
 func _on_draft_picked(card) -> void:
 	ForgeDraft.apply(card)

@@ -32,10 +32,16 @@ extends Resource
 const STAR_STEP: float = 0.05
 
 ## ---------- Rarity + forge progression (spec §9 Phase-1) ----------
-## rarity_idx: 0=common 1=rare 2=epic 3=legendary 4=mythic.
+## rarity_idx: 0=common 1=rare 2=epic 3=legendary 4=mythic. Hard cap below.
+const MAX_RARITY_IDX: int = 4
 @export var rarity_idx: int = 0
-## forge_progress: fractional progress toward the next rarity tier [0,1).
-var forge_progress: float = 0.0
+## forge_progress: fractional progress [0,1) banked toward forge_target_idx.
+## Exported so partial forge progress survives save/load (P0 persistence).
+@export var forge_progress: float = 0.0
+## The rarity tier the current bank works toward; -1 = no active bank. The bank
+## is target-exclusive: applying a part that banks toward a DIFFERENT tier resets
+## the bank first (no cross-tier contamination — codex gate P1).
+@export var forge_target_idx: int = -1
 
 ## ---------- Derived stats ----------
 
@@ -89,30 +95,53 @@ func get_all_tags() -> Array:
 ##   diff == 4  -> no instant upgrade; bank 1/3 toward the part's tier (3 parts reach it)
 const _FORGE_FILL: float = 1.0 - 0.000001  ## float-safe completion threshold (handles 3×(1/3))
 func apply_forge_part(part_idx: int) -> bool:
+	if part_idx < 0 or part_idx > MAX_RARITY_IDX:
+		push_warning("WeaponData.apply_forge_part: part_idx %d outside 0..%d — rejected"
+			% [part_idx, MAX_RARITY_IDX])
+		return false
 	var diff: int = part_idx - rarity_idx
 	if diff < 0:
 		return false
 	if diff == 0:
-		forge_progress += 0.5
-		if forge_progress >= 1.0:
-			rarity_idx += 1
-			forge_progress -= 1.0
-			return true
-		return false
+		if rarity_idx >= MAX_RARITY_IDX:
+			## Already Mythic: no tier above to bank toward. No contribution
+			## (caller refunds as essence, same as the lower-tier path).
+			return false
+		return _bank(rarity_idx + 1, 0.5, true)
 	if diff == 1:
 		rarity_idx = part_idx
 		forge_progress = 0.0
+		forge_target_idx = -1
 		return true
 	if diff == 2:
+		## Instant jump straight to the part's tier + 50% banked toward the tier
+		## above it — unless the part IS Mythic (no tier above: bank dropped).
 		rarity_idx = part_idx
-		forge_progress = 0.5
+		if part_idx >= MAX_RARITY_IDX:
+			forge_progress = 0.0
+			forge_target_idx = -1
+		else:
+			forge_progress = 0.5
+			forge_target_idx = part_idx + 1
 		return true
-	## diff >= 3: large gap. No instant upgrade — bank fractional progress toward the
-	## part's tier (Y). Assumes a run of same-rarity parts (the spec §9 banking model).
+	## diff >= 3: large gap. No instant upgrade — bank toward the part's tier (Y).
 	var inc: float = 0.5 if diff == 3 else (1.0 / 3.0)
+	return _bank(part_idx, inc, false)
+
+## Add `inc` to the bank toward `target`. The bank is target-exclusive: a different
+## active target resets the bank before adding (harsh rule, no cross-tier mixing;
+## a UI warning ships with the pull increment). On fill the weapon upgrades to the
+## TARGET tier. `carry` keeps overflow past 1.0 (historical same-tier semantics).
+func _bank(target: int, inc: float, carry: bool) -> bool:
+	if forge_target_idx != target:
+		forge_target_idx = target
+		forge_progress = 0.0
 	forge_progress += inc
 	if forge_progress >= _FORGE_FILL:
-		rarity_idx = part_idx
-		forge_progress = 0.0
+		rarity_idx = target
+		forge_progress = (forge_progress - 1.0) if carry else 0.0
+		if forge_progress < 0.000001:
+			forge_progress = 0.0
+		forge_target_idx = -1
 		return true
 	return false

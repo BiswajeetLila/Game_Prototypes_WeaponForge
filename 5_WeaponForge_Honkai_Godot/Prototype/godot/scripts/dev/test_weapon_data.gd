@@ -29,6 +29,11 @@ func _ready() -> void:
 	_test_forge_part_three_tiers_higher_two_parts_reach_target()
 	_test_forge_part_four_tiers_higher_banks_third()
 	_test_forge_part_four_tiers_higher_three_parts_reach_target()
+	_test_forge_bank_retarget_on_different_gap_tier()
+	_test_forge_same_tier_after_gap_resets_bank()
+	_test_instant_upgrades_set_target_correctly()
+	_test_mythic_cap_same_tier_no_overflow()
+	_test_out_of_range_part_rejected()
 	_test_get_crit_flat()
 	_test_get_ult_rate_flat()
 	_test_get_all_tags_rune_and_derived()
@@ -144,6 +149,85 @@ func _test_forge_part_four_tiers_higher_three_parts_reach_target() -> void:
 	var upgraded: bool = w.apply_forge_part(4)  ## 3/3 -> upgrade
 	_check("diff==4 x3: third part upgrades", upgraded == true, "upgraded=%s" % upgraded)
 	_check("diff==4 x3: reached Mythic(4)", w.rarity_idx == 4, "rarity_idx=%d" % w.rarity_idx)
+
+## ---------- Forge bank targeting + rarity cap (codex gate P1 fixes) ----------
+
+func _test_forge_bank_retarget_on_different_gap_tier() -> void:
+	## P1: the bank must not mix tiers. Applying a gap part of a DIFFERENT tier than
+	## the active bank RESETS the bank to the new tier (harsh rule, documented;
+	## UI warning ships with the pull increment). Fill upgrades to the TARGET.
+	var w = WeaponDataT.new()
+	if not ("forge_target_idx" in w):
+		_check("WeaponData has forge_target_idx", false, "property missing (RED)")
+		return
+	w.rarity_idx = 0
+	w.apply_forge_part(4)                       ## 1/3 banked toward Mythic(4)
+	_check("gap bank targets Mythic(4)", w.forge_target_idx == 4, "target=%d" % w.forge_target_idx)
+	var upgraded: bool = w.apply_forge_part(3)  ## different gap tier -> reset + re-target
+	_check("retarget: no upgrade", upgraded == false, "upgraded=%s" % upgraded)
+	_check("retarget: progress reset to fresh 0.5 (not 1/3+0.5 contamination)",
+		is_equal_approx(w.forge_progress, 0.5), "progress=%f" % w.forge_progress)
+	_check("retarget: target now Legendary(3)", w.forge_target_idx == 3, "target=%d" % w.forge_target_idx)
+	w.apply_forge_part(3)                       ## second Legendary fills the bank
+	_check("fill upgrades to the TARGET tier (3)", w.rarity_idx == 3, "rarity=%d" % w.rarity_idx)
+
+func _test_forge_same_tier_after_gap_resets_bank() -> void:
+	## Same single-meter rule applies to diff==0: it banks toward X+1, so arriving
+	## while a gap bank is active re-targets and resets. No cross-tier mixing, ever.
+	var w = WeaponDataT.new()
+	if not ("forge_target_idx" in w):
+		_check("WeaponData has forge_target_idx", false, "property missing (RED)")
+		return
+	w.rarity_idx = 0
+	w.apply_forge_part(4)                       ## 1/3 toward Mythic(4)
+	w.apply_forge_part(0)                       ## same-tier -> re-target to Rare(1)
+	_check("same-tier after gap: progress fresh 0.5", is_equal_approx(w.forge_progress, 0.5),
+		"progress=%f" % w.forge_progress)
+	_check("same-tier after gap: target Rare(1)", w.forge_target_idx == 1,
+		"target=%d" % w.forge_target_idx)
+	_check("same-tier after gap: rarity unchanged", w.rarity_idx == 0, "rarity=%d" % w.rarity_idx)
+
+func _test_instant_upgrades_set_target_correctly() -> void:
+	var w = WeaponDataT.new()
+	if not ("forge_target_idx" in w):
+		_check("WeaponData has forge_target_idx", false, "property missing (RED)")
+		return
+	w.rarity_idx = 0
+	w.apply_forge_part(2)                       ## instant Epic(2) + 50% toward Legendary(3)
+	_check("diff==2 banks toward Y+1: target Legendary(3)", w.forge_target_idx == 3,
+		"target=%d" % w.forge_target_idx)
+	var w2 = WeaponDataT.new()
+	w2.rarity_idx = 0
+	w2.apply_forge_part(1)                      ## instant, no bank
+	_check("diff==1 clears target (-1)", w2.forge_target_idx == -1, "target=%d" % w2.forge_target_idx)
+	var w3 = WeaponDataT.new()
+	w3.rarity_idx = 2
+	w3.apply_forge_part(4)                      ## diff==2 straight onto Mythic: no tier above
+	_check("diff==2 landing on Mythic: no overflow bank", w3.forge_target_idx == -1 and w3.rarity_idx == 4,
+		"target=%d rarity=%d" % [w3.forge_target_idx, w3.rarity_idx])
+
+func _test_mythic_cap_same_tier_no_overflow() -> void:
+	## P1: rarity must never exceed Mythic(4). Same-tier parts at the cap contribute
+	## nothing (caller refunds as essence, same as the lower-tier path).
+	var w = WeaponDataT.new()
+	w.rarity_idx = 4
+	var first: bool = w.apply_forge_part(4)
+	var second: bool = w.apply_forge_part(4)
+	_check("mythic+mythic: first is a no-op", first == false, "returned %s" % first)
+	_check("mythic+mythic: no progress banked", is_equal_approx(w.forge_progress, 0.0),
+		"progress=%f" % w.forge_progress)
+	_check("mythic+mythic: second is a no-op", second == false, "returned %s" % second)
+	_check("rarity capped at Mythic(4)", w.rarity_idx == 4, "rarity=%d" % w.rarity_idx)
+
+func _test_out_of_range_part_rejected() -> void:
+	## P1: part_idx outside the 0..4 ladder is rejected with state untouched.
+	var w = WeaponDataT.new()
+	w.rarity_idx = 0
+	var ok: bool = w.apply_forge_part(5)
+	_check("part_idx 5 rejected", ok == false, "returned %s" % ok)
+	_check("part_idx 5: no progress banked", is_equal_approx(w.forge_progress, 0.0),
+		"progress=%f" % w.forge_progress)
+	_check("part_idx 5: rarity unchanged", w.rarity_idx == 0, "rarity=%d" % w.rarity_idx)
 
 ## ---------- Combat-interface accessors (Stage 1: make WeaponData a drop-in for the
 ## legacy socket weapon's combat surface; combat.gd reads these four off hero.weapon) ----------

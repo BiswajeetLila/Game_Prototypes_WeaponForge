@@ -19,6 +19,7 @@ extends Control
 
 const SCRIPT_PATH := "res://scripts/core/account_state.gd"
 const WeaponDataT = preload("res://scripts/data/weapon_data.gd")
+const ShardDataT = preload("res://scripts/data/shard_data.gd")
 const TEST_SAVE_PATH := "user://test_account_save.json"
 
 var _passed: int = 0
@@ -48,6 +49,12 @@ func _ready() -> void:
 		_test_equip_rejects_class_mismatch()
 		_test_swap_between_owned_weapons()
 		_test_run_reset_does_not_touch_account()
+		_test_save_version_is_3()
+		_test_v2_save_loads_without_shards()
+		_test_shards_round_trip()
+		_test_corrupt_shard_rejected()
+		_test_reset_clears_shards()
+		_test_star_progress_round_trip()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -322,6 +329,86 @@ func _test_run_reset_does_not_touch_account() -> void:
 	_check("new_session leaves owned weapons alone", a.owned_weapons.size() == 1,
 		"size=%d" % a.owned_weapons.size())
 	a.free()
+
+## ---------- Shard inventory + save v2->v3 migration (Stage E) ----------
+
+func _test_save_version_is_3() -> void:
+	_check("SAVE_VERSION bumped to 3 (shard inventory)", _Account.SAVE_VERSION == 3,
+		"version=%d" % _Account.SAVE_VERSION)
+
+func _test_v2_save_loads_without_shards() -> void:
+	## A pre-shard v2 save must LOAD (not be wiped): shards default empty, and old
+	## weapon dicts lacking star_progress default it to 0.
+	var a = _Account.new()
+	a.add_gems(50)                                ## 650
+	a.acquire_weapon(_make_catalog_weapon())
+	var d: Dictionary = a.to_save_dict()
+	d["version"] = 2
+	d.erase("shards")
+	for wd in d["weapons"]:
+		wd.erase("star_progress")                 ## v2 weapons predate the field
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(d)
+	_check("v2 save still loads (not wiped)", ok, "rejected")
+	_check("v2 load: gems survive", b.gems == 650, "gems=%d" % b.gems)
+	_check("v2 load: weapon survives", b.owned_weapons.size() == 1, "size=%d" % b.owned_weapons.size())
+	_check("v2 load: shards default empty", ("shards" in b) and (b.shards as Array).is_empty(),
+		"shards missing or non-empty")
+	_check("v2 load: missing star_progress defaults to 0",
+		b.owned_weapons.size() == 1 and b.owned_weapons[0].star_progress == 0,
+		"star_progress not defaulted")
+	a.free(); b.free()
+
+func _test_shards_round_trip() -> void:
+	var a = _Account.new()
+	if not a.has_method(&"add_shard"):
+		_check("AccountState has add_shard()", false, "method missing (RED)")
+		a.free(); return
+	var s = ShardDataT.new(); s.rarity_idx = 3; s.element = &"fire"
+	a.add_shard(s)
+	a.add_shard(ShardDataT.new())                 ## common, default
+	var d: Dictionary = a.to_save_dict()
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(d)
+	_check("shards round-trip load succeeds", ok, "false")
+	_check("shards count preserved (2)", b.shards.size() == 2, "size=%d" % b.shards.size())
+	if b.shards.size() == 2:
+		_check("shard rarity + element preserved",
+			b.shards[0].rarity_idx == 3 and b.shards[0].element == &"fire",
+			"rarity=%d element=%s" % [b.shards[0].rarity_idx, b.shards[0].element])
+	a.free(); b.free()
+
+func _test_corrupt_shard_rejected() -> void:
+	var a = _Account.new()
+	var d: Dictionary = a.to_save_dict()
+	d["shards"] = ["junk"]                         ## non-dict entry
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(d)
+	_check("corrupt shard entry rejected", ok == false, "accepted")
+	_check("rejected corrupt-shard load leaves fresh defaults", b.gems == 600, "gems=%d" % b.gems)
+	a.free(); b.free()
+
+func _test_reset_clears_shards() -> void:
+	var a = _Account.new()
+	if not a.has_method(&"add_shard"):
+		_check("AccountState shards (gate)", false, "method missing (RED)")
+		a.free(); return
+	a.add_shard(ShardDataT.new())
+	a.reset_account()
+	_check("reset clears shards", ("shards" in a) and (a.shards as Array).is_empty(), "not cleared")
+	a.free()
+
+func _test_star_progress_round_trip() -> void:
+	var a = _Account.new()
+	var owned = a.acquire_weapon(_make_catalog_weapon())
+	owned.star_progress = 2
+	var d: Dictionary = a.to_save_dict()
+	var b = _Account.new()
+	b.load_from_dict(d)
+	_check("star_progress survives save round-trip",
+		b.owned_weapons.size() == 1 and b.owned_weapons[0].star_progress == 2,
+		"star_progress not persisted")
+	a.free(); b.free()
 
 ## ---------- Test helpers ----------
 

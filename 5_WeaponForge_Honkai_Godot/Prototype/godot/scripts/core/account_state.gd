@@ -20,13 +20,15 @@
 extends Node
 
 const WeaponDataT = preload("res://scripts/data/weapon_data.gd")
+const ShardDataT = preload("res://scripts/data/shard_data.gd")
 
 signal gems_changed(new_gems: int)
 signal owned_weapons_changed
+signal shards_changed
 
 ## v2: invalidates saves written by the pre-game-frame loop (owner playtest got
 ## stranded at 45 gems from a deprecated-flow save). Old versions load as fresh.
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3   ## v3 adds the shard inventory + star_progress (v2 saves still load)
 const SAVE_PATH: String = "user://account.json"
 const STARTING_GEMS: int = 600
 ## Run = 4 waves + boss (Wittle stage shape; boss kill ends the run). Cleared run
@@ -43,15 +45,25 @@ var equipped: Dictionary = {}      ## StringName hero_id -> int index into owned
 ## defeat doesn't. Bosses rotate + enemies scale per stage (Combat helpers).
 var current_stage: int = 1
 
+## Forge Shard inventory (Stage E) — runtime ShardData instances dropped by pulls
+## (2/pull) and consumed by infuse. Code-minted, never catalog refs.
+var shards: Array = []
+
 ## All WeaponData fields that round-trip through a save. Self-contained snapshot.
 const _WEAPON_FIELDS: Array = [
 	"id", "name", "cls", "ability", "rune", "recipe",
 	"base_atk", "base_hp", "base_crit", "base_ult_rate",
-	"star_tier", "rarity_idx", "forge_progress", "forge_target_idx",
+	"star_tier", "star_progress", "rarity_idx", "forge_progress", "forge_target_idx",
 ]
+## Fields added after v2 — absent in old saves, so OPTIONAL on load (default kept).
+const _OPTIONAL_WEAPON_FIELDS: Array = ["star_progress"]
 const _STRINGNAME_FIELDS: Array = ["id", "cls", "rune", "recipe"]
 const _FLOAT_FIELDS: Array = ["forge_progress"]
 const _STRING_FIELDS: Array = ["name", "ability"]
+
+## Shard serialization (self-contained snapshot, mirrors the weapon fields).
+const _SHARD_FIELDS: Array = ["id", "element", "rarity_idx"]
+const _SHARD_STRINGNAME_FIELDS: Array = ["id", "element"]
 
 func _ready() -> void:
 	## Account loads once at boot; absent/corrupt file -> fresh account (defaults).
@@ -98,9 +110,11 @@ func reset_account() -> void:
 	gems = STARTING_GEMS
 	owned_weapons = []
 	equipped = {}
+	shards = []
 	current_stage = 1
 	gems_changed.emit(gems)
 	owned_weapons_changed.emit()
+	shards_changed.emit()
 	autosave()
 
 ## Persist after meaningful account mutations (pull, wave earn). Headless-gated so
@@ -122,6 +136,27 @@ func acquire_weapon(catalog_weapon) -> Resource:
 	owned_weapons.append(inst)
 	owned_weapons_changed.emit()
 	return inst
+
+## ---------- Shards ----------
+
+## Add one runtime ShardData to the inventory (a drop / dupe-refund). Headless-gated autosave.
+func add_shard(shard) -> void:
+	if shard == null:
+		return
+	shards.append(shard)
+	shards_changed.emit()
+	autosave()
+
+## Add several shards at once (a pull mints 2) — one signal + one autosave.
+func add_shards(arr: Array) -> void:
+	var added: bool = false
+	for s in arr:
+		if s != null:
+			shards.append(s)
+			added = true
+	if added:
+		shards_changed.emit()
+		autosave()
 
 ## Equip is CLASS-MATCHED (spec §9 pillar): a weapon only fits heroes of its
 ## class. Re-equipping swaps; the displaced weapon stays owned (bench).
@@ -156,15 +191,20 @@ func to_save_dict() -> Dictionary:
 	var ws: Array = []
 	for w in owned_weapons:
 		ws.append(_weapon_to_dict(w))
+	var ss: Array = []
+	for s in shards:
+		ss.append(_shard_to_dict(s))
 	var eq: Dictionary = {}
 	for k in equipped:
 		eq[String(k)] = equipped[k]
-	return {"version": SAVE_VERSION, "gems": gems, "stage": current_stage, "weapons": ws, "equipped": eq}
+	return {"version": SAVE_VERSION, "gems": gems, "stage": current_stage,
+		"weapons": ws, "equipped": eq, "shards": ss}
 
 ## Validate-then-commit: returns false on ANY structural problem without touching
 ## current state, so a corrupt save can never half-apply.
 func load_from_dict(d: Dictionary) -> bool:
-	if int(d.get("version", -1)) != SAVE_VERSION:
+	var ver: int = int(d.get("version", -1))
+	if ver != 2 and ver != 3:                         ## accept v2 (pre-shard) + current v3
 		return false
 	if not (d.has("gems") and d.has("weapons") and d.has("equipped")):
 		return false
@@ -184,12 +224,27 @@ func load_from_dict(d: Dictionary) -> bool:
 		if idx < 0 or idx >= new_weapons.size():
 			return false
 		new_equipped[StringName(k)] = idx
+	## Shards: optional (absent in v2 -> empty, NOT a load failure). A malformed
+	## entry IS a failure — validate-then-commit, a corrupt save never half-applies.
+	var new_shards: Array = []
+	if d.has("shards"):
+		if typeof(d["shards"]) != TYPE_ARRAY:
+			return false
+		for sd in d["shards"]:
+			if typeof(sd) != TYPE_DICTIONARY:
+				return false
+			var s = _shard_from_dict(sd)
+			if s == null:
+				return false
+			new_shards.append(s)
 	gems = int(d["gems"])
 	current_stage = maxi(1, int(d.get("stage", 1)))   ## optional key: older v2 saves -> stage 1
 	owned_weapons = new_weapons
 	equipped = new_equipped
+	shards = new_shards
 	gems_changed.emit(gems)
 	owned_weapons_changed.emit()
+	shards_changed.emit()
 	return true
 
 func save_to_disk(path: String = SAVE_PATH) -> bool:
@@ -227,10 +282,12 @@ func _weapon_to_dict(w) -> Dictionary:
 ## Returns a WeaponData or null if any field is missing (treated as corrupt).
 func _weapon_from_dict(d: Dictionary):
 	for f in _WEAPON_FIELDS:
-		if not d.has(f):
+		if not d.has(f) and not (f in _OPTIONAL_WEAPON_FIELDS):
 			return null
 	var w = WeaponDataT.new()
 	for f in _WEAPON_FIELDS:
+		if not d.has(f):
+			continue   ## optional field absent (e.g. star_progress in a v2 save) -> keep default
 		if f in _STRINGNAME_FIELDS:
 			w.set(f, StringName(String(d[f])))
 		elif f in _STRING_FIELDS:
@@ -240,3 +297,23 @@ func _weapon_from_dict(d: Dictionary):
 		else:
 			w.set(f, int(d[f]))
 	return w
+
+## Shard <-> dict (self-contained snapshot; element round-trips as StringName).
+func _shard_to_dict(s) -> Dictionary:
+	var d: Dictionary = {}
+	for f in _SHARD_FIELDS:
+		var v = s.get(f)
+		d[f] = String(v) if v is StringName else v
+	return d
+
+func _shard_from_dict(d: Dictionary):
+	for f in _SHARD_FIELDS:
+		if not d.has(f):
+			return null
+	var s = ShardDataT.new()
+	for f in _SHARD_FIELDS:
+		if f in _SHARD_STRINGNAME_FIELDS:
+			s.set(f, StringName(String(d[f])))
+		else:
+			s.set(f, int(d[f]))
+	return s

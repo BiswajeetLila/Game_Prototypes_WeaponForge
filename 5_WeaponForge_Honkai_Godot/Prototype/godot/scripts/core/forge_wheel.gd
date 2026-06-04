@@ -14,8 +14,15 @@
 extends Node
 
 const WeaponDataT = preload("res://scripts/data/weapon_data.gd")
+const ShardDataT = preload("res://scripts/data/shard_data.gd")
 
 signal pull_completed(result: Dictionary)
+
+## Weapon drop pyramid by intrinsic rarity (C/R/E/L/M). Mythic = 0 (hero-bound
+## signatures aren't pulled). STARTING VALUES (Numbers Policy).
+const WEAPON_DROP_WEIGHT: Array = [50.0, 30.0, 15.0, 5.0, 0.0]
+## Shard rarity drop odds — cumulative %, C/R/E/L. STARTING VALUES.
+const SHARD_RARITY_ODDS: Array = [55, 85, 97, 100]
 
 const RARITY_NAMES: Array = ["Common", "Rare", "Epic", "Legendary", "Mythic"]
 const RARITY_COLORS: Array = [
@@ -58,30 +65,56 @@ func pull() -> Dictionary:
 		return {}
 	if not AccountState.spend_gems(AccountState.PULL_COST):
 		return {}
-	var catalog_pick = eligible[randi() % eligible.size()]
-	var owned = AccountState.acquire_weapon(catalog_pick)
+	var catalog_pick = _weighted_pick(eligible)
 	var hero_id: StringName = _first_hero_of_class(catalog_pick.cls)
 	var hero = GameState.get_hero(hero_id)
 	var old_atk: int = (hero.data.atk_base + hero.eff_atk()) if hero != null else 0
-	## Armory model: only auto-equip an EMPTY-HANDED hero. Never overwrite the
-	## player's chosen loadout — otherwise the pull lands on the bench.
+
+	## Dupe? A weapon you already own feeds STAR-UP on the owned instance — never a
+	## 2nd bench copy (the Wittle dupe-sink). Otherwise acquire + auto-equip if the
+	## class hero is empty-handed (never overwrite a chosen loadout).
+	var existing = _owned_with_id(catalog_pick.id)
+	var dupe: bool = existing != null
+	var owned
 	var auto_equipped: bool = false
-	if AccountState.get_equipped(hero_id) == null:
-		auto_equipped = AccountState.equip(hero_id, AccountState.owned_weapons.size() - 1)
-		if auto_equipped and hero != null:
-			GameState.equip_weapon_data(hero_id, owned)
+	var star_up: bool = false
+	var dupe_action: String = "none"
+	if dupe:
+		owned = existing
+		star_up = existing.add_dupe()
+		dupe_action = "star_up"
+	else:
+		owned = AccountState.acquire_weapon(catalog_pick)
+		if AccountState.get_equipped(hero_id) == null:
+			auto_equipped = AccountState.equip(hero_id, AccountState.owned_weapons.size() - 1)
+			if auto_equipped and hero != null:
+				GameState.equip_weapon_data(hero_id, owned)
+
+	## Every pull also drops 2 Forge Shards (the no-waste net): rarity-rolled,
+	## carrying the pulled weapon's element.
+	var drops: Array = [_mint_shard(catalog_pick.rune), _mint_shard(catalog_pick.rune)]
+	AccountState.add_shards(drops)
+
 	var result: Dictionary = {
 		"weapon": owned,
 		"hero_id": hero_id,
 		"auto_equipped": auto_equipped,
+		"dupe": dupe,
+		"dupe_action": dupe_action,
+		"star_up": star_up,
+		"shards": drops,
 		"old_atk": old_atk,
 		"new_atk": (hero.data.atk_base + hero.eff_atk()) if hero != null else 0,
 	}
-	if auto_equipped and hero != null:
-		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d[/color]"
+	if dupe:
+		var tail: String = ("★%d!" % owned.star_tier) if star_up else "★ progress"
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s DUPE → %s  (+2 shards)[/color]"
+			% [owned.name, tail])
+	elif auto_equipped and hero != null:
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d  (+2 shards)[/color]"
 			% [hero.data.name, owned.name, result.old_atk, result.new_atk])
 	else:
-		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s → Armory[/color]" % owned.name)
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s → Armory  (+2 shards)[/color]" % owned.name)
 	AccountState.autosave()
 	pull_completed.emit(result)
 	return result
@@ -92,6 +125,47 @@ func _first_hero_of_class(cls: StringName) -> StringName:
 		if h != null and h.data.cls == cls:
 			return id
 	return &""
+
+## The owned instance matching this id (dupe detection), or null. Dupes never add
+## a 2nd copy, so there is at most one owned instance per id.
+func _owned_with_id(weapon_id: StringName):
+	for w in AccountState.owned_weapons:
+		if w.id == weapon_id:
+			return w
+	return null
+
+## Rarity-weighted catalog pick (rarer weapon = rarer pull). Uniform fallback if
+## the weights sum to zero.
+func _weighted_pick(eligible: Array):
+	var total: float = 0.0
+	for w in eligible:
+		total += _drop_weight(w)
+	if total <= 0.0:
+		return eligible[randi() % eligible.size()]
+	var roll: float = randf() * total
+	for w in eligible:
+		roll -= _drop_weight(w)
+		if roll <= 0.0:
+			return w
+	return eligible[eligible.size() - 1]
+
+func _drop_weight(w) -> float:
+	return WEAPON_DROP_WEIGHT[clampi(w.rarity_idx, 0, WEAPON_DROP_WEIGHT.size() - 1)]
+
+## Mint a runtime Forge Shard: rarity rolled on SHARD_RARITY_ODDS, element copied
+## from the pulled weapon (inert in v1).
+func _mint_shard(element: StringName):
+	var s = ShardDataT.new()
+	s.rarity_idx = _roll_shard_rarity()
+	s.element = element
+	return s
+
+func _roll_shard_rarity() -> int:
+	var roll: int = randi() % 100
+	for i in range(SHARD_RARITY_ODDS.size()):
+		if roll < int(SHARD_RARITY_ODDS[i]):
+			return i
+	return SHARD_RARITY_ODDS.size() - 1
 
 ## ---------- Reveal overlay (visual sessions only; HomeScreen calls show_reveal) ----------
 

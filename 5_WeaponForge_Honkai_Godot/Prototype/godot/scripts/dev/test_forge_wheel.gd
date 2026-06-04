@@ -38,6 +38,8 @@ func _ready() -> void:
 		_test_second_pull_goes_to_bench()
 		_test_pull_signal()
 		_test_pull_eligibility_is_fielded_roster()
+		_test_pull_drops_two_shards()
+		_test_dupe_pull_feeds_star_up()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -141,21 +143,50 @@ func _test_pull_eligibility_is_fielded_roster() -> void:
 		classes.has(&"warrior") and classes.has(&"mage") and classes.has(&"rogue"),
 		"got %s" % str(classes.keys()))
 
-func _test_second_pull_goes_to_bench() -> void:
-	## Armory model: pulls only auto-equip an EMPTY-HANDED hero. A second pull
-	## must never overwrite the player's chosen loadout — it lands on the bench.
+## Stage F: every pull also drops 2 Forge Shards (the no-waste net), rarity-rolled,
+## carrying the pulled weapon's element.
+func _test_pull_drops_two_shards() -> void:
 	_fresh(600)
-	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])   ## both pulls = warrior -> bran
+	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])
+	var before: int = AccountState.shards.size()
+	var r: Dictionary = _wheel().pull()
+	_restore_catalog(saved)
+	_check("pull result carries 2 shards", r.has("shards") and r.shards.size() == 2,
+		"shards=%s" % str(r.get("shards", null)))
+	_check("2 shards added to inventory", AccountState.shards.size() == before + 2,
+		"delta=%d" % (AccountState.shards.size() - before))
+	_check("dropped shards carry the weapon's element (fire)",
+		r.has("shards") and r.shards.size() == 2 and r.shards[0].element == &"fire", "wrong element")
+
+## Stage F: re-pulling an owned weapon feeds star-up on the owned instance.
+func _test_dupe_pull_feeds_star_up() -> void:
+	_fresh(600)
+	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])
+	_wheel().pull()                                   ## acquire emberfang (owned, star_progress 0)
+	AccountState.owned_weapons[0].star_progress = 2   ## one dupe shy of ★2
+	_reset_gems_only(600)
+	var r: Dictionary = _wheel().pull()               ## dupe -> 3rd dupe -> ★ up
+	_restore_catalog(saved)
+	_check("dupe pull reports star_up", bool(r.get("star_up", false)), "no star_up")
+	_check("owned weapon reached ★2, no 2nd copy",
+		AccountState.owned_weapons.size() == 1 and AccountState.owned_weapons[0].star_tier == 2,
+		"size=%d star=%d" % [AccountState.owned_weapons.size(), AccountState.owned_weapons[0].star_tier])
+
+func _test_second_pull_goes_to_bench() -> void:
+	## Re-pulling a weapon you ALREADY own is a DUPE -> star-up progress on the owned
+	## instance, NEVER a 2nd bench copy.
+	_fresh(600)
+	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])
 	var first: Dictionary = _wheel().pull()
 	_reset_gems_only(600)
 	var second: Dictionary = _wheel().pull()
 	_restore_catalog(saved)
 	_check("first pull auto-equipped", bool(first.get("auto_equipped", false)), "false")
-	_check("second pull NOT auto-equipped", bool(second.get("auto_equipped", true)) == false, "true")
-	_check("hero still holds the FIRST weapon", AccountState.get_equipped(&"bran") == first.weapon,
-		"overwritten")
-	_check("second weapon owned (bench)", AccountState.owned_weapons.size() == 2,
+	_check("second same-id pull flagged as a dupe", bool(second.get("dupe", false)), "not dupe")
+	_check("dupe does NOT add a 2nd owned copy", AccountState.owned_weapons.size() == 1,
 		"size=%d" % AccountState.owned_weapons.size())
+	_check("hero still holds the same (dupe-fed) weapon",
+		AccountState.get_equipped(&"bran") == first.weapon, "changed")
 
 func _reset_gems_only(gems: int) -> void:
 	AccountState.gems = gems

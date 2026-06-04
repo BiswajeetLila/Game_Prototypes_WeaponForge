@@ -128,6 +128,24 @@ func apply_forge_part(part_idx: int) -> bool:
 	var inc: float = 0.5 if diff == 3 else (1.0 / 3.0)
 	return _bank(part_idx, inc, false)
 
+## ---------- Forge SHARDS (rarity-forge fuel, Stage B) ----------
+## SHARD_INC: how much of a tier one shard fills, indexed by the shard's OWN rarity
+## (0=common..4=mythic). STARTING VALUES (Numbers Policy) — tune in playtest so a
+## mained weapon reaches Legendary in ~N runs; a dupe (+0.5) ≈ 2-3 commons.
+const SHARD_INC: Array = [0.20, 0.35, 0.55, 0.85, 0.85]
+
+## Apply one Forge Shard of rarity `shard_rarity` to this weapon. DETERMINISTIC
+## (no skill/minigame): banks a rarity-scaled fraction toward the NEXT tier
+## (rarity_idx+1) via the shared _bank. Returns true if the weapon tiered up.
+func apply_forge_shard(shard_rarity: int) -> bool:
+	if shard_rarity < 0 or shard_rarity > MAX_RARITY_IDX:
+		push_warning("WeaponData.apply_forge_shard: shard_rarity %d outside 0..%d — rejected"
+			% [shard_rarity, MAX_RARITY_IDX])
+		return false
+	if rarity_idx >= MAX_RARITY_IDX:
+		return false   ## Mythic cap — no tier above to bank toward
+	return _bank(rarity_idx + 1, SHARD_INC[shard_rarity], true)
+
 ## Add `inc` to the bank toward `target`. The bank is target-exclusive: a different
 ## active target resets the bank before adding (harsh rule, no cross-tier mixing;
 ## a UI warning ships with the pull increment). On fill the weapon upgrades to the

@@ -34,6 +34,12 @@ func _ready() -> void:
 	_test_instant_upgrades_set_target_correctly()
 	_test_mythic_cap_same_tier_no_overflow()
 	_test_out_of_range_part_rejected()
+	_test_forge_shard_common_nudges_bar()
+	_test_forge_shard_rarity_scales_increment()
+	_test_forge_shard_fills_to_tier_up()
+	_test_forge_shard_mythic_capped()
+	_test_forge_shard_out_of_range_rejected()
+	_test_forge_shard_resets_foreign_bank()
 	_test_get_crit_flat()
 	_test_get_ult_rate_flat()
 	_test_get_all_tags_rune_and_derived()
@@ -228,6 +234,77 @@ func _test_out_of_range_part_rejected() -> void:
 	_check("part_idx 5: no progress banked", is_equal_approx(w.forge_progress, 0.0),
 		"progress=%f" % w.forge_progress)
 	_check("part_idx 5: rarity unchanged", w.rarity_idx == 0, "rarity=%d" % w.rarity_idx)
+
+## ---------- Forge SHARDS (Stage B): rarity-scaled fractional forge fuel. A shard
+## always banks toward the NEXT tier (rarity_idx+1) via the shared _bank; bigger
+## shard rarity = bigger increment (SHARD_INC). Deterministic — no skill/minigame. ----------
+
+func _test_forge_shard_common_nudges_bar() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("apply_forge_shard"):
+		_check("WeaponData.apply_forge_shard() exists", false, "method missing (RED)")
+		return
+	w.rarity_idx = 0
+	var up: bool = w.apply_forge_shard(0)   ## Common shard
+	_check("common shard: no instant upgrade", up == false, "up=%s" % up)
+	_check("common shard: +0.20 toward Rare", is_equal_approx(w.forge_progress, 0.20),
+		"progress=%f" % w.forge_progress)
+	_check("common shard: banks toward Rare(1)", w.forge_target_idx == 1,
+		"target=%d" % w.forge_target_idx)
+
+func _test_forge_shard_rarity_scales_increment() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("apply_forge_shard"):
+		return
+	w.rarity_idx = 0
+	w.apply_forge_shard(3)   ## Legendary shard = bigger nudge than Common
+	_check("legendary shard: +0.85 (rarity-scaled)", is_equal_approx(w.forge_progress, 0.85),
+		"progress=%f" % w.forge_progress)
+
+func _test_forge_shard_fills_to_tier_up() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("apply_forge_shard"):
+		return
+	w.rarity_idx = 0
+	var up: bool = false
+	for i in range(5):       ## 5 x 0.20 = 1.0 -> reaches Rare on the 5th
+		up = w.apply_forge_shard(0)
+	_check("5 common shards reach Rare(1)", up == true and w.rarity_idx == 1,
+		"up=%s rarity=%d" % [up, w.rarity_idx])
+
+func _test_forge_shard_mythic_capped() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("apply_forge_shard"):
+		return
+	w.rarity_idx = 4   ## Mythic — no tier above to bank toward
+	var up: bool = w.apply_forge_shard(0)
+	_check("mythic weapon: shard does nothing",
+		up == false and is_equal_approx(w.forge_progress, 0.0),
+		"up=%s progress=%f" % [up, w.forge_progress])
+
+func _test_forge_shard_out_of_range_rejected() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("apply_forge_shard"):
+		return
+	w.rarity_idx = 0
+	var hi: bool = w.apply_forge_shard(5)
+	var lo: bool = w.apply_forge_shard(-1)
+	_check("out-of-range shard rarity rejected",
+		hi == false and lo == false and is_equal_approx(w.forge_progress, 0.0),
+		"hi=%s lo=%s progress=%f" % [hi, lo, w.forge_progress])
+
+func _test_forge_shard_resets_foreign_bank() -> void:
+	## A shard always banks toward rarity_idx+1; a prior part banked toward a
+	## DIFFERENT tier gets reset by the target-exclusive _bank (contract #6).
+	var w = WeaponDataT.new()
+	if not w.has_method("apply_forge_shard"):
+		return
+	w.rarity_idx = 0
+	w.apply_forge_part(3)                  ## banks 0.5 toward Legendary(3)
+	var up: bool = w.apply_forge_shard(0)  ## targets Rare(1) -> resets the bank
+	_check("shard resets a foreign bank to its own target",
+		up == false and w.forge_target_idx == 1 and is_equal_approx(w.forge_progress, 0.20),
+		"target=%d progress=%f" % [w.forge_target_idx, w.forge_progress])
 
 ## ---------- Combat-interface accessors (Stage 1: make WeaponData a drop-in for the
 ## legacy socket weapon's combat surface; combat.gd reads these four off hero.weapon) ----------

@@ -104,6 +104,11 @@ var heroes: Dictionary = {}         ## StringName -> HeroState
 var squad_order: Array = []         ## ordered list of StringName ids (unlock order = display order)
 var unlocked_classes: Dictionary = {}  ## StringName cls -> true (shop class filter)
 
+## The deployable roster — the gacha pull pool keys off THIS (via fielded_classes),
+## NOT unlocked_classes (which only fills as heroes unlock mid-combat). Q1 fix: at
+## Home pre-battle only bran(warrior) was unlocked, so every pull was a warrior weapon.
+const FIELDED_HEROES: Array = [&"bran", &"elara", &"vex"]
+
 ## Back-compat shim. Reads first squad member (Bran in ultra-MVP). Writable
 ## for legacy callsites in tests that re-assign GameState.hero = HeroStateT.new(...).
 var hero = null
@@ -195,6 +200,17 @@ func new_session() -> void:
 
 func get_hero(hero_id: StringName):
 	return heroes.get(hero_id)
+
+## Classes of the deployable roster (FIELDED_HEROES), from the hero catalog. The
+## Forge Wheel pull pool uses this so pulls span the whole squad's classes from the
+## first pull — independent of which heroes have unlocked in combat yet (Q1 fix).
+func fielded_classes() -> Dictionary:
+	var out: Dictionary = {}
+	for hid in FIELDED_HEROES:
+		var d = heroes_by_id.get(hid)
+		if d != null:
+			out[d.cls] = true
+	return out
 
 func all_heroes() -> Array:
 	var out: Array = []

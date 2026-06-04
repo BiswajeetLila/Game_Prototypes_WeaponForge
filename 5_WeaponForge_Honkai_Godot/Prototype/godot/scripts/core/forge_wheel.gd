@@ -42,9 +42,10 @@ func _ready() -> void:
 
 func eligible_weapons() -> Array:
 	var out: Array = []
+	var fielded: Dictionary = GameState.fielded_classes()
 	for id in GameState.weapon_ids:
 		var w = GameState.weapons_by_id[id]
-		if GameState.unlocked_classes.has(w.cls):
+		if fielded.has(w.cls):
 			out.append(w)
 	return out
 

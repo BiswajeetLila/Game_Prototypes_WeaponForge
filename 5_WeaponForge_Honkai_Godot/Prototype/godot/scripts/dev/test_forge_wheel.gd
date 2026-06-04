@@ -37,6 +37,7 @@ func _ready() -> void:
 		_test_pull_class_filtered_to_unlocked()
 		_test_second_pull_goes_to_bench()
 		_test_pull_signal()
+		_test_pull_eligibility_is_fielded_roster()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -79,8 +80,10 @@ func _test_catalog_meets_curve() -> void:
 
 func _test_pull_happy_path() -> void:
 	var h = _fresh(600)
+	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])   ## deterministic warrior pull
 	var base_total: int = h.data.atk_base    ## 6, no sockets, no weapon_data
 	var result: Dictionary = _wheel().pull()
+	_restore_catalog(saved)
 	_check("pull returns a result", not result.is_empty(), "empty")
 	_check("pull spends 300 gems", AccountState.gems == 300, "gems=%d" % AccountState.gems)
 	_check("pull adds one owned weapon", AccountState.owned_weapons.size() == 1,
@@ -108,23 +111,45 @@ func _test_pull_insufficient_gems() -> void:
 	_check("nothing equipped on failed pull", h.weapon_data == null, "equipped")
 
 func _test_pull_class_filtered_to_unlocked() -> void:
-	## Bran-only session: every pull must be warrior (mage/rogue heroes locked).
-	_fresh(3000)                      ## 10 pulls worth
-	var all_warrior: bool = true
-	for i in range(10):
-		var r: Dictionary = _wheel().pull()
-		if r.is_empty() or r.weapon.cls != &"warrior":
-			all_warrior = false
-			break
-	_check("10 pulls, all warrior-class (locked classes excluded)", all_warrior, "non-warrior pulled")
+	## Q1 anti-regression: a NON-warrior weapon can now be pulled pre-battle. Force a
+	## mage-only pool; the pull yields a mage weapon (benched — no mage hero in a
+	## bran-only squad yet). Before the fix the pool was warrior-locked at Home.
+	_fresh(3000)
+	var saved: Array = _force_catalog([&"w_frostcall_stave"])
+	var r: Dictionary = _wheel().pull()
+	_restore_catalog(saved)
+	_check("non-warrior (mage) weapon can be pulled",
+		not r.is_empty() and r.weapon.cls == &"mage",
+		"cls=%s" % (str(r.weapon.cls) if not r.is_empty() else "empty"))
+
+## Q1 fix (RED): the pull pool spans the FIELDED roster's classes (bran/elara/vex =
+## warrior/mage/rogue), independent of combat unlock order. Pre-battle (a bran-only
+## session) you must STILL be able to pull mage/rogue weapons — not warrior-only.
+func _test_pull_eligibility_is_fielded_roster() -> void:
+	if not GameState.has_method("fielded_classes"):
+		_check("GameState.fielded_classes() exists", false, "method missing (RED)")
+		return
+	var fc: Dictionary = GameState.fielded_classes()
+	_check("fielded_classes covers warrior/mage/rogue",
+		fc.has(&"warrior") and fc.has(&"mage") and fc.has(&"rogue"),
+		"got %s" % str(fc.keys()))
+	_fresh(600)   ## bran-only session (only warrior unlocked for combat/shop)
+	var classes: Dictionary = {}
+	for w in _wheel().eligible_weapons():
+		classes[w.cls] = true
+	_check("eligible pool spans all fielded classes pre-battle",
+		classes.has(&"warrior") and classes.has(&"mage") and classes.has(&"rogue"),
+		"got %s" % str(classes.keys()))
 
 func _test_second_pull_goes_to_bench() -> void:
 	## Armory model: pulls only auto-equip an EMPTY-HANDED hero. A second pull
 	## must never overwrite the player's chosen loadout — it lands on the bench.
 	_fresh(600)
+	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])   ## both pulls = warrior -> bran
 	var first: Dictionary = _wheel().pull()
 	_reset_gems_only(600)
 	var second: Dictionary = _wheel().pull()
+	_restore_catalog(saved)
 	_check("first pull auto-equipped", bool(first.get("auto_equipped", false)), "false")
 	_check("second pull NOT auto-equipped", bool(second.get("auto_equipped", true)) == false, "true")
 	_check("hero still holds the FIRST weapon", AccountState.get_equipped(&"bran") == first.weapon,
@@ -134,6 +159,16 @@ func _test_second_pull_goes_to_bench() -> void:
 
 func _reset_gems_only(gems: int) -> void:
 	AccountState.gems = gems
+
+## Temporarily restrict the pull pool to specific weapon ids (deterministic pulls).
+## Returns the saved id list; pass it to _restore_catalog when done.
+func _force_catalog(ids: Array) -> Array:
+	var saved: Array = GameState.weapon_ids
+	GameState.weapon_ids = ids
+	return saved
+
+func _restore_catalog(saved: Array) -> void:
+	GameState.weapon_ids = saved
 
 func _test_pull_signal() -> void:
 	_fresh(600)

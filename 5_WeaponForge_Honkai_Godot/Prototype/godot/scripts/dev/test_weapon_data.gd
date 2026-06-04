@@ -24,6 +24,10 @@ func _ready() -> void:
 	_test_common_rarity_is_neutral()
 	_test_rarity_scales_atk_and_hp()
 	_test_rarity_and_star_compound()
+	_test_dupe_banks_toward_star()
+	_test_three_dupes_raise_star()
+	_test_dupe_raises_power_via_star()
+	_test_dupe_star_capped_at_10()
 	_test_forge_part_same_tier_advances_half()
 	_test_forge_part_one_tier_higher_upgrades_instantly()
 	_test_forge_part_lower_tier_no_progress()
@@ -107,6 +111,46 @@ func _test_rarity_and_star_compound() -> void:
 	w.star_tier = 3
 	_check("Mythic ★3 compounds rarity x2.0 and star x1.10 -> 220", w.get_atk() == 220,
 		"got %d" % w.get_atk())
+
+## ---------- Star-up via DUPES (Stage D): dupe weapons feed star_tier ★1..10 (the
+## Wittle dupe-sink). Separate axis from rarity; reuses the wired _star_mult. ----------
+
+func _test_dupe_banks_toward_star() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("add_dupe"):
+		_check("WeaponData.add_dupe() exists", false, "method missing (RED)")
+		return
+	var up: bool = w.add_dupe()
+	_check("1 dupe: no star-up yet", up == false and w.star_tier == 1,
+		"up=%s star=%d" % [up, w.star_tier])
+	_check("1 dupe: banked toward next ★", w.star_progress == 1, "progress=%d" % w.star_progress)
+
+func _test_three_dupes_raise_star() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("add_dupe"):
+		return
+	w.add_dupe(); w.add_dupe()
+	var up: bool = w.add_dupe()   ## 3rd dupe
+	_check("3 dupes raise ★1 -> ★2", up == true and w.star_tier == 2,
+		"up=%s star=%d" % [up, w.star_tier])
+	_check("star-up resets the dupe counter", w.star_progress == 0, "progress=%d" % w.star_progress)
+
+func _test_dupe_raises_power_via_star() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("add_dupe"):
+		return
+	w.base_atk = 100
+	w.add_dupe(); w.add_dupe(); w.add_dupe()   ## -> ★2 = +5%
+	_check("★2 from dupes scales atk 100 -> 105", w.get_atk() == 105, "got %d" % w.get_atk())
+
+func _test_dupe_star_capped_at_10() -> void:
+	var w = WeaponDataT.new()
+	if not w.has_method("add_dupe"):
+		return
+	w.star_tier = 10
+	var up: bool = w.add_dupe()
+	_check("★10 is the cap: dupe does not exceed", up == false and w.star_tier == 10,
+		"up=%s star=%d" % [up, w.star_tier])
 
 func _test_forge_part_same_tier_advances_half() -> void:
 	## Forge Math: same-rarity part -> +50% progress toward next tier.

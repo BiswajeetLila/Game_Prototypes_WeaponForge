@@ -30,6 +30,12 @@ extends Resource
 ## ---------- Star-up (spec Q4: 10 tiers, +5% stats per tier) ----------
 @export var star_tier: int = 1                  ## 1..10
 const STAR_STEP: float = 0.05
+const MAX_STAR_TIER: int = 10
+## Dupe-weapon star-up (the Wittle dupe-sink): pulling a weapon you already own
+## banks a dupe toward the next ★. DUPES_PER_STAR is a STARTING VALUE (flat; spec
+## ramps 5->50 later). star_progress is @export so banked dupes survive a save.
+const DUPES_PER_STAR: int = 3
+@export var star_progress: int = 0   ## dupes banked toward the next ★
 
 ## ---------- Rarity + forge progression (spec §9 Phase-1) ----------
 ## rarity_idx: 0=common 1=rare 2=epic 3=legendary 4=mythic. Hard cap below.
@@ -62,6 +68,19 @@ func get_atk() -> int:
 
 func get_hp() -> int:
 	return int(floor(float(base_hp) * _star_mult() * rarity_mult()))
+
+## ---------- Star-up (dupe-weapon sink) ----------
+## Bank one dupe of this weapon toward star-up. Returns true if it raised a ★ tier.
+## ★ caps at MAX_STAR_TIER; star_progress carries banked dupes between pulls/saves.
+func add_dupe() -> bool:
+	if star_tier >= MAX_STAR_TIER:
+		return false   ## ★ capped
+	star_progress += 1
+	if star_progress >= DUPES_PER_STAR:
+		star_tier += 1
+		star_progress = 0
+		return true
+	return false
 
 ## ---------- Combat interface (drop-in for the legacy socket weapon) ----------
 ## combat.gd reads get_atk/get_crit/get_ult_rate/get_all_tags off hero.weapon, and

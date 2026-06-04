@@ -34,6 +34,10 @@ const STAR_STEP: float = 0.05
 ## ---------- Rarity + forge progression (spec §9 Phase-1) ----------
 ## rarity_idx: 0=common 1=rare 2=epic 3=legendary 4=mythic. Hard cap below.
 const MAX_RARITY_IDX: int = 4
+## Direct stat multiplier per rarity tier (C/R/E/L/M). STARTING VALUES (Numbers
+## Policy): Mythic = 2x a Common. Common = 1.0 so existing rarity-0 weapons (incl.
+## combat fixtures) are unaffected — shards forging rarity up = real power.
+const RARITY_MULT: Array = [1.0, 1.15, 1.35, 1.6, 2.0]
 @export var rarity_idx: int = 0
 ## forge_progress: fractional progress [0,1) banked toward forge_target_idx.
 ## Exported so partial forge progress survives save/load (P0 persistence).
@@ -48,11 +52,16 @@ const MAX_RARITY_IDX: int = 4
 func _star_mult() -> float:
 	return 1.0 + STAR_STEP * float(maxi(star_tier, 1) - 1)
 
+## Direct combat multiplier from the weapon's rarity tier (shards forge this up).
+## Common(0) = 1.0 (neutral); clamped to the RARITY_MULT table.
+func rarity_mult() -> float:
+	return RARITY_MULT[clampi(rarity_idx, 0, MAX_RARITY_IDX)]
+
 func get_atk() -> int:
-	return int(floor(float(base_atk) * _star_mult()))
+	return int(floor(float(base_atk) * _star_mult() * rarity_mult()))
 
 func get_hp() -> int:
-	return int(floor(float(base_hp) * _star_mult()))
+	return int(floor(float(base_hp) * _star_mult() * rarity_mult()))
 
 ## ---------- Combat interface (drop-in for the legacy socket weapon) ----------
 ## combat.gd reads get_atk/get_crit/get_ult_rate/get_all_tags off hero.weapon, and

@@ -21,6 +21,9 @@ func _ready() -> void:
 	_log("=== WeaponData (P1a unitary schema) tests ===")
 	_test_get_atk_returns_base_atk_unitary()
 	_test_star_tier_scales_atk_and_hp()
+	_test_common_rarity_is_neutral()
+	_test_rarity_scales_atk_and_hp()
+	_test_rarity_and_star_compound()
 	_test_forge_part_same_tier_advances_half()
 	_test_forge_part_one_tier_higher_upgrades_instantly()
 	_test_forge_part_lower_tier_no_progress()
@@ -73,6 +76,37 @@ func _test_star_tier_scales_atk_and_hp() -> void:
 	var hp: int = w.get_hp()
 	_check("★3 scales atk 100 -> 110 (+5%/tier)", atk == 110, "got %d" % atk)
 	_check("★3 scales hp 200 -> 220 (+5%/tier)", hp == 220, "got %d" % hp)
+
+func _test_common_rarity_is_neutral() -> void:
+	## Common(0) = x1.0 — guarantees existing rarity-0 weapons (incl. combat
+	## fixtures) are unaffected by the new rarity multiplier.
+	var w = WeaponDataT.new()
+	w.base_atk = 100
+	w.rarity_idx = 0
+	w.star_tier = 1
+	_check("Common(0) rarity is neutral (atk unchanged at 100)", w.get_atk() == 100,
+		"got %d" % w.get_atk())
+
+func _test_rarity_scales_atk_and_hp() -> void:
+	## Rarity is a DIRECT stat multiplier (shards forge rarity up = real power).
+	## Epic(2) = x1.35. base 100 atk -> 135, base 200 hp -> 270.
+	var w = WeaponDataT.new()
+	w.base_atk = 100
+	w.base_hp = 200
+	w.rarity_idx = 2
+	w.star_tier = 1
+	_check("Epic(2) rarity scales atk 100 -> 135 (x1.35)", w.get_atk() == 135, "got %d" % w.get_atk())
+	_check("Epic(2) rarity scales hp 200 -> 270 (x1.35)", w.get_hp() == 270, "got %d" % w.get_hp())
+
+func _test_rarity_and_star_compound() -> void:
+	## Rarity and star multiply independently. Mythic(4) x2.0 and ★3 (+10%) x1.10:
+	## 100 * 1.10 * 2.0 = 220.
+	var w = WeaponDataT.new()
+	w.base_atk = 100
+	w.rarity_idx = 4
+	w.star_tier = 3
+	_check("Mythic ★3 compounds rarity x2.0 and star x1.10 -> 220", w.get_atk() == 220,
+		"got %d" % w.get_atk())
 
 func _test_forge_part_same_tier_advances_half() -> void:
 	## Forge Math: same-rarity part -> +50% progress toward next tier.

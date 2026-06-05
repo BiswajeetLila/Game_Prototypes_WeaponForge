@@ -33,12 +33,18 @@ var _grid: GridContainer = null
 var _detail: PanelContainer = null
 var _detail_label: Label = null
 var _selected_idx: int = -1         ## index into AccountState.owned_weapons, -1 = none
+var _selected_hero: StringName = &""  ## set when the selection is an EQUIPPED weapon (its hero); else &""
+var _shard_label: Label = null
+var _infuse_btn: Button = null
+var _unequip_btn: Button = null
+var _confirm: ConfirmationDialog = null
 
 func _ready() -> void:
 	_build_ui()
 	_grant_starter_if_first_boot()
 	AccountState.gems_changed.connect(func(_g): _refresh())
 	AccountState.owned_weapons_changed.connect(func(): _refresh())
+	AccountState.shards_changed.connect(func(): _refresh())
 	if get_node_or_null("/root/ForgeWheel") != null:
 		ForgeWheel.pull_completed.connect(func(_r): _refresh())
 	_refresh()
@@ -82,6 +88,12 @@ func _build_ui() -> void:
 	_gems_label.add_theme_font_size_override(&"font_size", 16)
 	v.add_child(_gems_label)
 
+	_shard_label = Label.new()
+	_shard_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_shard_label.add_theme_font_size_override(&"font_size", 12)
+	_shard_label.modulate = Color(0.7, 0.85, 1.0)
+	v.add_child(_shard_label)
+
 	var squad_title := Label.new()
 	squad_title.text = "— SQUAD —"
 	squad_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -123,13 +135,36 @@ func _build_ui() -> void:
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_grid)
 
-	## Weapon detail panel (hidden until a tile is selected).
+	## Weapon detail panel (hidden until a weapon is selected): stats + the FORGE
+	## (infuse) and UNEQUIP actions.
 	_detail = PanelContainer.new()
 	_detail.visible = false
+	var detail_v := VBoxContainer.new()
+	detail_v.add_theme_constant_override(&"separation", 6)
+	_detail.add_child(detail_v)
 	_detail_label = Label.new()
 	_detail_label.add_theme_font_size_override(&"font_size", 11)
-	_detail.add_child(_detail_label)
+	detail_v.add_child(_detail_label)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override(&"separation", 8)
+	detail_v.add_child(actions)
+	_infuse_btn = Button.new()
+	_infuse_btn.custom_minimum_size = Vector2(0, 36)
+	_infuse_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_infuse_btn.pressed.connect(_on_infuse_pressed)
+	actions.add_child(_infuse_btn)
+	_unequip_btn = Button.new()
+	_unequip_btn.text = "Unequip"
+	_unequip_btn.custom_minimum_size = Vector2(0, 36)
+	_unequip_btn.pressed.connect(_on_unequip_pressed)
+	actions.add_child(_unequip_btn)
 	v.add_child(_detail)
+
+	## Irreversible-infuse confirm (built once, reused).
+	_confirm = ConfirmationDialog.new()
+	_confirm.title = "Forge — infuse shard?"
+	_confirm.confirmed.connect(_on_infuse_confirmed)
+	add_child(_confirm)
 
 	_pull_btn = Button.new()
 	_pull_btn.custom_minimum_size = Vector2(0, 48)
@@ -174,6 +209,7 @@ func _refresh() -> void:
 	_pull_btn.disabled = broke
 	_pull_btn.text = ("⚒ FORGE WHEEL — need 300💎 (clear waves to earn!)" if broke
 		else "⚒ FORGE WHEEL — PULL WEAPON (300💎)")
+	_shard_label.text = "🔧 %d Forge Shards   (tap a weapon, then Forge)" % AccountState.shards.size()
 	_refresh_hero_rows()
 	_refresh_grid()
 	_refresh_squad_line()
@@ -252,27 +288,55 @@ func _refresh_detail() -> void:
 		return
 	var w = AccountState.owned_weapons[_selected_idx]
 	var rarity: int = clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)
-	_detail_label.text = "%s  —  ★%d %s\nATK %d · HP %d · CRIT %d%% · ULT %d%%\nAbility: %s\nElement: %s %s — pairs with other elements for Catalyst (P1e)\nTap a highlighted hero to equip." % [
+	var hint: String = "Tap a highlighted hero to equip." if _selected_hero == &"" else "Equipped on %s." % String(_selected_hero).capitalize()
+	_detail_label.text = "%s  —  ★%d %s\nATK %d · HP %d · CRIT %d%% · ULT %d%%\nAbility: %s\nElement: %s %s\nForge: %s\n%s" % [
 		w.name, w.star_tier, RARITY_NAMES[rarity],
 		w.get_atk(), w.get_hp(), w.get_crit(), w.get_ult_rate(),
 		(w.ability if w.ability != "" else "—"),
-		_elem_icon(w.rune), String(w.rune).capitalize()]
+		_elem_icon(w.rune), String(w.rune).capitalize(), _forge_bar_str(w), hint]
+	## FORGE (infuse): enabled when shards exist and the weapon isn't maxed.
+	var maxed: bool = w.rarity_idx >= w.MAX_RARITY_IDX
+	var have_shards: bool = not AccountState.shards.is_empty()
+	_infuse_btn.disabled = maxed or not have_shards
+	_infuse_btn.text = ("Maxed: Mythic" if maxed
+		else ("⚒ Forge (need shards)" if not have_shards else "⚒ Forge (spend 1 shard)"))
+	_unequip_btn.visible = _selected_hero != &""
 	_detail.visible = true
+
+## Human-readable rarity bar, e.g. "Common → Rare  44%" (or "Mythic (max)").
+func _forge_bar_str(w) -> String:
+	var rarity: int = clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)
+	if w.rarity_idx >= w.MAX_RARITY_IDX:
+		return "%s (max)" % RARITY_NAMES[rarity]
+	var pct: int = int(round(w.forge_progress * 100.0))
+	return "%s → %s  %d%%" % [RARITY_NAMES[rarity], RARITY_NAMES[rarity + 1], pct]
 
 ## ---------- Interaction ----------
 
 func _on_tile_pressed(owned_idx: int) -> void:
-	_selected_idx = -1 if _selected_idx == owned_idx else owned_idx
+	_selected_idx = -1 if (_selected_idx == owned_idx and _selected_hero == &"") else owned_idx
+	_selected_hero = &""   ## bench selection
 	_refresh()
 
 func _on_hero_row_pressed(hero_id: StringName) -> void:
-	if _selected_idx >= 0:
+	if _selected_idx >= 0 and _selected_hero == &"":
+		## A BENCH weapon is selected -> equip it on this hero (class-checked).
 		if AccountState.equip(hero_id, _selected_idx):
 			_selected_idx = -1
 		## Mismatch: keep selection so the player can pick the right hero.
 	else:
-		AccountState.unequip(hero_id)
+		## No bench selection -> open this hero's EQUIPPED weapon for forging.
+		var idx: int = int(AccountState.equipped.get(hero_id, -1))
+		_selected_idx = idx
+		_selected_hero = hero_id if idx >= 0 else &""
 	_refresh()
+
+func _on_unequip_pressed() -> void:
+	if _selected_hero != &"":
+		AccountState.unequip(_selected_hero)
+		_selected_idx = -1
+		_selected_hero = &""
+		_refresh()
 
 func _on_pull_pressed() -> void:
 	var result: Dictionary = ForgeWheel.pull()
@@ -283,3 +347,57 @@ func _on_pull_pressed() -> void:
 
 func _on_battle_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")
+
+## ---------- Forge (deterministic infuse — no skill/minigame) ----------
+
+func _on_infuse_pressed() -> void:
+	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():
+		return
+	var sidx: int = _lowest_shard_idx()
+	if sidx < 0:
+		return
+	var w = AccountState.owned_weapons[_selected_idx]
+	if w.rarity_idx >= w.MAX_RARITY_IDX:
+		return
+	var shard = AccountState.shards[sidx]
+	## Non-mutating before -> after preview via a deep dup.
+	var dry = w.duplicate(true)
+	var tier_up: bool = dry.apply_forge_shard(shard.rarity_idx)
+	var sr: int = clampi(shard.rarity_idx, 0, RARITY_NAMES.size() - 1)
+	var txt: String = "Spend a %s Shard on %s.\n\n%s\n→ %s" % [
+		RARITY_NAMES[sr], w.name, _forge_bar_str(w), _forge_bar_str(dry)]
+	if tier_up:
+		txt += "\n\n★ TIER UP to %s!" % RARITY_NAMES[clampi(dry.rarity_idx, 0, RARITY_NAMES.size() - 1)]
+	if w.forge_target_idx != -1 and w.forge_target_idx != w.rarity_idx + 1:
+		txt += "\n\n⚠ Resets pending forge progress toward a different tier."
+	txt += "\n\nShards are consumed permanently."
+	_confirm.dialog_text = txt
+	_confirm.popup_centered()
+
+func _on_infuse_confirmed() -> void:
+	var sidx: int = _lowest_shard_idx()
+	if sidx < 0:
+		return
+	var r: Dictionary = AccountState.infuse(_selected_idx, sidx)
+	if r.get("ok", false):
+		var w = AccountState.owned_weapons[_selected_idx]
+		GameState.append_combat_log("[color=ffcc66]⚒ Forged %s → %s%s[/color]" % [
+			w.name, RARITY_NAMES[clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)],
+			"  TIER UP!" if r.get("tier_up", false) else ""])
+		_flash_detail(Color(1.0, 0.85, 0.3) if r.get("tier_up", false) else Color(0.6, 0.9, 1.0))
+	_refresh()
+
+## Spend the LOWEST-rarity shard first (conserve the big ones). -1 = none.
+func _lowest_shard_idx() -> int:
+	if AccountState.shards.is_empty():
+		return -1
+	var best: int = 0
+	for i in range(AccountState.shards.size()):
+		if AccountState.shards[i].rarity_idx < AccountState.shards[best].rarity_idx:
+			best = i
+	return best
+
+func _flash_detail(c: Color) -> void:
+	_detail.modulate = c
+	var tw := create_tween()
+	tw.tween_property(_detail, "modulate", Color(1, 1, 1), 0.4)

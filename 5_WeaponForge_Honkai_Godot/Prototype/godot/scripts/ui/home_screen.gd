@@ -270,6 +270,18 @@ func _make_tile(owned_idx: int) -> Button:
 	b.text = "%s\n%s · ATK %d\n★%d %s" % [w.name, _elem_icon(w.rune), w.get_atk(),
 		w.star_tier, RARITY_NAMES[rarity]]
 	b.pressed.connect(_on_tile_pressed.bind(owned_idx))
+	## Class tag, top-right corner (rarity-coloured). Ignores mouse so the tile stays tappable.
+	var tag := Label.new()
+	tag.text = String(w.cls).capitalize()
+	tag.add_theme_font_size_override(&"font_size", 8)
+	tag.modulate = RARITY_COLORS[rarity]
+	tag.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	tag.offset_left = -54
+	tag.offset_top = 4
+	tag.offset_right = -6
+	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(tag)
 	return b
 
 func _make_empty_tile() -> Panel:

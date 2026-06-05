@@ -220,16 +220,29 @@ func show_reveal(result: Dictionary) -> void:
 	var w = result.weapon
 	var rarity: int = clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)
 	var c: Color = RARITY_COLORS[rarity]
-	_reveal_title.text = "%s WEAPON!" % String(RARITY_NAMES[rarity]).to_upper()
-	_reveal_title.modulate = c
-	_reveal_name.text = w.name
-	_reveal_name.modulate = c
-	_reveal_meta.text = "%s · %s · for %s" % [String(w.cls).capitalize(), String(w.rune).capitalize(),
-		String(result.hero_id).capitalize()]
-	if bool(result.get("auto_equipped", false)):
-		_reveal_delta.text = "ATK %d → %d" % [result.old_atk, result.new_atk]
+	var n_shards: int = (result.get("shards", []) as Array).size()
+	if bool(result.get("dupe", false)):
+		## Dupe -> star-up the OWNED weapon (never a 2nd copy). Make it read as a win.
+		_reveal_title.text = "DUPE!"
+		_reveal_title.modulate = Color(1.0, 0.85, 0.3)
+		_reveal_name.text = w.name
+		_reveal_name.modulate = c
+		_reveal_meta.text = "%s · %s" % [String(w.cls).capitalize(), String(w.rune).capitalize()]
+		if bool(result.get("star_up", false)):
+			_reveal_delta.text = "★ STAR UP → ★%d   ·   +%d shards" % [w.star_tier, n_shards]
+		else:
+			_reveal_delta.text = "★ progress banked   ·   +%d shards" % n_shards
 	else:
-		_reveal_delta.text = "→ Sent to Armory — equip at Home"
+		_reveal_title.text = "%s WEAPON!" % String(RARITY_NAMES[rarity]).to_upper()
+		_reveal_title.modulate = c
+		_reveal_name.text = w.name
+		_reveal_name.modulate = c
+		_reveal_meta.text = "%s · %s · for %s" % [String(w.cls).capitalize(), String(w.rune).capitalize(),
+			String(result.hero_id).capitalize()]
+		if bool(result.get("auto_equipped", false)):
+			_reveal_delta.text = "ATK %d → %d   ·   +%d shards" % [result.old_atk, result.new_atk, n_shards]
+		else:
+			_reveal_delta.text = "→ Armory   ·   +%d shards" % n_shards
 	_reveal.visible = true
 	## Rarity flash: overlay blinks in from the rarity color, settles to dark.
 	_reveal.color = Color(c.r, c.g, c.b, 0.55)

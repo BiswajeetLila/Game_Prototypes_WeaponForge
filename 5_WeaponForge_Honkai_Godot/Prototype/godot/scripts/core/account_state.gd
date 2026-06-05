@@ -158,6 +158,31 @@ func add_shards(arr: Array) -> void:
 		shards_changed.emit()
 		autosave()
 
+## DETERMINISTIC Forge Shard infusion (no skill / no minigame): consume one shard to
+## advance the chosen owned weapon's RARITY bar (rarity axis only — never the star
+## axis; dupes own that). Never wastes a shard on a failed infuse. Returns
+## {ok, before, after, tier_up, bank_reset, reason}.
+func infuse(owned_idx: int, shard_idx: int = 0) -> Dictionary:
+	if owned_idx < 0 or owned_idx >= owned_weapons.size():
+		return {"ok": false, "reason": "no_weapon"}
+	if shard_idx < 0 or shard_idx >= shards.size():
+		return {"ok": false, "reason": "no_shard"}
+	var w = owned_weapons[owned_idx]
+	if w.rarity_idx >= w.MAX_RARITY_IDX:
+		return {"ok": false, "reason": "max_rarity"}
+	var shard = shards[shard_idx]
+	var before: int = w.rarity_idx
+	## A pending bank toward a tier OTHER than the next one would be reset by this
+	## apply (target-exclusive _bank, contract #6) — surfaced so the UI can warn first.
+	var bank_reset: bool = w.forge_target_idx != -1 and w.forge_target_idx != before + 1
+	var tier_up: bool = w.apply_forge_shard(shard.rarity_idx)
+	shards.remove_at(shard_idx)
+	owned_weapons_changed.emit()
+	shards_changed.emit()
+	autosave()
+	return {"ok": true, "before": before, "after": w.rarity_idx,
+		"tier_up": tier_up, "bank_reset": bank_reset, "reason": ""}
+
 ## Equip is CLASS-MATCHED (spec §9 pillar): a weapon only fits heroes of its
 ## class. Re-equipping swaps; the displaced weapon stays owned (bench).
 func equip(hero_id: StringName, owned_idx: int) -> bool:

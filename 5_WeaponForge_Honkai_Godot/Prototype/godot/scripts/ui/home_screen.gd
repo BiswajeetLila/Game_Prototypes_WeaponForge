@@ -30,12 +30,12 @@ var _battle_btn: Button = null
 var _squad_line: Label = null
 var _hero_rows: Dictionary = {}     ## hero_id -> Button
 var _grid: GridContainer = null
-var _detail: PopupPanel = null
+var _detail: PanelContainer = null
 var _detail_label: Label = null
 var _selected_idx: int = -1         ## index into AccountState.owned_weapons, -1 = none
 var _selected_hero: StringName = &""  ## set when the selection is an EQUIPPED weapon (its hero); else &""
 var _shard_label: Label = null
-var _detail_actions: VBoxContainer = null  ## rebuilt each refresh: Forge + Equip/Unequip
+var _detail_actions: HBoxContainer = null  ## rebuilt each refresh: Forge (+ Unequip)
 var _confirm: ConfirmationDialog = null
 
 func _ready() -> void:
@@ -116,6 +116,27 @@ func _build_ui() -> void:
 	_squad_line.modulate = Color(0.8, 0.9, 1.0)
 	v.add_child(_squad_line)
 
+	## Weapon detail — a FIXED opaque panel between the squad and the armory. It always
+	## occupies this slot (no reflow -> START BATTLE stays put) and shows the selected
+	## weapon's stats + Forge. Quick-swap: tap a weapon, then a hero, to equip.
+	_detail = PanelContainer.new()
+	_detail.custom_minimum_size = Vector2(0, 128)
+	var detail_sb := StyleBoxFlat.new()
+	detail_sb.bg_color = Color(0.13, 0.12, 0.18, 1.0)
+	detail_sb.set_corner_radius_all(6)
+	detail_sb.set_content_margin_all(8)
+	_detail.add_theme_stylebox_override(&"panel", detail_sb)
+	var detail_v := VBoxContainer.new()
+	detail_v.add_theme_constant_override(&"separation", 6)
+	_detail.add_child(detail_v)
+	_detail_label = Label.new()
+	_detail_label.add_theme_font_size_override(&"font_size", 11)
+	detail_v.add_child(_detail_label)
+	_detail_actions = HBoxContainer.new()
+	_detail_actions.add_theme_constant_override(&"separation", 8)
+	detail_v.add_child(_detail_actions)
+	v.add_child(_detail)
+
 	var bench_title := Label.new()
 	bench_title.text = "— ARMORY (tap a weapon, then a hero) —"
 	bench_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -124,7 +145,7 @@ func _build_ui() -> void:
 	v.add_child(bench_title)
 
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 170)
+	scroll.custom_minimum_size = Vector2(0, 120)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(scroll)
 
@@ -134,23 +155,6 @@ func _build_ui() -> void:
 	_grid.add_theme_constant_override(&"v_separation", 8)
 	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_grid)
-
-	## Weapon detail as a POPUP overlay: it does NOT reflow the page (so START BATTLE
-	## stays put) and auto-closes on any click outside it. ALL weapon actions
-	## (Forge, Equip → <hero>, Unequip) live INSIDE the popup, rebuilt per refresh.
-	_detail = PopupPanel.new()
-	_detail.popup_hide.connect(_on_detail_closed)
-	var detail_v := VBoxContainer.new()
-	detail_v.add_theme_constant_override(&"separation", 8)
-	detail_v.custom_minimum_size = Vector2(320, 0)
-	_detail.add_child(detail_v)
-	_detail_label = Label.new()
-	_detail_label.add_theme_font_size_override(&"font_size", 12)
-	detail_v.add_child(_detail_label)
-	_detail_actions = VBoxContainer.new()
-	_detail_actions.add_theme_constant_override(&"separation", 6)
-	detail_v.add_child(_detail_actions)
-	add_child(_detail)
 
 	## Irreversible-infuse confirm (built once, reused).
 	_confirm = ConfirmationDialog.new()
@@ -295,47 +299,36 @@ func _refresh_squad_line() -> void:
 
 func _refresh_detail() -> void:
 	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():
-		if _detail.visible:
-			_detail.hide()
+		_detail_label.text = "Tap a weapon to inspect / forge it.\nTap a weapon, then a hero, to equip (quick-swap)."
+		_rebuild_detail_actions(null)
 		return
 	var w = AccountState.owned_weapons[_selected_idx]
 	var rarity: int = clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)
-	var where: String = "On the bench" if _selected_hero == &"" else "Equipped on %s" % String(_selected_hero).capitalize()
-	_detail_label.text = "%s  —  ★%d %s\nATK %d · HP %d · CRIT %d%% · ULT %d%%\nAbility: %s\nElement: %s %s\nForge: %s\nStar: %s\n%s\n(tap outside to close)" % [
-		w.name, w.star_tier, RARITY_NAMES[rarity],
-		w.get_atk(), w.get_hp(), w.get_crit(), w.get_ult_rate(),
-		(w.ability if w.ability != "" else "—"),
-		_elem_icon(w.rune), String(w.rune).capitalize(), _forge_bar_str(w), _star_bar_str(w), where]
+	var where: String = "On the bench — tap a highlighted hero to equip" if _selected_hero == &"" else "Equipped on %s" % String(_selected_hero).capitalize()
+	_detail_label.text = "%s   ★%d %s · %s %s\nATK %d · HP %d · CRIT %d%% · ULT %d%%   ·   %s\nForge: %s     Star: %s\n%s" % [
+		w.name, w.star_tier, RARITY_NAMES[rarity], _elem_icon(w.rune), String(w.rune).capitalize(),
+		w.get_atk(), w.get_hp(), w.get_crit(), w.get_ult_rate(), (w.ability if w.ability != "" else "—"),
+		_forge_bar_str(w), _star_bar_str(w), where]
 	_rebuild_detail_actions(w)
-	if not _detail.visible:
-		_detail.popup_centered()
 
-## Rebuild the popup's action buttons for the selected weapon: Forge (infuse) +
-## either Equip → <legal hero> (bench weapon) or Unequip (equipped weapon).
+## Rebuild the detail panel's action buttons: Forge (infuse) + Unequip (when an
+## equipped weapon is selected). Equipping a bench weapon is quick-swap (tap a hero).
 func _rebuild_detail_actions(w) -> void:
 	for c in _detail_actions.get_children():
 		c.queue_free()
+	if w == null:
+		return
 	var maxed: bool = w.rarity_idx >= w.MAX_RARITY_IDX
 	var have_shards: bool = not AccountState.shards.is_empty()
 	var forge := Button.new()
-	forge.custom_minimum_size = Vector2(0, 36)
+	forge.custom_minimum_size = Vector2(0, 34)
+	forge.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	forge.disabled = maxed or not have_shards
 	forge.text = ("Maxed: Mythic" if maxed
-		else ("⚒ Forge (need shards)" if not have_shards else "⚒ Forge (spend 1 shard)"))
+		else ("⚒ Forge (need shards)" if not have_shards else "⚒ Forge (1 shard)"))
 	forge.pressed.connect(_on_infuse_pressed)
 	_detail_actions.add_child(forge)
-	if _selected_hero == &"":
-		## Bench weapon -> one Equip button per LEGAL (class-matched) hero.
-		for id in ROSTER_IDS:
-			var hd = GameState.heroes_by_id.get(id)
-			if hd == null or hd.cls != w.cls:
-				continue
-			var eq := Button.new()
-			eq.custom_minimum_size = Vector2(0, 34)
-			eq.text = "Equip → %s" % String(id).capitalize()
-			eq.pressed.connect(_on_equip_pressed.bind(id))
-			_detail_actions.add_child(eq)
-	else:
+	if _selected_hero != &"":
 		var un := Button.new()
 		un.custom_minimum_size = Vector2(0, 34)
 		un.text = "Unequip"
@@ -365,33 +358,21 @@ func _on_tile_pressed(owned_idx: int) -> void:
 	_refresh()
 
 func _on_hero_row_pressed(hero_id: StringName) -> void:
-	## Open this hero's EQUIPPED weapon in the detail popup (inspect / forge / unequip).
-	## Equipping a bench weapon is done from INSIDE the popup (Equip → <hero> buttons).
-	var idx: int = int(AccountState.equipped.get(hero_id, -1))
-	_selected_idx = idx
-	_selected_hero = hero_id if idx >= 0 else &""
+	if _selected_idx >= 0 and _selected_hero == &"":
+		## A BENCH weapon is selected -> equip it on this hero (class-checked) = QUICK SWAP.
+		if AccountState.equip(hero_id, _selected_idx):
+			_selected_idx = -1
+		## Mismatch: keep the selection so the player can pick the right (legal) hero.
+	else:
+		## No bench selection -> inspect this hero's equipped weapon in the detail panel.
+		var idx: int = int(AccountState.equipped.get(hero_id, -1))
+		_selected_idx = idx
+		_selected_hero = hero_id if idx >= 0 else &""
 	_refresh()
 
 func _on_unequip_pressed() -> void:
 	if _selected_hero != &"":
 		AccountState.unequip(_selected_hero)
-		_selected_idx = -1
-		_selected_hero = &""
-		_refresh()
-
-func _on_equip_pressed(hero_id: StringName) -> void:
-	## Equip the selected BENCH weapon on this (legal) hero, then close the popup.
-	if _selected_idx < 0:
-		return
-	if AccountState.equip(hero_id, _selected_idx):
-		_selected_idx = -1
-		_selected_hero = &""
-		_refresh()
-
-func _on_detail_closed() -> void:
-	## Popup dismissed (outside click / hide) -> drop the selection so the tiles
-	## and hero rows deselect and the panel stays closed.
-	if _selected_idx != -1 or _selected_hero != &"":
 		_selected_idx = -1
 		_selected_hero = &""
 		_refresh()

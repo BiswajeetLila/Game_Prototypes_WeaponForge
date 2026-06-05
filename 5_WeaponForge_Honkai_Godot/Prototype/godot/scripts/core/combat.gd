@@ -69,17 +69,17 @@ const BOSS_BY_WAVE: Dictionary = {
 ## A run is one stage (GameState.RUN_FINAL_WAVE). The boss rotates per stage and
 ## enemies scale up; STAGE 1 MULTIPLIERS ARE EXACTLY 1.0 so the legacy balance
 ## numbers (and the 57-test combat contract) are untouched.
-## Numbers Policy starting values: HP +25%/stage, ATK +12%/stage (softened from
+## Numbers Policy starting values: HP +15%/stage, ATK +8%/stage (softened twice from
 ## +40%/+25% — playtest hit a wall at stage 3). Test plan: a squad armed with
 ## starter Commons should reach ~stage 5 before needing forged upgrades; if still
 ## a wall, drop ATK growth to +8%. Stage 1 stays EXACTLY 1.0 (combat contract).
 const STAGE_BOSS_ROTATION: Array = [&"boss_slime_king", &"boss_iron_golem", &"boss_arcane_lich"]
 
 func stage_hp_mult(stage: int) -> float:
-	return 1.0 + 0.25 * float(maxi(stage, 1) - 1)
+	return 1.0 + 0.15 * float(maxi(stage, 1) - 1)
 
 func stage_atk_mult(stage: int) -> float:
-	return 1.0 + 0.12 * float(maxi(stage, 1) - 1)
+	return 1.0 + 0.08 * float(maxi(stage, 1) - 1)
 
 func boss_for_stage(stage: int) -> StringName:
 	return STAGE_BOSS_ROTATION[(maxi(stage, 1) - 1) % STAGE_BOSS_ROTATION.size()]

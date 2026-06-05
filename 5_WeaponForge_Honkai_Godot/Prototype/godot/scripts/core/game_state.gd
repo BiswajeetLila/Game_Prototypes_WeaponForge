@@ -245,6 +245,7 @@ func revive_squad_for_retry() -> void:
 		h.is_dead = false
 		h.hp = h.max_hp
 		h.ult_used = false
+		h.ult_gauge = 0.0            ## fresh retry — ult charge does NOT carry from the failed attempt (#4)
 		h.burn_stack = 0
 		h.last_target_name = &""
 		emit_signal("hero_hp_changed", h.data.id)

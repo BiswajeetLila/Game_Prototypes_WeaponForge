@@ -783,6 +783,7 @@ func _test_revive_squad_for_retry_resets_all() -> void:
 		h.hp = 0
 		h.is_dead = true
 		h.ult_used = true
+		h.ult_gauge = 80.0
 		h.burn_stack = 2
 		h.last_target_name = &"junk"
 	GameState.gold = 42
@@ -796,7 +797,7 @@ func _test_revive_squad_for_retry_resets_all() -> void:
 	GameState.revive_squad_for_retry()
 	var all_revived: bool = true
 	for h in GameState.all_heroes():
-		if h.is_dead or h.hp != h.max_hp or h.ult_used or h.burn_stack != 0 or h.last_target_name != &"":
+		if h.is_dead or h.hp != h.max_hp or h.ult_used or h.ult_gauge != 0.0 or h.burn_stack != 0 or h.last_target_name != &"":
 			all_revived = false
 	var preserved: bool = GameState.gold == 42 \
 		and GameState.wave == 5 \
@@ -1052,9 +1053,9 @@ func _test_stage_mults_scale() -> void:
 	if not Combat.has_method(&"stage_hp_mult"):
 		_check("Combat has stage scaling (scale)", false, "missing (RED)")
 		return
-	_check("stage 3 HP mult 1.5 (1 + 0.25*2)", is_equal_approx(Combat.stage_hp_mult(3), 1.5),
+	_check("stage 3 HP mult 1.3 (1 + 0.15*2)", is_equal_approx(Combat.stage_hp_mult(3), 1.3),
 		"mult=%f" % Combat.stage_hp_mult(3))
-	_check("stage 3 ATK mult 1.24 (1 + 0.12*2)", is_equal_approx(Combat.stage_atk_mult(3), 1.24),
+	_check("stage 3 ATK mult 1.16 (1 + 0.08*2)", is_equal_approx(Combat.stage_atk_mult(3), 1.16),
 		"mult=%f" % Combat.stage_atk_mult(3))
 
 func _test_boss_rotation_by_stage() -> void:

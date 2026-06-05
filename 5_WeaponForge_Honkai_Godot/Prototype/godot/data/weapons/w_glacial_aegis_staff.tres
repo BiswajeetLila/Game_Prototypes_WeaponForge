@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_glacial_aegis_staff"
+name = "Glacial Aegis Staff"
+cls = &"mage"
+ability = "Frozen Ward"
+rune = &"ice"
+base_atk = 33
+base_hp = 26
+base_crit = 11
+base_ult_rate = 13
+rarity_idx = 3

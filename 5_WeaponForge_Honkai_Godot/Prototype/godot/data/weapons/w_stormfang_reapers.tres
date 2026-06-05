@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_stormfang_reapers"
+name = "Stormfang Reapers"
+cls = &"rogue"
+ability = "Thunderclap Rend"
+rune = &"electric"
+base_atk = 30
+base_hp = 18
+base_crit = 18
+base_ult_rate = 10
+rarity_idx = 3

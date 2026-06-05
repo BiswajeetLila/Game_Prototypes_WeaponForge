@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_ironbark_maul"
+name = "Ironbark Maul"
+cls = &"warrior"
+ability = "Crushing Blow"
+rune = &"earth"
+base_atk = 22
+base_hp = 34
+base_crit = 6
+base_ult_rate = 6
+rarity_idx = 1

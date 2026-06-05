@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_cinderbrand_greatsword"
+name = "Cinderbrand Greatsword"
+cls = &"warrior"
+ability = "Flame Sweep"
+rune = &"fire"
+base_atk = 28
+base_hp = 40
+base_crit = 8
+base_ult_rate = 8
+rarity_idx = 2

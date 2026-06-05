@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_venomwhisper_daggers"
+name = "Venomwhisper Daggers"
+cls = &"rogue"
+ability = "Toxic Flurry"
+rune = &"earth"
+base_atk = 20
+base_hp = 12
+base_crit = 14
+base_ult_rate = 6
+rarity_idx = 1

@@ -28,6 +28,7 @@ func _ready() -> void:
 	else:
 		_test_catalog_loaded_and_covers_classes()
 		_test_catalog_meets_curve()
+		_test_catalog_depth_four_per_class()
 	## ForgeWheel autoload is looked up via /root path (parse-safe while unregistered).
 	if get_node_or_null("/root/ForgeWheel") == null:
 		_check("ForgeWheel autoload registered", false, "missing (RED)")
@@ -77,6 +78,22 @@ func _test_catalog_meets_curve() -> void:
 		_check("'%s' meets curve (atk >= 16)" % id, w.base_atk >= 16, "atk=%d" % w.base_atk)
 		if w.base_atk < 16:
 			break
+
+## Catalog depth (Stage F): 4 weapons per fielded class (warrior/mage/rogue)
+## spanning rarities Common..Legendary, so pulls have real variety + a pyramid.
+func _test_catalog_depth_four_per_class() -> void:
+	var by_class: Dictionary = {}        ## cls -> { rarity_idx -> true }
+	for id in GameState.weapons_by_id:
+		var w = GameState.weapons_by_id[id]
+		if not by_class.has(w.cls):
+			by_class[w.cls] = {}
+		by_class[w.cls][w.rarity_idx] = true
+	for cls in [&"warrior", &"mage", &"rogue"]:
+		var rs: Dictionary = by_class.get(cls, {})
+		_check("class '%s' spans rarities C/R/E/L" % cls,
+			rs.has(0) and rs.has(1) and rs.has(2) and rs.has(3), "rarities=%s" % str(rs.keys()))
+	_check("catalog has >= 12 weapons", GameState.weapons_by_id.size() >= 12,
+		"size=%d" % GameState.weapons_by_id.size())
 
 ## ---------- Pull ----------
 

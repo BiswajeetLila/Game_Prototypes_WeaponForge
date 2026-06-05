@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/weapon_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"w_emberglass_wand"
+name = "Emberglass Wand"
+cls = &"mage"
+ability = "Cinder Bolt"
+rune = &"fire"
+base_atk = 21
+base_hp = 16
+base_crit = 7
+base_ult_rate = 9
+rarity_idx = 1

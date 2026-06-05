@@ -309,11 +309,11 @@ func _refresh_detail() -> void:
 	var w = AccountState.owned_weapons[_selected_idx]
 	var rarity: int = clampi(w.rarity_idx, 0, RARITY_NAMES.size() - 1)
 	var hint: String = "Tap a highlighted hero to equip." if _selected_hero == &"" else "Equipped on %s." % String(_selected_hero).capitalize()
-	_detail_label.text = "%s  —  ★%d %s\nATK %d · HP %d · CRIT %d%% · ULT %d%%\nAbility: %s\nElement: %s %s\nForge: %s\n%s" % [
+	_detail_label.text = "%s  —  ★%d %s\nATK %d · HP %d · CRIT %d%% · ULT %d%%\nAbility: %s\nElement: %s %s\nForge: %s\nStar: %s\n%s" % [
 		w.name, w.star_tier, RARITY_NAMES[rarity],
 		w.get_atk(), w.get_hp(), w.get_crit(), w.get_ult_rate(),
 		(w.ability if w.ability != "" else "—"),
-		_elem_icon(w.rune), String(w.rune).capitalize(), _forge_bar_str(w), hint]
+		_elem_icon(w.rune), String(w.rune).capitalize(), _forge_bar_str(w), _star_bar_str(w), hint]
 	## FORGE (infuse): enabled when shards exist and the weapon isn't maxed.
 	var maxed: bool = w.rarity_idx >= w.MAX_RARITY_IDX
 	var have_shards: bool = not AccountState.shards.is_empty()
@@ -322,6 +322,13 @@ func _refresh_detail() -> void:
 		else ("⚒ Forge (need shards)" if not have_shards else "⚒ Forge (spend 1 shard)"))
 	_unequip_btn.visible = _selected_hero != &""
 	_detail.visible = true
+
+## Human-readable star-up bar, e.g. "★1 · 2/3 dupes to ★2" (or "★10 (max)").
+## Dupes feed this; a dupe that doesn't tier up still moves star_progress here.
+func _star_bar_str(w) -> String:
+	if w.star_tier >= w.MAX_STAR_TIER:
+		return "★%d (max)" % w.star_tier
+	return "★%d  ·  %d/%d dupes to ★%d" % [w.star_tier, w.star_progress, w.DUPES_PER_STAR, w.star_tier + 1]
 
 ## Human-readable rarity bar, e.g. "Common → Rare  44%" (or "Mythic (max)").
 func _forge_bar_str(w) -> String:

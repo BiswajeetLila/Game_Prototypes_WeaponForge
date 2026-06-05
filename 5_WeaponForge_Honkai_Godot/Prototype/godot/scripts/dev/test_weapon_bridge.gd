@@ -48,6 +48,7 @@ func _ready() -> void:
 		_test_run_mods_crit_ult()
 		_test_run_mods_hp_raises_max_keeps_current()
 		_test_run_mods_reset_on_new_session()
+		_test_restore_full_heals_to_max()
 	if "combat_stat_source" in GameState:
 		GameState.combat_stat_source = GameState.STAT_SOURCE_AUTO
 	_summary()
@@ -114,6 +115,21 @@ func _test_hp_equip_no_refill() -> void:
 		"max=%d want %d" % [h.max_hp, base_max + 50])
 	_check("equip does NOT refill current hp", h.hp == base_max,
 		"hp=%d want %d (unchanged)" % [h.hp, base_max])
+
+func _test_restore_full_heals_to_max() -> void:
+	## Run-start full heal (#3): equipping a +HP weapon clamps current (mid-run rule),
+	## so a hero would enter a stage partially full. restore_full() is the run-start
+	## exception — full HP incl. the weapon bonus, death cleared.
+	var h = _fresh_hero()
+	if not h.has_method(&"restore_full"):
+		_check("HeroState has restore_full()", false, "method missing (RED)")
+		return
+	GameState.equip_weapon_data(&"bran", _pulled(30, 50))   ## max += 50, current NOT refilled
+	_check("pre-restore: hero is below max (clamped)", h.hp < h.max_hp, "hp=%d max=%d" % [h.hp, h.max_hp])
+	h.is_dead = true
+	h.restore_full()
+	_check("restore_full sets hp to max", h.hp == h.max_hp, "hp=%d max=%d" % [h.hp, h.max_hp])
+	_check("restore_full clears death", h.is_dead == false, "still dead")
 
 func _test_hp_equip_while_damaged_no_heal() -> void:
 	var h = _fresh_hero()

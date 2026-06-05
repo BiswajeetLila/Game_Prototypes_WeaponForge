@@ -128,3 +128,10 @@ func clamp_hp() -> void:
 	hp = clampi(hp, 0, max_hp)
 	if hp <= 0:
 		is_dead = true
+
+## Run-start full heal: enter a stage at FULL HP (the equipped weapon's HP bonus
+## included) and not dead. refresh_max_hp clamps-never-refills to block mid-run
+## swap-healing; run start is the deliberate exception so the squad isn't pre-damaged.
+func restore_full() -> void:
+	hp = max_hp
+	is_dead = false

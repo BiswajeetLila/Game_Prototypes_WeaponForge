@@ -251,6 +251,16 @@ func revive_squad_for_retry() -> void:
 		emit_signal("hero_hp_changed", h.data.id)
 		emit_signal("hero_ult_changed", h.data.id)
 
+## Run-start full heal for the WHOLE squad, WITH a display refresh. HeroState.restore_full()
+## is silent; the battle HP bars only update on hero_hp_changed, so emit it per hero — else
+## the bars keep the pre-heal (post-equip-clamp) value (#1 "heroes start at half HP").
+func restore_squad_full() -> void:
+	for id in squad_order:
+		var h = heroes.get(id)
+		if h != null:
+			h.restore_full()
+			emit_signal("hero_hp_changed", id)
+
 ## Instantiates a HeroState from the catalog, appends to squad_order, marks the
 ## hero's class as unlocked (widens shop pool), and emits hero_unlocked.
 ##

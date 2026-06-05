@@ -85,12 +85,10 @@ func _start_run() -> void:
 		var w = AccountState.get_equipped(id)
 		if w != null:
 			GameState.equip_weapon_data(id, w)
-	## Enter the stage at FULL HP (weapon HP bonus included). equip_weapon_data
-	## clamps-not-refills (mid-run rule); run start is the exception (#3 fix).
-	for id in GameState.squad_order:
-		var h = GameState.get_hero(id)
-		if h != null:
-			h.restore_full()
+	## Enter the stage at FULL HP (weapon bonus included) AND refresh the bars —
+	## equip_weapon_data clamps-not-refills (mid-run rule); run start is the exception.
+	## restore_squad_full emits hero_hp_changed per hero so the bars don't show stale HP (#1).
+	GameState.restore_squad_full()
 	GameState.run_stage = AccountState.current_stage
 	ForgeDraft.reset_run()
 	_refresh_strip()

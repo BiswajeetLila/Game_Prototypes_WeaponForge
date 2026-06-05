@@ -49,6 +49,7 @@ func _ready() -> void:
 		_test_run_mods_hp_raises_max_keeps_current()
 		_test_run_mods_reset_on_new_session()
 		_test_restore_full_heals_to_max()
+		_test_restore_squad_full_notifies()
 	if "combat_stat_source" in GameState:
 		GameState.combat_stat_source = GameState.STAT_SOURCE_AUTO
 	_summary()
@@ -198,6 +199,23 @@ func _test_equip_signal() -> void:
 	_check("signal carries hero_id", _signal_hero == &"bran", "hero=%s" % _signal_hero)
 	_check("hero actually holds the weapon", h.weapon_data != null and h.weapon_data.id == &"w_test_blade",
 		"wd=%s" % (h.weapon_data.id if h.weapon_data != null else &"null"))
+
+## #1 fix: run-start full heal must NOTIFY the battle bars. restore_full() is silent,
+## so restore_squad_full() heals the squad AND emits hero_hp_changed per hero (else the
+## bars keep the pre-heal value shown right after equip — the "starts at half HP" bug).
+func _test_restore_squad_full_notifies() -> void:
+	var h = _fresh_hero()
+	if not GameState.has_method(&"restore_squad_full"):
+		_check("GameState.restore_squad_full() exists", false, "method missing (RED)")
+		return
+	GameState.equip_weapon_data(&"bran", _pulled(30, 50))   ## max += 50, current clamped (partial)
+	_signal_count = 0
+	GameState.hero_hp_changed.connect(_on_wd_changed)
+	GameState.restore_squad_full()
+	GameState.hero_hp_changed.disconnect(_on_wd_changed)
+	_check("restore_squad_full heals to max", h.hp == h.max_hp, "hp=%d max=%d" % [h.hp, h.max_hp])
+	_check("restore_squad_full emits hero_hp_changed (bars refresh)", _signal_count >= 1,
+		"count=%d" % _signal_count)
 
 func _on_wd_changed(hero_id: StringName) -> void:
 	_signal_count += 1

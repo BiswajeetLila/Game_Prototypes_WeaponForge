@@ -38,6 +38,17 @@ func _ready() -> void:
 			bran.cls == &"warrior" and elara.cls == &"mage" and vex.cls == &"rogue",
 			"%s/%s/%s" % [bran.cls, elara.cls, vex.cls])
 
+	## Detail popup builds its dynamic action buttons (Forge + Equip→hero) for a valid
+	## selection without error (exercises the PopupPanel + _rebuild_detail_actions path).
+	hs._selected_idx = 0
+	hs._selected_hero = &""
+	hs._refresh_detail()
+	_check("detail builds action buttons for a selection",
+		hs._detail_actions.get_child_count() >= 1, "actions=%d" % hs._detail_actions.get_child_count())
+	hs._selected_idx = -1
+	hs._selected_hero = &""
+	hs._refresh_detail()
+
 	## #6 — a stale out-of-bounds selection must not crash the refresh (was OOB read).
 	hs._selected_idx = 99
 	hs._selected_hero = &""

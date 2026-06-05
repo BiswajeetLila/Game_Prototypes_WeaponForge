@@ -1052,9 +1052,9 @@ func _test_stage_mults_scale() -> void:
 	if not Combat.has_method(&"stage_hp_mult"):
 		_check("Combat has stage scaling (scale)", false, "missing (RED)")
 		return
-	_check("stage 3 HP mult 1.8 (1 + 0.4*2)", is_equal_approx(Combat.stage_hp_mult(3), 1.8),
+	_check("stage 3 HP mult 1.5 (1 + 0.25*2)", is_equal_approx(Combat.stage_hp_mult(3), 1.5),
 		"mult=%f" % Combat.stage_hp_mult(3))
-	_check("stage 3 ATK mult 1.5 (1 + 0.25*2)", is_equal_approx(Combat.stage_atk_mult(3), 1.5),
+	_check("stage 3 ATK mult 1.24 (1 + 0.12*2)", is_equal_approx(Combat.stage_atk_mult(3), 1.24),
 		"mult=%f" % Combat.stage_atk_mult(3))
 
 func _test_boss_rotation_by_stage() -> void:

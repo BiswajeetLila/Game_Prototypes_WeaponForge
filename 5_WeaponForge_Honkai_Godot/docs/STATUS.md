@@ -5,7 +5,7 @@
 > `2_Weaponcraft_Godot/...` are historical-origin paths; live equivalents are under
 > `5_WeaponForge_Honkai_Godot/...`. The origin folder is a frozen playtester build.
 
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-05
 **Maintainer:** keep this doc current; it is the canonical entry point for the project.
 
 > **If you read one file, read this one.** It points to everything else and states what is done, planned, and remaining.
@@ -14,7 +14,7 @@
 
 ## 1. What WeaponCraft is (one paragraph)
 
-Casual-mobile RPG / hero-collector for the Wittle Defender ∩ anime-curious audience. **Inverts the Wittle gacha axis**: you pull *weapons* (not heroes) from a slot-machine Forge Wheel, and master a **locked 7-hero roster** with anime-style personality + story. Combat is auto-resolved side-view squad-of-3 with single-tap ultimates; 15-wave stages with bosses at W5/W10/W15. Element-pair **Catalyst** compounds (renamed from "Resonance") drive squad synergy. The bet: equipment-gacha is precedented (Archero $263M), story-locked roster is unprecedented — **the combination is the moat**.
+Casual-mobile RPG / hero-collector for the Wittle Defender ∩ anime-curious audience. **Inverts the Wittle gacha axis**: you pull *weapons* (not heroes) from a slot-machine Forge Wheel, and master a **locked 7-hero roster** with anime-style personality + story. Combat is auto-resolved side-view squad-of-3 with single-tap ultimates. **Prototype build:** a stage = 5 waves (boss on wave 5); bosses rotate slime→golem→lich and scale per stage (procedural — no fixed stage count, 3 boss encounters in rotation). Element-pair **Catalyst** compounds (renamed from "Resonance") will drive squad synergy. (Spec design is 15-wave stages w/ W5/W10/W15 bosses; the prototype runs the compressed 5-wave shape.) The bet: equipment-gacha is precedented (Archero $263M), story-locked roster is unprecedented — **the combination is the moat**.
 
 ---
 
@@ -30,7 +30,13 @@ Casual-mobile RPG / hero-collector for the Wittle Defender ∩ anime-curious aud
 | `docs/research/weaponcraft-forge-mockups/` | F1-F4 nano-banana forge mockups (historic exploration — direction dropped). |
 | This file (`docs/STATUS.md`) | Done / planned / remaining + decision log. |
 
-Plan-mode scratch files live in `C:/Users/Biswa/.claude/plans/` (session artifacts, not canonical).
+**THE THREE SSOTs (read these; ignore stale next-step lists anywhere else):**
+1. **`docs/STATUS.md`** (this file) — current state + the canonical build queue (§4 NEXT) + repo/branch + engine/MCP rules. **Start here.**
+2. **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** — the locked DESIGN (identity / roster / Forge Wheel / combat / synergy / exit-gates).
+3. **`docs/handoffs/<newest>.md`** — the session RESUME doc (read the newest on resume).
+
+`docs/05_roadmap.md` is the post-LAUNCH live-ops roadmap ONLY, and predates the inversion pivot (TFT-shop/recipe content) — historical, **not** the prototype queue. The prototype queue is §4 NEXT below.
+Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts, not canonical.
 
 ---
 
@@ -93,9 +99,24 @@ Plan-mode scratch files live in `C:/Users/Biswa/.claude/plans/` (session artifac
   heroes stay out of the gacha (the moat). ~415 tests green; stage-1 combat stays neutral.
   Detail + commits: `docs/handoffs/2026-06-03-forge-and-infuse.md`. (Old "next step #1" now
   done except the spin cinematic.)
+- **PLAYTEST POLISH + BALANCE (2026-06-05).** Heroes start each stage at FULL HP (HP-bar
+  display-refresh fix); legacy battle gold hidden; stage curve softened to +15% HP / +8% ATK;
+  reforge-retry now resets ult; weapon detail is a FIXED opaque panel between squad + armory
+  with quick-swap (popup reverted); stage-3 Arcane Lich nerfed (hp 850→600, phase-2 AOE
+  0.5→0.30). **~423 tests green.** Detail + commits: `docs/handoffs/2026-06-05-session-handoff.md`.
 - **P1a — most cycles done (2026-06-01, in `5_WeaponForge_Honkai_Godot`).** WeaponData unitary schema + Forge Math (all diff cases incl. diff≥2 bank: diff2 instant+50% bank, diff3 ½×2, diff4 ⅓×3), `skill_card_data.gd` (SkillCardData Forge-Draft schema: 4 hero-tagged card types), and the WeaponData **combat interface** (`get_crit`/`get_ult_rate`/`get_all_tags`/`get_hp_bonus` — Stage 1 of the combat migration) all DONE under TDD. TestWeaponData 32/32, TestSkillCardData 14/14, **144-suite green (zero regression)**. **Remaining P1a (DEFERRED):** the actual `combat.gd`/`GameState` switch onto WeaponData + socket retirement on `weapon.gd` — blocked because the unitary model can't reproduce multi-part recipe tag-combos, so it needs Forge Draft (P1c) + Catalyst (P1e) built first. Full analysis + staged plan: `docs/2026-06-01-combat-weapon-migration-plan.md`.
-- Then: P1b Forge Wheel Phase 0 → P1c Forge Draft → P1d Mastery+Affinity+portraits → P1e Catalyst → P1f Hot Paladin cinematic → P1g hero missions Q1-Q3 → P1h skin shop → P1i balance → P1j SSR+playtest → P1k pre-mortem patches → P1l Discord pre-launch. (Detail: design spec §23.)
-- **First-10-min vertical slice = P1a + P1b + P1c + P1f.**
+- **First-10-min vertical slice = P1a + P1b + P1c + P1f** (full Phase-1 sequence P1b→P1l in design spec §23).
+
+### NEXT — prototype build queue (OWNER-AGREED ORDER, 2026-06-05) ← THE one true queue
+Not scheduled "now"; this is the order for upcoming sessions:
+1. **#2 — Elemental / ability draft cards** (finishes P1c). Rune cards vs enemy weak/resist + ability transforms → makes the boss 5-card draft matter. Shard `element` field is already wired for it.
+2. **#3 — Hot Paladin scripted-defeat entry** (P1f, the FM-8 hero-attachment probe). Re-map the spec's "Stage 2 wave 14" trigger to the 5-wave stage structure; add the Paladin hero + a Paladin starter weapon + the descend cinematic + the retry-with-4-hero-squad flow.
+   → **Do #2 + #3 together = the testable FM-8 vertical slice.**
+3. **#4 — Catalyst compounds** (P1e, squad element-pair synergy) → THEN **socket retirement 9a–e** (delete legacy sockets/shop/merge + ~80 legacy tests; contracts in `docs/2026-06-01-combat-weapon-migration-plan.md`).
+4. **#1 — Spin cinematic** (the last unfinished bit of the Forge Wheel — skippable ≤0.6s anvil-strike reel).
+   → **Do #4 + #1 together.**
+5. **Human gates** (not code): Bran 5-tier portrait eval (20 Honkai players) + "Catalyst" trademark check.
+6. **Merge `phase1` → `main`** — ONLY on explicit owner say.
 
 ### Exit gates (any 2 of 3): D1≥35% + FM-8 dual-anchor ≥6/10 both axes / ad CPI -20% vs Wittle / 10h internal self-play.
 ### Kill triggers: D1<30% / satisfaction<6/10 / no creative within 30% Wittle CPI / FM-8 probe <6/10 either axis.
@@ -133,4 +154,4 @@ Plan-mode scratch files live in `C:/Users/Biswa/.claude/plans/` (session artifac
 - Godot 4.6.2 Mono. **Active project: `5_WeaponForge_Honkai_Godot/Prototype/godot/project.godot`** (F5 to run). `2_Weaponcraft_Godot/...` is the FROZEN playtester build — open it only to demo, never to develop (see its root `FROZEN-2026-06-01.md`).
 - **Engine ops via the godot MCP — OWNER PREFERENCE (2026-06-03): default to `mcp__godot__*` for everything Godot.** Run/inspect with `run_project(projectPath, scene?)` → `get_debug_output` → `stop_project`; pass the **pedantic-golick worktree** godot path. Dev-test suites: `run_project(scene=res://scenes/dev/TestX.tscn)` then parse the printed `=== N passed / M failed ===` from `get_debug_output` (self-quitting suites end on their own; legacy TestCombat/Recipes/Shop/Merge/Ui can't take `--quit-after` via MCP → `stop_project` once the summary has printed). Console-exe headless is a fallback only when batch exit codes are required.
 - `.import` files are TRACKED (Godot 4 UID stability). Autosave churn on them is noise — discard, don't commit (K-12).
-- Tests: 7 dev scenes — TestCombat/TestRecipes/TestShop/TestMerge/TestUi (144 core, need `--quit-after` headless) + TestWeaponData/TestSkillCardData (self-quitting, exit code = fail count). Headless gotchas (cold-clone `--import` pass, quit behavior): `docs/handoffs/2026-06-01-session-handoff-p1a-fork.md`.
+- Tests: **~423 green across 14 dev scenes.** Self-quitting (exit code = fail count): TestWeaponData / TestShardData / TestInfuse / TestHomeScreen / TestAccountState / TestWeaponBridge / TestForgeWheel / TestForgeDraft / TestSkillCardData. Legacy (need `--quit-after 400`): TestCombat / TestRecipes / TestShop / TestMerge / TestUi. Headless gotchas (cold-clone `--import` pass, quit behavior): `docs/handoffs/2026-06-01-session-handoff-p1a-fork.md`.

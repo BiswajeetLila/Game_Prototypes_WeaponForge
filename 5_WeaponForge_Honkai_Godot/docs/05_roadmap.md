@@ -1,5 +1,10 @@
 # WeaponCraft — Live-ops Roadmap
 
+> ⚠️ **SCOPE: post-LAUNCH live-ops only — NOT the prototype build queue.** This file also
+> predates the wittle-inversion pivot (it describes the old TFT-shop / recipe content model),
+> so treat it as historical/aspirational. **The current prototype queue is `docs/STATUS.md`
+> §4 NEXT** — the single source of truth for "what's next."
+
 This roadmap follows the "ship A, grow into D" plan: launch with a focused chapter-map progression RPG (Q6 option A), expand to a chapter-map + weekly endless event hybrid (Q6 option D) by Season 2.
 
 ---

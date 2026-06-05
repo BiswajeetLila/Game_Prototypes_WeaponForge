@@ -766,10 +766,10 @@ func _test_boss_iron_golem_tres_loads() -> void:
 func _test_boss_arcane_lich_tres_loads() -> void:
 	var def = GameState.get_enemy_def(&"boss_arcane_lich")
 	var ok: bool = def != null \
-		and def.hp_base == 850 \
+		and def.hp_base == 600 \
 		and bool(def.get(&"is_boss")) == true \
 		and int(def.get(&"atk_override")) == 36
-	_check("boss_arcane_lich tres: hp=850 atk=36 is_boss=true",
+	_check("boss_arcane_lich tres: hp=600 atk=36 is_boss=true",
 		ok, "def=%s" % str(def))
 
 func _test_revive_squad_for_retry_resets_all() -> void:
@@ -982,8 +982,8 @@ func _test_arcane_lich_phase1_atk_bump_below_66pct() -> void:
 func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
 	## Lich at hp=255/max=850 (30% < 33%). phase_1_applied=true (skip phase 1).
 	## Elara + Vex pre-killed so single-target attack lands on Bran. On tick 1
-	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.5).
-	## Bran alone: takes 43 (single) + 60 (AoE = floor(120*0.5)) = 103 hp loss.
+	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.30).
+	## Bran alone: takes 43 (single) + 36 (AoE = floor(120*0.30)) = 79 hp loss.
 	GameState.new_session()
 	GameState.unlock_hero(&"elara")
 	GameState.unlock_hero(&"vex")
@@ -1007,8 +1007,8 @@ func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
 	}])
 	Combat.step()
 	var bran_loss: int = bran_start - bran.hp
-	_check("arcane_lich phase 2 (<33%%): Bran-solo loses 43 (single) + 60 (AoE 50%%) = 103",
-		bran_loss == 103, "loss=%d (expected 103)" % bran_loss)
+	_check("arcane_lich phase 2 (<33%%): Bran-solo loses 43 (single) + 36 (AoE 30%%) = 79",
+		bran_loss == 79, "loss=%d (expected 79)" % bran_loss)
 	Combat.stop()
 
 ## ---------- Test helpers ----------

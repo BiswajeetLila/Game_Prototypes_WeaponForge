@@ -15,6 +15,9 @@ func _ready() -> void:
 	GameState.codex_badge_changed.connect(_on_codex_badge_changed)
 	_codex_btn.pressed.connect(func(): emit_signal(&"codex_pressed"))
 	_refresh_all()
+	## Gold is the LEGACY shop currency — dead in the inversion loop (no between-wave
+	## shop). Hide it so the battle HUD doesn't show a counter that does nothing.
+	_gold_label.visible = false
 
 func _refresh_all() -> void:
 	_on_gold_changed(GameState.gold)

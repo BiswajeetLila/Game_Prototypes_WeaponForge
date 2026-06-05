@@ -77,8 +77,9 @@ func _build_ui() -> void:
 	reset.add_theme_font_size_override(&"font_size", 9)
 	reset.modulate = Color(1, 1, 1, 0.45)
 	reset.pressed.connect(func():
+		_selected_idx = -1                 ## clear selection BEFORE the array empties (#6)
+		_selected_hero = &""
 		AccountState.reset_account()
-		_selected_idx = -1
 		_grant_starter_if_first_boot()
 		_refresh())
 	v.add_child(reset)
@@ -189,13 +190,20 @@ func _build_ui() -> void:
 func _grant_starter_if_first_boot() -> void:
 	if not AccountState.owned_weapons.is_empty():
 		return
-	var starter = GameState.weapons_by_id.get(&"w_emberfang_cleaver")
-	if starter == null:
-		return
-	AccountState.acquire_weapon(starter)
-	AccountState.equip(&"bran", 0)
+	## Arm ALL three heroes with their class Common so nobody starts empty-handed (#4/#5).
+	var starters: Array = [
+		[&"bran", &"w_emberfang_cleaver"],
+		[&"elara", &"w_frostcall_stave"],
+		[&"vex", &"w_stormpierce_fangs"],
+	]
+	for pair in starters:
+		var wdef = GameState.weapons_by_id.get(pair[1])
+		if wdef == null:
+			continue
+		AccountState.acquire_weapon(wdef)
+		AccountState.equip(pair[0], AccountState.owned_weapons.size() - 1)
 	AccountState.autosave()
-	GameState.append_combat_log("⚒ Starter weapon granted: Emberfang Cleaver → Bran")
+	GameState.append_combat_log("⚒ Starters granted: Bran / Elara / Vex each armed with a Common.")
 
 ## ---------- Refresh ----------
 
@@ -216,7 +224,7 @@ func _refresh() -> void:
 	_refresh_detail()
 
 func _refresh_hero_rows() -> void:
-	var selected = AccountState.owned_weapons[_selected_idx] if _selected_idx >= 0 else null
+	var selected = AccountState.owned_weapons[_selected_idx] if (_selected_idx >= 0 and _selected_idx < AccountState.owned_weapons.size()) else null
 	for id in _hero_rows:
 		var row: Button = _hero_rows[id]
 		var data = GameState.heroes_by_id.get(id)

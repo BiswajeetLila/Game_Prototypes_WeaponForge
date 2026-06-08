@@ -31,7 +31,6 @@ const VEX_UNLOCK_WAVE: int = 6
 @onready var _hud: Control = %Hud
 @onready var _codex_modal: Control = %CodexModal
 @onready var _result_modal: Control = %ResultModal
-@onready var _reforge_retry_modal: Control = %ReforgeRetryModal
 @onready var _notifications: Control = %Notifications
 
 const DraftModalScript = preload("res://scripts/ui/draft_modal.gd")
@@ -50,8 +49,6 @@ func _ready() -> void:
 	_reset_btn.text = "⌂ HOME"
 	_hud.codex_pressed.connect(_codex_modal.open)
 	_result_modal.restart_requested.connect(_on_back_home)
-	_reforge_retry_modal.retry_requested.connect(_on_retry_pressed)
-	_reforge_retry_modal.give_up_requested.connect(_on_give_up_pressed)
 	GameState.wave_cleared.connect(_on_wave_cleared)
 	GameState.stage_cleared.connect(_on_stage_cleared)
 	GameState.squad_wiped.connect(_on_squad_wiped)
@@ -151,27 +148,9 @@ func _on_stage_cleared() -> void:
 	_result_modal.open(&"clear")
 
 func _on_squad_wiped() -> void:
-	_notifications.show_banner("💀 WIPE", Color(1, 0.3, 0.3), 1.6)
-	## Stage D — boss-wave wipes open the ReforgeRetryModal (revive + same
-	## wave). Non-boss wipes fall through to the standard ResultModal flow.
-	if GameState.wave in GameState.BOSS_WAVES:
-		var boss_id: StringName = Combat.BOSS_BY_WAVE.get(GameState.wave, &"")
-		var boss_def = GameState.get_enemy_def(boss_id)
-		var boss_name: String = boss_def.name if boss_def != null else "Boss"
-		_reforge_retry_modal.open(boss_name, GameState.wave)
-		return
-	_result_modal.open(&"wipe")
-
-## Reforge & Retry path. Revive squad and re-fight the same boss wave
-## (run mods + equipped weapons untouched).
-func _on_retry_pressed() -> void:
-	Combat.stop()
-	GameState.revive_squad_for_retry()
-	_begin_wave(GameState.wave)
-
-## Stage D — Give Up routes through to the standard wipe result modal.
-func _on_give_up_pressed() -> void:
-	_result_modal.open(&"wipe")
+	_notifications.show_banner("💀 DEFEATED — rebuild your loadout", Color(1, 0.3, 0.3), 1.3)
+	await get_tree().create_timer(1.3).timeout
+	_on_back_home()
 
 ## Stage D — pre-fight boss telegraph banner. Combat emits this from
 ## _spawn_boss right before the first tick fires, giving the player ~1s to

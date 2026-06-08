@@ -177,8 +177,9 @@ Skip steps only on trivial (single-file mechanical) work or owner waiver.
   scales per stage. (Spec is 15 waves with W5/W10/W15 bosses; prototype
   runs the compressed 5-wave shape.)
 - **Catalyst stacking:** cap-1 stages 1-4, no-cap stages 5+ (2026-06-09).
-- **Catalyst cap-1 priority order:** alphabetical pair name (Blizzard >
-  Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire) (2026-06-09).
+- **Catalyst cap-1 priority order:** alphabetical compound name —
+  Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire
+  (2026-06-09).
 - **Catalyst first reveal:** Forge Wheel scripted pull #1 = Fire-Bran-class,
   pull #3 = Ice-Elara-class. Starters are non-elemental until then (2026-06-09).
 

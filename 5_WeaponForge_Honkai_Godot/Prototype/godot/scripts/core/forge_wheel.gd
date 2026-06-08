@@ -90,10 +90,12 @@ func pull() -> Dictionary:
 			if auto_equipped and hero != null:
 				GameState.equip_weapon_data(hero_id, owned)
 
-	## Every pull also drops 2 Forge Shards (the no-waste net): rarity-rolled,
-	## carrying the pulled weapon's element.
-	var drops: Array = [_mint_shard(catalog_pick.rune), _mint_shard(catalog_pick.rune)]
-	AccountState.add_shards(drops)
+	## Shard consolation: 2 shards on a low-rarity pull (common/rare), 0 on epic+.
+	## (Spoils for a "meh" pull; high-rarity pulls are their own reward.)
+	var drops: Array = []
+	if catalog_pick.rarity_idx <= 1:
+		drops = [_mint_shard(catalog_pick.rune), _mint_shard(catalog_pick.rune)]
+		AccountState.add_shards(drops)
 
 	var result: Dictionary = {
 		"weapon": owned,

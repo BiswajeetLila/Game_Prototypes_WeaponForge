@@ -41,6 +41,7 @@ func _ready() -> void:
 		_test_pull_eligibility_is_fielded_roster()
 		_test_pull_drops_two_shards()
 		_test_dupe_pull_feeds_star_up()
+		_test_shard_drop_by_rarity()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -188,6 +189,27 @@ func _test_dupe_pull_feeds_star_up() -> void:
 	_check("owned weapon reached ★2, no 2nd copy",
 		AccountState.owned_weapons.size() == 1 and AccountState.owned_weapons[0].star_tier == 2,
 		"size=%d star=%d" % [AccountState.owned_weapons.size(), AccountState.owned_weapons[0].star_tier])
+
+## Task 2 / economy: 2 shards on common/rare pull (rarity_idx <= 1), 0 on epic+.
+func _test_shard_drop_by_rarity() -> void:
+	GameState.new_session()
+	AccountState.reset_account()
+	AccountState.add_gems(99999)   ## pull currently costs gems (Ember lands later)
+	var ok: bool = true
+	var saw: bool = false
+	for _i in range(40):
+		if AccountState.gems < AccountState.PULL_COST:
+			AccountState.add_gems(99999)
+		var r: Dictionary = ForgeWheel.pull()
+		if r.is_empty():
+			continue
+		saw = true
+		var n: int = (r.get("shards", []) as Array).size()
+		var rarity: int = r["weapon"].rarity_idx
+		var expected: int = 2 if rarity <= 1 else 0
+		if n != expected:
+			ok = false
+	_check("shard drop = 2 (common/rare) / 0 (epic+)", ok and saw, "wrong shard count for rarity")
 
 func _test_second_pull_goes_to_bench() -> void:
 	## Re-pulling a weapon you ALREADY own is a DUPE -> star-up progress on the owned

@@ -22,8 +22,8 @@
 ## Public API:
 ##   start_wave(wave, auto_tick := true)
 ##                              Spawn 2-3 enemies (HP scales 15 + wave*8),
-##                              assign weak (always) + resist (70% chance) tags
-##                              per addendum 0.1.5, reset per-fight state,
+##                              assign the stage's affinity tags (StageAffinity;
+##                              ~20% spawn un-classed), reset per-fight state,
 ##                              start the timers.  Pass auto_tick=false to
 ##                              skip the Timer (used by tests to drive step()
 ##                              manually).
@@ -54,9 +54,7 @@ const ULT_BASE_FILL: float = 6.0
 const ULT_FILL_PER_DMG: float = 0.2
 const ULT_FILL_PER_RATE: float = 0.25   ## == ult_rate / 4
 
-const TAG_POOL: Array = [&"fire", &"ice", &"electric", &"wind"]
 const UNCLASSED_CHANCE: float = 0.20   ## ~20% of minions spawn with no weak/resist (flavor; tunable)
-const RESIST_CHANCE: float = 0.7
 
 ## Stage D — boss roster keyed by wave. _spawn_enemies looks up the id and
 ## spawns exactly one boss enemy when the current wave matches.

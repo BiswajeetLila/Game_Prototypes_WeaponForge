@@ -58,6 +58,7 @@ Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts
 - **AI-Leverage Inventory** — design spec §23.1 (pipeline accel table, ~1.6× multiplier).
 - **Bran 5-tier portrait test render** — `docs/research/portrait-tier-test/bran_5tier_evolution.png`. Awaits 20-Honkai-player eval gate (FM-19).
 - **P1a STARTED (TDD)** — `WeaponData` unitary schema: get_atk/get_hp + ★-tier scaling (+5%/tier) + Forge Math (apply_forge_part: same-tier +50%, one-higher instant, lower no-op). **10/10 tests green** (`scripts/data/weapon_data.gd`, `scripts/dev/test_weapon_data.gd`, `scenes/dev/TestWeaponData.tscn`). Headless runner established.
+- **Teammate deck shipped (2026-06-09, branch `forgeloop/teammate-deck`)** — self-contained HTML one-pager (`docs/teammate-deck.html` + `docs/decks/style.css` + `docs/decks/scrub.js` + 12 asset copies in `docs/decks/assets/`). Forge industrial × anime rondel aesthetic, Cinzel + Manrope + JetBrains Mono, 7 sections w/ `<details>` collapsibles, sticky nav, Bran 5-tier scrubber as the unforgettable hook, scroll-triggered engraved dividers, print fallback, reduced-motion fallback. Spec: `docs/superpowers/specs/2026-06-09-teammate-deck-design.md`. Plan: `docs/superpowers/plans/2026-06-09-teammate-deck.md`.
 
 ### Key locked decisions (full log in design spec)
 

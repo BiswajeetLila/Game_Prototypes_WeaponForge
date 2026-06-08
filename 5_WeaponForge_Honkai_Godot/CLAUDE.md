@@ -121,10 +121,11 @@ Caveman is for CHAT, not source. `.gd` / `.tscn` / `.md` read normal.
 1. **`docs/STATUS.md`** — SSOT. State + queue + repo/engine rules. Start here.
 2. **`docs/handoffs/<newest>.md`** — RESUME doc.
 3. **`docs/prototype-screen-beats.md`** — beat-by-beat storyboard (ASCII mockups + status flags).
-4. **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** v2.2 — locked DESIGN.
-5. **`docs/superpowers/specs/2026-06-06-progression-economy-architecture.md`** — depth map.
-6. **`docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md`** + plan (counter-build, shipped).
-7. **`docs/research/`** — competitor synthesis + anime auto-battler study.
+4. **`docs/teammate-deck.html`** — self-contained one-pager for sharing with teammates (open in any browser; deeper detail in `<details>` collapsibles).
+5. **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** v2.2 — locked DESIGN.
+6. **`docs/superpowers/specs/2026-06-06-progression-economy-architecture.md`** — depth map.
+7. **`docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md`** + plan (counter-build, shipped).
+8. **`docs/research/`** — competitor synthesis + anime auto-battler study.
 
 `docs/05_roadmap.md` = post-launch live-ops, NOT the prototype queue.
 Prototype queue = `STATUS §4 NEXT`. Plan-mode scratch

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0710">
+  <title>WeaponForge — for teammates</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+
+  <link rel="stylesheet" href="decks/style.css">
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="hammered-noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
+        <feColorMatrix values="0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.07  0 0 0 0.06 0"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <nav class="deck-nav" aria-label="Section navigation">
+    <a href="#hero" class="deck-nav__brand">⚒ WEAPONFORGE</a>
+    <ul class="deck-nav__list">
+      <li><a href="#bet">Bet</a></li>
+      <li><a href="#what">What</a></li>
+      <li><a href="#roster">Roster</a></li>
+      <li><a href="#loop">Loop</a></li>
+      <li><a href="#build">Build</a></li>
+      <li><a href="#next">Next</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <section id="hero" class="section section--hero"></section>
+    <section id="bet" class="section section--bet"></section>
+    <section id="what" class="section section--what"></section>
+    <section id="roster" class="section section--roster"></section>
+    <section id="loop" class="section section--loop"></section>
+    <section id="build" class="section section--build"></section>
+    <section id="next" class="section section--next"></section>
+  </main>
+
+  <script src="decks/scrub.js" defer></script>
+</body>
+</html>

@@ -88,12 +88,16 @@ func _build_ui() -> void:
 	_gems_label = Label.new()
 	_gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_gems_label.add_theme_font_size_override(&"font_size", 16)
+	_gems_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_gems_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(_gems_label)
 
 	_shard_label = Label.new()
 	_shard_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_shard_label.add_theme_font_size_override(&"font_size", 12)
 	_shard_label.modulate = Color(0.7, 0.85, 1.0)
+	_shard_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_shard_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(_shard_label)
 
 	var squad_title := Label.new()
@@ -217,14 +221,14 @@ func _elem_icon(rune: StringName) -> String:
 	return String(ELEM_ICONS.get(rune, "•"))
 
 func _refresh() -> void:
-	_gems_label.text = "🔥 %d Ember   ·   💎 %d gems (forge)   ·   🏰 Stage %d" % [
+	_gems_label.text = "🔥 %d Ember  ·  💎 %d gems  ·  🏰 Stage %d" % [
 		AccountState.ember, AccountState.gems, AccountState.current_stage]
 	_battle_btn.text = "⚔ START BATTLE — STAGE %d" % AccountState.current_stage
 	var broke: bool = AccountState.ember < AccountState.PULL_COST_EMBER
 	_pull_btn.disabled = broke
-	_pull_btn.text = ("⚒ FORGE WHEEL — need %d🔥 Ember (boss/victory earns it!)" % AccountState.PULL_COST_EMBER if broke
-		else "⚒ FORGE WHEEL — PULL WEAPON (%d🔥 Ember)" % AccountState.PULL_COST_EMBER)
-	_shard_label.text = "🔧 %d Forge Shards   (tap a weapon, then Forge)" % AccountState.shards.size()
+	_pull_btn.text = ("⚒ FORGE WHEEL — need %d🔥 (boss+win)" % AccountState.PULL_COST_EMBER if broke
+		else "⚒ FORGE WHEEL — PULL (%d🔥)" % AccountState.PULL_COST_EMBER)
+	_shard_label.text = "🔧 %d Forge Shards  ·  tap a weapon, then Forge" % AccountState.shards.size()
 	_refresh_hero_rows()
 	_refresh_grid()
 	_refresh_squad_line()

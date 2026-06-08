@@ -45,6 +45,7 @@ const STARTING_EMBER: int = 5
 const EMBER_BOSS_BONUS: int = 1
 const EMBER_VICTORY_BONUS: int = 2
 const PULL_COST_EMBER: int = 5
+const STAR_GEM_BASE: int = 100   ## gems to raise a weapon one ★ = STAR_GEM_BASE * current star_tier
 
 var gems: int = STARTING_GEMS
 var ember: int = STARTING_EMBER
@@ -206,6 +207,24 @@ func infuse(owned_idx: int, shard_idx: int = 0) -> Dictionary:
 	autosave()
 	return {"ok": true, "before": before, "after": w.rarity_idx,
 		"tier_up": tier_up, "bank_reset": bank_reset, "reason": ""}
+
+## Deterministic star-up: spend gems to raise a weapon's ★ tier (the gem sink that
+## replaces dupe-banking). Cost = STAR_GEM_BASE * current star_tier. Returns
+## {ok, cost, star, reason}.
+func star_up(owned_idx: int) -> Dictionary:
+	if owned_idx < 0 or owned_idx >= owned_weapons.size():
+		return {"ok": false, "reason": "no_weapon"}
+	var w = owned_weapons[owned_idx]
+	if w.star_tier >= w.MAX_STAR_TIER:
+		return {"ok": false, "reason": "max_star"}
+	var cost: int = STAR_GEM_BASE * w.star_tier
+	if gems < cost:
+		return {"ok": false, "reason": "no_gems", "cost": cost}
+	spend_gems(cost)
+	w.star_tier += 1
+	owned_weapons_changed.emit()
+	autosave()
+	return {"ok": true, "cost": cost, "star": w.star_tier}
 
 ## Equip is CLASS-MATCHED (spec §9 pillar): a weapon only fits heroes of its
 ## class. Re-equipping swaps; the displaced weapon stays owned (bench).

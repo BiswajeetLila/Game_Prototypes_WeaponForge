@@ -57,6 +57,7 @@ func _ready() -> void:
 		_test_star_progress_round_trip()
 		_test_ember_basics()
 		_test_ember_save_roundtrip()
+		_test_star_up_spends_gems()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -433,6 +434,28 @@ func _test_ember_save_roundtrip() -> void:
 	var v3: Dictionary = {"version": 3, "gems": 100, "stage": 1, "weapons": [], "equipped": {}, "shards": []}
 	_check("v3 save loads", AccountState.load_from_dict(v3) == true, "v3 rejected")
 	_check("absent ember -> 0", AccountState.ember == 0, "ember=%d" % AccountState.ember)
+
+## ---------- Star-up via gem spend (Task 6) ----------
+
+func _test_star_up_spends_gems() -> void:
+	AccountState.reset_account()
+	var w = GameState.weapons_by_id.values()[0].duplicate(true)
+	w.star_tier = 1
+	AccountState.owned_weapons = [w]
+	AccountState.gems = 1000
+	var r: Dictionary = AccountState.star_up(0)
+	_check("star_up ok", r.get("ok", false), "reason=%s" % str(r.get("reason")))
+	_check("star_up cost = 100 * old tier (100)", int(r.get("cost", -1)) == 100, "cost=%s" % str(r.get("cost")))
+	_check("star raised to 2", w.star_tier == 2, "tier=%d" % w.star_tier)
+	_check("gems spent (1000 -> 900)", AccountState.gems == 900, "gems=%d" % AccountState.gems)
+	## Refuses when gems short.
+	AccountState.gems = 10
+	var r2: Dictionary = AccountState.star_up(0)
+	_check("star_up refused when gems short", r2.get("ok", true) == false and r2.get("reason") == "no_gems", "r2=%s" % str(r2))
+	## Caps at MAX_STAR_TIER.
+	w.star_tier = w.MAX_STAR_TIER
+	AccountState.gems = 100000
+	_check("star_up refused at max", AccountState.star_up(0).get("reason") == "max_star", "not capped")
 
 ## ---------- Test helpers ----------
 

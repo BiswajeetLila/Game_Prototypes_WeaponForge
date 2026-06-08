@@ -54,7 +54,8 @@ const ULT_BASE_FILL: float = 6.0
 const ULT_FILL_PER_DMG: float = 0.2
 const ULT_FILL_PER_RATE: float = 0.25   ## == ult_rate / 4
 
-const TAG_POOL: Array = [&"fire", &"ice", &"pierce"]
+const TAG_POOL: Array = [&"fire", &"ice", &"electric", &"wind"]
+const UNCLASSED_CHANCE: float = 0.20   ## ~20% of minions spawn with no weak/resist (flavor; tunable)
 const RESIST_CHANCE: float = 0.7
 
 ## Stage D — boss roster keyed by wave. _spawn_enemies looks up the id and
@@ -507,13 +508,13 @@ func _spawn_enemies(wave: int) -> void:
 		if def == null:
 			continue
 		var hp: int = int(floor(float(def.hp_base + def.hp_per_wave * wave) * hp_mult))
-		var weak: StringName = TAG_POOL[randi() % TAG_POOL.size()]
+		## 80% carry the stage affinity; ~20% spawn un-classed (no weak/resist) for flavor.
+		var weak: StringName = &""
 		var resist: StringName = &""
-		if randf() < RESIST_CHANCE:
-			var resist_pool: Array = TAG_POOL.duplicate()
-			resist_pool.erase(weak)
-			if not resist_pool.is_empty():
-				resist = resist_pool[randi() % resist_pool.size()]
+		if randf() >= UNCLASSED_CHANCE:
+			var _aff: Dictionary = StageAffinity.minion_affinity(GameState.run_stage)
+			weak = _aff[&"weak"]
+			resist = _aff[&"resist"]
 		GameState.enemies.append({
 			&"id": enemy_id,
 			"name": "%s_%d" % [def.name, i],   ## unique per spawn for Inferno target tracking

@@ -122,7 +122,11 @@ func _test_start_wave_spawns_2_or_3_enemies() -> void:
 
 func _test_spawned_enemies_have_weak_always_and_resist_70pct() -> void:
 	_fresh_session_with_weapon([])
-	## Sample 200 spawns; every enemy must have a weak tag, and ~70% must have a resist.
+	## New model (Task 4): 80% of minions carry the stage affinity (weak+resist both set),
+	## ~20% spawn un-classed (both empty). Stale assertions for the old random model updated:
+	##   - unclassed fraction (without_weak) must be in [10%, 30%]
+	##   - classed fraction (with_resist) must be in [70%, 90%]
+	## Both weak and resist move together: a classed minion always has both; an un-classed has neither.
 	var total := 0
 	var with_resist := 0
 	var without_weak := 0
@@ -136,11 +140,12 @@ func _test_spawned_enemies_have_weak_always_and_resist_70pct() -> void:
 				with_resist += 1
 		Combat.stop()
 	var resist_ratio: float = float(with_resist) / float(total)
-	_check("every spawn has a weak tag",
-		without_weak == 0,
-		"total=%d without_weak=%d" % [total, without_weak])
-	_check("resist applies to ~70%% of spawns (±10%%)",
-		resist_ratio > 0.6 and resist_ratio < 0.8,
+	var unclassed_ratio: float = float(without_weak) / float(total)
+	_check("unclassed spawns (empty weak) are ~20%% (10-30%%)",
+		unclassed_ratio >= 0.10 and unclassed_ratio <= 0.30,
+		"unclassed_ratio=%.2f (n=%d)" % [unclassed_ratio, total])
+	_check("classed spawns have resist ~80%% (70-90%%)",
+		resist_ratio >= 0.70 and resist_ratio <= 0.90,
 		"resist_ratio=%.2f (n=%d)" % [resist_ratio, total])
 
 func _test_hero_attack_deals_atk_damage() -> void:

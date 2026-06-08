@@ -14,6 +14,7 @@ func _ready() -> void:
 	_test_stage1_mirrors_boss()
 	_test_stage2plus_spread()
 	_test_conflict_rate()
+	_test_combat_minions_use_affinity()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -60,6 +61,28 @@ func _test_conflict_rate() -> void:
 	var rate: float = float(conflicts) / float(total)
 	_check("conflict (minion_weak==boss_resist) rate >= 1/3 over stages 2..30",
 		rate >= 0.3333, "rate=%.2f (%d/%d)" % [rate, conflicts, total])
+
+func _test_combat_minions_use_affinity() -> void:
+	## Each minion must be EITHER the stage affinity OR un-classed (empty) — never a
+	## foreign element. (Asserts the invariant, not the exact 20% split, to avoid RNG flake.)
+	GameState.new_session()
+	GameState.run_stage = 3
+	var exp: Dictionary = StageAffinity.minion_affinity(3)
+	var ok: bool = true
+	var saw_any: bool = false
+	for _w in range(8):
+		Combat.start_wave(1, false)   ## auto_tick=false: spawn only, no timers
+		for e in GameState.enemies:
+			if e.get(&"is_boss", false):
+				continue
+			saw_any = true
+			var is_aff: bool = e[&"weak"] == exp[&"weak"] and e[&"resist"] == exp[&"resist"]
+			var is_unclassed: bool = e[&"weak"] == &"" and e[&"resist"] == &""
+			if not (is_aff or is_unclassed):
+				ok = false
+		Combat.stop()
+	_check("stage-3 minions are EITHER stage-affinity OR un-classed (never foreign)", ok and saw_any,
+		"a minion had foreign tags")
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok:

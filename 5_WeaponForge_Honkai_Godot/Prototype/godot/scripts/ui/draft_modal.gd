@@ -48,7 +48,20 @@ func open(cards: Array) -> void:
 		btn.text = "%s\n%s\n→ %s" % [card.name, card.desc, hero_name]
 		btn.custom_minimum_size = Vector2(118, 96)
 		btn.clip_text = false
-		btn.pressed.connect(_on_pick.bind(card))
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		## Solid card panel so each pick reads clearly against the battle.
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.14, 0.13, 0.20, 1.0)
+		sb.border_color = Color(0.55, 0.55, 0.68)
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(8)
+		sb.set_content_margin_all(8)
+		btn.add_theme_stylebox_override(&"normal", sb)
+		var sb_hover := sb.duplicate()
+		sb_hover.bg_color = Color(0.21, 0.20, 0.30, 1.0)
+		sb_hover.border_color = Color(1.0, 0.85, 0.35)
+		btn.add_theme_stylebox_override(&"hover", sb_hover)
+		btn.pressed.connect(_on_pick.bind(card, btn))
 		_row.add_child(btn)
 	## Belt + braces: runtime-built Controls under a CanvasLayer have laid out
 	## 0x0 despite full-rect anchors — force the rect from the viewport.
@@ -56,6 +69,10 @@ func open(cards: Array) -> void:
 	size = get_viewport_rect().size
 	visible = true
 
-func _on_pick(card) -> void:
+func _on_pick(card, btn) -> void:
+	## Click feedback: flash the picked card gold, briefly, before closing.
+	if is_instance_valid(btn):
+		btn.modulate = Color(1.0, 0.85, 0.3)
+	await get_tree().create_timer(0.12).timeout
 	visible = false
 	card_picked.emit(card)

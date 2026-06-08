@@ -8,30 +8,47 @@
 extends Control
 
 func show_banner(text: String, color: Color, lifetime: float = 1.4) -> void:
+	## Solid-bg panel so banners read clearly over combat; autowrap + a width cap
+	## so long text (e.g. the boss weak/resist telegraph) never clips off-screen.
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.04, 0.09, 0.92)
+	sb.border_color = color
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	sb.set_content_margin_all(12)
+	panel.add_theme_stylebox_override(&"panel", sb)
+
 	var label := Label.new()
 	label.text = text
 	label.add_theme_color_override(&"font_color", color)
 	label.add_theme_color_override(&"font_outline_color", Color.BLACK)
-	label.add_theme_constant_override(&"outline_size", 8)
-	label.add_theme_font_size_override(&"font_size", 36)
+	label.add_theme_constant_override(&"outline_size", 6)
+	label.add_theme_font_size_override(&"font_size", 30)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.set_anchors_preset(Control.PRESET_CENTER, true)
-	add_child(label)
-	## Center horizontally over the screen.
-	label.size = Vector2(size.x, 60)
-	label.position = Vector2(0, size.y * 0.30 + get_child_count() * 20)
-	label.pivot_offset = label.size * 0.5
-	label.scale = Vector2(0.4, 0.4)
-	label.modulate.a = 0.0
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(minf(size.x * 0.86, 520.0), 0.0)
+	panel.add_child(label)
+
+	panel.set_anchors_preset(Control.PRESET_CENTER, true)
+	add_child(panel)
+	## Force a layout pass so panel.size is real before pivot/position math.
+	panel.reset_size()
+	await get_tree().process_frame
+	panel.pivot_offset = panel.size * 0.5
+	panel.position = Vector2(size.x * 0.5 - panel.size.x * 0.5,
+		size.y * 0.30 + get_child_count() * 16)
+	panel.scale = Vector2(0.4, 0.4)
+	panel.modulate.a = 0.0
 
 	var t := create_tween().set_parallel(true)
-	t.tween_property(label, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(label, "modulate:a", 1.0, 0.18)
+	t.tween_property(panel, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(panel, "modulate:a", 1.0, 0.18)
 	## Hold, then fade.
 	var tf := create_tween()
 	tf.tween_interval(lifetime - 0.45)
-	tf.tween_property(label, "modulate:a", 0.0, 0.35)
-	tf.tween_callback(label.queue_free)
+	tf.tween_property(panel, "modulate:a", 0.0, 0.35)
+	tf.tween_callback(panel.queue_free)
 
 ## Card-style overlay for richer wave / unlock announcements. Panel with
 ## border + 2-line title/subtitle, quick scale-pop + fade. Use this when text

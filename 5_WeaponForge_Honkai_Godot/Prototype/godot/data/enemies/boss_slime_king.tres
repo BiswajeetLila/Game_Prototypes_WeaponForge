@@ -12,5 +12,5 @@ dmg_base = 0
 dmg_per_wave = 0.0
 is_boss = true
 atk_override = 18
-weak_tag = &"ice"
-resist_tag = &""
+weak_tag = &"fire"
+resist_tag = &"ice"

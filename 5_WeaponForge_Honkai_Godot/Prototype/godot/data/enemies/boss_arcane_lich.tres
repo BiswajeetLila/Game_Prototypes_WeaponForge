@@ -12,5 +12,5 @@ dmg_base = 0
 dmg_per_wave = 0.0
 is_boss = true
 atk_override = 36
-weak_tag = &"pierce"
-resist_tag = &"ice"
+weak_tag = &"wind"
+resist_tag = &"fire"

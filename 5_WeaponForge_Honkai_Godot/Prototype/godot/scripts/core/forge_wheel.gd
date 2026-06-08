@@ -57,13 +57,13 @@ func eligible_weapons() -> Array:
 	return out
 
 func can_pull() -> bool:
-	return AccountState.gems >= AccountState.PULL_COST and not eligible_weapons().is_empty()
+	return AccountState.ember >= AccountState.PULL_COST_EMBER and not eligible_weapons().is_empty()
 
 func pull() -> Dictionary:
 	var eligible: Array = eligible_weapons()
 	if eligible.is_empty():
 		return {}
-	if not AccountState.spend_gems(AccountState.PULL_COST):
+	if not AccountState.spend_ember(AccountState.PULL_COST_EMBER):
 		return {}
 	var catalog_pick = _weighted_pick(eligible)
 	var hero_id: StringName = _first_hero_of_class(catalog_pick.cls)

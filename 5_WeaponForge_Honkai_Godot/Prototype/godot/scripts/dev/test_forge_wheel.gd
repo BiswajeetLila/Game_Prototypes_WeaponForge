@@ -42,6 +42,7 @@ func _ready() -> void:
 		_test_pull_drops_two_shards()
 		_test_dupe_pull_feeds_star_up()
 		_test_shard_drop_by_rarity()
+		_test_pull_spends_ember()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -52,14 +53,15 @@ func _ready() -> void:
 func _wheel():
 	return get_node("/root/ForgeWheel")
 
-func _reset_account(gems: int = 600) -> void:
+func _reset_account(gems: int = 600, ember: int = 9999) -> void:
 	AccountState.gems = gems
+	AccountState.ember = ember
 	AccountState.owned_weapons = []
 	AccountState.equipped = {}
 
-func _fresh(gems: int = 600):
+func _fresh(gems: int = 600, ember: int = 9999):
 	GameState.new_session()      ## bran only (warrior)
-	_reset_account(gems)
+	_reset_account(gems, ember)
 	return GameState.get_hero(&"bran")
 
 ## ---------- Catalog ----------
@@ -100,12 +102,15 @@ func _test_catalog_depth_four_per_class() -> void:
 
 func _test_pull_happy_path() -> void:
 	var h = _fresh(600)
+	var ember_before: int = AccountState.ember
+	var gems_before: int = AccountState.gems
 	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])   ## deterministic warrior pull
 	var base_total: int = h.data.atk_base    ## 6, no sockets, no weapon_data
 	var result: Dictionary = _wheel().pull()
 	_restore_catalog(saved)
 	_check("pull returns a result", not result.is_empty(), "empty")
-	_check("pull spends 300 gems", AccountState.gems == 300, "gems=%d" % AccountState.gems)
+	_check("pull deducts PULL_COST_EMBER ember", AccountState.ember == ember_before - AccountState.PULL_COST_EMBER, "ember=%d" % AccountState.ember)
+	_check("pull leaves gems untouched", AccountState.gems == gems_before, "gems=%d" % AccountState.gems)
 	_check("pull adds one owned weapon", AccountState.owned_weapons.size() == 1,
 		"size=%d" % AccountState.owned_weapons.size())
 	if result.is_empty():
@@ -122,10 +127,11 @@ func _test_pull_happy_path() -> void:
 		result.weapon != GameState.weapons_by_id.get(result.weapon.id), "same instance!")
 
 func _test_pull_insufficient_gems() -> void:
-	var h = _fresh(299)
+	## Retargeted: ember is now the pull currency; seed 0 ember to test the gate.
+	var h = _fresh(600, 0)   ## plenty of gems, zero ember
 	var result: Dictionary = _wheel().pull()
-	_check("pull with 299 gems returns {}", result.is_empty(), "got result")
-	_check("no gems spent on failed pull", AccountState.gems == 299, "gems=%d" % AccountState.gems)
+	_check("pull with 0 ember returns {}", result.is_empty(), "got result")
+	_check("no ember spent on failed pull", AccountState.ember == 0, "ember=%d" % AccountState.ember)
 	_check("no weapon acquired on failed pull", AccountState.owned_weapons.is_empty(),
 		"size=%d" % AccountState.owned_weapons.size())
 	_check("nothing equipped on failed pull", h.weapon_data == null, "equipped")
@@ -194,12 +200,12 @@ func _test_dupe_pull_feeds_star_up() -> void:
 func _test_shard_drop_by_rarity() -> void:
 	GameState.new_session()
 	AccountState.reset_account()
-	AccountState.add_gems(99999)   ## pull currently costs gems (Ember lands later)
+	AccountState.add_ember(99999)   ## pulls cost ember
 	var ok: bool = true
 	var saw: bool = false
 	for _i in range(40):
-		if AccountState.gems < AccountState.PULL_COST:
-			AccountState.add_gems(99999)
+		if AccountState.ember < AccountState.PULL_COST_EMBER:
+			AccountState.add_ember(99999)
 		var r: Dictionary = ForgeWheel.pull()
 		if r.is_empty():
 			continue
@@ -227,8 +233,23 @@ func _test_second_pull_goes_to_bench() -> void:
 	_check("hero still holds the same (dupe-fed) weapon",
 		AccountState.get_equipped(&"bran") == first.weapon, "changed")
 
+func _test_pull_spends_ember() -> void:
+	GameState.new_session()
+	AccountState.reset_account()
+	AccountState.add_ember(100)
+	var gems_before: int = AccountState.gems
+	var ember_before: int = AccountState.ember
+	var r: Dictionary = ForgeWheel.pull()
+	_check("pull succeeds with Ember", not r.is_empty(), "empty pull")
+	_check("pull deducts PULL_COST_EMBER ember", AccountState.ember == ember_before - AccountState.PULL_COST_EMBER,
+		"ember=%d" % AccountState.ember)
+	_check("pull leaves gems untouched", AccountState.gems == gems_before, "gems=%d" % AccountState.gems)
+	AccountState.spend_ember(AccountState.ember)   ## drain to 0
+	_check("can_pull false at 0 ember", ForgeWheel.can_pull() == false, "can_pull true at 0")
+
 func _reset_gems_only(gems: int) -> void:
 	AccountState.gems = gems
+	AccountState.ember = 9999   ## ensure ember is available (pulls cost ember now)
 
 ## Temporarily restrict the pull pool to specific weapon ids (deterministic pulls).
 ## Returns the saved id list; pass it to _restore_catalog when done.

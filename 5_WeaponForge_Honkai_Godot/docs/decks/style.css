@@ -409,13 +409,17 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 }
 /* Bran scrubber image is a 5-frame strip; object-position drives the visible tier.
    The source is 5 portraits wide (the existing bran_5tier_evolution.png). */
+.hero-card__rondel { overflow: hidden; }
 #bran-scrub {
-  position: absolute; inset: 0;
-  width: 500%;  /* 5 frames laid out side by side; the rondel masks to 1 frame */
+  width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* The source bran_5tier.png is a 5-frame horizontal strip. Using
+     object-fit: none + object-position lets us pan across the strip. */
+  object-fit: none;
+  /* Source asset is ~1024×~205 (5 portraits of ~205 each). Adjust if the
+     source aspect ratio differs — verify visually in step 4. */
   object-position: 0% center;
-  transition: transform 0.2s ease;
+  transition: object-position 0.2s ease;
 }
 
 @media (max-width: 1024px) { .roster-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -517,3 +521,12 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 .next-footer { font-family: var(--font-mono); font-size: 11px; color: var(--mute); text-align: center; margin: 0; }
 
 @media (max-width: 768px) { .next-cols { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

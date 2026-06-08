@@ -47,6 +47,7 @@ func _ready() -> void:
 	_test_forge_shard_mythic_capped()
 	_test_forge_shard_out_of_range_rejected()
 	_test_forge_shard_resets_foreign_bank()
+	_test_shard_inc_nerfed()
 	_test_get_crit_flat()
 	_test_get_ult_rate_flat()
 	_test_get_all_tags_rune_and_derived()
@@ -325,7 +326,7 @@ func _test_forge_shard_common_nudges_bar() -> void:
 	w.rarity_idx = 0
 	var up: bool = w.apply_forge_shard(0)   ## Common shard
 	_check("common shard: no instant upgrade", up == false, "up=%s" % up)
-	_check("common shard: +0.20 toward Rare", is_equal_approx(w.forge_progress, 0.20),
+	_check("common shard: +0.10 toward Rare", is_equal_approx(w.forge_progress, 0.10),
 		"progress=%f" % w.forge_progress)
 	_check("common shard: banks toward Rare(1)", w.forge_target_idx == 1,
 		"target=%d" % w.forge_target_idx)
@@ -336,7 +337,7 @@ func _test_forge_shard_rarity_scales_increment() -> void:
 		return
 	w.rarity_idx = 0
 	w.apply_forge_shard(3)   ## Legendary shard = bigger nudge than Common
-	_check("legendary shard: +0.85 (rarity-scaled)", is_equal_approx(w.forge_progress, 0.85),
+	_check("legendary shard: +0.425 (rarity-scaled, halved)", is_equal_approx(w.forge_progress, 0.425),
 		"progress=%f" % w.forge_progress)
 
 func _test_forge_shard_fills_to_tier_up() -> void:
@@ -345,9 +346,9 @@ func _test_forge_shard_fills_to_tier_up() -> void:
 		return
 	w.rarity_idx = 0
 	var up: bool = false
-	for i in range(5):       ## 5 x 0.20 = 1.0 -> reaches Rare on the 5th
+	for i in range(10):       ## 10 x 0.10 = 1.0 -> reaches Rare on the 10th (was 5 x 0.20)
 		up = w.apply_forge_shard(0)
-	_check("5 common shards reach Rare(1)", up == true and w.rarity_idx == 1,
+	_check("10 common shards reach Rare(1)", up == true and w.rarity_idx == 1,
 		"up=%s rarity=%d" % [up, w.rarity_idx])
 
 func _test_forge_shard_mythic_capped() -> void:
@@ -381,8 +382,19 @@ func _test_forge_shard_resets_foreign_bank() -> void:
 	w.apply_forge_part(3)                  ## banks 0.5 toward Legendary(3)
 	var up: bool = w.apply_forge_shard(0)  ## targets Rare(1) -> resets the bank
 	_check("shard resets a foreign bank to its own target",
-		up == false and w.forge_target_idx == 1 and is_equal_approx(w.forge_progress, 0.20),
+		up == false and w.forge_target_idx == 1 and is_equal_approx(w.forge_progress, 0.10),
 		"target=%d progress=%f" % [w.forge_target_idx, w.forge_progress])
+
+func _test_shard_inc_nerfed() -> void:
+	var w = WeaponDataT.new()           ## common (rarity_idx 0), forge_target -1
+	## A single COMMON shard now banks 0.10 toward Rare (was 0.20). No tier-up yet.
+	var up: bool = w.apply_forge_shard(0)
+	_check("common shard banks 0.10 (nerfed)", absf(w.forge_progress - 0.10) < 0.0001 and not up,
+		"progress=%f up=%s" % [w.forge_progress, str(up)])
+	## 10 common shards reach Rare (was 5).
+	for _i in range(9):
+		w.apply_forge_shard(0)
+	_check("10 common shards -> Rare (rarity_idx 1)", w.rarity_idx == 1, "rarity=%d" % w.rarity_idx)
 
 ## ---------- Combat-interface accessors (Stage 1: make WeaponData a drop-in for the
 ## legacy socket weapon's combat surface; combat.gd reads these four off hero.weapon) ----------

@@ -160,7 +160,7 @@ func apply_forge_part(part_idx: int) -> bool:
 ## SHARD_INC: how much of a tier one shard fills, indexed by the shard's OWN rarity
 ## (0=common..4=mythic). STARTING VALUES (Numbers Policy) — tune in playtest so a
 ## mained weapon reaches Legendary in ~N runs; a dupe (+0.5) ≈ 2-3 commons.
-const SHARD_INC: Array = [0.20, 0.35, 0.55, 0.85, 0.85]
+const SHARD_INC: Array = [0.10, 0.175, 0.275, 0.425, 0.425]   ## halved (Numbers Policy: slower rarity forge)
 
 ## Apply one Forge Shard of rarity `shard_rarity` to this weapon. DETERMINISTIC
 ## (no skill/minigame): banks a rarity-scaled fraction toward the NEXT tier

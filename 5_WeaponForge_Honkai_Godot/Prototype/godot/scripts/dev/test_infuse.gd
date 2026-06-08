@@ -66,7 +66,8 @@ func _test_infuse_fills_to_tier_up() -> void:
 	if not a.has_method(&"infuse"):
 		a.free(); return
 	a.owned_weapons = [_weapon(0)]
-	a.shards = [_shard(3), _shard(3)]              ## 0.85 + 0.85 = 1.7 -> tier up on 2nd
+	a.shards = [_shard(3), _shard(3), _shard(3)]   ## 0.425+0.425+0.425=1.275 -> tier up on 3rd (was 2x0.85; SHARD_INC halved)
+	a.infuse(0, 0)
 	a.infuse(0, 0)
 	var r: Dictionary = a.infuse(0, 0)
 	_check("infuse tiers up when the bar fills",

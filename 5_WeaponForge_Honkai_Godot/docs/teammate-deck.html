@@ -25,6 +25,9 @@
         <path d="M560 6 L600 18 L640 6" fill="none" stroke="currentColor" stroke-width="1.5"/>
         <circle cx="600" cy="18" r="2.5" fill="currentColor"/>
       </symbol>
+      <symbol id="anvil" viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
+        <path d="M40 90 L40 70 Q40 50 70 50 L130 50 Q160 50 160 70 L160 90 Z M70 50 L70 30 L130 30 L130 50 Z M20 90 L180 90 L170 110 L30 110 Z" fill="currentColor"/>
+      </symbol>
     </defs>
   </svg>
 
@@ -41,7 +44,30 @@
   </nav>
 
   <main>
-    <section id="hero" class="section section--hero"></section>
+    <section id="hero" class="section section--hero">
+      <div class="hero-bg" aria-hidden="true">
+        <svg class="hero-anvil"><use href="#anvil"/></svg>
+      </div>
+      <div class="hero-grid">
+        <div class="hero-text">
+          <h1 class="hero-title">
+            <span style="--i:0">W</span><span style="--i:1">E</span><span style="--i:2">A</span><span style="--i:3">P</span><span style="--i:4">O</span><span style="--i:5">N</span><span style="--i:6">F</span><span style="--i:7">O</span><span style="--i:8">R</span><span style="--i:9">G</span><span style="--i:10">E</span>
+          </h1>
+          <p class="hero-tagline">
+            Casual-mobile RPG.<br>
+            You pull <em>weapons</em>. You bond with <em>heroes</em>.
+          </p>
+          <p class="hero-ribbon">
+            prototype build  ·  5-wave stages  ·  3-boss rotation  ·  forked 2026-06-01
+          </p>
+        </div>
+        <div class="hero-portraits" aria-label="Founding heroes: Bran, Elara, Vex">
+          <div class="rondel rondel--bran"><img src="decks/assets/heroes/bran.png" alt="Bran the warrior"></div>
+          <div class="rondel rondel--elara"><img src="decks/assets/heroes/elara.png" alt="Elara the mage"></div>
+          <div class="rondel rondel--vex"><img src="decks/assets/heroes/vex.png" alt="Vex the rogue"></div>
+        </div>
+      </div>
+    </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
     <section id="bet" class="section section--bet"></section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>

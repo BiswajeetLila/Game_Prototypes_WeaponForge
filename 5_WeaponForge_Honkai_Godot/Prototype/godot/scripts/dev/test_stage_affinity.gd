@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_stage2plus_spread()
 	_test_conflict_rate()
 	_test_combat_minions_use_affinity()
+	_test_briefing_mismatch()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -83,6 +84,18 @@ func _test_combat_minions_use_affinity() -> void:
 		Combat.stop()
 	_check("stage-3 minions are EITHER stage-affinity OR un-classed (never foreign)", ok and saw_any,
 		"a minion had foreign tags")
+
+func _test_briefing_mismatch() -> void:
+	## squad fields the boss-weak element but NOT the minion-weak element.
+	var a: Dictionary = StageAffinity.affinity_for(3)
+	var squad_elems: Array = [a[&"boss_weak"]]          ## only covers the boss
+	var b: Dictionary = StageAffinity.briefing(3, squad_elems)
+	_check("briefing exposes minion + boss affinity", b.has(&"minion_weak") and b.has(&"boss_weak"),
+		"missing keys")
+	_check("briefing flags the uncovered minion weakness",
+		b[&"minion_weak_covered"] == false, "minion-weak wrongly marked covered")
+	_check("briefing marks the covered boss weakness",
+		b[&"boss_weak_covered"] == true, "boss-weak wrongly uncovered")
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok:

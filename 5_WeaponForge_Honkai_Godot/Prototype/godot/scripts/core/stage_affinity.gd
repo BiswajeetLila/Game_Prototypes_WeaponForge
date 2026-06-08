@@ -42,3 +42,14 @@ static func affinity_for(stage: int) -> Dictionary:
 		&"minion_weak": m[&"weak"], &"minion_resist": m[&"resist"],
 		&"boss_weak": boss_weak(stage), &"boss_resist": boss_resist(stage),
 	}
+
+## Briefing data for the pre-stage panel: the affinities + whether the squad's
+## equipped elements cover each weakness. `squad_elements` = Array[StringName].
+static func briefing(stage: int, squad_elements: Array) -> Dictionary:
+	var a: Dictionary = affinity_for(stage)
+	a[&"minion_weak_covered"] = a[&"minion_weak"] in squad_elements
+	a[&"boss_weak_covered"] = a[&"boss_weak"] in squad_elements
+	## a resisted element you're bringing is a soft warning (wasted on that target)
+	a[&"minion_resist_brought"] = a[&"minion_resist"] in squad_elements
+	a[&"boss_resist_brought"] = a[&"boss_resist"] in squad_elements
+	return a

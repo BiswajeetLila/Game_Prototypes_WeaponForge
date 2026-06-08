@@ -576,3 +576,24 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 /* The dashed line + chevron + dot inherit currentColor; the simplest reveal
    is opacity. A more elaborate stroke-dashoffset draw would need each
    divider to be a unique SVG with its own stroke length — overkill here. */
+
+/* ----------------------------------- print */
+@media print {
+  :root { --iron-deep: #fff; --iron: #fff; --iron-2: #fff; --parchment: #000; --mute: #555; }
+  body { background: white; color: black; font-size: 11pt; }
+  .deck-nav, .scrubber, .build-rail__hint, .next-links { display: none !important; }
+  .section { padding: 24pt 24pt; break-before: page; background: white; }
+  .section::before { display: none; }
+  details { open: true; }
+  details > * { display: revert !important; }
+  details summary::after { display: none; }
+  .divider-engraved { display: none; }
+  .hero-title { font-size: 36pt; }
+  h2 { color: black; border-bottom: 1px solid #888; padding-bottom: 4pt; }
+  a { color: black; border-bottom: 0; }
+  .rondel, .hero-card__rondel { border-color: #888; }
+  .pull-quote { color: black; border-color: #888; }
+  .axis-status--shipped, .axis-status--inflight { background: #eee; color: black; }
+  .forge-log__item[data-status="inflight"]::before { background: black; box-shadow: none; }
+  #bran-scrub { object-position: 50% center; }  /* show tier 3 in print */
+}

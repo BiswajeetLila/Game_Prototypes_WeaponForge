@@ -37,6 +37,7 @@ var _selected_hero: StringName = &""  ## set when the selection is an EQUIPPED w
 var _shard_label: Label = null
 var _detail_actions: HBoxContainer = null  ## rebuilt each refresh: Forge (+ Unequip)
 var _confirm: ConfirmationDialog = null
+var _briefing: ConfirmationDialog = null
 
 func _ready() -> void:
 	_build_ui()
@@ -161,6 +162,13 @@ func _build_ui() -> void:
 	_confirm.title = "Forge — infuse shard?"
 	_confirm.confirmed.connect(_on_infuse_confirmed)
 	add_child(_confirm)
+
+	_briefing = ConfirmationDialog.new()
+	_briefing.title = "Stage Briefing"
+	_briefing.ok_button_text = "⚔ ENTER STAGE"
+	_briefing.cancel_button_text = "Adjust Loadout"
+	_briefing.confirmed.connect(func(): get_tree().change_scene_to_file("res://scenes/Main.tscn"))
+	add_child(_briefing)
 
 	_pull_btn = Button.new()
 	_pull_btn.custom_minimum_size = Vector2(0, 48)
@@ -385,7 +393,29 @@ func _on_pull_pressed() -> void:
 	_refresh()
 
 func _on_battle_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/Main.tscn")
+	_open_briefing()
+
+func _open_briefing() -> void:
+	var stage: int = AccountState.current_stage
+	var squad_elems: Array = []
+	for id in ROSTER_IDS:
+		var w = AccountState.get_equipped(id)
+		if w != null and w.rune != &"":
+			squad_elems.append(w.rune)
+	var b: Dictionary = StageAffinity.briefing(stage, squad_elems)
+	var ic := func(t): return _elem_icon(t)
+	var lines: Array = []
+	lines.append("STAGE %d" % stage)
+	lines.append("Minions   weak %s   resist %s   %s" % [ic.call(b[&"minion_weak"]),
+		ic.call(b[&"minion_resist"]), ("✅" if b[&"minion_weak_covered"] else "⚠️ not covered")])
+	lines.append("👑 Boss   weak %s   resist %s   %s" % [ic.call(b[&"boss_weak"]),
+		ic.call(b[&"boss_resist"]), ("✅" if b[&"boss_weak_covered"] else "⚠️ not covered")])
+	lines.append("")
+	lines.append("Your squad: %s" % "  ".join(squad_elems.map(func(e): return ic.call(e))))
+	if b[&"minion_resist_brought"] or b[&"boss_resist_brought"]:
+		lines.append("⚠️ You're bringing a RESISTED element (½ damage on that target).")
+	_briefing.dialog_text = "\n".join(lines)
+	_briefing.popup_centered()
 
 ## ---------- Forge (deterministic infuse — no skill/minigame) ----------
 

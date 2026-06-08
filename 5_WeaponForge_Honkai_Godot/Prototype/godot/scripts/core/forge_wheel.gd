@@ -236,10 +236,7 @@ func show_reveal(result: Dictionary) -> void:
 		_reveal_name.text = w.name
 		_reveal_name.modulate = c
 		_reveal_meta.text = "%s · %s" % [String(w.cls).capitalize(), String(w.rune).capitalize()]
-		if bool(result.get("star_up", false)):
-			_reveal_delta.text = "★ STAR UP → ★%d   ·   +%d shards" % [w.star_tier, n_shards]
-		else:
-			_reveal_delta.text = "★ progress banked   ·   +%d shards" % n_shards
+		_reveal_delta.text = "+%d gems   ·   +%d shards" % [int(result.get("dupe_gems", 0)), n_shards]
 	else:
 		_reveal_title.text = "%s WEAPON!" % String(RARITY_NAMES[rarity]).to_upper()
 		_reveal_title.modulate = c

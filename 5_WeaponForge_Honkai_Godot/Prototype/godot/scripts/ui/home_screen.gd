@@ -43,6 +43,7 @@ func _ready() -> void:
 	_build_ui()
 	_grant_starter_if_first_boot()
 	AccountState.gems_changed.connect(func(_g): _refresh())
+	AccountState.ember_changed.connect(func(_e): _refresh())
 	AccountState.owned_weapons_changed.connect(func(): _refresh())
 	AccountState.shards_changed.connect(func(): _refresh())
 	if get_node_or_null("/root/ForgeWheel") != null:
@@ -214,12 +215,13 @@ func _elem_icon(rune: StringName) -> String:
 	return String(ELEM_ICONS.get(rune, "•"))
 
 func _refresh() -> void:
-	_gems_label.text = "💎 %d gems   ·   🏰 Stage %d" % [AccountState.gems, AccountState.current_stage]
+	_gems_label.text = "🔥 %d Ember   ·   💎 %d gems (forge)   ·   🏰 Stage %d" % [
+		AccountState.ember, AccountState.gems, AccountState.current_stage]
 	_battle_btn.text = "⚔ START BATTLE — STAGE %d" % AccountState.current_stage
-	var broke: bool = AccountState.gems < AccountState.PULL_COST
+	var broke: bool = AccountState.ember < AccountState.PULL_COST_EMBER
 	_pull_btn.disabled = broke
-	_pull_btn.text = ("⚒ FORGE WHEEL — need 300💎 (clear waves to earn!)" if broke
-		else "⚒ FORGE WHEEL — PULL WEAPON (300💎)")
+	_pull_btn.text = ("⚒ FORGE WHEEL — need %d🔥 Ember (boss/victory earns it!)" % AccountState.PULL_COST_EMBER if broke
+		else "⚒ FORGE WHEEL — PULL WEAPON (%d🔥 Ember)" % AccountState.PULL_COST_EMBER)
 	_shard_label.text = "🔧 %d Forge Shards   (tap a weapon, then Forge)" % AccountState.shards.size()
 	_refresh_hero_rows()
 	_refresh_grid()
@@ -336,6 +338,15 @@ func _rebuild_detail_actions(w) -> void:
 		else ("⚒ Forge (need shards)" if not have_shards else "⚒ Forge (1 shard)"))
 	forge.pressed.connect(_on_infuse_pressed)
 	_detail_actions.add_child(forge)
+	var star := Button.new()
+	star.custom_minimum_size = Vector2(0, 34)
+	star.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var maxed_star: bool = w.star_tier >= w.MAX_STAR_TIER
+	var star_cost: int = AccountState.STAR_GEM_BASE * w.star_tier
+	star.disabled = maxed_star or AccountState.gems < star_cost
+	star.text = ("★ Max" if maxed_star else "★ Star-up (%d💎)" % star_cost)
+	star.pressed.connect(_on_star_up_pressed)
+	_detail_actions.add_child(star)
 	if _selected_hero != &"":
 		var un := Button.new()
 		un.custom_minimum_size = Vector2(0, 34)
@@ -418,6 +429,14 @@ func _open_briefing() -> void:
 	_briefing.popup_centered()
 
 ## ---------- Forge (deterministic infuse — no skill/minigame) ----------
+
+func _on_star_up_pressed() -> void:
+	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():
+		return
+	var r: Dictionary = AccountState.star_up(_selected_idx)
+	if r.get("ok", false):
+		_flash_detail(Color(1.0, 0.85, 0.3))
+	_refresh()
 
 func _on_infuse_pressed() -> void:
 	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():

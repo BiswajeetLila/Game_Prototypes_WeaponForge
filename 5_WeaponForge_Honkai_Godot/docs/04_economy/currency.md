@@ -1,6 +1,10 @@
 # Currency Layering — Stub
 
-**Status:** Deferred from initial GDD. To be specified during pre-prototype design refinement.
+> ⚠️ **SUPERSEDED (2026-06-06).** This stub is **pre-pivot** (it lists hero-shards-from-banner, a TFT in-stage shop, and recipe scrolls — all dropped by the Wittle inversion). The current, consolidated currency + progression map is:
+> **`docs/superpowers/specs/2026-06-06-progression-economy-architecture.md`** (§5 currency table).
+> Kept only for historical reference. Do not design from this file.
+
+**Status:** SUPERSEDED — see the architecture doc above. (Originally: deferred from initial GDD.)
 
 ## Scope
 

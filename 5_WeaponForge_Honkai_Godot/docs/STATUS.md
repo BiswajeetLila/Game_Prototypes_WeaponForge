@@ -5,7 +5,7 @@
 > `2_Weaponcraft_Godot/...` are historical-origin paths; live equivalents are under
 > `5_WeaponForge_Honkai_Godot/...`. The origin folder is a frozen playtester build.
 
-**Last updated:** 2026-06-05
+**Last updated:** 2026-06-08
 **Maintainer:** keep this doc current; it is the canonical entry point for the project.
 
 > **If you read one file, read this one.** It points to everything else and states what is done, planned, and remaining.
@@ -29,6 +29,12 @@ Casual-mobile RPG / hero-collector for the Wittle Defender ∩ anime-curious aud
 | `docs/research/reference-games/` | Wittle Defender, Archero 2, BALL x PIT, Gear Defenders design specs. |
 | `docs/research/weaponcraft-forge-mockups/` | F1-F4 nano-banana forge mockups (historic exploration — direction dropped). |
 | This file (`docs/STATUS.md`) | Done / planned / remaining + decision log. |
+
+**2026-06-08 design suite (NEW — read alongside the v2.2 spec):**
+- `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` — full-game depth map (15 layers, currency table, core loop, B small/full, ≤4-concurrent pacing).
+- `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md` — economy pivot (Cores/gems/shards, dupe→gems, shard nerf, Elara spark-chain).
+- `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md` — pre-stage counter-build (the core-loop "is it fun" fix) + `docs/superpowers/plans/2026-06-08-prestage-counterbuild.md` (the ACTIVE build).
+- `docs/research/anime_autobattlers/` — anime auto-battler cluster study (NOT a direct threat; validates the moat + the uncontested counter-build loop).
 
 **THE THREE SSOTs (read these; ignore stale next-step lists anywhere else):**
 1. **`docs/STATUS.md`** (this file) — current state + the canonical build queue (§4 NEXT) + repo/branch + engine/MCP rules. **Start here.**
@@ -76,6 +82,8 @@ Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts
 ---
 
 ## 4. PLANNED (design locked, not built)
+
+> **UPDATED 2026-06-08.** A long design session added the **economy pivot** + **full-game progression architecture** + the **pre-stage counter-build** core-loop design (see §2 "2026-06-08 design suite"). **ACTIVE BUILD:** `docs/superpowers/plans/2026-06-08-prestage-counterbuild.md` (6 TDD tasks, subagent-driven). Notes vs the old queue below: the old **#2 elemental/ability cards** is now the **counter-build** work (in-run draft stays RNG; the strategic layer moved pre-stage); **Catalyst** = the next core-loop spec after counter-build; **economy build**, **Hot Paladin**, **Elara spark-quest + hero-talents (B)**, **spin cinematic** all remain queued.
 
 ### Pre-flight gates (before Phase 1 implementation)
 - [x] Branch for impl work created → `weaponcraft-godot/wittle-inversion-phase1` (merged to main 2026-06-01)

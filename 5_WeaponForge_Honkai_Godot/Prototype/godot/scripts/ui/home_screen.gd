@@ -354,12 +354,12 @@ func _rebuild_detail_actions(w) -> void:
 		un.pressed.connect(_on_unequip_pressed)
 		_detail_actions.add_child(un)
 
-## Human-readable star-up bar, e.g. "★1 · 2/3 dupes to ★2" (or "★10 (max)").
-## Dupes feed this; a dupe that doesn't tier up still moves star_progress here.
+## Human-readable star-up bar, e.g. "★1 · 100💎 to ★2" (or "★10 (max)").
+## Star-up is a gem spend now (dupes award gems, not star progress).
 func _star_bar_str(w) -> String:
 	if w.star_tier >= w.MAX_STAR_TIER:
 		return "★%d (max)" % w.star_tier
-	return "★%d  ·  %d/%d dupes to ★%d" % [w.star_tier, w.star_progress, w.DUPES_PER_STAR, w.star_tier + 1]
+	return "★%d  ·  %d💎 to ★%d (Star-up)" % [w.star_tier, AccountState.STAR_GEM_BASE * w.star_tier, w.star_tier + 1]
 
 ## Human-readable rarity bar, e.g. "Common → Rare  44%" (or "Mythic (max)").
 func _forge_bar_str(w) -> String:

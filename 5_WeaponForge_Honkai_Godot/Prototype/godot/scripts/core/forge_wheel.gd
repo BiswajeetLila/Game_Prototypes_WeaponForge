@@ -1,11 +1,11 @@
 ## ForgeWheel — weapon-pull service (increment #2) + temporary debug pull UI.
 ##
-## Service: pull() spends AccountState.PULL_COST gems, picks uniformly from the
+## Service: pull() spends AccountState.PULL_COST_EMBER Ember, picks uniformly from the
 ## starter catalog FILTERED to unlocked classes, acquires a runtime instance via
 ## AccountState.acquire_weapon (duplicate — never the catalog .tres), equips it on
 ## the first hero of that class (GameState.equip_weapon_data + AccountState.equip),
 ## and returns {weapon, hero_id, old_atk, new_atk} for the reveal's damage delta.
-## Insufficient gems or no eligible weapon -> {} with ZERO state change.
+## Insufficient Ember or no eligible weapon -> {} with ZERO state change.
 ##
 ## Debug UI (skipped headless; replaced by the real slot-machine wheel in #3):
 ## top-right gems label + PULL button + odds line, and a full-screen reveal
@@ -119,10 +119,10 @@ func pull() -> Dictionary:
 		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s DUPE → +%d gems[/color]"
 			% [owned.name, dupe_gems])
 	elif auto_equipped and hero != null:
-		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d  (+2 shards)[/color]"
-			% [hero.data.name, owned.name, result.old_atk, result.new_atk])
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d  (+%d shards)[/color]"
+			% [hero.data.name, owned.name, result.old_atk, result.new_atk, drops.size()])
 	else:
-		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s → Armory  (+2 shards)[/color]" % owned.name)
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s → Armory  (+%d shards)[/color]" % [owned.name, drops.size()])
 	AccountState.autosave()
 	pull_completed.emit(result)
 	return result

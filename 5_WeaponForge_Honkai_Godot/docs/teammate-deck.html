@@ -130,7 +130,83 @@
       </div>
     </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
-    <section id="roster" class="section section--roster"></section>
+    <section id="roster" class="section section--roster">
+      <div class="section-inner">
+        <h2>The Roster — the moat</h2>
+        <p class="roster-intro">Seven heroes. Locked. The cast you master, the bond you build. <em>Equipment is the gacha. People are the lore.</em></p>
+        <div class="roster-grid">
+
+          <article class="hero-card hero-card--big" data-status="ftue" data-rot="-1">
+            <div class="hero-card__rondel">
+              <img id="bran-scrub" src="decks/assets/bran_5tier.png" alt="Bran portrait at tier 1" data-tier="0">
+            </div>
+            <h3>Bran</h3>
+            <p class="hero-card__class">Warrior · FTUE</p>
+            <p class="hero-card__blurb">Stoic, dependable, takes the front. Anchor of every starter squad. Inherited his father's hammer.</p>
+            <div class="scrubber">
+              <label for="bran-tier" class="scrubber__label" id="bran-tier-label">Tier 1 · Apprentice</label>
+              <input id="bran-tier" type="range" min="0" max="4" step="1" value="0" aria-labelledby="bran-tier-label">
+              <div class="scrubber__hint">drag to evolve ★1 → ★5</div>
+            </div>
+          </article>
+
+          <article class="hero-card" data-status="ftue" data-rot="+1">
+            <div class="hero-card__rondel"><img src="decks/assets/heroes/elara.png" alt="Elara"></div>
+            <h3>Elara</h3>
+            <p class="hero-card__class">Mage · FTUE</p>
+            <p class="hero-card__blurb">Quiet prodigy. Frost-bolt scholar with a secret meteor lineage. Signature arc unlocks her tree.</p>
+          </article>
+
+          <article class="hero-card" data-status="ftue" data-rot="-1">
+            <div class="hero-card__rondel"><img src="decks/assets/heroes/vex.png" alt="Vex"></div>
+            <h3>Vex</h3>
+            <p class="hero-card__class">Rogue · FTUE</p>
+            <p class="hero-card__blurb">From the shadow corps. Critting on his off-hand is the love language. Pairs explosively with Elara's chain.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="+1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>Hot Paladin</h3>
+            <p class="hero-card__class">Lance · Stage 2</p>
+            <p class="hero-card__blurb">Descends mid-stage in a scripted-defeat cinematic. The FM-8 hero-bond probe.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="-1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>2nd Rogue</h3>
+            <p class="hero-card__class">Rogue variant · TBD</p>
+            <p class="hero-card__blurb">Personality + identity to be designed. Mid-game unlock.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="+1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>2nd Mage</h3>
+            <p class="hero-card__class">Mage variant · TBD</p>
+            <p class="hero-card__blurb">Personality + identity to be designed. Mid-game unlock.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="-1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>Hot Assassin</h3>
+            <p class="hero-card__class">Assassin · TBD</p>
+            <p class="hero-card__blurb">Personality + identity to be designed. Late-game unlock.</p>
+          </article>
+
+        </div>
+        <details class="deep">
+          <summary>Why a locked roster?</summary>
+          <p>Hero-collectors win on power-fantasy variety; we win on attachment. A locked 7-hero cast means each character can carry actual personality + story without diluting it across hundreds of pulls. The pre-mortem flag here (FM-1) is "players raised on Archero / AFK Arena expect to collect heroes too." Mitigation: weapon gacha satisfies the slot-machine itch, while the locked cast is sold as "your mains" — the language of competitive games, not gachas.</p>
+        </details>
+      </div>
+    </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
     <section id="loop" class="section section--loop"></section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>

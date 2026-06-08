@@ -420,3 +420,48 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 
 @media (max-width: 1024px) { .roster-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 768px)  { .roster-grid { grid-template-columns: 1fr; } .hero-card--big { grid-column: span 1; grid-row: span 1; } }
+
+/* ----------------------------------- loop */
+.loop-grid {
+  display: grid;
+  grid-template-columns: 6fr 4fr;
+  gap: 40px;
+  align-items: flex-start;
+  margin-top: 24px;
+}
+.loop-ascii {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--parchment);
+  background: var(--iron-2);
+  border-left: 2px solid var(--gold-leaf);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+.loop-axes h3 { margin-bottom: 16px; color: var(--gold-leaf); }
+.loop-axes ol { padding-left: 20px; margin: 0; }
+.loop-axes li { margin-bottom: 14px; line-height: 1.5; }
+.loop-axes strong { color: var(--amber); }
+.axis-status {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.axis-status--shipped  { background: color-mix(in srgb, var(--rarity-r) 22%, transparent); color: var(--rarity-r); }
+.axis-status--inflight { background: color-mix(in srgb, var(--amber) 22%, transparent); color: var(--amber); }
+
+.compounds { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+.compounds th, .compounds td { padding: 8px 12px; text-align: left; border-bottom: 1px solid color-mix(in srgb, var(--gold-leaf) 18%, transparent); }
+.compounds th { color: var(--gold-leaf); font-family: var(--font-display); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+@media (max-width: 768px) { .loop-grid { grid-template-columns: 1fr; } .loop-ascii { font-size: 11px; } }

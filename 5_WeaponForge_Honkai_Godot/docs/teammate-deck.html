@@ -208,7 +208,62 @@
       </div>
     </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
-    <section id="loop" class="section section--loop"></section>
+    <section id="loop" class="section section--loop">
+      <div class="section-inner">
+        <h2>The Loop</h2>
+        <div class="loop-grid">
+          <pre class="loop-ascii" aria-label="Core gameplay loop diagram">
+       ┌──────── HOME ────────┐
+       │  pull → equip       │
+       │  briefing telegraph │
+       └──────────┬──────────┘
+                  │
+                  ▼
+       ┌────── STAGE ─────────┐
+       │ W1 → W2 → W3 → W4    │
+       │ ↓ mid-wave: meter    │
+       │ ↓ Forge Draft pick   │
+       │ W5 = BOSS            │
+       └──────────┬───────────┘
+                  │
+                  ▼
+       ┌──── reward / wipe ───┐
+       │ +Ember +stage++      │
+       │ heroes restored      │
+       └──────────┬───────────┘
+                  │
+                  └──→ back to HOME
+          </pre>
+          <div class="loop-axes">
+            <h3>Three progression axes</h3>
+            <ol>
+              <li><strong>Counter-build</strong> <span class="axis-status axis-status--shipped">shipped</span> — pre-stage briefing tells you the boss + minion weak/resist; you pick a squad that exploits it.</li>
+              <li><strong>Catalyst</strong> <span class="axis-status axis-status--inflight">in-flight</span> — squad element-pairs trigger named compound buffs (Firestorm, Wildfire, Plasma...). Cap-1 stages 1-4, no-cap stages 5+.</li>
+              <li><strong>Forge Wheel</strong> <span class="axis-status axis-status--shipped">shipped</span> — the weapon gacha. Ember currency, dupe-into-gems, shard-into-rarity, gem-into-star-up.</li>
+            </ol>
+          </div>
+        </div>
+        <details class="deep">
+          <summary>The 5-wave stage shape</summary>
+          <p>Five waves per stage. Boss on wave 5. The boss rotates by stage: Slime King → Iron Golem → Arcane Lich → repeat (with per-stage scaling). Slime heals to 50%, Golem windups + AoE-slams, Lich phase-shifts at 33% HP. The Forge Draft modal opens mid-stage when the kill-meter fills; on the W5 boss wave it shows 5 cards instead of 3. Heroes restored to full HP at the start of every stage. Wipes route back to a loadout-adjust screen — no retry penalty.</p>
+        </details>
+        <details class="deep">
+          <summary>What's a Catalyst? (6 FTUE compounds)</summary>
+          <table class="compounds">
+            <thead><tr><th>Pair</th><th>Compound</th><th>v1 effect (Numbers Policy)</th></tr></thead>
+            <tbody>
+              <tr><td>🔥 + ❄</td><td>Firestorm</td><td>+20% squad ATK</td></tr>
+              <tr><td>🔥 + 🌪</td><td>Wildfire</td><td>+15% ATK · +10% crit</td></tr>
+              <tr><td>🔥 + ⚡</td><td>Plasma</td><td>+15% squad crit</td></tr>
+              <tr><td>❄ + 🌪</td><td>Blizzard</td><td>−20% enemy attack speed</td></tr>
+              <tr><td>❄ + ⚡</td><td>Glacial Storm</td><td>+15% squad ATK</td></tr>
+              <tr><td>🌪 + ⚡</td><td>Stormfront</td><td>+25% ATK vs ≥3 enemies</td></tr>
+            </tbody>
+          </table>
+          <p>Earth-pair compounds (Volcanic / Permafrost / Sandstorm / Magnetic Storm) gate at Stage 10. The first Catalyst reveal lands organically around Stage 4-5: Forge Wheel pull #1 is scripted Fire-Bran-class, pull #3 is Ice-Elara-class. Until then, starter weapons are non-elemental — preserving the stage-1 neutrality contract.</p>
+        </details>
+      </div>
+    </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
     <section id="build" class="section section--build"></section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>

@@ -429,19 +429,16 @@ before owner sign-off:
 
 ---
 
-## 18. Open questions
+## 18. Resolved decisions (owner 2026-06-09)
 
-1. **Build branch.** Cut a new branch `forgeloop/teammate-deck` off
-   `main` (deck has nothing to do with Catalyst) — or stay on
-   `forgeloop/catalyst-element-pairs` and just commit the deck
-   alongside? Recommend: new branch off main.
-2. **Roster card placeholders.** For Hot Paladin / 2nd Rogue / 2nd
-   Mage / Hot Assassin — silhouette + `?` or just a "📋 TBD" colored
-   tile? Recommend: silhouette in a rondel + small "?" mark — looks
+1. **Build branch:** new `forgeloop/teammate-deck` cut from the current
+   Catalyst-branch tip (carries the spec + CLAUDE.md + storyboard).
+   Will rebase onto `main` after Catalyst merges.
+2. **Roster card placeholders:** silhouette in a rondel + small `?`
+   mark for Hot Paladin / 2nd Rogue / 2nd Mage / Hot Assassin. Looks
    intentional, not lazy.
-3. **Build section's right-rail data.** Static (manually maintained
-   in the HTML) or dynamic (a small JSON file the deck reads)? v1 =
-   static, easier; revisit if it goes stale.
+3. **Build section's right-rail data:** STATIC — manually maintained
+   in the HTML. Revisit (dynamic JSON) only if it goes stale.
 
 ---
 

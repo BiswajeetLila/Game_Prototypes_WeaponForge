@@ -111,11 +111,13 @@ func _build_ui() -> void:
 		v.add_child(row)
 		_hero_rows[id] = row
 
-	## Squad-level element trio (Catalyst readout — compound names land with P1e).
+	## Squad-level element trio (Catalyst readout — compound names land with the Catalyst build).
 	_squad_line = Label.new()
 	_squad_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_squad_line.add_theme_font_size_override(&"font_size", 12)
 	_squad_line.modulate = Color(0.8, 0.9, 1.0)
+	_squad_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_squad_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(_squad_line)
 
 	## Weapon detail — a FIXED opaque panel between the squad and the armory. It always
@@ -305,7 +307,7 @@ func _refresh_squad_line() -> void:
 	for id in ROSTER_IDS:
 		var w = AccountState.get_equipped(id)
 		icons.append(_elem_icon(w.rune) if w != null else "·")
-	_squad_line.text = "Squad elements:  %s  (Catalyst compounds land in P1e)" % "  ".join(icons)
+	_squad_line.text = "Squad elements:  %s" % "  ".join(icons)
 
 func _refresh_detail() -> void:
 	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():

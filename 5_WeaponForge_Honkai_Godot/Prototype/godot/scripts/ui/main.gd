@@ -42,7 +42,6 @@ const RUN_FINAL_WAVE: int = GameState.RUN_FINAL_WAVE
 var _draft_modal: ColorRect = null
 var _pending_next_wave: int = -1
 var _kill_bar: ProgressBar = null
-var _strip_labels: Dictionary = {}
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -88,7 +87,6 @@ func _start_run() -> void:
 	GameState.restore_squad_full()
 	GameState.run_stage = AccountState.current_stage
 	ForgeDraft.reset_run()
-	_refresh_strip()
 	_notifications.show_banner("🏰 STAGE %d" % GameState.run_stage, Color(0.8, 0.9, 1.0), 1.2)
 	_begin_wave(1)
 
@@ -183,41 +181,15 @@ func _build_battle_overlay(layer: CanvasLayer) -> void:
 	_kill_bar.size = Vector2(vp.x - 220.0, 10.0)
 	layer.add_child(_kill_bar)
 	ForgeDraft.meter_changed.connect(_on_meter_changed_ui)
-
-	## Weapon strip: three columns under the portraits — weapon, ATK, upgrade pips.
-	var strip := HBoxContainer.new()
-	strip.position = Vector2(0.0, vp.y - 44.0)
-	strip.size = Vector2(vp.x, 40.0)
-	strip.add_theme_constant_override(&"separation", 6)
-	layer.add_child(strip)
-	for id in [&"bran", &"elara", &"vex"]:
-		var l := Label.new()
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.add_theme_font_size_override(&"font_size", 11)
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		strip.add_child(l)
-		_strip_labels[id] = l
-	GameState.weapon_data_changed.connect(func(_h): _refresh_strip())
-	ForgeDraft.draft_applied.connect(func(_c): _refresh_strip())
+	## The weapon strip that used to sit at vp.y - 44 is gone. Per-hero weapon
+	## name + ATK + run-card pips now render inside HeroCard.tscn (no more
+	## right-edge clip on narrow mobile-portrait viewports).
 
 func _on_meter_changed_ui(kills: int, needed: int) -> void:
 	if _kill_bar == null:
 		return
 	_kill_bar.value = mini(kills, needed)
 	_kill_bar.modulate = Color(1.0, 0.85, 0.2) if kills >= needed else Color(1, 1, 1)
-
-func _refresh_strip() -> void:
-	for id in _strip_labels:
-		var l: Label = _strip_labels[id]
-		var hero = GameState.get_hero(id)
-		if hero == null:
-			l.text = ""
-			continue
-		var weapon_str: String = "— no weapon"
-		if hero.weapon_data != null:
-			weapon_str = "⚔ %s  ATK %d" % [hero.weapon_data.name, hero.eff_atk()]
-		var pips: int = clampi(hero.run_card_count, 0, 3)
-		l.text = "%s\n%s%s" % [weapon_str, "●".repeat(pips), "○".repeat(3 - pips)]
 
 ## Battle over (or HOME button): back to the meta layer.
 func _on_back_home() -> void:

@@ -55,6 +55,8 @@ func _ready() -> void:
 		_test_corrupt_shard_rejected()
 		_test_reset_clears_shards()
 		_test_star_progress_round_trip()
+		_test_ember_basics()
+		_test_ember_save_roundtrip()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -333,7 +335,7 @@ func _test_run_reset_does_not_touch_account() -> void:
 ## ---------- Shard inventory + save v2->v3 migration (Stage E) ----------
 
 func _test_save_version_is_3() -> void:
-	_check("SAVE_VERSION bumped to 3 (shard inventory)", _Account.SAVE_VERSION == 3,
+	_check("SAVE_VERSION bumped to 4 (ember currency)", _Account.SAVE_VERSION == 4,
 		"version=%d" % _Account.SAVE_VERSION)
 
 func _test_v2_save_loads_without_shards() -> void:
@@ -409,6 +411,28 @@ func _test_star_progress_round_trip() -> void:
 		b.owned_weapons.size() == 1 and b.owned_weapons[0].star_progress == 2,
 		"star_progress not persisted")
 	a.free(); b.free()
+
+## ---------- Ember currency (Task 3) ----------
+
+func _test_ember_basics() -> void:
+	AccountState.reset_account()
+	_check("ember starts at STARTING_EMBER", AccountState.ember == AccountState.STARTING_EMBER,
+		"ember=%d" % AccountState.ember)
+	AccountState.add_ember(3)
+	_check("add_ember raises ember", AccountState.ember == AccountState.STARTING_EMBER + 3, "ember=%d" % AccountState.ember)
+	var ok: bool = AccountState.spend_ember(2)
+	_check("spend_ember within balance true", ok and AccountState.ember == AccountState.STARTING_EMBER + 1, "ember=%d" % AccountState.ember)
+	_check("spend_ember over balance false", AccountState.spend_ember(9999) == false, "overspent")
+
+func _test_ember_save_roundtrip() -> void:
+	AccountState.reset_account()
+	AccountState.add_ember(7)
+	var d: Dictionary = AccountState.to_save_dict()
+	_check("save dict version is 4", int(d.get("version", -1)) == 4, "ver=%s" % str(d.get("version")))
+	_check("save dict carries ember", int(d.get("ember", -1)) == AccountState.ember, "ember=%s" % str(d.get("ember")))
+	var v3: Dictionary = {"version": 3, "gems": 100, "stage": 1, "weapons": [], "equipped": {}, "shards": []}
+	_check("v3 save loads", AccountState.load_from_dict(v3) == true, "v3 rejected")
+	_check("absent ember -> 0", AccountState.ember == 0, "ember=%d" % AccountState.ember)
 
 ## ---------- Test helpers ----------
 

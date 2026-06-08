@@ -25,10 +25,11 @@ const ShardDataT = preload("res://scripts/data/shard_data.gd")
 signal gems_changed(new_gems: int)
 signal owned_weapons_changed
 signal shards_changed
+signal ember_changed(new_ember: int)
 
 ## v2: invalidates saves written by the pre-game-frame loop (owner playtest got
 ## stranded at 45 gems from a deprecated-flow save). Old versions load as fresh.
-const SAVE_VERSION: int = 3   ## v3 adds the shard inventory + star_progress (v2 saves still load)
+const SAVE_VERSION: int = 4   ## v4 adds the Ember pull-currency (v2/v3 saves still load; ember -> 0)
 const SAVE_PATH: String = "user://account.json"
 const STARTING_GEMS: int = 600
 ## Run = 4 waves + boss (Wittle stage shape; boss kill ends the run). Cleared run
@@ -38,7 +39,15 @@ const GEMS_BOSS_BONUS: int = 75
 const RUN_VICTORY_BONUS: int = 100
 const PULL_COST: int = 300
 
+## Ember — the scarce GACHA currency (pulls will cost Ember; gems no longer pull).
+## Earned only from boss clears + run victory (NOT per wave) -> savored pulls.
+const STARTING_EMBER: int = 5
+const EMBER_BOSS_BONUS: int = 1
+const EMBER_VICTORY_BONUS: int = 2
+const PULL_COST_EMBER: int = 5
+
 var gems: int = STARTING_GEMS
+var ember: int = STARTING_EMBER
 var owned_weapons: Array = []      ## Array[WeaponData] — runtime instances, never catalog refs
 var equipped: Dictionary = {}      ## StringName hero_id -> int index into owned_weapons
 ## Account progression: which stage the next battle is. Victory advances it,
@@ -87,16 +96,29 @@ func spend_gems(amount: int) -> bool:
 	gems_changed.emit(gems)
 	return true
 
+func add_ember(amount: int) -> void:
+	ember += amount
+	ember_changed.emit(ember)
+
+func spend_ember(amount: int) -> bool:
+	if ember < amount:
+		return false
+	ember -= amount
+	ember_changed.emit(ember)
+	return true
+
 func _on_wave_cleared(wave: int) -> void:
 	var amount: int = GEMS_PER_WAVE
 	if wave in GameState.BOSS_WAVES:
 		amount += GEMS_BOSS_BONUS
+		add_ember(EMBER_BOSS_BONUS)
 	add_gems(amount)
 	autosave()
 
 ## Boss kill = run victory. Pays the clear bonus and persists.
 func award_victory() -> void:
 	add_gems(RUN_VICTORY_BONUS)
+	add_ember(EMBER_VICTORY_BONUS)
 	autosave()
 
 ## Victory also advances account progression to the next stage.
@@ -108,11 +130,13 @@ func advance_stage() -> void:
 ## persist it. Home exposes this as a small debug button.
 func reset_account() -> void:
 	gems = STARTING_GEMS
+	ember = STARTING_EMBER
 	owned_weapons = []
 	equipped = {}
 	shards = []
 	current_stage = 1
 	gems_changed.emit(gems)
+	ember_changed.emit(ember)
 	owned_weapons_changed.emit()
 	shards_changed.emit()
 	autosave()
@@ -223,13 +247,13 @@ func to_save_dict() -> Dictionary:
 	for k in equipped:
 		eq[String(k)] = equipped[k]
 	return {"version": SAVE_VERSION, "gems": gems, "stage": current_stage,
-		"weapons": ws, "equipped": eq, "shards": ss}
+		"ember": ember, "weapons": ws, "equipped": eq, "shards": ss}
 
 ## Validate-then-commit: returns false on ANY structural problem without touching
 ## current state, so a corrupt save can never half-apply.
 func load_from_dict(d: Dictionary) -> bool:
 	var ver: int = int(d.get("version", -1))
-	if ver != 2 and ver != 3:                         ## accept v2 (pre-shard) + current v3
+	if ver < 2 or ver > 4:                             ## accept v2 (pre-shard) / v3 / v4 (ember)
 		return false
 	if not (d.has("gems") and d.has("weapons") and d.has("equipped")):
 		return false
@@ -263,11 +287,13 @@ func load_from_dict(d: Dictionary) -> bool:
 				return false
 			new_shards.append(s)
 	gems = int(d["gems"])
+	ember = int(d.get("ember", 0))                     ## absent in v2/v3 -> 0
 	current_stage = maxi(1, int(d.get("stage", 1)))   ## optional key: older v2 saves -> stage 1
 	owned_weapons = new_weapons
 	equipped = new_equipped
 	shards = new_shards
 	gems_changed.emit(gems)
+	ember_changed.emit(ember)
 	owned_weapons_changed.emit()
 	shards_changed.emit()
 	return true

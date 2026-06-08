@@ -265,7 +265,92 @@
       </div>
     </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
-    <section id="build" class="section section--build"></section>
+    <section id="build" class="section section--build">
+      <div class="section-inner">
+        <h2>The Build</h2>
+        <div class="build-grid">
+          <ol class="forge-log" aria-label="Build milestones">
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-01</time>
+              <h3>Forked from Weaponcraft</h3>
+              <p>Hot-fork e958745. Frozen playtester build preserved at ../2_Weaponcraft_Godot/.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-01</time>
+              <h3>P1a — WeaponData unitary schema</h3>
+              <p>10/10 tests green. New combat-interface methods landed (get_atk / get_crit / get_ult_rate / get_all_tags / get_hp_bonus).</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-02</time>
+              <h3>Game Frame</h3>
+              <p>HOME → STAGE → BOSS loop playable end-to-end. 368 tests green.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-03</time>
+              <h3>Forge & Infuse Economy</h3>
+              <p>Shards-into-rarity + dupes-into-stars + 12-weapon catalog. 415 tests green.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-05</time>
+              <h3>Playtest Polish</h3>
+              <p>Full HP at stage start, softer stage curve, fixed weapon detail panel, Lich phase-2 nerfed. 423 tests green.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-08</time>
+              <h3>Counter-build</h3>
+              <p>Bosses retagged Fire/Ice/Electric/Wind. Deterministic StageAffinity. Pre-stage briefing telegraphs. Defeat → loadout (no retry modal).</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-08</time>
+              <h3>Ember Economy</h3>
+              <p>Ember = the pull currency (5/pull, earn from boss+win). Gems → forge currency (star-up). Dupes → gems. Save v3 → v4.</p>
+            </li>
+            <li class="forge-log__item" data-status="inflight">
+              <time>2026-06-09</time>
+              <h3>Catalyst</h3>
+              <p>Element-pair squad synergy. 6 FTUE compounds + 4 Earth-gated. MVP-6 simple (stat-modifier bag). Spec locked, plan locked, code in-flight.</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Spin Cinematic</h3>
+              <p>The last Forge Wheel polish: a 0.6s anvil-strike reel on pull, skippable.</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Hot Paladin (FM-8 anchor)</h3>
+              <p>Stage 2 scripted-defeat cinematic. Probes hero-bond + build-investment.</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Elara Signature Arc</h3>
+              <p>Spark-chain mechanic + small-B Meteor talent tree. FM-8 hero-bond probe (option B).</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Stage 10 — Master Smith</h3>
+              <p>Phase-1 Forge Wheel unlocks: part-pull (150 gems) + 5-tier Forge Math + Earth runes.</p>
+            </li>
+          </ol>
+
+          <aside class="build-rail">
+            <h3>Live status</h3>
+            <dl class="kv">
+              <dt>Tests</dt><dd>~450 green</dd>
+              <dt>Branch</dt><dd>forgeloop/teammate-deck</dd>
+              <dt>Last commit</dt><dd>(manually updated)</dd>
+              <dt>Godot</dt><dd>4.6.2 Mono</dd>
+              <dt>Save schema</dt><dd>v4</dd>
+            </dl>
+            <p class="build-rail__hint">Static — owner edits when stale.</p>
+          </aside>
+        </div>
+
+        <details class="deep">
+          <summary>What shipped this session</summary>
+          <p>Counter-build + Ember economy merged to main 2026-06-08. Combat hero-card redesign (weapon row + circle-mask portrait) landed on the Catalyst branch 2026-06-09. Catalyst v1 design spec locked. CLAUDE.md + this deck spec authored.</p>
+        </details>
+      </div>
+    </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
     <section id="next" class="section section--next"></section>
   </main>

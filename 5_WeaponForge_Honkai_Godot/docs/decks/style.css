@@ -465,3 +465,29 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 .compounds th { color: var(--gold-leaf); font-family: var(--font-display); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
 
 @media (max-width: 768px) { .loop-grid { grid-template-columns: 1fr; } .loop-ascii { font-size: 11px; } }
+
+/* ----------------------------------- build */
+.build-grid { display: grid; grid-template-columns: 7fr 3fr; gap: 40px; margin-top: 24px; }
+.forge-log { list-style: none; padding: 0; margin: 0; position: relative; }
+.forge-log::before { content: ""; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--gold-leaf); opacity: 0.4; }
+.forge-log__item { position: relative; padding-left: 40px; margin-bottom: 24px; }
+.forge-log__item::before {
+  content: ""; position: absolute; left: 5px; top: 6px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--iron); border: 2px solid var(--gold-leaf);
+}
+.forge-log__item[data-status="done"]::before     { background: var(--rarity-r); border-color: var(--rarity-r); }
+.forge-log__item[data-status="inflight"]::before { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 12px var(--amber); }
+.forge-log__item[data-status="queued"]::before   { background: var(--iron); border-color: var(--mute); }
+.forge-log__item time { font-family: var(--font-mono); font-size: 11px; color: var(--mute); letter-spacing: 0.08em; }
+.forge-log__item h3 { margin: 2px 0 4px; color: var(--parchment); font-size: 16px; }
+.forge-log__item[data-status="inflight"] h3 { color: var(--amber); }
+.forge-log__item p { font-size: 14px; color: var(--parchment); margin-bottom: 0; }
+
+.build-rail { background: var(--iron-2); border: 1px solid color-mix(in srgb, var(--gold-leaf) 25%, transparent); border-radius: var(--radius-md); padding: 20px; align-self: flex-start; position: sticky; top: 80px; }
+.build-rail h3 { margin-bottom: 12px; }
+.kv { display: grid; grid-template-columns: 100px 1fr; gap: 8px 12px; margin: 0; }
+.kv dt { font-family: var(--font-mono); font-size: 11px; color: var(--mute); letter-spacing: 0.08em; text-transform: uppercase; }
+.kv dd { font-family: var(--font-mono); font-size: 12px; color: var(--parchment); margin: 0; }
+.build-rail__hint { font-family: var(--font-mono); font-size: 10px; color: var(--mute); margin: 16px 0 0; }
+
+@media (max-width: 768px) { .build-grid { grid-template-columns: 1fr; } .build-rail { position: static; } }

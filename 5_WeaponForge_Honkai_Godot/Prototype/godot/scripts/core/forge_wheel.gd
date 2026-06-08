@@ -21,6 +21,9 @@ signal pull_completed(result: Dictionary)
 ## Weapon drop pyramid by intrinsic rarity (C/R/E/L/M). Mythic = 0 (hero-bound
 ## signatures aren't pulled). STARTING VALUES (Numbers Policy).
 const WEAPON_DROP_WEIGHT: Array = [50.0, 30.0, 15.0, 5.0, 0.0]
+## Dupe consolation: a duplicate pull mints gems (the forge currency) by the
+## pulled weapon's rarity, instead of feeding star progress. C/R/E/L/M.
+const DUPE_GEMS: Array = [20, 40, 80, 160, 320]
 ## Shard rarity drop odds — cumulative %, C/R/E/L. STARTING VALUES.
 const SHARD_RARITY_ODDS: Array = [55, 85, 97, 100]
 
@@ -70,19 +73,22 @@ func pull() -> Dictionary:
 	var hero = GameState.get_hero(hero_id)
 	var old_atk: int = (hero.data.atk_base + hero.eff_atk()) if hero != null else 0
 
-	## Dupe? A weapon you already own feeds STAR-UP on the owned instance — never a
-	## 2nd bench copy (the Wittle dupe-sink). Otherwise acquire + auto-equip if the
-	## class hero is empty-handed (never overwrite a chosen loadout).
+	## Dupe? A weapon you already own mints rarity-scaled gems — never a 2nd bench
+	## copy (the Wittle dupe-sink). Star-up is a separate gem-spend (later task).
+	## Otherwise acquire + auto-equip if the class hero is empty-handed (never
+	## overwrite a chosen loadout).
 	var existing = _owned_with_id(catalog_pick.id)
 	var dupe: bool = existing != null
 	var owned
 	var auto_equipped: bool = false
 	var star_up: bool = false
+	var dupe_gems: int = 0
 	var dupe_action: String = "none"
 	if dupe:
 		owned = existing
-		star_up = existing.add_dupe()
-		dupe_action = "star_up"
+		dupe_gems = DUPE_GEMS[clampi(catalog_pick.rarity_idx, 0, DUPE_GEMS.size() - 1)]
+		AccountState.add_gems(dupe_gems)
+		dupe_action = "gems"
 	else:
 		owned = AccountState.acquire_weapon(catalog_pick)
 		if AccountState.get_equipped(hero_id) == null:
@@ -104,14 +110,14 @@ func pull() -> Dictionary:
 		"dupe": dupe,
 		"dupe_action": dupe_action,
 		"star_up": star_up,
+		"dupe_gems": dupe_gems,
 		"shards": drops,
 		"old_atk": old_atk,
 		"new_atk": (hero.data.atk_base + hero.eff_atk()) if hero != null else 0,
 	}
 	if dupe:
-		var tail: String = ("★%d!" % owned.star_tier) if star_up else "★ progress"
-		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s DUPE → %s  (+2 shards)[/color]"
-			% [owned.name, tail])
+		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s DUPE → +%d gems[/color]"
+			% [owned.name, dupe_gems])
 	elif auto_equipped and hero != null:
 		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s — %s! ATK %d → %d  (+2 shards)[/color]"
 			% [hero.data.name, owned.name, result.old_atk, result.new_atk])

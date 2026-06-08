@@ -40,7 +40,7 @@ func _ready() -> void:
 		_test_pull_signal()
 		_test_pull_eligibility_is_fielded_roster()
 		_test_pull_drops_two_shards()
-		_test_dupe_pull_feeds_star_up()
+		_test_dupe_pull_awards_gems()
 		_test_shard_drop_by_rarity()
 		_test_pull_spends_ember()
 	_summary()
@@ -182,19 +182,36 @@ func _test_pull_drops_two_shards() -> void:
 	_check("dropped shards carry the weapon's element (fire)",
 		r.has("shards") and r.shards.size() == 2 and r.shards[0].element == &"fire", "wrong element")
 
-## Stage F: re-pulling an owned weapon feeds star-up on the owned instance.
-func _test_dupe_pull_feeds_star_up() -> void:
+## Task 5 economy: re-pulling an owned weapon awards gems (rarity-scaled) instead
+## of feeding star-up. The dupe-forcing mechanism is identical to the old test:
+## pin the pool to one weapon id, pull twice (1st acquires, 2nd is guaranteed dupe).
+func _test_dupe_pull_awards_gems() -> void:
 	_fresh(600)
 	var saved: Array = _force_catalog([&"w_emberfang_cleaver"])
-	_wheel().pull()                                   ## acquire emberfang (owned, star_progress 0)
-	AccountState.owned_weapons[0].star_progress = 2   ## one dupe shy of ★2
+	_wheel().pull()                                   ## acquire emberfang (1st pull, not a dupe)
+	var gems_before: int = AccountState.gems
+	var star_tier_before: int = AccountState.owned_weapons[0].star_tier
+	var star_prog_before: int = AccountState.owned_weapons[0].star_progress
 	_reset_gems_only(600)
-	var r: Dictionary = _wheel().pull()               ## dupe -> 3rd dupe -> ★ up
+	var r: Dictionary = _wheel().pull()               ## 2nd pull of same id -> guaranteed dupe
 	_restore_catalog(saved)
-	_check("dupe pull reports star_up", bool(r.get("star_up", false)), "no star_up")
-	_check("owned weapon reached ★2, no 2nd copy",
-		AccountState.owned_weapons.size() == 1 and AccountState.owned_weapons[0].star_tier == 2,
-		"size=%d star=%d" % [AccountState.owned_weapons.size(), AccountState.owned_weapons[0].star_tier])
+	## The pulled weapon is emberfang (rarity_idx == 0 = Common), so expected gems = DUPE_GEMS[0] = 20
+	var expected_gems: int = _wheel().DUPE_GEMS[0]
+	_check("dupe pull result has dupe == true", bool(r.get("dupe", false)), "dupe flag missing")
+	_check("dupe pull result carries dupe_gems key",
+		r.has("dupe_gems") and r.get("dupe_gems", 0) == expected_gems,
+		"dupe_gems=%d want %d" % [r.get("dupe_gems", -1), expected_gems])
+	_check("AccountState.gems rose by dupe_gems",
+		AccountState.gems == gems_before + expected_gems,
+		"gems=%d want %d" % [AccountState.gems, gems_before + expected_gems])
+	_check("star_tier unchanged by dupe",
+		AccountState.owned_weapons[0].star_tier == star_tier_before,
+		"star_tier=%d was %d" % [AccountState.owned_weapons[0].star_tier, star_tier_before])
+	_check("star_progress unchanged by dupe",
+		AccountState.owned_weapons[0].star_progress == star_prog_before,
+		"star_prog=%d was %d" % [AccountState.owned_weapons[0].star_progress, star_prog_before])
+	_check("still only one owned copy after dupe", AccountState.owned_weapons.size() == 1,
+		"size=%d" % AccountState.owned_weapons.size())
 
 ## Task 2 / economy: 2 shards on common/rare pull (rarity_idx <= 1), 0 on epic+.
 func _test_shard_drop_by_rarity() -> void:

@@ -413,12 +413,13 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 #bran-scrub {
   width: 100%;
   height: 100%;
-  /* The source bran_5tier.png is a 5-frame horizontal strip. Using
-     object-fit: none + object-position lets us pan across the strip. */
+  /* Source bran_5tier.png is a 1344×768 horizontal strip of 5 portraits
+     (~268.8 px wide each). object-fit: none renders the source at natural
+     size; the rondel masks to a 180×180 window. scrub.js computes the
+     correct object-position percentages at runtime from naturalWidth +
+     clientWidth — robust to source-asset resizing. */
   object-fit: none;
-  /* Source asset is ~1024×~205 (5 portraits of ~205 each). Adjust if the
-     source aspect ratio differs — verify visually in step 4. */
-  object-position: 0% center;
+  object-position: 0% 35%;
   transition: object-position 0.2s ease;
 }
 
@@ -584,8 +585,10 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   .deck-nav, .scrubber, .build-rail__hint, .next-links { display: none !important; }
   .section { padding: 24pt 24pt; break-before: page; background: white; }
   .section::before { display: none; }
-  details { open: true; }
-  details > * { display: revert !important; }
+  /* Force <details> open in print. CSS can't toggle the [open] attribute
+     (it's HTML), but we can override the user-agent rule that hides the
+     non-summary children when [open] is absent. */
+  details > *:not(summary) { display: block !important; }
   details summary::after { display: none; }
   .divider-engraved { display: none; }
   .hero-title { font-size: 36pt; }
@@ -595,5 +598,7 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   .pull-quote { color: black; border-color: #888; }
   .axis-status--shipped, .axis-status--inflight { background: #eee; color: black; }
   .forge-log__item[data-status="inflight"]::before { background: black; box-shadow: none; }
-  #bran-scrub { object-position: 50% center; }  /* show tier 3 in print */
+  /* Show tier 3 (Ascended, middle) in print. !important defeats the
+     inline style scrub.js sets at runtime. */
+  #bran-scrub { object-position: 50% 35% !important; }
 }

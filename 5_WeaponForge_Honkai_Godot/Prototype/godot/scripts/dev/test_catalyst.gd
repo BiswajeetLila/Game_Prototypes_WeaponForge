@@ -27,6 +27,9 @@ func _ready() -> void:
 	_test_resolve_nocap_at_stage5()
 	_test_resolve_three_same_element_null()
 	_test_resolve_compose_math_explicit()
+	_test_earth_pair_skipped_below_stage10()
+	_test_earth_pair_triggers_at_stage10()
+	_test_stormfront_swarm_field_present()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -150,6 +153,41 @@ func _test_resolve_compose_math_explicit() -> void:
 		"add=%f" % float(r["merged_bag"][&"squad_crit_add"]))
 	## Stormfront's swarm mult also lands in the merged bag.
 	_check("compose swarm_mult = 1.25 (Stormfront)",
+		is_equal_approx(float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]), 1.25),
+		"swarm=%f" % float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]))
+
+func _test_earth_pair_skipped_below_stage10() -> void:
+	## Spec §9 case C-7 + §5: Earth-pair compounds skip when stage < 10.
+	## fire+earth at stage 9 -> no compound (Volcanic gated).
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"earth"), _make_weapon(&"")]
+	var r9: Dictionary = CatalystResolverT.resolve(squad, 9)
+	_check("fire+earth at stage 9 -> no compound (gated)", r9.get("compound", null) == null,
+		"compound=%s" % str(r9.get("compound")))
+	_check("fire+earth at stage 9 -> EMPTY_BAG", _bags_equal(r9["merged_bag"], CatalystDataT.EMPTY_BAG),
+		"bag=%s" % str(r9["merged_bag"]))
+
+func _test_earth_pair_triggers_at_stage10() -> void:
+	## Spec §9 case C-7: at stage 10, the Earth gate opens. fire+earth -> Volcanic.
+	## Stage 10 is no-cap (CLAUDE.md §13: cap-1 stages 1-4, no-cap stages 5+), so
+	## the winner lands in the `compounds` array, not the cap-1 `compound` slot.
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"earth"), _make_weapon(&"")]
+	var r10: Dictionary = CatalystResolverT.resolve(squad, 10)
+	var compounds: Array = r10.get("compounds", [])
+	_check("fire+earth at stage 10 -> 1 triggered compound", compounds.size() == 1,
+		"size=%d" % compounds.size())
+	var first_id: StringName = (compounds[0] as Dictionary).get("id", &"") if compounds.size() > 0 else &""
+	_check("fire+earth at stage 10 -> Volcanic", first_id == &"volcanic",
+		"id=%s" % first_id)
+
+func _test_stormfront_swarm_field_present() -> void:
+	## Spec §9 C-11 surface: the merged bag carries squad_atk_vs_swarm_mult = 1.25 when
+	## Stormfront triggers (wind+electric). Combat applies the actual >=3-enemies check
+	## conditionally inside hit-resolution (covered by TestCombat in Chunk C).
+	var squad: Array = [_make_weapon(&"wind"), _make_weapon(&"electric"), _make_weapon(&"")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 1)
+	_check("Stormfront at stage 1 (cap-1)", r["compound"].get("id", &"") == &"stormfront",
+		"id=%s" % r["compound"].get("id", &""))
+	_check("Stormfront bag carries squad_atk_vs_swarm_mult=1.25",
 		is_equal_approx(float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]), 1.25),
 		"swarm=%f" % float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]))
 

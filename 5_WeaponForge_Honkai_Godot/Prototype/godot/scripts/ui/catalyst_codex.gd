@@ -1,8 +1,13 @@
-## CatalystCodex — discovery-driven codex listing all 10 compounds (spec §7.5).
+## CatalystCodex — discovery-driven codex listing all compounds (spec §7.5).
+##
+## Post-A5 the compound table grew from 10 → 14 (4 light-pair compounds added:
+## Auroral Veil / Halo Bloom / Plasma Arc / Solar Flare). The codex auto-iterates
+## CatalystDataT.by_priority() so the row count and header denominator both
+## track the table size automatically — no magic number in this file.
 ##
 ## Public:
 ##   refresh(discovered: Array, stage: int = -1)
-##     Rebuild the 10-row list. discovered = ids triggered at least once.
+##     Rebuild the row list. discovered = ids triggered at least once.
 ##     stage = stage gate for Earth-pair locking (default reads AccountState).
 ##     Row marker:  ★ = discovered, 🔒 = Earth-gated and below stage 10, blank otherwise.
 ##
@@ -46,7 +51,7 @@ func refresh(discovered: Array, stage: int = -1) -> void:
 		var label: Label = _build_row(rec, disc, stage)
 		_list.add_child(label)
 		_row_records[label] = rec
-	_header.text = "CATALYST CODEX — %d / 10 discovered" % disc_count
+	_header.text = "CATALYST CODEX — %d / %d discovered" % [disc_count, rows.size()]
 
 func _build_row(rec: Dictionary, discovered: bool, stage: int) -> Label:
 	var l := Label.new()

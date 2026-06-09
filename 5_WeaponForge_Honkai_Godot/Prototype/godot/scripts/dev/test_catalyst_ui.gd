@@ -23,7 +23,7 @@ func _ready() -> void:
 	_test_chip_stacks_three_compounds()
 	_test_chip_hides_when_empty_array()
 	_test_chip_set_compounds_replaces_rows()
-	_test_codex_lists_all_ten_compounds()
+	_test_codex_lists_all_compounds()
 	_test_codex_marks_discovered()
 	_test_codex_hides_earth_below_stage10()
 	_test_codex_unlocks_earth_at_stage10()
@@ -142,24 +142,26 @@ func _test_chip_set_compounds_replaces_rows() -> void:
 
 ## ---------- Codex ----------
 
-func _test_codex_lists_all_ten_compounds() -> void:
-	## refresh([]) -> 10 rows visible; header reads "0 / 10 discovered".
+func _test_codex_lists_all_compounds() -> void:
+	## refresh([]) -> 14 rows visible post-A5 (10 base + 4 light-pair compounds);
+	## header reads "0 / 14 discovered".
 	var c = CatalystCodexT.new()
 	add_child(c)
 	c.refresh([], 1)
-	_check("codex shows 10 rows", c._list.get_child_count() == 10,
+	_check("codex shows 14 rows post-A5 light compounds",
+		c._list.get_child_count() == 14,
 		"rows=%d" % c._list.get_child_count())
-	_check("codex header shows 0 / 10 discovered",
-		c._header.text.contains("0 / 10"), "header=%s" % c._header.text)
+	_check("codex header shows 0 / 14 discovered",
+		c._header.text.contains("0 / 14"), "header=%s" % c._header.text)
 	c.queue_free()
 
 func _test_codex_marks_discovered() -> void:
-	## refresh([&"firestorm"]) -> header reads "1 / 10 discovered"; the Firestorm row carries a ★.
+	## refresh([&"firestorm"]) -> header reads "1 / 14 discovered"; the Firestorm row carries a ★.
 	var c = CatalystCodexT.new()
 	add_child(c)
 	c.refresh([&"firestorm"], 10)   ## stage 10 unlocks Earth too, but the test only checks Firestorm.
-	_check("codex header shows 1 / 10 discovered",
-		c._header.text.contains("1 / 10"), "header=%s" % c._header.text)
+	_check("codex header shows 1 / 14 discovered",
+		c._header.text.contains("1 / 14"), "header=%s" % c._header.text)
 	var firestorm_row: Label = c._row_for(&"firestorm")
 	_check("Firestorm row exists", firestorm_row != null, "null")
 	if firestorm_row != null:
@@ -192,16 +194,24 @@ func _test_codex_unlocks_earth_at_stage10() -> void:
 	c.queue_free()
 
 func _test_codex_rows_sorted_by_alpha_priority() -> void:
-	## Spec §7.5 + CLAUDE.md §13: rows render in alphabetical_priority order:
-	## Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire,
-	## then Earth unlocks: Magnetic Storm > Permafrost > Sandstorm > Volcanic.
+	## Spec §7.5 + CLAUDE.md §13: rows render in alphabetical_priority order.
+	## Post-A5 (4 light-pair compounds), the full 14-row alpha order is:
+	##   Auroral Veil > Blizzard > Firestorm > Glacial Storm > Halo Bloom >
+	##   Plasma > Plasma Arc > Solar Flare > Stormfront > Wildfire,
+	## then Earth unlocks at stage 10:
+	##   Magnetic Storm > Permafrost > Sandstorm > Volcanic.
+	## Light compounds slot in at: Auroral Veil row[0], Halo Bloom row[4],
+	## Plasma Arc row[6] (after Plasma), Solar Flare row[7] (before Stormfront).
 	var c = CatalystCodexT.new()
 	add_child(c)
 	c.refresh([], 10)
-	## Read the first 6 rows' display_name substrings to verify the alpha order.
-	var expected: Array = [&"blizzard", &"firestorm", &"glacial_storm", &"plasma",
-		&"stormfront", &"wildfire"]
-	for i in range(6):
+	var expected: Array = [
+		&"auroral_veil", &"blizzard", &"firestorm", &"glacial_storm",
+		&"halo_bloom", &"plasma", &"plasma_arc", &"solar_flare",
+		&"stormfront", &"wildfire",
+		&"magnetic_storm", &"permafrost", &"sandstorm", &"volcanic",
+	]
+	for i in range(expected.size()):
 		var row: Label = c._list.get_child(i)
 		var rec: Dictionary = c._row_record(row)
 		_check("row[%d] is %s (alpha priority)" % [i, expected[i]],

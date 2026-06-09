@@ -118,18 +118,27 @@ Caveman is for CHAT, not source. `.gd` / `.tscn` / `.md` read normal.
 
 ## 10. Doc index (read order)
 
-1. **`docs/STATUS.md`** — SSOT. State + queue + repo/engine rules. Start here.
-2. **`docs/handoffs/<newest>.md`** — RESUME doc.
-3. **`docs/prototype-screen-beats.md`** — beat-by-beat storyboard (ASCII mockups + status flags).
-4. **`docs/teammate-deck.html`** — self-contained one-pager for sharing with teammates (open in any browser; deeper detail in `<details>` collapsibles).
-5. **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** v2.2 — locked DESIGN.
-6. **`docs/superpowers/specs/2026-06-06-progression-economy-architecture.md`** — depth map.
-7. **`docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md`** + plan (counter-build, shipped).
-8. **`docs/research/`** — competitor synthesis + anime auto-battler study.
+1. **`docs/01_GDD.md`** — DESIGN SSOT. Consolidated current design.
+2. **`docs/STATUS.md`** — STATE SSOT. Done / queued / repo + engine rules.
+3. **`docs/handoffs/<newest>.md`** — RESUME doc on session start.
+4. **`docs/prototype-screen-beats.md`** — beat-by-beat storyboard.
+5. **`docs/teammate-deck.html`** — pitch deck for teammates.
+6. **`docs/101-WeaponCraft-Concept.md`** — RICOCHET-template SSR submission.
+7. **`docs/superpowers/specs/*`** — detail-reference specs (v2.2 + economy + counter-build + Catalyst + deck). The GDD amends these; if they conflict, the GDD wins.
+8. **`docs/superpowers/plans/*`** — implementation plans.
+9. **`docs/research/`** — competitor synthesis + monorepo research.
+10. **`docs/_archive/`** — stale / pre-pivot docs (non-authoritative).
 
 `docs/05_roadmap.md` = post-launch live-ops, NOT the prototype queue.
 Prototype queue = `STATUS §4 NEXT`. Plan-mode scratch
 in `C:/Users/Biswa/.claude/plans/` is session-only.
+
+**Update-inline rule.** When the design changes, update `01_GDD.md` directly.
+Do NOT fork a parallel SSOT or rely on a session-close-ritual to mirror
+later — agent rituals rot. The detail specs in `superpowers/specs/` may
+lag; that's OK as long as the GDD is current and the v2.2 spec carries
+its banner marker. If a section of the GDD goes stale, fix it in the same
+commit as the change, not "later."
 
 ---
 

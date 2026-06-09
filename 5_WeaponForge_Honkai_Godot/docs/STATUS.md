@@ -22,27 +22,25 @@ Casual-mobile RPG / hero-collector for the Wittle Defender ∩ anime-curious aud
 
 | Doc | Purpose |
 |---|---|
-| **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** (v2.2) | **THE design spec.** Identity, anchors, fragile assumption, roster, Forge Wheel, combat, synergy, monetization, SSR text bundle, pre-mortem (FM-1→19), exit gates, implementation plan, risk register. |
-| `docs/research/2026-05-28-competitor-landscape-synthesis.md` | Competitor landscape (50 games, 170 Sensor Tower calls). Drives v2.2 deltas. |
-| `docs/handoffs/2026-05-27-wittle-inversion-brainstorm.md` | Brainstorm session capture (design rationale). |
-| `docs/research/ricochet/WIP_DESIGN_DOC.md` | Tarun's RICOCHET concept (template-perfect SSR exemplar). |
-| `docs/research/reference-games/` | Wittle Defender, Archero 2, BALL x PIT, Gear Defenders design specs. |
-| `docs/research/weaponcraft-forge-mockups/` | F1-F4 nano-banana forge mockups (historic exploration — direction dropped). |
-| This file (`docs/STATUS.md`) | Done / planned / remaining + decision log. |
+| **`docs/01_GDD.md`** | **THE design SSOT** — consolidated top-of-hierarchy. Identity, roster, Forge Wheel, combat, Catalyst, economy, exit gates, risks. Amends everything below. |
+| **`docs/STATUS.md`** (this file) | **THE state SSOT** — done / queued / repo + engine rules. |
+| **`5_WeaponForge_Honkai_Godot/CLAUDE.md`** | **THE rules SSOT** — agent behavior + branch / commit / TDD / save / Numbers Policy. |
+| `docs/handoffs/<newest>.md` | session RESUME doc — read newest on resume. |
+| `docs/prototype-screen-beats.md` | beat-by-beat storyboard (~50 per-screen ASCII mockups). |
+| `docs/teammate-deck.html` | pitch deck for internal team + leadership. |
+| `docs/101-WeaponCraft-Concept.md` | RICOCHET-template pitch / SSR submission (current content; name pre-rename). |
+| `docs/superpowers/specs/2026-05-27-wittle-inversion-design.md` v2.2 | foundational design (banner-marked DETAIL REFERENCE — GDD wins on amendments). |
+| `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` | full-game depth map. |
+| `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md` | Ember-pivot economy + Elara arc spec. |
+| `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md` | counter-build (shipped). |
+| `docs/superpowers/specs/2026-06-09-catalyst-design.md` | Catalyst v1 (in-flight). |
+| `docs/superpowers/specs/2026-06-09-teammate-deck-design.md` | deck design. |
+| `docs/superpowers/plans/*` | implementation plans (incl. socket-retirement migration, Ember economy, counter-build, Catalyst, deck). |
+| `docs/research/` | competitor synthesis + monorepo-wide research (50-game landscape, anime-autobattler cluster, reference-games). |
+| `docs/_archive/` | **non-authoritative** stale docs (see `_archive/README.md`). |
 
-**2026-06-08 design suite (NEW — read alongside the v2.2 spec):**
-- `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` — full-game depth map (15 layers, currency table, core loop, B small/full, ≤4-concurrent pacing).
-- `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md` — economy pivot (Cores/gems/shards, dupe→gems, shard nerf, Elara spark-chain).
-- `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md` — pre-stage counter-build (the core-loop "is it fun" fix) + `docs/superpowers/plans/2026-06-08-prestage-counterbuild.md` (the ACTIVE build).
-- `docs/research/anime_autobattlers/` — anime auto-battler cluster study (NOT a direct threat; validates the moat + the uncontested counter-build loop).
-
-**THE THREE SSOTs (read these; ignore stale next-step lists anywhere else):**
-1. **`docs/STATUS.md`** (this file) — current state + the canonical build queue (§4 NEXT) + repo/branch + engine/MCP rules. **Start here.**
-2. **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** — the locked DESIGN (identity / roster / Forge Wheel / combat / synergy / exit-gates).
-3. **`docs/handoffs/<newest>.md`** — the session RESUME doc (read the newest on resume).
-
-`docs/05_roadmap.md` is the post-LAUNCH live-ops roadmap ONLY, and predates the inversion pivot (TFT-shop/recipe content) — historical, **not** the prototype queue. The prototype queue is §4 NEXT below.
-Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts, not canonical.
+`docs/05_roadmap.md` is post-LAUNCH live-ops, NOT the prototype queue.
+Plan-mode scratch in `C:/Users/Biswa/.claude/plans/` is session-only.
 
 ---
 

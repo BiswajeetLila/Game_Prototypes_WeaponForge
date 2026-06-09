@@ -131,18 +131,27 @@ func _test_resolve_three_same_element_null() -> void:
 		"bag=%s" % str(r["merged_bag"]))
 
 func _test_resolve_compose_math_explicit() -> void:
-	## Spec §9 C-9: explicit math check — Firestorm 1.20 + Plasma's 0.15 crit add on the
-	## same squad would require fire+ice+electric (Firestorm+Plasma+Glacial Storm).
-	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"electric")]
+	## Spec §9 case C-9: explicit ADDITIVE compose math — Wildfire 0.10 + Plasma 0.15
+	## crit add = 0.25. Squad: fire+wind+electric at stage 5 (no-cap).
+	## Triggered compounds: Wildfire (atk 1.15, crit +0.10), Plasma (atk 1.0, crit +0.15),
+	## Stormfront (atk 1.0, swarm 1.25). atk = 1.15 * 1.0 * 1.0 = 1.15. crit = 0.25.
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"wind"), _make_weapon(&"electric")]
 	var r: Dictionary = CatalystResolverT.resolve(squad, 5)
-	## Firestorm 1.20 * Plasma 1.0 * Glacial Storm 1.15 = 1.38
-	_check("compose: 1.20 * 1.15 = 1.38",
-		is_equal_approx(float(r["merged_bag"][&"squad_atk_mult"]), 1.20 * 1.15),
+	_check("compose: 3 compounds active (Wildfire+Plasma+Stormfront)",
+		(r["compounds"] as Array).size() == 3,
+		"size=%d" % (r["compounds"] as Array).size())
+	## Only Wildfire has a non-1.0 atk mult.
+	_check("compose atk_mult = 1.15 (Wildfire alone, others 1.0)",
+		is_equal_approx(float(r["merged_bag"][&"squad_atk_mult"]), 1.15),
 		"mult=%f" % float(r["merged_bag"][&"squad_atk_mult"]))
-	## Plasma adds 0.15 crit
-	_check("compose crit 0.15",
-		is_equal_approx(float(r["merged_bag"][&"squad_crit_add"]), 0.15),
+	## ADDITIVE: 0.10 (Wildfire) + 0.15 (Plasma) + 0.0 (Stormfront) = 0.25.
+	_check("compose ADDITIVE crit 0.10 + 0.15 = 0.25",
+		is_equal_approx(float(r["merged_bag"][&"squad_crit_add"]), 0.25),
 		"add=%f" % float(r["merged_bag"][&"squad_crit_add"]))
+	## Stormfront's swarm mult also lands in the merged bag.
+	_check("compose swarm_mult = 1.25 (Stormfront)",
+		is_equal_approx(float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]), 1.25),
+		"swarm=%f" % float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]))
 
 ## ---------- fixtures ----------
 

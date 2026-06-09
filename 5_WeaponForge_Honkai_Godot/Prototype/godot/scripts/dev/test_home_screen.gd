@@ -63,6 +63,7 @@ func _ready() -> void:
 	_test_squad_line_shows_firestorm_when_fire_ice()
 	_test_briefing_hides_catalyst_when_no_pair()
 	_test_briefing_shows_firestorm_when_fire_ice()
+	_test_paladin_in_catalog()
 
 	_summary()
 	_render_to_ui()
@@ -155,6 +156,22 @@ func _test_briefing_shows_firestorm_when_fire_ice() -> void:
 	_check("briefing body shows +20% ATK", body.contains("+20") and body.contains("ATK"),
 		"body=%s" % body.left(200))
 	hs.queue_free()
+
+## ---------- Scripted Pacing Rework Chunk A (2026-06-10) ----------
+
+func _test_paladin_in_catalog() -> void:
+	## A3: Hot Paladin registered in GameState.heroes_by_id (folder-scanned from
+	## data/heroes/paladin.tres) AND added to FIELDED_HEROES so its class flows
+	## through fielded_classes() once unlocked. Locked-by-default filter logic
+	## (the AccountState.paladin_unlocked gate) lands in A6.
+	_check("paladin hero exists",
+		GameState.heroes_by_id.has(&"paladin"), "missing")
+	var h = GameState.heroes_by_id.get(&"paladin")
+	if h != null:
+		_check("paladin class == paladin",
+			h.cls == &"paladin", "cls=%s" % h.cls)
+		_check("paladin in FIELDED_HEROES",
+			&"paladin" in GameState.FIELDED_HEROES, "missing from roster")
 
 ## ---------- Helpers ----------
 

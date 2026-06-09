@@ -22,6 +22,11 @@ func _ready() -> void:
 	_test_for_pair_empty_element_rejected()
 	_test_resolve_empty_squad_returns_neutral()
 	_test_resolve_single_pair_cap1()
+	_test_resolve_cap1_alpha_priority()
+	_test_resolve_cap1_alpha_at_stage4()
+	_test_resolve_nocap_at_stage5()
+	_test_resolve_three_same_element_null()
+	_test_resolve_compose_math_explicit()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -77,6 +82,67 @@ func _test_resolve_single_pair_cap1() -> void:
 	_check("Firestorm bag has +20%% atk",
 		is_equal_approx(float(r["merged_bag"].get(&"squad_atk_mult", 1.0)), 1.20),
 		"mult=%f" % float(r["merged_bag"].get(&"squad_atk_mult", 1.0)))
+
+func _test_resolve_cap1_alpha_priority() -> void:
+	## Spec §9 case C-5/C-10: fire+ice+wind squad at stage 1 -> Blizzard (alpha-by-COMPOUND
+	## priority wins; Blizzard < Firestorm < Wildfire).
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"wind")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 1)
+	_check("3-element squad at stage 1 -> Blizzard (alpha)",
+		r["compound"].get("id", &"") == &"blizzard",
+		"id=%s" % r["compound"].get("id", &""))
+	_check("cap-1: compounds list size 1", (r["compounds"] as Array).size() == 1,
+		"size=%d" % (r["compounds"] as Array).size())
+
+func _test_resolve_cap1_alpha_at_stage4() -> void:
+	## Spec §9 C-10: still cap-1 at stage 4.
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"wind")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 4)
+	_check("stage 4 still cap-1 -> Blizzard", r["compound"].get("id", &"") == &"blizzard",
+		"id=%s" % r["compound"].get("id", &""))
+
+func _test_resolve_nocap_at_stage5() -> void:
+	## Spec §9 C-6: fire+ice+wind at stage 5 -> 3 compounds (Firestorm + Wildfire + Blizzard),
+	## bags compose multiplicatively. Order in the list = alpha priority for stability.
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"wind")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 5)
+	_check("stage 5 no-cap: 3 compounds active", (r["compounds"] as Array).size() == 3,
+		"size=%d" % (r["compounds"] as Array).size())
+	## Compose: Firestorm 1.20 * Wildfire 1.15 * Blizzard 1.0 = 1.38. Crit additive: Wildfire 0.10.
+	## Blizzard sets enemy_atk_speed_mult 0.80.
+	var bag: Dictionary = r["merged_bag"]
+	_check("merged squad_atk_mult = 1.20 * 1.15 = 1.38",
+		is_equal_approx(float(bag.get(&"squad_atk_mult", 1.0)), 1.20 * 1.15),
+		"mult=%f" % float(bag.get(&"squad_atk_mult", 1.0)))
+	_check("merged squad_crit_add = 0.10",
+		is_equal_approx(float(bag.get(&"squad_crit_add", 0.0)), 0.10),
+		"add=%f" % float(bag.get(&"squad_crit_add", 0.0)))
+	_check("merged enemy_atk_speed_mult = 0.80",
+		is_equal_approx(float(bag.get(&"enemy_atk_speed_mult", 1.0)), 0.80),
+		"mult=%f" % float(bag.get(&"enemy_atk_speed_mult", 1.0)))
+
+func _test_resolve_three_same_element_null() -> void:
+	## Spec §9 C-8: 3 same-element squad -> null compound (no pair).
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"fire"), _make_weapon(&"fire")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 5)
+	_check("same-element squad -> null compound", r.get("compound", null) == null,
+		"compound=%s" % str(r.get("compound")))
+	_check("same-element squad -> bag is EMPTY_BAG", _bags_equal(r["merged_bag"], CatalystDataT.EMPTY_BAG),
+		"bag=%s" % str(r["merged_bag"]))
+
+func _test_resolve_compose_math_explicit() -> void:
+	## Spec §9 C-9: explicit math check — Firestorm 1.20 + Plasma's 0.15 crit add on the
+	## same squad would require fire+ice+electric (Firestorm+Plasma+Glacial Storm).
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"electric")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 5)
+	## Firestorm 1.20 * Plasma 1.0 * Glacial Storm 1.15 = 1.38
+	_check("compose: 1.20 * 1.15 = 1.38",
+		is_equal_approx(float(r["merged_bag"][&"squad_atk_mult"]), 1.20 * 1.15),
+		"mult=%f" % float(r["merged_bag"][&"squad_atk_mult"]))
+	## Plasma adds 0.15 crit
+	_check("compose crit 0.15",
+		is_equal_approx(float(r["merged_bag"][&"squad_crit_add"]), 0.15),
+		"add=%f" % float(r["merged_bag"][&"squad_crit_add"]))
 
 ## ---------- fixtures ----------
 

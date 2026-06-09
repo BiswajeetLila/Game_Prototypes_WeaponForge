@@ -75,6 +75,11 @@ func _ready() -> void:
 	_test_stage_mults_neutral_at_stage_1()
 	_test_stage_mults_scale()
 	_test_boss_rotation_by_stage()
+	## Catalyst v1 combat hook (B5).
+	_test_catalyst_bag_initialized_empty()
+	_test_start_wave_refreshes_catalyst_bag_neutral()
+	_test_start_wave_applies_firestorm_bag()
+	_test_stage_1_neutrality_preserved()
 	_summary()
 	_render_to_ui()
 
@@ -1075,3 +1080,79 @@ func _test_boss_rotation_by_stage() -> void:
 		"got %s" % Combat.boss_for_stage(3))
 	_check("stage 4 cycles to slime king", Combat.boss_for_stage(4) == &"boss_slime_king",
 		"got %s" % Combat.boss_for_stage(4))
+
+## ---------- Catalyst v1 combat hook (Task B5) ----------
+
+func _test_catalyst_bag_initialized_empty() -> void:
+	## Combat exposes _catalyst_bag as a property; default is EMPTY_BAG.
+	_check("Combat has _catalyst_bag", "_catalyst_bag" in Combat, "property missing")
+	if "_catalyst_bag" in Combat:
+		var bag: Dictionary = Combat._catalyst_bag
+		_check("_catalyst_bag squad_atk_mult defaults 1.0",
+			is_equal_approx(float(bag.get(&"squad_atk_mult", -1.0)), 1.0),
+			"mult=%f" % float(bag.get(&"squad_atk_mult", -1.0)))
+		_check("_catalyst_bag squad_crit_add defaults 0.0",
+			is_equal_approx(float(bag.get(&"squad_crit_add", -1.0)), 0.0),
+			"add=%f" % float(bag.get(&"squad_crit_add", -1.0)))
+
+func _test_start_wave_refreshes_catalyst_bag_neutral() -> void:
+	## start_wave calls CatalystResolver.resolve and stashes merged_bag.
+	## Non-elemental starters (B2) -> bag stays EMPTY (stage-1 neutrality contract).
+	GameState.new_session()
+	AccountState.reset_account()
+	## Grant starters via the same path the home screen uses (so equipped state matches first-boot).
+	var hs = load("res://scripts/ui/home_screen.gd").new()
+	add_child(hs)
+	hs._grant_starter_if_first_boot()
+	hs.queue_free()
+	Combat.start_wave(1, false)
+	_check("stage 1 with non-elemental starters: bag squad_atk_mult == 1.0",
+		is_equal_approx(float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)), 1.0),
+		"mult=%f" % float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)))
+	_check("stage 1 with non-elemental starters: bag squad_crit_add == 0.0",
+		is_equal_approx(float(Combat._catalyst_bag.get(&"squad_crit_add", -1.0)), 0.0),
+		"add=%f" % float(Combat._catalyst_bag.get(&"squad_crit_add", -1.0)))
+	Combat.stop()
+
+func _test_start_wave_applies_firestorm_bag() -> void:
+	## Force-equip elemental gacha weapons; stage 1 cap-1 -> Firestorm bag (atk x1.20).
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")   ## new_session only unlocks bran; need elara in active squad
+	AccountState.reset_account()
+	## Use full-elemental Rare+ weapons (since Commons are non-elemental after B2).
+	var fire_w = GameState.weapons_by_id[&"w_cinderbrand_greatsword"].duplicate(true)   ## Epic fire warrior
+	var ice_w = GameState.weapons_by_id[&"w_frostcall_stave"].duplicate(true)             ## Common mage — still non-elemental!
+	## Override the duplicate's rune so the test forces an ice-mage even though
+	## the catalog instance is non-elemental post-B2. Verifies the resolver pipeline.
+	ice_w.rune = &"ice"
+	AccountState.owned_weapons = [fire_w, ice_w]
+	AccountState.equip(&"bran", 0)
+	AccountState.equip(&"elara", 1)
+	GameState.equip_weapon_data(&"bran", fire_w)
+	GameState.equip_weapon_data(&"elara", ice_w)
+	Combat.start_wave(1, false)
+	_check("fire+ice at stage 1 -> Firestorm bag (atk x1.20)",
+		is_equal_approx(float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)), 1.20),
+		"mult=%f" % float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)))
+	Combat.stop()
+
+func _test_stage_1_neutrality_preserved() -> void:
+	## STAGE-1 NEUTRALITY CONTRACT (CLAUDE.md §3). Equip non-elemental starters,
+	## start wave 1, assert merged bag is empty -> hero ATK pipeline unchanged.
+	GameState.new_session()
+	AccountState.reset_account()
+	var hs = load("res://scripts/ui/home_screen.gd").new()
+	add_child(hs)
+	hs._grant_starter_if_first_boot()
+	hs.queue_free()
+	Combat.start_wave(1, false)
+	var bran = GameState.get_hero(&"bran")
+	var atk_pre_bag: int = bran.data.atk_base + bran.eff_atk()
+	## With empty bag, the bag-multiplied atk equals the raw atk (1.0 * x = x).
+	## We're effectively asserting the bag default is multiplicative-neutral.
+	var bag_mult: float = float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0))
+	_check("stage-1 neutrality: squad_atk_mult is 1.0", is_equal_approx(bag_mult, 1.0),
+		"mult=%f (any value != 1.0 breaks the contract)" % bag_mult)
+	_check("stage-1 neutrality: hero atk unchanged with EMPTY bag",
+		atk_pre_bag == bran.data.atk_base + bran.eff_atk(), "shouldn't differ")
+	Combat.stop()

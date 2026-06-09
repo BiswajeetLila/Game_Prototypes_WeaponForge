@@ -83,6 +83,16 @@ func stage_atk_mult(stage: int) -> float:
 func boss_for_stage(stage: int) -> StringName:
 	return STAGE_BOSS_ROTATION[(maxi(stage, 1) - 1) % STAGE_BOSS_ROTATION.size()]
 
+const CatalystResolverT = preload("res://scripts/core/catalyst_resolver.gd")
+const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
+
+## Per-stage Catalyst modifier bag (spec §3). EMPTY_BAG until start_wave reads it.
+## v1 NOTE: enemy_atk_speed_mult is read into the bag but NOT yet applied —
+## enemy-side attack frequency would require either a per-enemy tick-skip roll
+## or a Combat.TICK_SEC scale. Deferred to v1.1; Blizzard's combat effect ships
+## dormant in v1 (the merged-bag math is still exercised correctly).
+var _catalyst_bag: Dictionary = CatalystDataT.EMPTY_BAG.duplicate()
+
 signal tick_completed
 signal hero_hit_enemy(hero_id: StringName, enemy_idx: int, dmg: int, source: StringName, is_crit: bool)
 signal enemy_hit_hero(enemy_idx: int, hero_id: StringName, dmg: int)
@@ -119,6 +129,8 @@ func _ready() -> void:
 func start_wave(wave: int, auto_tick: bool = true) -> void:
 	_current_wave = wave
 	_tick_counter = 0
+	## Refresh Catalyst bag from deployed squad weapons + current stage. Once per wave.
+	_refresh_catalyst_bag()
 	GameState.set_wave(wave)
 	_spawn_enemies(wave)
 	ForgeDraft.reset_wave_baseline()   ## kill meter: new wave's dead-count starts at 0
@@ -348,8 +360,15 @@ func _hero_attack(hero) -> void:
 
 	## Total atk = hero baseAtk + sum of part contributions (matches prototype's
 	## weaponStats(hero) formula). weapon.get_atk() alone is parts-only.
-	var stats_atk: int = hero.data.atk_base + hero.eff_atk()
-	var stats_crit: int = hero.eff_crit()
+	## Catalyst v1 (spec §3): squad_atk_mult applies always; squad_atk_vs_swarm_mult
+	## only when >= 3 alive enemies (Stormfront's gate per CLAUDE.md §13).
+	var stats_atk_raw: int = hero.data.atk_base + hero.eff_atk()
+	var atk_mult: float = float(_catalyst_bag.get(&"squad_atk_mult", 1.0))
+	if _alive_enemy_indices().size() >= 3:
+		atk_mult *= float(_catalyst_bag.get(&"squad_atk_vs_swarm_mult", 1.0))
+	var stats_atk: int = int(floor(float(stats_atk_raw) * atk_mult))
+	## Catalyst v1: squad_crit_add adds flat percentage points (e.g. Plasma 0.15 -> +15%).
+	var stats_crit: int = hero.eff_crit() + int(round(100.0 * float(_catalyst_bag.get(&"squad_crit_add", 0.0))))
 	var stats_ultrate: int = hero.eff_ult_rate()
 	var weapon_tags: Array = hero.eff_tags()
 	var bonuses: Dictionary = Recipes.get_recipe_bonuses(hero)
@@ -735,3 +754,15 @@ func _log_hero_hit(hero, enemy, dmg: int, is_crit: bool) -> void:
 	if is_crit:
 		prefix += "⚡"
 	GameState.append_combat_log("[color=ffd070]%s%s → %s for %d[/color]" % [prefix, hero.data.name, enemy.name, dmg])
+
+## ---------- Catalyst v1 (B5) ----------
+
+## Builds the squad-weapon list from active heroes and resolves the merged bag.
+## Reads AccountState.current_stage so cap-1 (S1-4) vs no-cap (S5+) is automatic.
+func _refresh_catalyst_bag() -> void:
+	var squad_weapons: Array = []
+	for h in GameState.active_heroes():
+		if h.weapon_data != null:
+			squad_weapons.append(h.weapon_data)
+	var resolved: Dictionary = CatalystResolverT.resolve(squad_weapons, AccountState.current_stage)
+	_catalyst_bag = resolved.get("merged_bag", CatalystDataT.EMPTY_BAG.duplicate())

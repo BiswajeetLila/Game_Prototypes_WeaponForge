@@ -1,0 +1,80 @@
+{
+  "app": "Honkai: Star Rail",
+  "unified_app_id": "63e5633fded9c9175b7fca1e",
+  "source": "Sensor Tower MCP active_users (os=unified, time_period=month)",
+  "metric": "Monthly Active Users (MAU), worldwide = sum across countries returned",
+  "monthly": [
+    {
+      "month": "2025-06",
+      "ww_MAU": 10186988,
+      "android_MAU": 5444592,
+      "ios_MAU": 4742396
+    },
+    {
+      "month": "2025-07",
+      "ww_MAU": 11078319,
+      "android_MAU": 6047517,
+      "ios_MAU": 5030802
+    },
+    {
+      "month": "2025-08",
+      "ww_MAU": 9787444,
+      "android_MAU": 5375381,
+      "ios_MAU": 4412063
+    },
+    {
+      "month": "2025-09",
+      "ww_MAU": 9303274,
+      "android_MAU": 5177363,
+      "ios_MAU": 4125911
+    },
+    {
+      "month": "2025-10",
+      "ww_MAU": 9110896,
+      "android_MAU": 5114132,
+      "ios_MAU": 3996764
+    },
+    {
+      "month": "2025-11",
+      "ww_MAU": 9399241,
+      "android_MAU": 5292531,
+      "ios_MAU": 4106710
+    },
+    {
+      "month": "2025-12",
+      "ww_MAU": 8404139,
+      "android_MAU": 4792056,
+      "ios_MAU": 3612083
+    },
+    {
+      "month": "2026-01",
+      "ww_MAU": 7552358,
+      "android_MAU": 4281586,
+      "ios_MAU": 3270772
+    },
+    {
+      "month": "2026-02",
+      "ww_MAU": 8487629,
+      "android_MAU": 4893284,
+      "ios_MAU": 3594345
+    },
+    {
+      "month": "2026-03",
+      "ww_MAU": 8259278,
+      "android_MAU": 4933890,
+      "ios_MAU": 3325388
+    },
+    {
+      "month": "2026-04",
+      "ww_MAU": 8542412,
+      "android_MAU": 5097695,
+      "ios_MAU": 3444717
+    },
+    {
+      "month": "2026-05",
+      "ww_MAU": 9057453,
+      "android_MAU": 5458280,
+      "ios_MAU": 3599173
+    }
+  ]
+}

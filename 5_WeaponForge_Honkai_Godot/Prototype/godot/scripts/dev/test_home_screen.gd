@@ -68,6 +68,7 @@ func _ready() -> void:
 	_test_home_paladin_row_locked()
 	_test_home_paladin_row_unlocked()
 	_test_stage_3_briefing_shows_light_weakness()
+	_test_stage_3_retry_flow_post_defeat()
 
 	_summary()
 	_render_to_ui()
@@ -249,6 +250,85 @@ func _test_stage_3_briefing_shows_light_weakness() -> void:
 		body.contains("earth") or body.contains("🪨"),
 		"body=%s" % body.left(300))
 	hs.queue_free()
+
+func _test_stage_3_retry_flow_post_defeat() -> void:
+	## D4: After Hot Paladin defeat: current_stage stays 3 (no auto-advance),
+	## paladin is unlocked + Helios equipped, Home start-battle routes to Stage 3
+	## retry, briefing still telegraphs light weak (cold telegraph — same pre
+	## and post-defeat). Combat retry: sentinel guard skips the scripted AOE.
+	AccountState.reset_account()
+	AccountState.current_stage = 3
+	## Simulate post-defeat state (Combat C1 would have flipped these).
+	AccountState.paladin_unlocked = true
+	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
+	## Grant + equip Helios on paladin (simulating the C1 grant).
+	var helios = GameState.weapons_by_id[&"w_helios_cleaver"].duplicate(true)
+	AccountState.owned_weapons = [helios]
+	AccountState.equip(&"paladin", 0)
+	## --- Test 1: current_stage unchanged. ---
+	_check("current_stage = 3 (defeat doesn't advance stage)",
+		AccountState.current_stage == 3,
+		"stage=%d" % AccountState.current_stage)
+	## --- Test 2: Helios equipped on paladin. ---
+	var pal_eq = AccountState.get_equipped(&"paladin")
+	_check("Paladin equipped Helios Cleaver post-defeat",
+		pal_eq != null and pal_eq.id == &"w_helios_cleaver",
+		"equipped=%s" % str(pal_eq))
+	## --- Test 3: Home start-battle button targets Stage 3 retry. ---
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._refresh()
+	_check("battle button targets STAGE 3",
+		hs._battle_btn.text.contains("STAGE 3") or hs._battle_btn.text.contains("Stage 3"),
+		"btn text=%s" % hs._battle_btn.text)
+	## --- Test 4: Briefing still telegraphs light weak (cold telegraph). ---
+	hs._open_briefing()
+	var body: String = hs._briefing.dialog_text
+	_check("retry briefing still shows light/☀ weakness",
+		body.contains("light") or body.contains("☀"),
+		"body=%s" % body.left(300))
+	hs.queue_free()
+	## --- Test 5: Combat retry — sentinel guard short-circuits scripted AOE. ---
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.unlock_hero(&"paladin")
+	GameState.run_stage = 3
+	## Re-grant the post-defeat state (new_session resets parts of state).
+	AccountState.current_stage = 3
+	AccountState.paladin_unlocked = true
+	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
+	Combat.start_wave(5, false)
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i; break
+	if lich_idx >= 0:
+		GameState.enemies[lich_idx].hp = int(float(GameState.enemies[lich_idx].max_hp) * 0.4)
+		## Boost hero HP so phase-1 atk bumps don't kill anyone in one tick
+		## (mirrors test_combat _test_paladin_defeat_skips_on_retry pattern).
+		for h in GameState.all_heroes():
+			h.hp = 9999
+			h.max_hp = 9999
+		var alive_before: int = 0
+		for h in GameState.active_heroes():
+			if h.data.id != &"paladin" and h.hp > 0:
+				alive_before += 1
+		var emitted: Array = [false]
+		Combat.paladin_descend.connect(func(): emitted[0] = true, CONNECT_ONE_SHOT)
+		Combat.step()
+		var alive_after: int = 0
+		for h in GameState.active_heroes():
+			if h.data.id != &"paladin" and h.hp > 0:
+				alive_after += 1
+		_check("retry: paladin_descend NOT re-emitted (sentinel guard)",
+			not emitted[0], "re-emitted on retry")
+		_check("retry: squad survives (no scripted AOE)",
+			alive_after == alive_before,
+			"alive before=%d after=%d" % [alive_before, alive_after])
+	else:
+		_check("retry: lich spawned at stage 3 boss wave", false, "no lich")
+	Combat.stop()
 
 ## ---------- Helpers ----------
 

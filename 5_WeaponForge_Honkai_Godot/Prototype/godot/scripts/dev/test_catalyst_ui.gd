@@ -8,6 +8,7 @@ extends Control
 
 const CatalystBannerT = preload("res://scripts/ui/catalyst_banner.gd")
 const CatalystChipT = preload("res://scripts/ui/catalyst_chip.gd")
+const CatalystCodexT = preload("res://scripts/ui/catalyst_codex.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -22,6 +23,11 @@ func _ready() -> void:
 	_test_chip_stacks_three_compounds()
 	_test_chip_hides_when_empty_array()
 	_test_chip_set_compounds_replaces_rows()
+	_test_codex_lists_all_ten_compounds()
+	_test_codex_marks_discovered()
+	_test_codex_hides_earth_below_stage10()
+	_test_codex_unlocks_earth_at_stage10()
+	_test_codex_rows_sorted_by_alpha_priority()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -133,6 +139,75 @@ func _test_chip_set_compounds_replaces_rows() -> void:
 		"rows=%d (expected 1)" % chip._rows.get_child_count())
 	_check("chip still visible after re-set", chip.visible == true, "hidden after re-set")
 	chip.queue_free()
+
+## ---------- Codex ----------
+
+func _test_codex_lists_all_ten_compounds() -> void:
+	## refresh([]) -> 10 rows visible; header reads "0 / 10 discovered".
+	var c = CatalystCodexT.new()
+	add_child(c)
+	c.refresh([], 1)
+	_check("codex shows 10 rows", c._list.get_child_count() == 10,
+		"rows=%d" % c._list.get_child_count())
+	_check("codex header shows 0 / 10 discovered",
+		c._header.text.contains("0 / 10"), "header=%s" % c._header.text)
+	c.queue_free()
+
+func _test_codex_marks_discovered() -> void:
+	## refresh([&"firestorm"]) -> header reads "1 / 10 discovered"; the Firestorm row carries a ★.
+	var c = CatalystCodexT.new()
+	add_child(c)
+	c.refresh([&"firestorm"], 10)   ## stage 10 unlocks Earth too, but the test only checks Firestorm.
+	_check("codex header shows 1 / 10 discovered",
+		c._header.text.contains("1 / 10"), "header=%s" % c._header.text)
+	var firestorm_row: Label = c._row_for(&"firestorm")
+	_check("Firestorm row exists", firestorm_row != null, "null")
+	if firestorm_row != null:
+		_check("Firestorm row shows ★ marker",
+			firestorm_row.text.contains("★"), "text=%s" % firestorm_row.text)
+	c.queue_free()
+
+func _test_codex_hides_earth_below_stage10() -> void:
+	## At stage 1, Earth-pair rows show 🔒 marker.
+	var c = CatalystCodexT.new()
+	add_child(c)
+	c.refresh([], 1)
+	var volcanic_row: Label = c._row_for(&"volcanic")
+	_check("Volcanic row exists at any stage", volcanic_row != null, "null")
+	if volcanic_row != null:
+		_check("Volcanic row shows 🔒 at stage 1",
+			volcanic_row.text.contains("🔒"), "text=%s" % volcanic_row.text)
+	c.queue_free()
+
+func _test_codex_unlocks_earth_at_stage10() -> void:
+	## At stage 10, Earth-pair rows lose the 🔒 prefix (still rendered, just unlocked).
+	var c = CatalystCodexT.new()
+	add_child(c)
+	c.refresh([], 10)
+	var volcanic_row: Label = c._row_for(&"volcanic")
+	_check("Volcanic row exists at stage 10", volcanic_row != null, "null")
+	if volcanic_row != null:
+		_check("Volcanic row drops 🔒 at stage 10",
+			not volcanic_row.text.contains("🔒"), "text=%s" % volcanic_row.text)
+	c.queue_free()
+
+func _test_codex_rows_sorted_by_alpha_priority() -> void:
+	## Spec §7.5 + CLAUDE.md §13: rows render in alphabetical_priority order:
+	## Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire,
+	## then Earth unlocks: Magnetic Storm > Permafrost > Sandstorm > Volcanic.
+	var c = CatalystCodexT.new()
+	add_child(c)
+	c.refresh([], 10)
+	## Read the first 6 rows' display_name substrings to verify the alpha order.
+	var expected: Array = [&"blizzard", &"firestorm", &"glacial_storm", &"plasma",
+		&"stormfront", &"wildfire"]
+	for i in range(6):
+		var row: Label = c._list.get_child(i)
+		var rec: Dictionary = c._row_record(row)
+		_check("row[%d] is %s (alpha priority)" % [i, expected[i]],
+			rec.get("id", &"") == expected[i],
+			"id=%s, expected=%s" % [rec.get("id"), expected[i]])
+	c.queue_free()
 
 ## ---------- helpers ----------
 

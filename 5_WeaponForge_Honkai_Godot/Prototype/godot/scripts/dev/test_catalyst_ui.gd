@@ -28,6 +28,8 @@ func _ready() -> void:
 	_test_codex_hides_earth_below_stage10()
 	_test_codex_unlocks_earth_at_stage10()
 	_test_codex_rows_sorted_by_alpha_priority()
+	_test_paladin_descend_handler_exists()
+	_test_paladin_entry_image_loads()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -218,6 +220,28 @@ func _test_codex_rows_sorted_by_alpha_priority() -> void:
 			rec.get("id", &"") == expected[i],
 			"id=%s, expected=%s" % [rec.get("id"), expected[i]])
 	c.queue_free()
+
+## ---------- Scripted Pacing Rework D3 — paladin descend cinematic ----------
+
+const MainT = preload("res://scripts/ui/main.gd")
+
+func _test_paladin_descend_handler_exists() -> void:
+	## D3: main.gd defines _on_paladin_descend method (full integration covered
+	## when Combat.paladin_descend emits in a real game session — verified by
+	## TestCombat D2 paladin_descend signal-emission tests).
+	var script: GDScript = load("res://scripts/ui/main.gd")
+	var has_handler: bool = false
+	for m in script.get_script_method_list():
+		if m["name"] == "_on_paladin_descend":
+			has_handler = true
+			break
+	_check("main.gd defines _on_paladin_descend", has_handler, "missing")
+
+func _test_paladin_entry_image_loads() -> void:
+	## D3: paladin_entry.png at assets/generated/cinematics/ loads as Texture2D.
+	var tex = load("res://assets/generated/cinematics/paladin_entry.png")
+	_check("paladin_entry.png loads from assets/generated/cinematics/",
+		tex != null and tex is Texture2D, "load failed or wrong type")
 
 ## ---------- helpers ----------
 

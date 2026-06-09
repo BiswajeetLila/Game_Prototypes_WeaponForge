@@ -500,6 +500,118 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 
 @media (max-width: 768px) { .loop-grid { grid-template-columns: 1fr; } .loop-ascii { font-size: 11px; } }
 
+/* ----------------------------------- beats carousel
+   Featured beat (big image + caption right) with prev/next arrows on either
+   side; a thumbnail strip below selects the active beat. JS in scrub.js
+   handles the swap; CSS handles the active/hover/focus states + the 200ms
+   fade when the featured image changes. */
+.beats-intro { max-width: 60ch; color: var(--parchment); margin-bottom: 24px; }
+.beats-carousel {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.beats-arrow {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--gold-leaf) 35%, transparent);
+  background: var(--iron-2);
+  color: var(--amber);
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.beats-arrow:hover, .beats-arrow:focus-visible {
+  background: var(--iron);
+  border-color: var(--amber);
+  transform: scale(1.06);
+}
+.beats-stage {
+  margin: 0;
+  background: var(--iron-2);
+  border: 1px solid color-mix(in srgb, var(--gold-leaf) 25%, transparent);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  min-height: 360px;
+}
+.beats-stage__img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+  transition: opacity 0.2s ease;
+  background: var(--iron-deep);
+}
+.beats-stage__caption {
+  padding: 28px;
+  display: flex; flex-direction: column;
+  border-left: 1px solid color-mix(in srgb, var(--gold-leaf) 18%, transparent);
+}
+.beats-stage__title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  color: var(--amber);
+}
+.beats-stage__sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--mute);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+}
+.beats-stage__desc { font-size: 14px; line-height: 1.55; color: var(--parchment); margin: 0; }
+.beats-thumbs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.beats-thumb {
+  display: flex; flex-direction: column;
+  padding: 0;
+  background: var(--iron-2);
+  border: 2px solid color-mix(in srgb, var(--gold-leaf) 20%, transparent);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.2s ease;
+  opacity: 0.7;
+}
+.beats-thumb img { width: 100%; height: 64px; object-fit: cover; object-position: center; display: block; }
+.beats-thumb span {
+  display: block;
+  padding: 6px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--parchment);
+  text-align: left;
+}
+.beats-thumb:hover, .beats-thumb:focus-visible { opacity: 1; transform: translateY(-2px); border-color: color-mix(in srgb, var(--amber) 60%, transparent); }
+.beats-thumb.is-active {
+  opacity: 1;
+  border-color: var(--amber);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--ember) 40%, transparent);
+}
+.beats-thumb.is-active span { color: var(--amber); }
+
+@media (max-width: 1024px) {
+  .beats-stage { grid-template-columns: 1fr; min-height: auto; }
+  .beats-stage__caption { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--gold-leaf) 18%, transparent); }
+  .beats-thumbs { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .beats-carousel { grid-template-columns: 36px 1fr 36px; gap: 8px; }
+  .beats-arrow { width: 36px; height: 36px; font-size: 22px; }
+  .beats-thumbs { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ----------------------------------- build */
 .build-grid { display: grid; grid-template-columns: 7fr 3fr; gap: 40px; margin-top: 24px; }
 .forge-log { list-style: none; padding: 0; margin: 0; position: relative; }
@@ -611,7 +723,11 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
 @media print {
   :root { --iron-deep: #fff; --iron: #fff; --iron-2: #fff; --parchment: #000; --mute: #555; }
   body { background: white; color: black; font-size: 11pt; }
-  .deck-nav, .scrubber, .build-rail__hint, .next-links { display: none !important; }
+  .deck-nav, .scrubber, .build-rail__hint, .next-links,
+  .beats-arrow, .beats-thumbs { display: none !important; }
+  .beats-carousel { display: block !important; }
+  .beats-stage { grid-template-columns: 1fr !important; min-height: auto !important; }
+  .beats-stage__caption { border-left: 0 !important; border-top: 1px solid #888 !important; }
   .section { padding: 24pt 24pt; break-before: page; background: white; }
   .section::before { display: none; }
   /* Force <details> open in print. CSS can't toggle the [open] attribute

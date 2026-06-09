@@ -27,14 +27,16 @@ const DUPE_GEMS: Array = [20, 40, 80, 160, 320]
 ## Shard rarity drop odds — cumulative %, C/R/E/L. STARTING VALUES.
 const SHARD_RARITY_ODDS: Array = [55, 85, 97, 100]
 
-## Catalyst v1 scripted starter pulls (spec 2026-06-09-catalyst-design §6).
-## Pull #1 = guaranteed Fire-warrior; Pull #3 = guaranteed Ice-mage.
-## Owner-amended B2: scripted picks land on the only Rare+ matches —
-## Cinderbrand Greatsword (Epic fire-warrior) + Glacial Aegis Staff
-## (Legendary ice-mage). Tracked via AccountState.scripted_pulls_seen
+## Catalyst v1 scripted starter pulls (spec 2026-06-09-scripted-pacing-rework §2).
+## Reshuffled 3-beat timeline (B2):
+##   Pull #1 = guaranteed Fire-warrior  -> Cinderbrand Greatsword (Epic, Bran).
+##   Pull #3 = guaranteed Electric-rogue -> Voltedge Daggers   (Rare,  Vex).
+##   Pull #5 = guaranteed Ice-mage       -> Glacial Aegis Staff (Legendary, Elara).
+## Pulls #2 / #4 / #6+ remain RNG. Tracked via AccountState.scripted_pulls_seen
 ## (idempotent across save/load); scheduling reads AccountState.pull_count + 1.
 const SCRIPT_PULL_1_SENTINEL: StringName = &"pull_1_fire_warrior"
-const SCRIPT_PULL_3_SENTINEL: StringName = &"pull_3_ice_mage"
+const SCRIPT_PULL_3_SENTINEL: StringName = &"pull_3_electric_rogue"   ## was pull_3_ice_mage
+const SCRIPT_PULL_5_SENTINEL: StringName = &"pull_5_ice_mage"          ## NEW (moved from #3)
 
 ## Scripted-grant-only weapons. Granted via cinematic events (Hot Paladin
 ## descend C-chunk, future Master Smith S10, etc.) — never via RNG.
@@ -183,33 +185,47 @@ func _weighted_pick(eligible: Array):
 func _drop_weight(w) -> float:
 	return WEAPON_DROP_WEIGHT[clampi(w.rarity_idx, 0, WEAPON_DROP_WEIGHT.size() - 1)]
 
-## Returns a scripted catalog pick when scheduled (pull #1 = Fire-warrior, pull #3 =
-## Ice-mage). Reads AccountState.pull_count + 1 to determine the upcoming pull #.
-## Records the sentinel on AccountState.scripted_pulls_seen ONLY when a pick
-## succeeds, so a defer-and-retry path (no eligible match yet) doesn't burn the
-## schedule. Returns null when no script applies (so caller falls through to RNG).
+## Returns a scripted catalog pick when scheduled (B2 timeline: pull #1 Fire-warrior,
+## pull #3 Electric-rogue, pull #5 Ice-mage). Reads AccountState.pull_count + 1 to
+## determine the upcoming pull #. Records the sentinel on AccountState.scripted_pulls_seen
+## ONLY when a pick succeeds, so a defer-and-retry path (no eligible match yet) doesn't
+## burn the schedule. Returns null when no script applies (so caller falls through to RNG).
 func _try_scripted_pick(eligible: Array):
 	var n: int = AccountState.pull_count + 1   ## the pull about to be resolved
 	if n == 1 and not (SCRIPT_PULL_1_SENTINEL in AccountState.scripted_pulls_seen):
-		var pick = _pick_first_match(eligible, &"fire", &"warrior")
+		## Pull #1 target: Cinderbrand Greatsword (Epic fire warrior, the only fire-warrior).
+		var pick = _pick_first_match(eligible, &"fire", &"warrior", -1)
 		if pick != null:
 			## GDScript Arrays are reference types — append mutates the live autoload array.
 			AccountState.scripted_pulls_seen.append(SCRIPT_PULL_1_SENTINEL)
 			return pick
 		return null   ## defer the script — try again next eligible pull (sentinel un-burnt)
 	elif n == 3 and not (SCRIPT_PULL_3_SENTINEL in AccountState.scripted_pulls_seen):
-		var pick = _pick_first_match(eligible, &"ice", &"mage")
+		## Pull #3 target: Voltedge Daggers SPECIFICALLY (Rare electric rogue). Catalog
+		## also contains Stormfang Reapers (Legendary electric rogue) — pin rarity so the
+		## scripted beat lands on the intended Rare drop, not the Legendary one.
+		var pick = _pick_first_match(eligible, &"electric", &"rogue", 1)
 		if pick != null:
 			AccountState.scripted_pulls_seen.append(SCRIPT_PULL_3_SENTINEL)
 			return pick
 		return null
+	elif n == 5 and not (SCRIPT_PULL_5_SENTINEL in AccountState.scripted_pulls_seen):
+		## Pull #5 target: Glacial Aegis Staff (Legendary ice mage, the only ice-mage).
+		var pick = _pick_first_match(eligible, &"ice", &"mage", -1)
+		if pick != null:
+			AccountState.scripted_pulls_seen.append(SCRIPT_PULL_5_SENTINEL)
+			return pick
+		return null
 	return null
 
-## Linear search for the first eligible weapon matching (rune, cls). Used by scripted picks.
-func _pick_first_match(eligible: Array, rune: StringName, cls: StringName):
+## Linear search for the first eligible weapon matching (rune, cls). When
+## target_rarity_idx >= 0, also requires rarity_idx == target_rarity_idx (used for
+## scripted beats that target a specific drop in a class+element with multiple options).
+func _pick_first_match(eligible: Array, rune: StringName, cls: StringName, target_rarity_idx: int = -1):
 	for w in eligible:
 		if w.rune == rune and w.cls == cls:
-			return w
+			if target_rarity_idx < 0 or w.rarity_idx == target_rarity_idx:
+				return w
 	return null
 
 ## Mint a runtime Forge Shard: rarity rolled on SHARD_RARITY_ODDS, element copied

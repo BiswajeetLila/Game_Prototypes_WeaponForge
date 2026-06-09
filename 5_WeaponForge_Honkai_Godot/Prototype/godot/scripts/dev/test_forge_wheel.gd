@@ -47,7 +47,8 @@ func _ready() -> void:
 		_test_pull_spends_ember()
 		_test_scripted_pull_1_fire_warrior()
 		_test_scripted_pull_2_is_rng()
-		_test_scripted_pull_3_ice_mage()
+		_test_scripted_pull_3_electric_rogue()
+		_test_scripted_pull_5_ice_mage()
 		_test_scripted_pulls_idempotent_after_resume()
 		_test_scripted_grant_ids_const_present()
 		_test_helios_not_in_pull_pool()
@@ -368,41 +369,65 @@ func _test_scripted_pull_2_is_rng() -> void:
 	_check("pull_count after 2 pulls == 2", AccountState.pull_count == 2,
 		"pull_count=%d" % AccountState.pull_count)
 
-func _test_scripted_pull_3_ice_mage() -> void:
-	## Spec §6: pull #3 = guaranteed Ice-mage. Lands on w_glacial_aegis_staff (Legendary,
-	## the only ice-mage at Rare+ after B2).
+func _test_scripted_pull_3_electric_rogue() -> void:
+	## B2: Pull #3 reshuffled to Vex Rare electric (was Elara Legendary ice).
+	## Target: Voltedge Daggers (rune electric, cls rogue, rarity_idx 1).
 	_fresh(600, 9999)
 	AccountState.scripted_pulls_seen = []
 	AccountState.pull_count = 0
-	_wheel().pull()                    ## #1
-	_wheel().pull()                    ## #2 (RNG)
+	_wheel().pull()   ## #1 scripted fire warrior
+	_wheel().pull()   ## #2 RNG
 	var r3: Dictionary = _wheel().pull()
 	_check("pull #3 returns a result", not r3.is_empty(), "empty")
 	if not r3.is_empty():
-		_check("pull #3 is ice", r3.weapon.rune == &"ice", "rune=%s" % r3.weapon.rune)
-		_check("pull #3 is mage", r3.weapon.cls == &"mage", "cls=%s" % r3.weapon.cls)
-		_check("pull #3 is Rare+ (rarity_idx >= 1)", r3.weapon.rarity_idx >= 1,
-			"rarity=%d" % r3.weapon.rarity_idx)
-	_check("scripted_pulls_seen includes pull_3_ice_mage",
-		&"pull_3_ice_mage" in AccountState.scripted_pulls_seen,
+		_check("pull #3 is electric", r3.weapon.rune == &"electric",
+			"rune=%s" % r3.weapon.rune)
+		_check("pull #3 is rogue", r3.weapon.cls == &"rogue",
+			"cls=%s" % r3.weapon.cls)
+		_check("pull #3 is Rare (rarity_idx 1)",
+			r3.weapon.rarity_idx == 1, "rarity=%d" % r3.weapon.rarity_idx)
+	_check("scripted_pulls_seen includes pull_3_electric_rogue",
+		&"pull_3_electric_rogue" in AccountState.scripted_pulls_seen,
 		"seen=%s" % str(AccountState.scripted_pulls_seen))
-	_check("pull_count after 3 pulls == 3", AccountState.pull_count == 3,
-		"pull_count=%d" % AccountState.pull_count)
+
+func _test_scripted_pull_5_ice_mage() -> void:
+	## B2: NEW pull #5 reveals Elara Legendary ice (was pull #3).
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = []
+	AccountState.pull_count = 0
+	_wheel().pull()   ## #1 scripted fire warrior
+	_wheel().pull()   ## #2 RNG
+	_wheel().pull()   ## #3 scripted electric rogue
+	_wheel().pull()   ## #4 RNG
+	var r5: Dictionary = _wheel().pull()
+	_check("pull #5 returns a result", not r5.is_empty(), "empty")
+	if not r5.is_empty():
+		_check("pull #5 is ice", r5.weapon.rune == &"ice",
+			"rune=%s" % r5.weapon.rune)
+		_check("pull #5 is mage", r5.weapon.cls == &"mage",
+			"cls=%s" % r5.weapon.cls)
+		_check("pull #5 is Legendary (rarity_idx 3)",
+			r5.weapon.rarity_idx == 3, "rarity=%d" % r5.weapon.rarity_idx)
+	_check("scripted_pulls_seen includes pull_5_ice_mage",
+		&"pull_5_ice_mage" in AccountState.scripted_pulls_seen,
+		"seen=%s" % str(AccountState.scripted_pulls_seen))
 
 func _test_scripted_pulls_idempotent_after_resume() -> void:
-	## Spec §6: scripted_pulls_seen survives save/load (B1). If both sentinels exist
-	## and pull_count >= 3 on resume, a 4th pull (and beyond) is RNG with no script.
+	## Spec §6: scripted_pulls_seen survives save/load (B1). If all three sentinels exist
+	## and pull_count >= 5 on resume, a 6th pull (and beyond) is RNG with no script.
+	## B2 rebaseline: sentinels are now pull_1_fire_warrior + pull_3_electric_rogue +
+	## pull_5_ice_mage (was just pull_1 + pull_3_ice_mage pre-B2).
 	_fresh(600, 9999)
-	AccountState.scripted_pulls_seen = [&"pull_1_fire_warrior", &"pull_3_ice_mage"]
-	AccountState.pull_count = 3
+	AccountState.scripted_pulls_seen = [&"pull_1_fire_warrior", &"pull_3_electric_rogue", &"pull_5_ice_mage"]
+	AccountState.pull_count = 5
 	var size_before: int = (AccountState.scripted_pulls_seen as Array).size()
 	var r: Dictionary = _wheel().pull()
-	_check("4th-pull-equivalent succeeds", not r.is_empty(), "empty")
+	_check("6th-pull-equivalent succeeds", not r.is_empty(), "empty")
 	_check("scripted_pulls_seen unchanged size (idempotent)",
 		(AccountState.scripted_pulls_seen as Array).size() == size_before,
 		"size before=%d after=%d" % [size_before, (AccountState.scripted_pulls_seen as Array).size()])
-	_check("pull_count advances to 4",
-		AccountState.pull_count == 4, "pull_count=%d" % AccountState.pull_count)
+	_check("pull_count advances to 6",
+		AccountState.pull_count == 6, "pull_count=%d" % AccountState.pull_count)
 
 ## ---------- Scripted Pacing Rework Chunk B (2026-06-10) ----------
 

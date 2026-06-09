@@ -44,9 +44,13 @@ const PULL_COST: int = 300
 
 ## Ember — the scarce GACHA currency (pulls will cost Ember; gems no longer pull).
 ## Earned only from boss clears + run victory (NOT per wave) -> savored pulls.
+## Scripted-pacing-rework bump per spec §11a (2026-06-10). Per-stage total raised
+## 3 -> 7 so the 4-beat scripted timeline (pull #1 Bran fire + #3 Vex electric +
+## Stage 3 lich defeat + pull #5 Elara ice) lands at 1 pull/stage cadence.
+## Numbers Policy starting values; playtest-tunable.
 const STARTING_EMBER: int = 5
-const EMBER_BOSS_BONUS: int = 1
-const EMBER_VICTORY_BONUS: int = 2
+const EMBER_BOSS_BONUS: int = 3      ## Why 3: was 1; A7 bump (spec §11a) for 1 pull/stage cadence
+const EMBER_VICTORY_BONUS: int = 4   ## Why 4: was 2; A7 bump (spec §11a) for 1 pull/stage cadence
 const PULL_COST_EMBER: int = 5
 const STAR_GEM_BASE: int = 100   ## gems to raise a weapon one ★ = STAR_GEM_BASE * current star_tier
 

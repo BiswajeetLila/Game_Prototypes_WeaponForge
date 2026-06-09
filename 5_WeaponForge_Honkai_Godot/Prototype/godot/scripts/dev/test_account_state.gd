@@ -65,6 +65,8 @@ func _ready() -> void:
 		_test_v5_save_migrates_to_v6()
 		_test_v6_round_trip_persists_paladin_unlocked()
 		_test_reset_clears_paladin_unlocked()
+		_test_wave_clear_earnings_bumped()
+		_test_starting_ember_unchanged_by_economy_bump()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -573,6 +575,30 @@ func _test_reset_clears_paladin_unlocked() -> void:
 		("paladin_unlocked" in a) and a.paladin_unlocked == false,
 		"not cleared, paladin_unlocked=%s" % str(a.paladin_unlocked))
 	a.free()
+
+## ---------- Scripted Pacing Rework A7 — ember economy bump (§11a) ----------
+
+func _test_wave_clear_earnings_bumped() -> void:
+	## A7: Per spec §11a — per-stage 7 ember total (was 3) so 4-beat scripted
+	## timeline lands at 1 pull/stage cadence.
+	## Boss wave (W5) bonus: 3 (was 1). Victory bonus: 4 (was 2).
+	AccountState.reset_account()
+	AccountState.ember = 0
+	AccountState._on_wave_cleared(5)   ## boss wave
+	_check("boss wave pays 3 ember (was 1)", AccountState.ember == 3,
+		"ember=%d" % AccountState.ember)
+	AccountState.award_victory()
+	_check("victory pays 4 ember more (was 2) -> total 7",
+		AccountState.ember == 7, "ember=%d" % AccountState.ember)
+
+func _test_starting_ember_unchanged_by_economy_bump() -> void:
+	## A7 only bumps per-stage accrual; STARTING_EMBER unchanged (= 1 pull).
+	AccountState.reset_account()
+	_check("STARTING_EMBER still 5", AccountState.STARTING_EMBER == 5,
+		"got=%d" % AccountState.STARTING_EMBER)
+	_check("fresh account ember = STARTING_EMBER",
+		AccountState.ember == AccountState.STARTING_EMBER,
+		"ember=%d" % AccountState.ember)
 
 ## ---------- Test helpers ----------
 

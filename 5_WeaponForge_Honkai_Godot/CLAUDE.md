@@ -49,13 +49,13 @@ Two cohorts under `scripts/dev/`:
 - **Self-quitting** (exit code = fail count):
   TestWeaponData / TestShardData / TestInfuse / TestHomeScreen /
   TestAccountState / TestWeaponBridge / TestForgeWheel / TestForgeDraft /
-  TestSkillCardData.
+  TestSkillCardData / TestCatalyst / TestCatalystUI.
 - **Legacy** (needs `--quit-after 400`):
   TestCombat / TestRecipes / TestShop / TestMerge / TestUi.
   godot MCP can't pass that flag → start, wait for the
   `=== N passed / M failed ===` line in `get_debug_output`, then `stop_project`.
 
-~450 tests baseline (grows w/ Catalyst + roster).
+~540 tests baseline (Catalyst v1 added ~93 new asserts; grows further w/ Hot Paladin + roster).
 
 ---
 
@@ -89,7 +89,7 @@ Default to `mcp__godot__*` for everything Godot-related.
 Save schema bumps = a NEW `_migrate_vN_to_vN+1()` fn in
 `scripts/core/account_state.gd` + a TestAccountState case that loads an
 old-format dict and asserts the v+1 defaults. Never silently widen the
-schema. Current version: v4.
+schema. Current version: v5 (Catalyst fields — scripted_pulls_seen + catalyst_codex_discovered + pull_count).
 
 ---
 

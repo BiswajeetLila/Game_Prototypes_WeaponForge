@@ -57,6 +57,7 @@ Plan-mode scratch in `C:/Users/Biswa/.claude/plans/` is session-only.
 - **Bran 5-tier portrait test render** — `docs/research/portrait-tier-test/bran_5tier_evolution.png`. Awaits 20-Honkai-player eval gate (FM-19).
 - **P1a STARTED (TDD)** — `WeaponData` unitary schema: get_atk/get_hp + ★-tier scaling (+5%/tier) + Forge Math (apply_forge_part: same-tier +50%, one-higher instant, lower no-op). **10/10 tests green** (`scripts/data/weapon_data.gd`, `scripts/dev/test_weapon_data.gd`, `scenes/dev/TestWeaponData.tscn`). Headless runner established.
 - **Teammate deck shipped (2026-06-09, branch `forgeloop/teammate-deck`)** — self-contained HTML one-pager (`docs/teammate-deck.html` + `docs/decks/style.css` + `docs/decks/scrub.js` + 12 asset copies in `docs/decks/assets/`). Forge industrial × anime rondel aesthetic, Cinzel + Manrope + JetBrains Mono, 7 sections w/ `<details>` collapsibles, sticky nav, Bran 5-tier scrubber as the unforgettable hook, scroll-triggered engraved dividers, print fallback, reduced-motion fallback. Spec: `docs/superpowers/specs/2026-06-09-teammate-deck-design.md`. Plan: `docs/superpowers/plans/2026-06-09-teammate-deck.md`.
+- **Catalyst v1 SHIPPED (2026-06-09, branch `forgeloop/catalyst-element-pairs`)** — element-pair synergy compounds layer over the squad loadout. 10 records (6 FTUE: Firestorm/Wildfire/Plasma/Blizzard/Glacial Storm/Stormfront + 4 Earth-gated at S10: Volcanic/Permafrost/Sandstorm/Magnetic Storm). Modifier-bag architecture (zero new combat callbacks); `_hero_attack` applies `squad_atk_mult` + additive `squad_crit_add`; Stormfront's `squad_atk_vs_swarm_mult` gates on `>=3 alive enemies`. Cap-1 stages 1-4 / no-cap stages 5+ with alphabetical-priority winner. Earth gate at stage 10. AccountState v4→v5 migration adds `scripted_pulls_seen`, `catalyst_codex_discovered`, `pull_count`. Forge Wheel scripted pulls #1 (Fire-warrior → Cinderbrand Greatsword Epic) + #3 (Ice-mage → Glacial Aegis Staff Legendary) — first elemental pulls are also rare reveal moments. Common-tier weapons stripped to non-elemental (`rune = &""`) so stage-1 neutrality contract holds. UI: Home squad-line + pre-stage briefing Catalyst section + battle-start banner + persistent HUD chip + Catalyst Codex sub-screen w/ ★ discovered / 🔒 locked markers. Codex auto-populates on stage-start banner render. 393 tests green across the 7 catalyst-touched suites (TestCatalyst 34, TestCatalystUI 29, TestAccountState 96, TestForgeWheel 73, TestHomeScreen 18, TestCombat 73, TestWeaponData 70). Spec: `docs/superpowers/specs/2026-06-09-catalyst-design.md`. Plan: `docs/superpowers/plans/2026-06-09-catalyst-element-pairs.md`. Commit range `dc10780..22da4e4` (19 commits incl. cleanups). v1.1 deferrals: `enemy_atk_speed_mult` combat application (Blizzard's combat behavior dormant), Catalyst Codex completion rewards, per-compound rich effects (chain lightning / freeze cones / etc), Earth-pair v2 effects.
 
 ### Key locked decisions (full log in design spec)
 
@@ -116,12 +117,11 @@ Plan-mode scratch in `C:/Users/Biswa/.claude/plans/` is session-only.
 
 ### NEXT — prototype build queue (OWNER-AGREED ORDER, 2026-06-05) ← THE one true queue
 Not scheduled "now"; this is the order for upcoming sessions:
-1. **#2 — Elemental / ability draft cards** (finishes P1c). Rune cards vs enemy weak/resist + ability transforms → makes the boss 5-card draft matter. Shard `element` field is already wired for it.
-2. **#3 — Hot Paladin scripted-defeat entry** (P1f, the FM-8 hero-attachment probe). Re-map the spec's "Stage 2 wave 14" trigger to the 5-wave stage structure; add the Paladin hero + a Paladin starter weapon + the descend cinematic + the retry-with-4-hero-squad flow.
-   → **Do #2 + #3 together = the testable FM-8 vertical slice.**
-3. **#4 — Catalyst compounds** (P1e, squad element-pair synergy) → THEN **socket retirement 9a–e** (delete legacy sockets/shop/merge + ~80 legacy tests; contracts in `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`).
-4. **#1 — Spin cinematic** (the last unfinished bit of the Forge Wheel — skippable ≤0.6s anvil-strike reel).
-   → **Do #4 + #1 together.**
+1. **Elemental / ability draft cards** (finishes P1c). Rune cards vs enemy weak/resist + ability transforms → makes the boss 5-card draft matter. Shard `element` field is already wired for it.
+2. **Hot Paladin scripted-defeat entry** (P1f, the FM-8 hero-attachment probe). Re-map the spec's "Stage 2 wave 14" trigger to the 5-wave stage structure; add the Paladin hero + a Paladin starter weapon + the descend cinematic + the retry-with-4-hero-squad flow.
+   → **Do #1 + #2 together = the testable FM-8 vertical slice.**
+3. **Socket retirement 9a–e** — delete legacy sockets/shop/merge + ~80 legacy tests; contracts in `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`.
+4. **Spin cinematic** (the last unfinished bit of the Forge Wheel — skippable ≤0.6s anvil-strike reel).
 5. **Human gates** (not code): Bran 5-tier portrait eval (20 Honkai players) + "Catalyst" trademark check.
 6. **Merge `phase1` → `main`** — ONLY on explicit owner say.
 

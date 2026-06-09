@@ -580,8 +580,11 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   margin: 0;
 }
 .beats-thumbs {
+  /* 9 beats total: 6 loop beats + Elara signature + Elara talents + Elara gear.
+     9 thumbs is too tight per row even at desktop widths; wrap to 2 rows of
+     ~5 via auto-fit + a min thumbnail width that keeps labels legible. */
   display: grid;
-  grid-template-columns: repeat(7, 1fr);  /* 6 base beats + Elara signature */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   margin-top: 20px;
 }

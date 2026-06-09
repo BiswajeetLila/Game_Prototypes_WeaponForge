@@ -93,6 +93,20 @@
       title: "Elara signature mission",
       sub: "Mid-game · the FM-8 hero-bond probe (option B)",
       desc: "Triggered when Elara crit-kills a boss while in the squad. A 'Spark of Power' cinematic plays; the spark-chain combat mechanic unlocks (crits chain to N targets); the small-B Meteor talent tree opens (gem-spend per node, Meteor → Meteor Shower → Meteor Storm). Probes player attachment and build-investment in a single arc."
+    },
+    {
+      img: "decks/assets/beats/beat7-elara-talent-tree.png",
+      alt: "Beat 7 concept — Elara talent tree screen",
+      title: "Elara talent tree",
+      sub: "Post-signature unlock · per-hero progression layer",
+      desc: "The small-B Meteor branch the signature mission unlocks. Nodes laddered Meteor → Meteor Shower → Meteor Storm; gem-spend per node. Generalizes to full-B trees for Bran (Warrior: Taunt → AOE Taunt → Counter) and Vex (Rogue: Poison → Bleed → Execute) in Phase 3."
+    },
+    {
+      img: "decks/assets/beats/beat8-elara-gear-screen.png",
+      alt: "Beat 8 concept — Elara gear screen",
+      title: "Elara gear screen",
+      sub: "Hero detail · equipped weapon + slot stats",
+      desc: "The per-hero detail view from the meta layer. Equipped weapon (name + element rune + ATK + ★-tier), the hero's class-locked slot, quick-equip from bench, Forge / Star-up actions, and the hero's bond + ult description. Where most of the squad-puzzle decisions actually get made."
     }
   ];
 

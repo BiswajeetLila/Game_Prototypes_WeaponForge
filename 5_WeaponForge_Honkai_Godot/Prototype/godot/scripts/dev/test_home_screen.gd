@@ -61,6 +61,8 @@ func _ready() -> void:
 	_test_starters_are_non_elemental()
 	_test_squad_line_hidden_when_no_pair()
 	_test_squad_line_shows_firestorm_when_fire_ice()
+	_test_briefing_hides_catalyst_when_no_pair()
+	_test_briefing_shows_firestorm_when_fire_ice()
 
 	_summary()
 	_render_to_ui()
@@ -117,6 +119,41 @@ func _test_squad_line_shows_firestorm_when_fire_ice() -> void:
 	_check("squad line names Firestorm", s.contains("Firestorm"), "text=%s" % s)
 	_check("squad line shows +20% ATK effect", s.contains("+20") and s.contains("ATK"),
 		"text=%s" % s)
+	hs.queue_free()
+
+## ---------- Catalyst v1 briefing (Task C2) ----------
+
+func _test_briefing_hides_catalyst_when_no_pair() -> void:
+	## Fresh squad (non-elemental Commons post-B2) -> briefing has no
+	## "ACTIVE CATALYST" section.
+	AccountState.reset_account()
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._open_briefing()
+	var body: String = hs._briefing.dialog_text
+	_check("briefing body lacks ACTIVE CATALYST pre-pair",
+		not body.contains("ACTIVE CATALYST"), "body=%s" % body.left(200))
+	hs.queue_free()
+
+func _test_briefing_shows_firestorm_when_fire_ice() -> void:
+	## Equip Cinderbrand (Epic fire warrior) + Glacial Aegis Staff (Legendary ice mage).
+	## Briefing should list Firestorm with its +20% squad ATK effect.
+	AccountState.reset_account()
+	var fire_w = GameState.weapons_by_id[&"w_cinderbrand_greatsword"].duplicate(true)
+	var ice_w = GameState.weapons_by_id[&"w_glacial_aegis_staff"].duplicate(true)
+	AccountState.owned_weapons = [fire_w, ice_w]
+	AccountState.equip(&"bran", 0)
+	AccountState.equip(&"elara", 1)
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._open_briefing()
+	var body: String = hs._briefing.dialog_text
+	_check("briefing body contains ACTIVE CATALYST", body.contains("ACTIVE CATALYST"),
+		"body=%s" % body.left(200))
+	_check("briefing body names Firestorm", body.contains("Firestorm"),
+		"body=%s" % body.left(200))
+	_check("briefing body shows +20% ATK", body.contains("+20") and body.contains("ATK"),
+		"body=%s" % body.left(200))
 	hs.queue_free()
 
 ## ---------- Helpers ----------

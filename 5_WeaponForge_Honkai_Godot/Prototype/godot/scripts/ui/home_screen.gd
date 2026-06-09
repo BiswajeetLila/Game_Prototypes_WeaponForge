@@ -470,6 +470,20 @@ func _open_briefing() -> void:
 	lines.append("Your squad: %s" % "  ".join(squad_elems.map(func(e): return ic.call(e))))
 	if b[&"minion_resist_brought"] or b[&"boss_resist_brought"]:
 		lines.append("⚠️ You're bringing a RESISTED element (½ damage on that target).")
+	## Catalyst v1 (spec §7.2): list every active compound + its effect string.
+	## Hidden when no compound triggers (0/1 element or three-same squad).
+	var squad_weapons: Array = []
+	for id in ROSTER_IDS:
+		var w = AccountState.get_equipped(id)
+		if w != null:
+			squad_weapons.append(w)
+	var resolved: Dictionary = ResolverT.resolve(squad_weapons, stage)
+	var actives: Array = resolved.get("compounds", [])
+	if not actives.is_empty():
+		lines.append("")
+		lines.append("💠 ACTIVE CATALYST")
+		for c in actives:
+			lines.append("  • %s — %s" % [c.get("display_name", ""), _format_compound_effect(c)])
 	_briefing.dialog_text = "\n".join(lines)
 	_briefing.popup_centered()
 

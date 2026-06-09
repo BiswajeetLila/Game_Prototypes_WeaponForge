@@ -668,7 +668,7 @@ func _boss_tick_iron_golem(idx: int, boss) -> void:
 const LICH_PHASE_1_RATIO: float = 0.66
 const LICH_PHASE_1_ATK_MULT: float = 1.2
 const LICH_PHASE_2_RATIO: float = 0.33
-const LICH_PHASE_2_AOE_RATIO: float = 0.30   ## softened from 0.5 — the squad-wipe was the stage-3 wall
+const LICH_PHASE_2_AOE_RATIO: float = 0.15   ## softened 0.5 -> 0.30 -> 0.15 (2026-06-09 owner: still too punishing)
 
 func _boss_tick_arcane_lich(idx: int, boss) -> void:
 	var hp_ratio: float = float(boss.hp) / float(boss.max_hp)

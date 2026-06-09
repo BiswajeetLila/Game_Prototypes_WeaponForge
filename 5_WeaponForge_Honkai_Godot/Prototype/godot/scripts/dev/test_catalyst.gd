@@ -1,4 +1,4 @@
-## Test harness for CatalystData (10-compound table) + CatalystResolver (cap-1/no-cap).
+## Test harness for CatalystData (10-compound table) + CatalystResolver (no-cap from stage 1).
 ## Spec: docs/superpowers/specs/2026-06-09-catalyst-design.md
 ##
 ## Run via godot MCP:
@@ -22,8 +22,8 @@ func _ready() -> void:
 	_test_for_pair_empty_element_rejected()
 	_test_resolve_empty_squad_returns_neutral()
 	_test_resolve_single_pair_cap1()
-	_test_resolve_cap1_alpha_priority()
-	_test_resolve_cap1_alpha_at_stage4()
+	_test_resolve_alpha_winner_at_stage1()
+	_test_resolve_alpha_winner_at_stage4()
 	_test_resolve_nocap_at_stage5()
 	_test_resolve_three_same_element_null()
 	_test_resolve_compose_math_explicit()
@@ -96,23 +96,30 @@ func _test_resolve_single_pair_cap1() -> void:
 		is_equal_approx(float(r["merged_bag"].get(&"squad_atk_mult", 1.0)), 1.20),
 		"mult=%f" % float(r["merged_bag"].get(&"squad_atk_mult", 1.0)))
 
-func _test_resolve_cap1_alpha_priority() -> void:
-	## Spec §9 case C-5/C-10: fire+ice+wind squad at stage 1 -> Blizzard (alpha-by-COMPOUND
-	## priority wins; Blizzard < Firestorm < Wildfire).
+func _test_resolve_alpha_winner_at_stage1() -> void:
+	## Post-cap-1-removal: stage 1 with 3-element squad returns ALL 3 triggering
+	## compounds. The primary `compound` field still picks the alpha winner
+	## (Blizzard < Firestorm < Wildfire by alphabetical_priority).
 	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"wind")]
 	var r: Dictionary = CatalystResolverT.resolve(squad, 1)
-	_check("3-element squad at stage 1 -> Blizzard (alpha)",
+	_check("3-element squad at stage 1 -> compound = Blizzard (alpha winner)",
 		r["compound"].get("id", &"") == &"blizzard",
 		"id=%s" % r["compound"].get("id", &""))
-	_check("cap-1: compounds list size 1", (r["compounds"] as Array).size() == 1,
+	_check("3-element squad at stage 1 -> 3 compounds active (no-cap from stage 1)",
+		(r["compounds"] as Array).size() == 3,
 		"size=%d" % (r["compounds"] as Array).size())
 
-func _test_resolve_cap1_alpha_at_stage4() -> void:
-	## Spec §9 C-10: still cap-1 at stage 4.
+func _test_resolve_alpha_winner_at_stage4() -> void:
+	## Stage 4 same as any other no-cap stage: 3 compounds active, alpha winner
+	## as primary `compound`.
 	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"wind")]
 	var r: Dictionary = CatalystResolverT.resolve(squad, 4)
-	_check("stage 4 still cap-1 -> Blizzard", r["compound"].get("id", &"") == &"blizzard",
+	_check("stage 4 no-cap -> compound = Blizzard (alpha winner)",
+		r["compound"].get("id", &"") == &"blizzard",
 		"id=%s" % r["compound"].get("id", &""))
+	_check("stage 4 no-cap -> 3 compounds active",
+		(r["compounds"] as Array).size() == 3,
+		"size=%d" % (r["compounds"] as Array).size())
 
 func _test_resolve_nocap_at_stage5() -> void:
 	## Spec §9 C-6: fire+ice+wind at stage 5 -> 3 compounds (Firestorm + Wildfire + Blizzard),
@@ -178,8 +185,7 @@ func _test_earth_pair_skipped_below_stage10() -> void:
 
 func _test_earth_pair_triggers_at_stage10() -> void:
 	## Spec §9 case C-7: at stage 10, the Earth gate opens. fire+earth -> Volcanic.
-	## Stage 10 is no-cap (CLAUDE.md §13: cap-1 stages 1-4, no-cap stages 5+), so
-	## the winner lands in the `compounds` array, not the cap-1 `compound` slot.
+	## Single-pair squad -> 1 triggering compound in the `compounds` array.
 	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"earth"), _make_weapon(&"")]
 	var r10: Dictionary = CatalystResolverT.resolve(squad, 10)
 	var compounds: Array = r10.get("compounds", [])
@@ -195,7 +201,7 @@ func _test_stormfront_swarm_field_present() -> void:
 	## conditionally inside hit-resolution (covered by TestCombat in Chunk C).
 	var squad: Array = [_make_weapon(&"wind"), _make_weapon(&"electric"), _make_weapon(&"")]
 	var r: Dictionary = CatalystResolverT.resolve(squad, 1)
-	_check("Stormfront at stage 1 (cap-1)", r["compound"].get("id", &"") == &"stormfront",
+	_check("Stormfront at stage 1 (single pair)", r["compound"].get("id", &"") == &"stormfront",
 		"id=%s" % r["compound"].get("id", &""))
 	_check("Stormfront bag carries squad_atk_vs_swarm_mult=1.25",
 		is_equal_approx(float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]), 1.25),

@@ -3,10 +3,9 @@
 ## Spec: docs/superpowers/specs/2026-06-09-catalyst-design.md §4-§5.
 ##
 ## Stacking rule (CLAUDE.md §13):
-##   stages 1-4 -> cap-1 (alphabetical compound-name priority wins)
-##   stages 5+  -> no-cap (all triggering compounds active; bags compose
-##                  multiplicatively for *_mult keys, additively for *_add)
-##   Earth-gated compounds skip entirely when stage < 10, regardless of cap.
+##   no-cap from stage 1 (Earth-gated skip at stage < 10). All triggering
+##   compounds active; bags compose multiplicatively for *_mult keys, additively
+##   for *_add keys. The primary `compound` field = alpha winner (compounds[0]).
 ##
 ## Empty-element entries in squad_weapons are skipped (non-elemental starters
 ## never count toward a pair).
@@ -17,8 +16,8 @@ const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
 
 ## Returns:
 ##   {
-##     compound:    Dictionary | null      # cap-1: the winning record, else null
-##     compounds:   Array[Dictionary]      # no-cap (stage>=5): every triggering record
+##     compound:    Dictionary | null      # alpha winner (compounds[0]), or null if empty
+##     compounds:   Array[Dictionary]      # every triggering record, alpha-sorted
 ##     merged_bag:  Dictionary             # composed modifier bag
 ##   }
 static func resolve(squad_weapons: Array, stage: int) -> Dictionary:
@@ -49,19 +48,15 @@ static func resolve(squad_weapons: Array, stage: int) -> Dictionary:
 	if triggered.is_empty():
 		return {"compound": null, "compounds": [], "merged_bag": CatalystDataT.EMPTY_BAG.duplicate()}
 
-	## Always sort by alphabetical_priority so the displayed/picked compound is
-	## stable across equip-order changes. cap-1 slices [0]; no-cap returns the
-	## sorted list so callers reading compounds[0] get the alpha winner too.
+	## Sort by alphabetical_priority so primary `compound` (the displayed/picked
+	## one) is stable across squad equip-order changes. `compound` = compounds[0]
+	## (the alpha winner); `compounds` = the full triggering set.
 	triggered.sort_custom(func(a, b): return int(a["alphabetical_priority"]) < int(b["alphabetical_priority"]))
 
-	## 3. Stacking.
-	if stage <= 4:
-		## cap-1: alphabetical priority winner.
-		var winner: Dictionary = triggered[0]
-		return {"compound": winner, "compounds": [winner],
-			"merged_bag": _compose([winner])}
-	## stage >= 5: all triggering, alpha-sorted.
-	return {"compound": null, "compounds": triggered, "merged_bag": _compose(triggered)}
+	## No-cap stacking from stage 1 (cap-1 dropped post-playtest 2026-06-09).
+	## All triggering compounds active; bags compose multiplicatively for *_mult,
+	## additively for *_add. Earth-gated compounds remain skipped at stage < 10.
+	return {"compound": triggered[0], "compounds": triggered, "merged_bag": _compose(triggered)}
 
 ## Composition rules (spec §3): *_mult keys multiplicative, *_add keys additive,
 ## starting from EMPTY_BAG. squad_atk_vs_swarm_mult composes as a normal mult key

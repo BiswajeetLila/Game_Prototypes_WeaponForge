@@ -97,18 +97,23 @@ triggers C(3,2) = 3 compounds simultaneously *if* stage ≥ 5; if stage
 
 ## 5. Stacking rule
 
-- **Stages 1-4:** **cap-1**. The first compound by **alphabetical
-  COMPOUND name** wins:
-  Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire.
-  Deterministic, easy to doc. (Earth-pair names insert in this order at
-  S10+ unlock: Magnetic Storm > Permafrost > Sandstorm > Volcanic.)
-- **Stages 5+:** **no-cap**. All triggering compounds active; bags
-  compose multiplicatively.
-- Earth-gated compounds skip entirely if stage < 10, regardless of cap.
+- **No-cap from stage 1 onward.** All triggering compounds active simultaneously;
+  bags compose multiplicatively for `*_mult` keys, additively for `*_add` keys.
+- **Earth-gated compounds** skip entirely if `stage < 10`, regardless.
+- **Display order:** alphabetical priority by COMPOUND name (CLAUDE.md §13). The
+  primary `compound` returned by `CatalystResolver.resolve` is `compounds[0]` after
+  the alpha sort. Surfaces displaying a single name (Home squad-line, battle banner)
+  show this primary; surfaces displaying the full list (briefing dialog, HUD chip)
+  show all in alpha order.
 
-**Why cap-1 FTUE:** simpler onboarding. The player sees ONE compound
-named on screen, learns what it does, then unlocks stacking once the
-basic loop is internalized.
+  Alpha order: Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire.
+  Earth unlocks insert at S10+: Magnetic Storm > Permafrost > Sandstorm > Volcanic.
+
+**Cap-1 dropped 2026-06-09 (post-playtest):** the original cap-1 rule (stages 1-4
+pick one winner; stages 5+ stack all) was simplified after playtest revealed that
+non-elemental Common starters (B2) mean players naturally see 0-1 compounds during
+stages 1-4 anyway — cap-1 almost never actually capped. The simpler unconditional
+no-cap rule removes a Numbers-Policy lever without changing typical FTUE flow.
 
 ---
 

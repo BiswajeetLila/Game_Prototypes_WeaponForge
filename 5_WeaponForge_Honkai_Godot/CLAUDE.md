@@ -186,10 +186,12 @@ Skip steps only on trivial (single-file mechanical) work or owner waiver.
 - **Stage shape:** 5 waves / boss on W5. Boss rotates slime → golem → lich;
   scales per stage. (Spec is 15 waves with W5/W10/W15 bosses; prototype
   runs the compressed 5-wave shape.)
-- **Catalyst stacking:** cap-1 stages 1-4, no-cap stages 5+ (2026-06-09).
-- **Catalyst cap-1 priority order:** alphabetical compound name —
-  Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire
-  (2026-06-09).
+- **Catalyst stacking:** no-cap from stage 1, Earth-gated skip at stage < 10
+  (2026-06-09 — cap-1 dropped post-playtest).
+- **Catalyst display-priority order:** alphabetical compound name —
+  Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire,
+  Earth unlocks at S10+ as Magnetic Storm > Permafrost > Sandstorm > Volcanic
+  (2026-06-09). Primary `compound` = first in this order.
 - **Catalyst first reveal:** Forge Wheel scripted pull #1 = Fire-Bran-class,
   pull #3 = Ice-Elara-class. Starters are non-elemental until then (2026-06-09).
 

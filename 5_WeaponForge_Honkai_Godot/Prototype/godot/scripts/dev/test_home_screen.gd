@@ -65,6 +65,8 @@ func _ready() -> void:
 	_test_briefing_shows_firestorm_when_fire_ice()
 	_test_paladin_in_catalog()
 	_test_fielded_classes_excludes_paladin_when_locked()
+	_test_home_paladin_row_locked()
+	_test_home_paladin_row_unlocked()
 
 	_summary()
 	_render_to_ui()
@@ -187,6 +189,42 @@ func _test_fielded_classes_excludes_paladin_when_locked() -> void:
 		fc.has(&"paladin"), "missing: %s" % str(fc.keys()))
 	## Restore neutral state.
 	AccountState.paladin_unlocked = false
+
+## ---------- Scripted Pacing Rework Chunk C (2026-06-10) ----------
+
+func _test_home_paladin_row_locked() -> void:
+	## C3: Pre-unlock, home_screen renders a "🔒 Hot Paladin — locked" disabled
+	## row in the squad list. Per spec §8: paladin is the 4th roster slot.
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._refresh()
+	_check("paladin row exists in _hero_rows", hs._hero_rows.has(&"paladin"),
+		"hero_rows keys=%s" % str(hs._hero_rows.keys()))
+	var row: Button = hs._hero_rows.get(&"paladin")
+	if row != null:
+		_check("locked paladin row shows 🔒",
+			row.text.contains("🔒"), "text=%s" % row.text)
+		_check("locked paladin row is disabled",
+			row.disabled == true, "disabled=%s" % str(row.disabled))
+	hs.queue_free()
+
+func _test_home_paladin_row_unlocked() -> void:
+	## C3: Post-unlock, home_screen renders paladin row normally (no 🔒, enabled).
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = true
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._refresh()
+	var row: Button = hs._hero_rows.get(&"paladin")
+	_check("paladin row exists when unlocked", row != null, "missing")
+	if row != null:
+		_check("unlocked paladin row drops 🔒",
+			not row.text.contains("🔒"), "text=%s" % row.text)
+		_check("unlocked paladin row enabled (not disabled)",
+			row.disabled == false, "disabled=%s" % str(row.disabled))
+	hs.queue_free()
 
 ## ---------- Helpers ----------
 

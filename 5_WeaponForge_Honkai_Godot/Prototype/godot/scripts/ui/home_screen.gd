@@ -14,7 +14,7 @@ extends Control
 const ResolverT = preload("res://scripts/core/catalyst_resolver.gd")
 const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
 
-const ROSTER_IDS: Array = [&"bran", &"elara", &"vex"]
+const ROSTER_IDS: Array = [&"bran", &"elara", &"vex", &"paladin"]   ## paladin = 4th roster slot, gated via AccountState.paladin_unlocked (Stage 3 defeat unlock — Combat C1)
 const GRID_COLS: int = 3
 const MIN_GRID_TILES: int = 6   ## dashed empties up to this count ("pull to fill")
 
@@ -245,6 +245,14 @@ func _refresh_hero_rows() -> void:
 		if data == null:
 			row.text = ""
 			continue
+		## C3: paladin starts locked; unlocks via Stage 3 defeat (Combat C1).
+		## Locked row is a disabled placeholder — no weapon, no class highlight.
+		if id == &"paladin" and not AccountState.paladin_unlocked:
+			row.text = "  🔒 Hot Paladin — locked"
+			row.disabled = true
+			row.modulate = Color(1, 1, 1, 0.55)
+			continue
+		row.disabled = false
 		var w = AccountState.get_equipped(id)
 		var weapon_str: String = "—  tap a weapon below to equip"
 		if w != null:

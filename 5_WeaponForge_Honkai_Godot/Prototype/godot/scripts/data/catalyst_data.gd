@@ -29,6 +29,7 @@ const EMPTY_BAG: Dictionary = {
 const ELEM_GLYPH: Dictionary = {
 	&"fire": "🔥", &"ice": "❄", &"electric": "⚡",
 	&"wind": "🌪", &"earth": "🪨",
+	&"light": "☀",   ## A4 scripted-pacing-rework — Hot Paladin's Helios Cleaver
 }
 
 ## Cap-1 alphabetical priority — by COMPOUND name (CLAUDE.md §13).

@@ -40,6 +40,7 @@ func _ready() -> void:
 	_test_format_effect_neutral_bag_custom_empty_str()
 	_test_format_effect_glyph_prefix()
 	_test_format_effect_glyph_prefix_neutral_bag()
+	_test_elem_glyph_includes_light()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -292,6 +293,15 @@ func _test_format_effect_glyph_prefix_neutral_bag() -> void:
 	var s: String = CatalystDataT.format_effect(rec, {"glyph_prefix": true})
 	_check("format_effect glyph_prefix + neutral bag = '🔥+❄   —'",
 		s == "🔥+❄   —", "got=%s" % s)
+
+func _test_elem_glyph_includes_light() -> void:
+	## A4: light element joins the consolidated ELEM_GLYPH dict from C5 cleanup.
+	## All UI surfaces (home / banner / chip / codex) inherit the icon.
+	_check("ELEM_GLYPH has light",
+		CatalystDataT.ELEM_GLYPH.has(&"light"), "missing")
+	_check("ELEM_GLYPH[light] == ☀",
+		String(CatalystDataT.ELEM_GLYPH.get(&"light", "")) == "☀",
+		"got=%s" % CatalystDataT.ELEM_GLYPH.get(&"light", ""))
 
 ## ---------- fixtures ----------
 

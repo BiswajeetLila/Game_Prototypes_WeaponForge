@@ -29,6 +29,7 @@ func _ready() -> void:
 		_test_catalog_loaded_and_covers_classes()
 		_test_catalog_meets_curve()
 		_test_catalog_depth_four_per_class()
+		_test_voltedge_in_catalog()
 	## ForgeWheel autoload is looked up via /root path (parse-safe while unregistered).
 	if get_node_or_null("/root/ForgeWheel") == null:
 		_check("ForgeWheel autoload registered", false, "missing (RED)")
@@ -101,6 +102,21 @@ func _test_catalog_depth_four_per_class() -> void:
 			rs.has(0) and rs.has(1) and rs.has(2) and rs.has(3), "rarities=%s" % str(rs.keys()))
 	_check("catalog has >= 12 weapons", GameState.weapons_by_id.size() >= 12,
 		"size=%d" % GameState.weapons_by_id.size())
+
+## ---------- Scripted Pacing Rework Chunk A (2026-06-10) ----------
+
+func _test_voltedge_in_catalog() -> void:
+	## A1: Rare electric rogue must exist (Voltedge Daggers) to back the
+	## scripted pull #3 reshuffle (Vex's electric reveal). Catalog gap pre-A1.
+	_check("voltedge_daggers exists",
+		GameState.weapons_by_id.has(&"w_voltedge_daggers"), "missing")
+	var w = GameState.weapons_by_id.get(&"w_voltedge_daggers")
+	if w != null:
+		_check("voltedge is Rare electric rogue",
+			w.cls == &"rogue" and w.rune == &"electric" and w.rarity_idx == 1,
+			"cls=%s rune=%s rarity=%d" % [w.cls, w.rune, w.rarity_idx])
+		_check("voltedge base_atk = 21", w.base_atk == 21,
+			"atk=%d" % w.base_atk)
 
 ## ---------- Pull ----------
 

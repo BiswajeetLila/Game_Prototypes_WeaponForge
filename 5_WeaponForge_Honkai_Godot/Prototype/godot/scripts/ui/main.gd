@@ -43,6 +43,7 @@ var _draft_modal: ColorRect = null
 var _pending_next_wave: int = -1
 var _kill_bar: ProgressBar = null
 var _catalyst_banner: Control = null
+var _catalyst_chip: Control = null
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -176,6 +177,20 @@ func _on_stage_telegraph_for_catalyst(_text: String) -> void:
 	else:
 		_catalyst_banner.hide_banner()
 
+## Catalyst chip refresh — fires per Combat.boss_telegraph (same signal as the banner).
+## Resolves the current compound list and updates the chip's rows.
+func _on_stage_telegraph_for_chip(_text: String) -> void:
+	var resolver = preload("res://scripts/core/catalyst_resolver.gd")
+	var squad_weapons: Array = []
+	for h in GameState.active_heroes():
+		if h.weapon_data != null:
+			squad_weapons.append(h.weapon_data)
+	var resolved: Dictionary = resolver.resolve(squad_weapons, AccountState.current_stage)
+	var compounds_arr: Array = resolved.get("compounds", [])
+	if compounds_arr.is_empty() and resolved.get("compound", null) != null:
+		compounds_arr = [resolved["compound"]]
+	_catalyst_chip.set_compounds(compounds_arr)
+
 ## Append every compound rendered to the player into AccountState.catalyst_codex_discovered.
 ## Idempotent (deduped by id presence). Persists via autosave (called on AccountState mutations).
 func _record_codex_discovery(resolved: Dictionary) -> void:
@@ -228,6 +243,13 @@ func _build_battle_overlay(layer: CanvasLayer) -> void:
 	layer.add_child(_catalyst_banner)
 	## Hook the existing boss_telegraph signal — fires per Combat.start_wave.
 	Combat.boss_telegraph.connect(_on_stage_telegraph_for_catalyst, CONNECT_DEFERRED)
+
+	## Catalyst HUD chip — top-right, persistent for the stage. Shows active
+	## compound(s); 1 row in cap-1 (S1-4), up to 3 in no-cap (S5+).
+	_catalyst_chip = preload("res://scripts/ui/catalyst_chip.gd").new()
+	_catalyst_chip.position = Vector2(vp.x - 160.0, 16.0)
+	layer.add_child(_catalyst_chip)
+	Combat.boss_telegraph.connect(_on_stage_telegraph_for_chip, CONNECT_DEFERRED)
 
 func _on_meter_changed_ui(kills: int, needed: int) -> void:
 	if _kill_bar == null:

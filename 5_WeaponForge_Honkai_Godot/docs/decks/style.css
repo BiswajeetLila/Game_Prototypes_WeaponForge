@@ -505,7 +505,13 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
    side; a thumbnail strip below selects the active beat. JS in scrub.js
    handles the swap; CSS handles the active/hover/focus states + the 200ms
    fade when the featured image changes. */
-.beats-intro { max-width: 60ch; color: var(--parchment); margin-bottom: 24px; }
+.beats-intro {
+  max-width: 60ch;
+  color: var(--parchment);
+  margin-bottom: 24px;
+  font-size: 22px;
+  line-height: 1.5;
+}
 .beats-carousel {
   display: grid;
   grid-template-columns: 48px 1fr 48px;
@@ -537,8 +543,8 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   border-radius: var(--radius-md);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 3fr 2fr;
-  min-height: 360px;
+  grid-template-columns: 5fr 4fr;  /* extra caption width — fonts bumped 2x */
+  min-height: 440px;
 }
 .beats-stage__img {
   width: 100%; height: 100%;
@@ -548,27 +554,34 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   background: var(--iron-deep);
 }
 .beats-stage__caption {
-  padding: 28px;
+  padding: 36px 40px;
   display: flex; flex-direction: column;
   border-left: 1px solid color-mix(in srgb, var(--gold-leaf) 18%, transparent);
 }
 .beats-stage__title {
-  margin: 0 0 4px;
-  font-size: 22px;
+  margin: 0 0 8px;
+  font-size: 44px;       /* was 22 — 2x bump */
+  line-height: 1.05;
   color: var(--amber);
 }
 .beats-stage__sub {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 18px;       /* was 11 — ~1.6x bump (mono caps stay tight) */
   color: var(--mute);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin: 0 0 16px;
+  margin: 0 0 24px;
+  line-height: 1.4;
 }
-.beats-stage__desc { font-size: 14px; line-height: 1.55; color: var(--parchment); margin: 0; }
+.beats-stage__desc {
+  font-size: 26px;       /* was 14 — ~1.9x bump */
+  line-height: 1.5;
+  color: var(--parchment);
+  margin: 0;
+}
 .beats-thumbs {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);  /* 6 base beats + Elara signature */
   gap: 12px;
   margin-top: 20px;
 }
@@ -583,12 +596,12 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.2s ease;
   opacity: 0.7;
 }
-.beats-thumb img { width: 100%; height: 64px; object-fit: cover; object-position: center; display: block; }
+.beats-thumb img { width: 100%; height: 80px; object-fit: cover; object-position: center; display: block; }
 .beats-thumb span {
   display: block;
-  padding: 6px 8px;
+  padding: 8px 10px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.05em;
   color: var(--parchment);
   text-align: left;

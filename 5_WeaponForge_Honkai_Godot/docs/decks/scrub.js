@@ -84,8 +84,15 @@
       img: "decks/assets/beats/beat5-hot-paladin-cinematic-2E.png",
       alt: "Beat 5 mockup — Hot Paladin cinematic",
       title: "Hot Paladin descent",
-      sub: "Stage 2 cinematic · the FM-8 hero-bond probe",
+      sub: "Stage 2 cinematic · the FM-8 hero-bond probe (option A)",
       desc: "Mid-stage scripted defeat. A lance crashes to centre stage; the Hot Paladin descends, ult-overrides the wave, joins the roster. A 4-hero squad slot opens for the retry and every stage after."
+    },
+    {
+      img: "decks/assets/beats/beat6-elara-signature-mission.png",
+      alt: "Beat 6 mockup — Elara signature mission",
+      title: "Elara signature mission",
+      sub: "Mid-game · the FM-8 hero-bond probe (option B)",
+      desc: "Triggered when Elara crit-kills a boss while in the squad. A 'Spark of Power' cinematic plays; the spark-chain combat mechanic unlocks (crits chain to N targets); the small-B Meteor talent tree opens (gem-spend per node, Meteor → Meteor Shower → Meteor Storm). Probes player attachment and build-investment in a single arc."
     }
   ];
 

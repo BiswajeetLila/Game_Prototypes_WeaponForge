@@ -364,7 +364,9 @@ func _hero_attack(hero) -> void:
 	## only when >= 3 alive enemies (Stormfront's gate per CLAUDE.md §13).
 	var stats_atk_raw: int = hero.data.atk_base + hero.eff_atk()
 	var atk_mult: float = float(_catalyst_bag.get(&"squad_atk_mult", 1.0))
-	if _alive_enemy_indices().size() >= 3:
+	## Stormfront swarm gate (CLAUDE.md §13): >=3 alive enemies. Reuses the local
+	## `alive` from line ~355 instead of re-querying _alive_enemy_indices().
+	if alive.size() >= 3:
 		atk_mult *= float(_catalyst_bag.get(&"squad_atk_vs_swarm_mult", 1.0))
 	var stats_atk: int = int(floor(float(stats_atk_raw) * atk_mult))
 	## Catalyst v1: squad_crit_add adds flat percentage points (e.g. Plasma 0.15 -> +15%).

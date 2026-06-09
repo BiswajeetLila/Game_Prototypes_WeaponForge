@@ -110,7 +110,7 @@ Catalyst line shows trio only (P1e) · enemy curve beyond stage ~3 untuned.
 1. **Wheel cinematic + dupes→Forge Math** ← next up. Spin (anvil-strike reel stops, skippable ≤0.6s), dupe pull feeds `apply_forge_part` (tier meter, rarity jumps, bank-retarget warning per entry contract #6) instead of stacking bench copies.
 2. **Elemental/ability draft cards** — rune cards (change/strengthen element vs enemy weak/resist), ability transforms; makes boss 5-card drafts meaningful (FM-2).
 3. **P1f Hot Paladin tease** — hero-attachment anchor (FM-8).
-4. **Catalyst compounds (P1e)** — squad element-pair synergy; THEN migration stages 9a-e (retire sockets/shop/merge + ~80 legacy tests; contracts in `docs/2026-06-01-combat-weapon-migration-plan.md`).
+4. **Catalyst compounds (P1e)** — squad element-pair synergy; THEN migration stages 9a-e (retire sockets/shop/merge + ~80 legacy tests; contracts in `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`).
 5. Human gates: Bran 5-tier portrait eval (20 Honkai players), "Catalyst" trademark check.
 6. When owner approves: merge phase1 → main.
 

@@ -99,6 +99,10 @@ signal enemy_hit_hero(enemy_idx: int, hero_id: StringName, dmg: int)
 signal ult_fired(hero_id: StringName, total_dmg: int)
 ## Stage D — pre-wave banner. Main listens and displays before Combat.start_wave.
 signal boss_telegraph(text: String)
+## Scripted-pacing-rework C1: emitted once when the Stage 3 Arcane Lich crosses
+## 50% HP with paladin not yet unlocked. main.gd listens and triggers the Hot
+## Paladin descent cinematic + scripted retry-stage-3 flow.
+signal paladin_descend
 
 var _tick_timer: Timer
 var _time_cap_timer: Timer
@@ -691,7 +695,18 @@ const LICH_PHASE_1_ATK_MULT: float = 1.2
 const LICH_PHASE_2_RATIO: float = 0.33
 const LICH_PHASE_2_AOE_RATIO: float = 0.30   ## softened from 0.5 — the squad-wipe was the stage-3 wall
 
+## Scripted-pacing-rework C1: one-shot sentinel tag persisted in
+## AccountState.scripted_pulls_seen once the Hot Paladin descent fires.
+const PALADIN_DEFEAT_SENTINEL: StringName = &"defeat_stage_3_paladin"
+## HP threshold (fraction of max_hp) at or below which the descent trigger arms.
+const PALADIN_DEFEAT_HP_RATIO: float = 0.5
+
 func _boss_tick_arcane_lich(idx: int, boss) -> void:
+	## C1: scripted descent trigger runs BEFORE phase-1/2 logic. If it fires, the
+	## squad is wiped (forced defeat); Combat.step's win/loss check then routes
+	## through _on_wipe() -> ReforgeRetryModal. Sentinel guard short-circuits the
+	## retry path so phase-1/2 play normally on the second attempt.
+	_maybe_trigger_paladin_defeat(idx, boss)
 	var hp_ratio: float = float(boss.hp) / float(boss.max_hp)
 	if hp_ratio < LICH_PHASE_1_RATIO and not bool(boss.get(&"phase_1_applied", false)):
 		boss.atk = int(floor(float(boss.atk) * LICH_PHASE_1_ATK_MULT))
@@ -701,6 +716,50 @@ func _boss_tick_arcane_lich(idx: int, boss) -> void:
 		for h in GameState.active_heroes():
 			var dmg: int = int(floor(float(h.max_hp) * LICH_PHASE_2_AOE_RATIO))
 			_boss_strike_hero(idx, h, dmg)
+
+## Scripted-pacing-rework C1: scripted-wipe trigger when the Arcane Lich (Stage 3
+## boss) crosses 50% HP for the first time. One-shot per account via
+## PALADIN_DEFEAT_SENTINEL in AccountState.scripted_pulls_seen.
+##
+## Effects (in order):
+## - Record sentinel + flip AccountState.paladin_unlocked = true.
+## - Grant Helios Cleaver to paladin slot (acquire_weapon + equip).
+## - 999-dmg AOE to every alive deployed non-paladin hero -> forced defeat
+##   (_boss_strike_hero handles hp clamp / is_dead flag / signals).
+## - autosave + emit paladin_descend (main.gd C-chunk D3 wires the cinematic).
+##
+## Retry path: sentinel-guard short-circuits -> normal phase-1/2 plays through.
+##
+## Stage-1 neutrality contract: this helper is only called from
+## _boss_tick_arcane_lich, so slime / golem bosses never see it. The
+## _test_paladin_defeat_only_on_lich_boss case pins this.
+##
+## Note: each per-hero hit fires `enemy_hit_hero` via _boss_strike_hero, so HP
+## bars do update correctly — but the cinematic overlay (C-chunk D3) will mask
+## the wipe regardless. ATK-stat irrelevant: we pass a fixed 999 dmg.
+func _maybe_trigger_paladin_defeat(idx: int, boss) -> void:
+	if PALADIN_DEFEAT_SENTINEL in AccountState.scripted_pulls_seen:
+		return   ## already triggered; retry proceeds with normal phase-1/2
+	if float(boss.hp) > float(boss.max_hp) * PALADIN_DEFEAT_HP_RATIO:
+		return   ## haven't crossed threshold yet
+	## Record + unlock.
+	AccountState.scripted_pulls_seen.append(PALADIN_DEFEAT_SENTINEL)
+	AccountState.paladin_unlocked = true
+	## Grant Helios Cleaver -> auto-equip on paladin slot.
+	var helios = GameState.weapons_by_id.get(&"w_helios_cleaver")
+	if helios != null:
+		var owned = AccountState.acquire_weapon(helios)
+		AccountState.equip(&"paladin", AccountState.owned_weapons.size() - 1)
+		if owned != null and GameState.has_method("equip_weapon_data"):
+			GameState.equip_weapon_data(&"paladin", owned)
+	AccountState.autosave()
+	## Overwhelming AOE: forced-defeat every alive deployed non-paladin hero.
+	## _boss_strike_hero handles hp clamp / is_dead / hero_died / enemy_hit_hero
+	## signals so Combat.any_alive() correctly returns false -> _on_wipe fires.
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin":
+			_boss_strike_hero(idx, h, 999)
+	emit_signal(&"paladin_descend")
 
 ## Shared damage path for boss-special attacks (golem AoE / lich phase 2 AoE).
 ## Mirrors _enemy_attack's death-notification + signal contract minus the

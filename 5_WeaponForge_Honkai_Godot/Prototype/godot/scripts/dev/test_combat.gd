@@ -80,6 +80,10 @@ func _ready() -> void:
 	_test_start_wave_refreshes_catalyst_bag_neutral()
 	_test_start_wave_applies_firestorm_bag()
 	_test_stage_1_neutrality_preserved()
+	## Scripted Pacing Rework C1 — Hot Paladin descend.
+	_test_paladin_defeat_trigger_at_50pct_hp()
+	_test_paladin_defeat_skips_on_retry()
+	_test_paladin_defeat_only_on_lich_boss()
 	_summary()
 	_render_to_ui()
 
@@ -994,7 +998,13 @@ func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
 	## Elara + Vex pre-killed so single-target attack lands on Bran. On tick 1
 	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.30).
 	## Bran alone: takes 43 (single) + 36 (AoE = floor(120*0.30)) = 79 hp loss.
+	##
+	## C1: lich at 30% HP is past the scripted 50% descent gate. Pre-set the
+	## sentinel so the scripted-wipe trigger short-circuits — phase 2 is the
+	## "after the descent, retry path" scenario.
 	GameState.new_session()
+	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
+	AccountState.paladin_unlocked = true
 	GameState.unlock_hero(&"elara")
 	GameState.unlock_hero(&"vex")
 	var bran = GameState.get_hero(&"bran")
@@ -1155,4 +1165,128 @@ func _test_stage_1_neutrality_preserved() -> void:
 		"mult=%f (any value != 1.0 breaks the contract)" % bag_mult)
 	_check("stage-1 neutrality: hero atk unchanged with EMPTY bag",
 		atk_pre_bag == bran.data.atk_base + bran.eff_atk(), "shouldn't differ")
+	Combat.stop()
+
+## ---------- Scripted Pacing Rework C1 — Hot Paladin descend ----------
+
+func _test_paladin_defeat_trigger_at_50pct_hp() -> void:
+	## C1: Arcane Lich crosses 50% HP -> scripted AOE wipes deployed squad,
+	## sentinel set, paladin_unlocked = true, Helios granted, signal emitted.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 3
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	AccountState.scripted_pulls_seen = []
+	AccountState.current_stage = 3
+	Combat.start_wave(5, false)   ## boss wave at stage 3 -> arcane lich
+	## Find the lich enemy in the spawn list.
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i
+			break
+	_check("lich spawned at stage 3 boss wave", lich_idx >= 0,
+		"no lich found, enemies=%s" % str(GameState.enemies))
+	if lich_idx < 0:
+		Combat.stop(); return
+	## Drop lich HP to below 50% threshold.
+	var lich = GameState.enemies[lich_idx]
+	lich.hp = int(float(lich.max_hp) * 0.4)
+	## Listen for the signal.
+	var emitted: Array = [false]
+	var emit_capture: Callable = func(): emitted[0] = true
+	Combat.paladin_descend.connect(emit_capture, CONNECT_ONE_SHOT)
+	## One tick = boss-tick hooks fire.
+	Combat.step()
+	_check("paladin_descend signal emitted", emitted[0], "not emitted")
+	_check("sentinel defeat_stage_3_paladin recorded",
+		&"defeat_stage_3_paladin" in AccountState.scripted_pulls_seen,
+		"seen=%s" % str(AccountState.scripted_pulls_seen))
+	_check("paladin_unlocked = true",
+		AccountState.paladin_unlocked == true, "still false")
+	_check("Helios Cleaver granted + equipped on paladin",
+		AccountState.get_equipped(&"paladin") != null
+		and AccountState.get_equipped(&"paladin").id == &"w_helios_cleaver",
+		"equipped=%s" % str(AccountState.get_equipped(&"paladin")))
+	## Verify deployed squad (non-paladin) is dead.
+	var alive_deployed: int = 0
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin" and h.hp > 0:
+			alive_deployed += 1
+	_check("scripted AOE killed all deployed heroes (non-paladin)",
+		alive_deployed == 0, "alive=%d" % alive_deployed)
+	Combat.stop()
+
+func _test_paladin_defeat_skips_on_retry() -> void:
+	## C1: sentinel-guarded — retry path (sentinel already set) does NOT
+	## re-fire the scripted AOE. Normal phase 2 plays.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 3
+	AccountState.reset_account()
+	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
+	AccountState.paladin_unlocked = true
+	AccountState.current_stage = 3
+	Combat.start_wave(5, false)
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i; break
+	if lich_idx < 0:
+		_check("lich spawned at stage 3 retry", false, "no lich"); Combat.stop(); return
+	## Set lich HP to ~40% — above phase-2 threshold (33%) but below the scripted
+	## 50% gate. With sentinel already set, no AOE fires; phase-1 atk bump may apply
+	## (it crosses 66%) but squad must survive a single tick.
+	GameState.enemies[lich_idx].hp = int(float(GameState.enemies[lich_idx].max_hp) * 0.4)
+	## Boost hero HP so phase-1 atk bumps don't accidentally kill anyone in one tick.
+	for h in GameState.all_heroes():
+		h.hp = 9999
+		h.max_hp = 9999
+	## Count alive deployed before tick.
+	var alive_before: int = 0
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin" and h.hp > 0:
+			alive_before += 1
+	Combat.step()
+	var alive_after: int = 0
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin" and h.hp > 0:
+			alive_after += 1
+	_check("retry path: alive count unchanged by scripted AOE (sentinel guard)",
+		alive_after == alive_before,
+		"before=%d after=%d" % [alive_before, alive_after])
+	Combat.stop()
+
+func _test_paladin_defeat_only_on_lich_boss() -> void:
+	## C1: trigger lives inside _boss_tick_arcane_lich -> ONLY fires when lich
+	## is the active boss. Slime boss (stage 1) must not trigger paladin descend
+	## even if its HP crosses 50%. Stage-1 neutrality contract preserved.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 1
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	AccountState.scripted_pulls_seen = []
+	AccountState.current_stage = 1
+	Combat.start_wave(5, false)
+	## Drop boss HP to below 50%.
+	var boss_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if bool(GameState.enemies[i].get(&"is_boss", false)):
+			boss_idx = i; break
+	if boss_idx < 0:
+		_check("boss spawned at stage 1 boss wave", false, "no boss")
+		Combat.stop(); return
+	GameState.enemies[boss_idx].hp = int(float(GameState.enemies[boss_idx].max_hp) * 0.4)
+	var emitted: Array = [false]
+	Combat.paladin_descend.connect(func(): emitted[0] = true, CONNECT_ONE_SHOT)
+	Combat.step()
+	_check("paladin_descend NOT emitted on slime boss",
+		not emitted[0], "emitted on wrong boss")
+	_check("paladin still locked after slime fight",
+		AccountState.paladin_unlocked == false, "unlocked on wrong boss")
 	Combat.stop()

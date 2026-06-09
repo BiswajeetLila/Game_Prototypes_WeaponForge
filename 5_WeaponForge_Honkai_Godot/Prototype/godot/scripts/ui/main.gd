@@ -42,6 +42,7 @@ const RUN_FINAL_WAVE: int = GameState.RUN_FINAL_WAVE
 var _draft_modal: ColorRect = null
 var _pending_next_wave: int = -1
 var _kill_bar: ProgressBar = null
+var _catalyst_banner: Control = null
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -156,6 +157,41 @@ func _on_squad_wiped() -> void:
 func _on_boss_telegraph(text: String) -> void:
 	_notifications.show_banner(text, Color(1, 0.55, 0.55), 1.6)
 
+## Catalyst banner trigger — fires after boss_telegraph each wave.
+## Resolves the current squad+stage compound and shows the banner. Also records
+## codex discovery on AccountState.catalyst_codex_discovered (spec §7.5 data hook).
+func _on_stage_telegraph_for_catalyst(_text: String) -> void:
+	var resolver = preload("res://scripts/core/catalyst_resolver.gd")
+	var squad_weapons: Array = []
+	for h in GameState.active_heroes():
+		if h.weapon_data != null:
+			squad_weapons.append(h.weapon_data)
+	var resolved: Dictionary = resolver.resolve(squad_weapons, AccountState.current_stage)
+	var compound = resolved.get("compound", null)
+	if compound == null and not (resolved.get("compounds", []) as Array).is_empty():
+		compound = (resolved["compounds"] as Array)[0]
+	if compound != null:
+		_catalyst_banner.show_compound(compound)
+		_record_codex_discovery(resolved)
+	else:
+		_catalyst_banner.hide_banner()
+
+## Append every compound rendered to the player into AccountState.catalyst_codex_discovered.
+## Idempotent (deduped by id presence). Persists via autosave (called on AccountState mutations).
+func _record_codex_discovery(resolved: Dictionary) -> void:
+	var seen: Array = AccountState.catalyst_codex_discovered
+	var mutated: bool = false
+	var primary = resolved.get("compound", null)
+	if primary != null and not (primary["id"] in seen):
+		seen.append(primary["id"])
+		mutated = true
+	for c in resolved.get("compounds", []):
+		if not (c["id"] in seen):
+			seen.append(c["id"])
+			mutated = true
+	if mutated:
+		AccountState.autosave()
+
 func _on_hero_died(hero_id: StringName) -> void:
 	## Per-individual death — informational only. Squad keeps fighting as long
 	## as any_alive(); the stage-failure modal opens via _on_squad_wiped above.
@@ -184,6 +220,14 @@ func _build_battle_overlay(layer: CanvasLayer) -> void:
 	## The weapon strip that used to sit at vp.y - 44 is gone. Per-hero weapon
 	## name + ATK + run-card pips now render inside HeroCard.tscn (no more
 	## right-edge clip on narrow mobile-portrait viewports).
+
+	## Catalyst banner — fades in when a compound is active for the stage.
+	_catalyst_banner = preload("res://scripts/ui/catalyst_banner.gd").new()
+	_catalyst_banner.position = Vector2(0, 90.0)
+	_catalyst_banner.size = Vector2(vp.x, 88.0)
+	layer.add_child(_catalyst_banner)
+	## Hook the existing boss_telegraph signal — fires per Combat.start_wave.
+	Combat.boss_telegraph.connect(_on_stage_telegraph_for_catalyst, CONNECT_DEFERRED)
 
 func _on_meter_changed_ui(kills: int, needed: int) -> void:
 	if _kill_bar == null:

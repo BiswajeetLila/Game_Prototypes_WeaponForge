@@ -43,6 +43,10 @@ func _ready() -> void:
 		_test_dupe_pull_awards_gems()
 		_test_shard_drop_by_rarity()
 		_test_pull_spends_ember()
+		_test_scripted_pull_1_fire_warrior()
+		_test_scripted_pull_2_is_rng()
+		_test_scripted_pull_3_ice_mage()
+		_test_scripted_pulls_idempotent_after_resume()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -294,6 +298,78 @@ func _test_pull_signal() -> void:
 func _on_pull_completed(result: Dictionary) -> void:
 	_pull_signal_count += 1
 	_pull_signal_result = result
+
+## ---------- Catalyst v1 scripted pulls (Task B4) ----------
+
+func _test_scripted_pull_1_fire_warrior() -> void:
+	## Spec §6: Pull #1 on a fresh account -> guaranteed Fire weapon, warrior class.
+	## After owner amendment B2 (non-elemental Common starters), the only fire-warrior
+	## at Rare+ is w_cinderbrand_greatsword (Epic). Scripted pick lands there.
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = []
+	AccountState.pull_count = 0
+	var r: Dictionary = _wheel().pull()
+	_check("pull #1 returns a result", not r.is_empty(), "empty")
+	if not r.is_empty():
+		_check("pull #1 is fire", r.weapon.rune == &"fire", "rune=%s" % r.weapon.rune)
+		_check("pull #1 is warrior", r.weapon.cls == &"warrior", "cls=%s" % r.weapon.cls)
+		_check("pull #1 is Rare+ (rarity_idx >= 1)", r.weapon.rarity_idx >= 1,
+			"rarity=%d" % r.weapon.rarity_idx)
+	_check("scripted_pulls_seen includes pull_1_fire_warrior",
+		&"pull_1_fire_warrior" in AccountState.scripted_pulls_seen,
+		"seen=%s" % str(AccountState.scripted_pulls_seen))
+	_check("pull_count incremented to 1", AccountState.pull_count == 1,
+		"pull_count=%d" % AccountState.pull_count)
+
+func _test_scripted_pull_2_is_rng() -> void:
+	## Spec §6: pull #2 = normal RNG. Scripts only fire on pull # 1 and pull # 3.
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = []
+	AccountState.pull_count = 0
+	_wheel().pull()                    ## #1 (scripted)
+	var size_before: int = (AccountState.scripted_pulls_seen as Array).size()
+	_wheel().pull()                    ## #2 (should NOT add a sentinel)
+	_check("pull #2 doesn't add a new sentinel",
+		(AccountState.scripted_pulls_seen as Array).size() == size_before,
+		"size before=%d after=%d" % [size_before, (AccountState.scripted_pulls_seen as Array).size()])
+	_check("pull_count after 2 pulls == 2", AccountState.pull_count == 2,
+		"pull_count=%d" % AccountState.pull_count)
+
+func _test_scripted_pull_3_ice_mage() -> void:
+	## Spec §6: pull #3 = guaranteed Ice-mage. Lands on w_glacial_aegis_staff (Legendary,
+	## the only ice-mage at Rare+ after B2).
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = []
+	AccountState.pull_count = 0
+	_wheel().pull()                    ## #1
+	_wheel().pull()                    ## #2 (RNG)
+	var r3: Dictionary = _wheel().pull()
+	_check("pull #3 returns a result", not r3.is_empty(), "empty")
+	if not r3.is_empty():
+		_check("pull #3 is ice", r3.weapon.rune == &"ice", "rune=%s" % r3.weapon.rune)
+		_check("pull #3 is mage", r3.weapon.cls == &"mage", "cls=%s" % r3.weapon.cls)
+		_check("pull #3 is Rare+ (rarity_idx >= 1)", r3.weapon.rarity_idx >= 1,
+			"rarity=%d" % r3.weapon.rarity_idx)
+	_check("scripted_pulls_seen includes pull_3_ice_mage",
+		&"pull_3_ice_mage" in AccountState.scripted_pulls_seen,
+		"seen=%s" % str(AccountState.scripted_pulls_seen))
+	_check("pull_count after 3 pulls == 3", AccountState.pull_count == 3,
+		"pull_count=%d" % AccountState.pull_count)
+
+func _test_scripted_pulls_idempotent_after_resume() -> void:
+	## Spec §6: scripted_pulls_seen survives save/load (B1). If both sentinels exist
+	## and pull_count >= 3 on resume, a 4th pull (and beyond) is RNG with no script.
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = [&"pull_1_fire_warrior", &"pull_3_ice_mage"]
+	AccountState.pull_count = 3
+	var size_before: int = (AccountState.scripted_pulls_seen as Array).size()
+	var r: Dictionary = _wheel().pull()
+	_check("4th-pull-equivalent succeeds", not r.is_empty(), "empty")
+	_check("scripted_pulls_seen unchanged size (idempotent)",
+		(AccountState.scripted_pulls_seen as Array).size() == size_before,
+		"size before=%d after=%d" % [size_before, (AccountState.scripted_pulls_seen as Array).size()])
+	_check("pull_count advances to 4",
+		AccountState.pull_count == 4, "pull_count=%d" % AccountState.pull_count)
 
 ## ---------- Test helpers ----------
 

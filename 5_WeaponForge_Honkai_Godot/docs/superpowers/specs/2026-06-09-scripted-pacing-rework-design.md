@@ -290,16 +290,54 @@ Key candidates for tuning:
 
 ---
 
-## 11. Open Questions for owner review
+## 11. Owner-resolved decisions (locked 2026-06-10)
 
-- **Light glyph: ☀ vs 🌟 vs ✨ vs ⭐?** Spec defaults to ☀ (sun-knight thematic).
-- **Compound name rename pass:** Solar Flare / Halo Bloom / Plasma Arc / Auroral Veil are placeholder names. Owner-call.
-- **Voltedge Daggers stats fine?** ATK 21 fits Rare-tier baseline (between Common 17-18 and Epic 24-30). Or stricter / looser?
-- **Helios Cleaver stats fine?** ATK 28 mid-Epic. Or higher (this IS the rescue weapon)?
-- **Paladin ult kit:** placeholder "Solar Burst" 2.5x AOE. Real kit (heal, holy cleave, taunt?) deferred to v1.1 OR ship something more distinctive in v1?
-- **Pre-defeat boss telegraph wording:** does the briefing also hint at "you may not have what you need" so player isn't blindsided, OR pure cold telegraph?
-- **Bug 1 (auto-equip override) — still discarded?** Scripted pulls #1/#3/#5 still trigger auto-equip via existing `get_equipped == null` check, but only because heroes had non-elemental starters before pull #1. After pull #1 lands Bran's Cinderbrand, future pulls landing on Bran would NOT auto-equip (since slot is filled). Pull #3 to Vex / pull #5 to Elara should still auto-equip since those slots haven't been touched by prior scripted pulls. Confirm scripted pulls override the "get_equipped == null" guard so reveals always land?
-- **Stage 3 retry — squad rotation enforced or optional?** Player picks 3-of-4 for retry. Default: previous 3 selection persists; player can swap in Paladin. Or force-include Paladin so the scripted moment lands clean?
+- **Light glyph:** ☀ (sun-knight thematic, default accepted).
+- **Compound names:** Solar Flare / Halo Bloom / Plasma Arc / Auroral Veil — accepted as-is (Numbers Policy tunable later).
+- **Voltedge Daggers stats:** atk 21 / hp 12 / crit 10 / ult 5 — accepted (R-tier baseline).
+- **Helios Cleaver stats:** atk 28 / hp 30 / crit 8 / ult 10 — accepted (mid-Epic, paladin tank-leaning).
+- **Paladin ult kit:** placeholder Solar Burst 2.5x AOE for v1. Distinctive kit deferred to v1.1.
+- **Pre-defeat boss telegraph:** cold ("weak: ☀ light · resist: 🪨 earth"). No "you may not have what you need" hint. Player learns from the wipe.
+- **Scripted-pull auto-equip override:** YES — scripted picks (`_try_scripted_pick` results) force `AccountState.equip(hero_id, idx)` regardless of `get_equipped(hero_id)` state. RNG pulls keep current go-to-bench behavior (Bug 1 remains discarded for organic pulls).
+- **Stage 3 retry squad default:** Paladin auto-included in the deployed 3 (player can swap him out via squad-selection if they want — but default = Paladin on the team).
+
+## 11a. Economy adjustment — Option A (locked)
+
+Ember accrual is bumped so the scripted-pull timeline lands consistently:
+
+```
+EMBER_BOSS_BONUS      1 -> 3
+EMBER_VICTORY_BONUS   2 -> 4
+```
+
+Total per cleared stage = **7 ember** (was 3). Pull cost unchanged at 5. Net 1+ pull per stage with a small buffer for tail-end ramp.
+
+### Per-stage ember math (Option A locked)
+
+| Beat | Ember pre | Action | Ember post | Pull # |
+|---|---|---|---|---|
+| Boot | 5 | Pull #1 Bran fire scripted | 0 | 1 |
+| Stage 1 clear | 0 | +7 (boss 3 + victory 4) | 7 | — |
+| Pull #2 (mid-stage 2) | 7 | RNG | 2 | 2 |
+| Stage 2 clear | 2 | +7 | 9 | — |
+| Pull #3 Vex electric scripted | 9 | cost 5 | 4 | 3 |
+| Stage 3 first attempt | 4 | scripted wipe → no clear bonus | 4 | — |
+| Stage 3 retry clear | 4 | +7 | 11 | — |
+| Pull #4 (mid-stage 4) | 11 | RNG | 6 | 4 |
+| Stage 4 clear | 6 | +7 | 13 | — |
+| Pull #5 Elara ice scripted | 13 | cost 5 | 8 | 5 |
+| Stage 5 entry | 8 | no-cap multi-compound stack ✓ | — | — |
+
+Pacing lands clean. Pull #3 (Vex) consistently lands BEFORE Stage 3 boss. Pull #5 (Elara) lands BEFORE Stage 5 (first no-cap stage).
+
+## 11b. Hot Paladin descend cinematic asset (locked)
+
+The descend cinematic uses a single full-screen reveal image:
+
+- **Source:** `5_WeaponForge_Honkai_Godot/Mockup/all-mockups/A13_paladin-entry_2E-ref.png` (1.4MB, 2E mockup-quality reference).
+- **Godot asset path:** `Prototype/godot/assets/generated/cinematics/paladin_entry.png` (copied + tracked).
+- **Display:** when `Combat.paladin_descend` fires, `main.gd` builds a full-screen `ColorRect` dim overlay + `TextureRect` showing the paladin image, centered. Fade-in over 0.6s, hold 2.0s, "Continue" button reveals → routes to retry.
+- **Cinematic copy:** placeholder text overlay: "💎 HOT PALADIN DESCENDS\nHelios Cleaver — Light burns the lich." (Numbers Policy tunable.)
 
 ---
 

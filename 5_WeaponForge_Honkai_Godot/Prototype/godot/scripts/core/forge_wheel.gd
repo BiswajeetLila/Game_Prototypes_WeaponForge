@@ -36,6 +36,13 @@ const SHARD_RARITY_ODDS: Array = [55, 85, 97, 100]
 const SCRIPT_PULL_1_SENTINEL: StringName = &"pull_1_fire_warrior"
 const SCRIPT_PULL_3_SENTINEL: StringName = &"pull_3_ice_mage"
 
+## Scripted-grant-only weapons. Granted via cinematic events (Hot Paladin
+## descend C-chunk, future Master Smith S10, etc.) — never via RNG.
+## eligible_weapons() filters these out before the class-fielded check so
+## once a hero class becomes fielded (e.g. paladin post-Stage-3 defeat),
+## their scripted weapon doesn't leak into the gacha pool.
+const SCRIPTED_GRANT_IDS: Array = [&"w_helios_cleaver"]
+
 const RARITY_NAMES: Array = ["Common", "Rare", "Epic", "Legendary", "Mythic"]
 const RARITY_COLORS: Array = [
 	Color(0.75, 0.75, 0.75),  ## common - grey
@@ -63,6 +70,8 @@ func eligible_weapons() -> Array:
 	var out: Array = []
 	var fielded: Dictionary = GameState.fielded_classes()
 	for id in GameState.weapon_ids:
+		if id in SCRIPTED_GRANT_IDS:
+			continue   ## B1: scripted-grant only; never RNG-pulled
 		var w = GameState.weapons_by_id[id]
 		if fielded.has(w.cls):
 			out.append(w)

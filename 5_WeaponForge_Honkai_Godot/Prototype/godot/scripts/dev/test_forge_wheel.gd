@@ -49,6 +49,8 @@ func _ready() -> void:
 		_test_scripted_pull_2_is_rng()
 		_test_scripted_pull_3_ice_mage()
 		_test_scripted_pulls_idempotent_after_resume()
+		_test_scripted_grant_ids_const_present()
+		_test_helios_not_in_pull_pool()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -401,6 +403,35 @@ func _test_scripted_pulls_idempotent_after_resume() -> void:
 		"size before=%d after=%d" % [size_before, (AccountState.scripted_pulls_seen as Array).size()])
 	_check("pull_count advances to 4",
 		AccountState.pull_count == 4, "pull_count=%d" % AccountState.pull_count)
+
+## ---------- Scripted Pacing Rework Chunk B (2026-06-10) ----------
+
+func _test_scripted_grant_ids_const_present() -> void:
+	## B1: SCRIPTED_GRANT_IDS const declared so future scripted weapons can be
+	## added without touching eligible_weapons() logic. Includes Helios Cleaver
+	## (Hot Paladin's signature, granted via Stage-3 boss defeat — never RNG).
+	var fw = get_node("/root/ForgeWheel")
+	_check("SCRIPTED_GRANT_IDS const exists",
+		"SCRIPTED_GRANT_IDS" in fw,
+		"missing")
+	if "SCRIPTED_GRANT_IDS" in fw:
+		_check("SCRIPTED_GRANT_IDS includes w_helios_cleaver",
+			&"w_helios_cleaver" in fw.SCRIPTED_GRANT_IDS,
+			"helios missing from exclusion list")
+
+func _test_helios_not_in_pull_pool() -> void:
+	## B1: SCRIPTED_GRANT_IDS filters Helios Cleaver out of eligible_weapons.
+	## Helios is granted via Stage 3 boss defeat (Chunk C), never via RNG.
+	## Today paladin class isn't yet fielded (A3 skip in fielded_classes) so this
+	## assertion is defense-in-depth — once A6 lifts the skip, this filter holds
+	## the line and keeps helios out of the gacha pool.
+	_fresh(600, 9999)
+	var ids_in_pool: Dictionary = {}
+	for w in _wheel().eligible_weapons():
+		ids_in_pool[w.id] = true
+	_check("helios NOT in eligible pool",
+		not ids_in_pool.has(&"w_helios_cleaver"),
+		"leaked into pool: %s" % str(ids_in_pool.keys()))
 
 ## ---------- Test helpers ----------
 

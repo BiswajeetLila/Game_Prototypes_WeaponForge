@@ -4,10 +4,12 @@
 ## Pure data class — static fns only, no instance state. RefCounted so callers
 ## can `preload`/`load` and call without an autoload entry.
 ##
-## 10 compounds: 6 FTUE-reachable (gated_from_stage = 0) + 4 Earth-pair gated
-## from stage 10 (per the design spec's Earth gate at S10). v1 implements all 10
-## as simple modifier-bag rows; Earth-pair compounds carry a placeholder
-## squad_atk_mult of 1.15 until v2 lands their rich effects.
+## 14 compounds: 6 FTUE-reachable original pairs + 4 light-pair compounds
+## (gated_from_stage = 0; the light *element* gates at the weapon-grant level
+## via Stage 3 Hot Paladin defeat) + 4 Earth-pair compounds gated from stage 10
+## (per the design spec's Earth gate at S10). v1 implements all rows as simple
+## modifier-bag entries; Earth-pair compounds carry a placeholder squad_atk_mult
+## of 1.15 until v2 lands their rich effects.
 ##
 ## Modifier bag schema (spec §3):
 ##   squad_atk_mult         (1.0 neutral, multiplicative)
@@ -34,11 +36,18 @@ const ELEM_GLYPH: Dictionary = {
 
 ## Cap-1 alphabetical priority — by COMPOUND name (CLAUDE.md §13).
 ## Lower index = higher priority.
-##   Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire
+##   Auroral Veil > Blizzard > Firestorm > Glacial Storm > Halo Bloom >
+##   Plasma > Plasma Arc > Solar Flare > Stormfront > Wildfire
 ##   then Earth unlocks (S10+):
 ##   Magnetic Storm > Permafrost > Sandstorm > Volcanic
+##
+## Light-pair compounds (Auroral Veil / Halo Bloom / Plasma Arc / Solar Flare)
+## added in the scripted-pacing-rework A5 task — they are FTUE-accessible
+## (gated_from_stage = 0); the *element* unlock gates at the weapon-grant level
+## via Stage 3 Hot Paladin defeat, not in the resolver.
 const _PRIORITY_ORDER: Array = [
-	&"blizzard", &"firestorm", &"glacial_storm", &"plasma",
+	&"auroral_veil", &"blizzard", &"firestorm", &"glacial_storm",
+	&"halo_bloom", &"plasma", &"plasma_arc", &"solar_flare",
 	&"stormfront", &"wildfire",
 	&"magnetic_storm", &"permafrost", &"sandstorm", &"volcanic",
 ]
@@ -51,7 +60,7 @@ static func _pair_key(a: StringName, b: StringName) -> StringName:
 		return StringName("%s+%s" % [sa, sb])
 	return StringName("%s+%s" % [sb, sa])
 
-## Canonical 10-record table. Each record:
+## Canonical 14-record table. Each record:
 ##   { id: StringName, pair_key: StringName, elements: [StringName, StringName],
 ##     display_name: String, modifier_bag: Dictionary, gated_from_stage: int,
 ##     alphabetical_priority: int }
@@ -81,6 +90,26 @@ static func compounds() -> Array:
 		{"id": &"stormfront", "elements": [&"wind", &"electric"], "display_name": "Stormfront",
 			"modifier_bag": {&"squad_atk_mult": 1.0, &"squad_crit_add": 0.0,
 				&"enemy_atk_speed_mult": 1.0, &"squad_atk_vs_swarm_mult": 1.25},
+			"gated_from_stage": 0},
+		## ---------- Light pairs (Hot Paladin scripted-pacing-rework, 2026-06-10) ----------
+		## gated_from_stage = 0: the light *element* itself unlocks via Stage 3
+		## Hot Paladin defeat at the weapon-grant level — once a squad equips a
+		## light weapon, all 4 of these compounds are resolver-eligible.
+		{"id": &"solar_flare", "elements": [&"light", &"fire"], "display_name": "Solar Flare",
+			"modifier_bag": {&"squad_atk_mult": 1.20, &"squad_crit_add": 0.0,
+				&"enemy_atk_speed_mult": 1.0, &"squad_atk_vs_swarm_mult": 1.0},
+			"gated_from_stage": 0},
+		{"id": &"halo_bloom", "elements": [&"light", &"ice"], "display_name": "Halo Bloom",
+			"modifier_bag": {&"squad_atk_mult": 1.15, &"squad_crit_add": 0.10,
+				&"enemy_atk_speed_mult": 1.0, &"squad_atk_vs_swarm_mult": 1.0},
+			"gated_from_stage": 0},
+		{"id": &"plasma_arc", "elements": [&"light", &"electric"], "display_name": "Plasma Arc",
+			"modifier_bag": {&"squad_atk_mult": 1.25, &"squad_crit_add": 0.0,
+				&"enemy_atk_speed_mult": 1.0, &"squad_atk_vs_swarm_mult": 1.0},
+			"gated_from_stage": 0},
+		{"id": &"auroral_veil", "elements": [&"light", &"wind"], "display_name": "Auroral Veil",
+			"modifier_bag": {&"squad_atk_mult": 1.0, &"squad_crit_add": 0.0,
+				&"enemy_atk_speed_mult": 0.80, &"squad_atk_vs_swarm_mult": 1.0},
 			"gated_from_stage": 0},
 		## Earth pairs — gated_from_stage 10. v1 placeholder bag = +15% ATK; v2 = rich effects.
 		{"id": &"volcanic", "elements": [&"fire", &"earth"], "display_name": "Volcanic",

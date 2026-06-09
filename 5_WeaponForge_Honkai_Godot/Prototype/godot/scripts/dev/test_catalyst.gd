@@ -17,7 +17,7 @@ var _lines: Array = []
 
 func _ready() -> void:
 	_log("=== CatalystData + CatalystResolver tests ===")
-	_test_compounds_returns_ten_records()
+	_test_compounds_now_fourteen()
 	_test_for_pair_order_independent()
 	_test_for_pair_empty_element_rejected()
 	_test_resolve_empty_squad_returns_neutral()
@@ -41,15 +41,20 @@ func _ready() -> void:
 	_test_format_effect_glyph_prefix()
 	_test_format_effect_glyph_prefix_neutral_bag()
 	_test_elem_glyph_includes_light()
+	_test_for_pair_light_combinations()
+	_test_alpha_priority_with_light()
+	_test_light_compound_bag_values()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
 		get_tree().quit(_failed)
 
-func _test_compounds_returns_ten_records() -> void:
-	## Spec §2: 6 active FTUE compounds + 4 Earth-gated = 10 total.
+func _test_compounds_now_fourteen() -> void:
+	## A5: 4 new light-pair compounds raise total to 14 (10 prior + 4 light).
+	## Earth-gated quartet still gated_from_stage = 10.
 	var rows: Array = CatalystDataT.compounds()
-	_check("compounds() returns 10 records", rows.size() == 10, "size=%d" % rows.size())
+	_check("compounds() returns 14 records", rows.size() == 14,
+		"size=%d" % rows.size())
 	var earth_gated: int = 0
 	for r in rows:
 		if int(r.get("gated_from_stage", 0)) >= 10:
@@ -302,6 +307,64 @@ func _test_elem_glyph_includes_light() -> void:
 	_check("ELEM_GLYPH[light] == ☀",
 		String(CatalystDataT.ELEM_GLYPH.get(&"light", "")) == "☀",
 		"got=%s" % CatalystDataT.ELEM_GLYPH.get(&"light", ""))
+
+## ---------- Scripted Pacing Rework A5 — light-pair compounds ----------
+
+func _test_for_pair_light_combinations() -> void:
+	## A5: 4 light pairs map to Solar Flare / Halo Bloom / Plasma Arc / Auroral Veil.
+	var pairs: Array = [
+		[&"light", &"fire", &"solar_flare", "Solar Flare"],
+		[&"light", &"ice", &"halo_bloom", "Halo Bloom"],
+		[&"light", &"electric", &"plasma_arc", "Plasma Arc"],
+		[&"light", &"wind", &"auroral_veil", "Auroral Veil"],
+	]
+	for p in pairs:
+		var r: Dictionary = CatalystDataT.for_pair(p[0], p[1])
+		_check("for_pair(%s,%s) -> %s" % [p[0], p[1], p[2]],
+			r.get("id", &"") == p[2], "id=%s" % r.get("id", &""))
+		_check("for_pair(%s,%s) display = '%s'" % [p[0], p[1], p[3]],
+			String(r.get("display_name", "")) == p[3],
+			"display=%s" % r.get("display_name", ""))
+
+func _test_alpha_priority_with_light() -> void:
+	## A5: 14-row alpha-sorted priority order includes light compounds at
+	## correct positions. Auroral Veil precedes Blizzard; Halo Bloom between
+	## Glacial Storm and Plasma; Plasma Arc + Solar Flare between Plasma and
+	## Stormfront.
+	var sorted: Array = CatalystDataT.by_priority()
+	var expected: Array = [
+		&"auroral_veil", &"blizzard", &"firestorm", &"glacial_storm",
+		&"halo_bloom", &"plasma", &"plasma_arc", &"solar_flare",
+		&"stormfront", &"wildfire",
+		&"magnetic_storm", &"permafrost", &"sandstorm", &"volcanic",
+	]
+	_check("by_priority returns 14 rows", sorted.size() == 14,
+		"size=%d" % sorted.size())
+	for i in range(expected.size()):
+		if i < sorted.size():
+			_check("alpha-priority[%d] = %s" % [i, expected[i]],
+				sorted[i]["id"] == expected[i],
+				"got=%s expected=%s" % [sorted[i]["id"], expected[i]])
+
+func _test_light_compound_bag_values() -> void:
+	## A5: spec §3 starting values. Solar Flare 1.20 atk; Halo Bloom 1.15 atk +
+	## 0.10 crit; Plasma Arc 1.25 atk; Auroral Veil 0.80 enemy atk-spd.
+	var solar: Dictionary = CatalystDataT.for_pair(&"light", &"fire")
+	_check("Solar Flare squad_atk_mult = 1.20",
+		is_equal_approx(float(solar["modifier_bag"].get(&"squad_atk_mult", 1.0)), 1.20),
+		"mult=%f" % float(solar["modifier_bag"].get(&"squad_atk_mult", 1.0)))
+	var halo: Dictionary = CatalystDataT.for_pair(&"light", &"ice")
+	_check("Halo Bloom squad_crit_add = 0.10",
+		is_equal_approx(float(halo["modifier_bag"].get(&"squad_crit_add", 0.0)), 0.10),
+		"add=%f" % float(halo["modifier_bag"].get(&"squad_crit_add", 0.0)))
+	var plasma_arc: Dictionary = CatalystDataT.for_pair(&"light", &"electric")
+	_check("Plasma Arc squad_atk_mult = 1.25",
+		is_equal_approx(float(plasma_arc["modifier_bag"].get(&"squad_atk_mult", 1.0)), 1.25),
+		"mult=%f" % float(plasma_arc["modifier_bag"].get(&"squad_atk_mult", 1.0)))
+	var auroral: Dictionary = CatalystDataT.for_pair(&"light", &"wind")
+	_check("Auroral Veil enemy_atk_speed_mult = 0.80",
+		is_equal_approx(float(auroral["modifier_bag"].get(&"enemy_atk_speed_mult", 1.0)), 0.80),
+		"mult=%f" % float(auroral["modifier_bag"].get(&"enemy_atk_speed_mult", 1.0)))
 
 ## ---------- fixtures ----------
 

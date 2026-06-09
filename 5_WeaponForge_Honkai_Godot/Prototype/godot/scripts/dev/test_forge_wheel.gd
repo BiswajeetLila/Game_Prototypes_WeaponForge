@@ -179,8 +179,11 @@ func _test_pull_drops_two_shards() -> void:
 		"shards=%s" % str(r.get("shards", null)))
 	_check("2 shards added to inventory", AccountState.shards.size() == before + 2,
 		"delta=%d" % (AccountState.shards.size() - before))
-	_check("dropped shards carry the weapon's element (fire)",
-		r.has("shards") and r.shards.size() == 2 and r.shards[0].element == &"fire", "wrong element")
+	## B2: Common-tier emberfang is now non-elemental (rune = &""); shards mint with
+	## the weapon's element so a non-elemental Common pull yields non-elemental shards.
+	_check("dropped shards carry the weapon's element (Common = non-elemental)",
+		r.has("shards") and r.shards.size() == 2 and r.shards[0].element == &"",
+		"wrong element; got %s" % str(r.shards[0].element if r.shards.size() > 0 else "no shards"))
 
 ## Task 5 economy: re-pulling an owned weapon awards gems (rarity-scaled) instead
 ## of feeding star-up. The dupe-forcing mechanism is identical to the old test:

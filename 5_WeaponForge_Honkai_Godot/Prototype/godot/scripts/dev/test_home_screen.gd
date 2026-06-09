@@ -57,10 +57,31 @@ func _ready() -> void:
 	_check("refresh survives an out-of-bounds selection (no crash)", true, "")
 
 	hs.queue_free()
+
+	_test_starters_are_non_elemental()
+
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
 		get_tree().quit(_failed)
+
+## ---------- Catalyst v1 (Task B2) ----------
+
+func _test_starters_are_non_elemental() -> void:
+	## Spec §6: starters preserve the stage-1 neutrality contract. The 3 Common
+	## .tres files (emberfang/frostcall/stormpierce) have rune stripped to &"".
+	## _grant_starter_if_first_boot grants those same ids, so the equipped squad
+	## carries no element on first boot -> no Catalyst possible until pulls hit Rare+.
+	AccountState.reset_account()
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	for hero_id in [&"bran", &"elara", &"vex"]:
+		var w = AccountState.get_equipped(hero_id)
+		_check("starter equipped for %s" % hero_id, w != null, "null")
+		if w != null:
+			_check("%s starter rune == &\"\"" % hero_id, w.rune == &"",
+				"rune=%s" % str(w.rune))
+	hs.queue_free()
 
 ## ---------- Helpers ----------
 

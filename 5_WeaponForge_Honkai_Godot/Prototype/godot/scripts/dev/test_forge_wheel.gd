@@ -52,6 +52,8 @@ func _ready() -> void:
 		_test_scripted_pulls_idempotent_after_resume()
 		_test_scripted_grant_ids_const_present()
 		_test_helios_not_in_pull_pool()
+		_test_scripted_pull_force_equips_over_starter()
+		_test_rng_pull_still_goes_to_bench_when_armed()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -457,6 +459,59 @@ func _test_helios_not_in_pull_pool() -> void:
 	_check("helios NOT in eligible pool",
 		not ids_in_pool.has(&"w_helios_cleaver"),
 		"leaked into pool: %s" % str(ids_in_pool.keys()))
+
+func _test_scripted_pull_force_equips_over_starter() -> void:
+	## B3: scripted pull #1 (Bran fire) force-equips Cinderbrand on Bran even when
+	## Bran's non-elemental starter (Emberfang, rune="") is already in the slot.
+	## Without B3 the elemental sits in bench; reveal lands silently.
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = []
+	AccountState.pull_count = 0
+	## Grant non-elemental starter to Bran first (mimics _grant_starter_if_first_boot).
+	var starter = GameState.weapons_by_id[&"w_emberfang_cleaver"].duplicate(true)
+	AccountState.owned_weapons = [starter]
+	AccountState.equip(&"bran", 0)
+	## Sanity: Bran's slot is occupied by starter pre-pull.
+	_check("pre-pull: Bran equipped starter (rune empty)",
+		AccountState.get_equipped(&"bran") != null
+		and AccountState.get_equipped(&"bran").rune == &"",
+		"unexpected pre-state")
+	## Pull #1 scripted — Cinderbrand should force-equip on Bran.
+	var r: Dictionary = _wheel().pull()
+	_check("pull #1 returns a result", not r.is_empty(), "empty")
+	if not r.is_empty():
+		_check("Bran now equipped Cinderbrand (force-equipped over starter)",
+			AccountState.get_equipped(&"bran") != null
+			and AccountState.get_equipped(&"bran").id == &"w_cinderbrand_greatsword",
+			"equipped=%s" % str(AccountState.get_equipped(&"bran")))
+		_check("scripted pull result carries auto_equipped == true",
+			bool(r.get("auto_equipped", false)), "auto_equipped=%s" % str(r.get("auto_equipped")))
+
+func _test_rng_pull_still_goes_to_bench_when_armed() -> void:
+	## B3: only SCRIPTED pulls force-equip. RNG pulls keep current "if armed, go
+	## to bench" behavior so players retain agency over organic loadout.
+	_fresh(600, 9999)
+	AccountState.scripted_pulls_seen = [&"pull_1_fire_warrior", &"pull_3_electric_rogue", &"pull_5_ice_mage"]
+	AccountState.pull_count = 5   ## past all scripted slots -> next pull is RNG
+	## Bran already armed with a duplicated emberfang (starter).
+	var starter = GameState.weapons_by_id[&"w_emberfang_cleaver"].duplicate(true)
+	AccountState.owned_weapons = [starter]
+	AccountState.equip(&"bran", 0)
+	var equipped_before: Resource = AccountState.get_equipped(&"bran")
+	## Pull #6 = pure RNG.
+	var r: Dictionary = _wheel().pull()
+	_check("pull #6 returns a result", not r.is_empty(), "empty")
+	if not r.is_empty():
+		## If RNG happened to roll a warrior weapon, the new weapon should be in
+		## bench (not equipped on Bran) — Bran's equipped slot unchanged.
+		var equipped_after: Resource = AccountState.get_equipped(&"bran")
+		if r.weapon.cls == &"warrior":
+			_check("RNG warrior pull goes to bench (Bran's equipped unchanged)",
+				equipped_after == equipped_before,
+				"Bran's slot changed: before=%s after=%s" % [equipped_before, equipped_after])
+		else:
+			## Non-warrior pull doesn't target Bran's slot anyway — skip the assert.
+			_check("RNG non-warrior pull doesn't touch Bran (skipped)", true, "")
 
 ## ---------- Test helpers ----------
 

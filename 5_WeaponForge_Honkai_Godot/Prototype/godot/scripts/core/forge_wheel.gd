@@ -90,9 +90,12 @@ func pull() -> Dictionary:
 		return {}
 	## Scripted picks override RNG when scheduled (pull #1 + pull #3 only) AND a
 	## matching eligible weapon exists. Falls through to RNG otherwise.
+	var scripted_pick: bool = false
 	var catalog_pick = _try_scripted_pick(eligible)
 	if catalog_pick == null:
 		catalog_pick = _weighted_pick(eligible)
+	else:
+		scripted_pick = true
 	var hero_id: StringName = _first_hero_of_class(catalog_pick.cls)
 	var hero = GameState.get_hero(hero_id)
 	var old_atk: int = (hero.data.atk_base + hero.eff_atk()) if hero != null else 0
@@ -115,7 +118,11 @@ func pull() -> Dictionary:
 		dupe_action = "gems"
 	else:
 		owned = AccountState.acquire_weapon(catalog_pick)
-		if AccountState.get_equipped(hero_id) == null:
+		## B3 scripted-pull force-equip override (per spec §11 owner decision):
+		## scripted picks force-equip over existing starter/loadout so the reveal
+		## lands visually. RNG pulls keep current "if armed, go to bench" behavior
+		## so players retain agency over organic loadout choices.
+		if AccountState.get_equipped(hero_id) == null or scripted_pick:
 			auto_equipped = AccountState.equip(hero_id, AccountState.owned_weapons.size() - 1)
 			if auto_equipped and hero != null:
 				GameState.equip_weapon_data(hero_id, owned)

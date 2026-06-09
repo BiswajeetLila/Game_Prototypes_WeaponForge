@@ -6,7 +6,7 @@
 script = ExtResource("1")
 id = &"boss_arcane_lich"
 name = "Arcane Lich"
-hp_base = 600
+hp_base = 300
 hp_per_wave = 0
 dmg_base = 0
 dmg_per_wave = 0.0

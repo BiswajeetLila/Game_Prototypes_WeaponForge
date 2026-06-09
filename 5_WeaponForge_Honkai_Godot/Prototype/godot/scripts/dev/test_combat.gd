@@ -771,10 +771,10 @@ func _test_boss_iron_golem_tres_loads() -> void:
 func _test_boss_arcane_lich_tres_loads() -> void:
 	var def = GameState.get_enemy_def(&"boss_arcane_lich")
 	var ok: bool = def != null \
-		and def.hp_base == 600 \
+		and def.hp_base == 300 \
 		and bool(def.get(&"is_boss")) == true \
 		and int(def.get(&"atk_override")) == 36
-	_check("boss_arcane_lich tres: hp=600 atk=36 is_boss=true",
+	_check("boss_arcane_lich tres: hp=300 atk=36 is_boss=true  (50%% nerf 2026-06-09)",
 		ok, "def=%s" % str(def))
 
 func _test_revive_squad_for_retry_resets_all() -> void:

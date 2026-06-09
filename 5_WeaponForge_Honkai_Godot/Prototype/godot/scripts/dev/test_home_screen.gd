@@ -59,6 +59,8 @@ func _ready() -> void:
 	hs.queue_free()
 
 	_test_starters_are_non_elemental()
+	_test_squad_line_hidden_when_no_pair()
+	_test_squad_line_shows_firestorm_when_fire_ice()
 
 	_summary()
 	_render_to_ui()
@@ -81,6 +83,40 @@ func _test_starters_are_non_elemental() -> void:
 		if w != null:
 			_check("%s starter rune == &\"\"" % hero_id, w.rune == &"",
 				"rune=%s" % str(w.rune))
+	hs.queue_free()
+
+## ---------- Catalyst v1 squad-line (Task C1) ----------
+
+func _test_squad_line_hidden_when_no_pair() -> void:
+	## Spec §7.1: with 0-1 distinct elements, the catalyst readout is hidden.
+	## A fresh-boot squad (non-elemental Commons post-B2) -> no Catalyst phrase.
+	AccountState.reset_account()
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._refresh()
+	var s: String = hs._squad_line.text
+	_check("squad line lacks Catalyst phrase pre-pair",
+		not s.contains("Catalyst"), "text=%s" % s)
+	hs.queue_free()
+
+func _test_squad_line_shows_firestorm_when_fire_ice() -> void:
+	## Equip Rare+ fire-warrior + Rare+ ice-mage (Commons are non-elemental post-B2).
+	## The squad line gains "Catalyst: Firestorm (+20% squad ATK)".
+	AccountState.reset_account()
+	## Use Cinderbrand (Epic fire warrior) + Glacial Aegis Staff (Legendary ice mage).
+	var fire_w = GameState.weapons_by_id[&"w_cinderbrand_greatsword"].duplicate(true)
+	var ice_w = GameState.weapons_by_id[&"w_glacial_aegis_staff"].duplicate(true)
+	AccountState.owned_weapons = [fire_w, ice_w]
+	AccountState.equip(&"bran", 0)
+	AccountState.equip(&"elara", 1)
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._refresh()
+	var s: String = hs._squad_line.text
+	_check("squad line includes Catalyst", s.contains("Catalyst"), "text=%s" % s)
+	_check("squad line names Firestorm", s.contains("Firestorm"), "text=%s" % s)
+	_check("squad line shows +20% ATK effect", s.contains("+20") and s.contains("ATK"),
+		"text=%s" % s)
 	hs.queue_free()
 
 ## ---------- Helpers ----------

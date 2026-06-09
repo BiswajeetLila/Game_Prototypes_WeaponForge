@@ -308,10 +308,48 @@ func _make_empty_tile() -> Panel:
 
 func _refresh_squad_line() -> void:
 	var icons: Array = []
+	var squad_weapons: Array = []
 	for id in ROSTER_IDS:
 		var w = AccountState.get_equipped(id)
 		icons.append(_elem_icon(w.rune) if w != null else "·")
-	_squad_line.text = "Squad elements:  %s" % "  ".join(icons)
+		if w != null:
+			squad_weapons.append(w)
+	var base: String = "Squad elements:  %s" % "  ".join(icons)
+	## Catalyst readout (spec §7.1): when >= 2 distinct elements form a defined
+	## pair, append the compound name + effect. Hidden otherwise (pre-pair state).
+	var resolver = load("res://scripts/core/catalyst_resolver.gd")
+	var resolved: Dictionary = resolver.resolve(squad_weapons, AccountState.current_stage)
+	var compound = resolved.get("compound", null)
+	## stage >= 5 (no-cap) — show the FIRST triggering compound (alpha priority).
+	if compound == null and not (resolved.get("compounds", []) as Array).is_empty():
+		compound = (resolved["compounds"] as Array)[0]
+	if compound == null:
+		_squad_line.text = base
+		return
+	var name_s: String = String(compound.get("display_name", ""))
+	var effect_s: String = _format_compound_effect(compound)
+	_squad_line.text = "%s\n💠 Catalyst: %s  (%s)" % [base, name_s, effect_s]
+
+## Renders a compound's modifier_bag as a human-readable effect string. Used by
+## the squad line + (Task C2) the pre-stage briefing dialog.
+func _format_compound_effect(rec: Dictionary) -> String:
+	var mb: Dictionary = rec.get("modifier_bag", {})
+	var parts: Array = []
+	var atk_mult: float = float(mb.get(&"squad_atk_mult", 1.0))
+	if not is_equal_approx(atk_mult, 1.0):
+		parts.append("+%d%% squad ATK" % int(round((atk_mult - 1.0) * 100.0)))
+	var crit_add: float = float(mb.get(&"squad_crit_add", 0.0))
+	if not is_equal_approx(crit_add, 0.0):
+		parts.append("+%d%% crit" % int(round(crit_add * 100.0)))
+	var enemy_as: float = float(mb.get(&"enemy_atk_speed_mult", 1.0))
+	if not is_equal_approx(enemy_as, 1.0):
+		parts.append("-%d%% enemy atk-spd" % int(round((1.0 - enemy_as) * 100.0)))
+	var swarm: float = float(mb.get(&"squad_atk_vs_swarm_mult", 1.0))
+	if not is_equal_approx(swarm, 1.0):
+		parts.append("+%d%% ATK vs swarm" % int(round((swarm - 1.0) * 100.0)))
+	if parts.is_empty():
+		return "no effect"
+	return " · ".join(parts)
 
 func _refresh_detail() -> void:
 	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():

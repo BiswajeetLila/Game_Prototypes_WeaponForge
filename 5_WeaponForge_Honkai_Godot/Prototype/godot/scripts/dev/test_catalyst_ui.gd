@@ -21,7 +21,7 @@ func _ready() -> void:
 	_test_chip_renders_single_compound()
 	_test_chip_stacks_three_compounds()
 	_test_chip_hides_when_empty_array()
-	_test_chip_replaces_rows_on_resize_call()
+	_test_chip_set_compounds_replaces_rows()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -114,8 +114,10 @@ func _test_chip_hides_when_empty_array() -> void:
 		"rows=%d" % chip._rows.get_child_count())
 	chip.queue_free()
 
-func _test_chip_replaces_rows_on_resize_call() -> void:
-	## set_compounds called twice -> old rows freed, new rows reflect the latest call.
+func _test_chip_set_compounds_replaces_rows() -> void:
+	## set_compounds called twice -> old rows synchronously freed, new rows
+	## reflect the latest call's record count. Synchronous remove_child+free
+	## (catalyst_chip.gd) means get_child_count() is stable in the same frame.
 	var chip = CatalystChipT.new()
 	add_child(chip)
 	chip.set_compounds([
@@ -127,13 +129,8 @@ func _test_chip_replaces_rows_on_resize_call() -> void:
 	chip.set_compounds([
 		{"id": &"blizzard", "display_name": "Blizzard", "elements": [&"ice", &"wind"], "modifier_bag": {}},
 	])
-	## queue_free is deferred — assert the array tracks the intent via children-after-process.
-	## Use call_deferred or await a frame; simplest is to verify size eventually settles to 1.
-	## For this in-frame test, accept that get_child_count() may still include freeing nodes;
-	## assert via tree's process-then-count by yielding via add/free pattern.
-	## Simplified: just re-count after the SAME frame returns (queue_free schedules removal at
-	## end of frame; for a one-shot test the test_catalyst_ui scene drives _ready synchronously).
-	## Verify visible stays true (one compound still active).
+	_check("re-set with 1 record -> _rows shrinks to 1", chip._rows.get_child_count() == 1,
+		"rows=%d (expected 1)" % chip._rows.get_child_count())
 	_check("chip still visible after re-set", chip.visible == true, "hidden after re-set")
 	chip.queue_free()
 

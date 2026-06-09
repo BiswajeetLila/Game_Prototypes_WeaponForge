@@ -30,6 +30,7 @@ func _ready() -> void:
 	_test_earth_pair_skipped_below_stage10()
 	_test_earth_pair_triggers_at_stage10()
 	_test_stormfront_swarm_field_present()
+	_test_resolve_nocap_compounds_alpha_sorted()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -190,6 +191,24 @@ func _test_stormfront_swarm_field_present() -> void:
 	_check("Stormfront bag carries squad_atk_vs_swarm_mult=1.25",
 		is_equal_approx(float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]), 1.25),
 		"swarm=%f" % float(r["merged_bag"][&"squad_atk_vs_swarm_mult"]))
+
+func _test_resolve_nocap_compounds_alpha_sorted() -> void:
+	## C1 cleanup: at stage >= 5 the compounds[] array MUST be sorted alpha-priority
+	## so callers picking compounds[0] get a stable, predictable winner regardless
+	## of squad equip order. Squad: fire+ice+wind at stage 5 -> Blizzard < Firestorm
+	## < Wildfire (alphabetical_priority indices 0, 1, 5 per CatalystData).
+	var squad: Array = [_make_weapon(&"fire"), _make_weapon(&"ice"), _make_weapon(&"wind")]
+	var r: Dictionary = CatalystResolverT.resolve(squad, 5)
+	var compounds_arr: Array = r["compounds"]
+	_check("no-cap compounds size 3", compounds_arr.size() == 3,
+		"size=%d" % compounds_arr.size())
+	if compounds_arr.size() == 3:
+		_check("compounds[0] is Blizzard (alpha winner)",
+			compounds_arr[0]["id"] == &"blizzard", "id=%s" % compounds_arr[0]["id"])
+		_check("compounds[1] is Firestorm",
+			compounds_arr[1]["id"] == &"firestorm", "id=%s" % compounds_arr[1]["id"])
+		_check("compounds[2] is Wildfire",
+			compounds_arr[2]["id"] == &"wildfire", "id=%s" % compounds_arr[2]["id"])
 
 ## ---------- fixtures ----------
 

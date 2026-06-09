@@ -11,6 +11,8 @@
 ##     above the grid (compound names light up when P1e lands).
 extends Control
 
+const ResolverT = preload("res://scripts/core/catalyst_resolver.gd")
+
 const ROSTER_IDS: Array = [&"bran", &"elara", &"vex"]
 const GRID_COLS: int = 3
 const MIN_GRID_TILES: int = 6   ## dashed empties up to this count ("pull to fill")
@@ -317,8 +319,7 @@ func _refresh_squad_line() -> void:
 	var base: String = "Squad elements:  %s" % "  ".join(icons)
 	## Catalyst readout (spec §7.1): when >= 2 distinct elements form a defined
 	## pair, append the compound name + effect. Hidden otherwise (pre-pair state).
-	var resolver = load("res://scripts/core/catalyst_resolver.gd")
-	var resolved: Dictionary = resolver.resolve(squad_weapons, AccountState.current_stage)
+	var resolved: Dictionary = ResolverT.resolve(squad_weapons, AccountState.current_stage)
 	var compound = resolved.get("compound", null)
 	## stage >= 5 (no-cap) — show the FIRST triggering compound (alpha priority).
 	if compound == null and not (resolved.get("compounds", []) as Array).is_empty():

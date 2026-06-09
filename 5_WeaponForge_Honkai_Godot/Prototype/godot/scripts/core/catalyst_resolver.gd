@@ -49,14 +49,18 @@ static func resolve(squad_weapons: Array, stage: int) -> Dictionary:
 	if triggered.is_empty():
 		return {"compound": null, "compounds": [], "merged_bag": CatalystDataT.EMPTY_BAG.duplicate()}
 
+	## Always sort by alphabetical_priority so the displayed/picked compound is
+	## stable across equip-order changes. cap-1 slices [0]; no-cap returns the
+	## sorted list so callers reading compounds[0] get the alpha winner too.
+	triggered.sort_custom(func(a, b): return int(a["alphabetical_priority"]) < int(b["alphabetical_priority"]))
+
 	## 3. Stacking.
 	if stage <= 4:
-		## cap-1: alphabetical priority by compound id (lower index = wins).
-		triggered.sort_custom(func(a, b): return int(a["alphabetical_priority"]) < int(b["alphabetical_priority"]))
+		## cap-1: alphabetical priority winner.
 		var winner: Dictionary = triggered[0]
 		return {"compound": winner, "compounds": [winner],
 			"merged_bag": _compose([winner])}
-	## stage >= 5: all triggering.
+	## stage >= 5: all triggering, alpha-sorted.
 	return {"compound": null, "compounds": triggered, "merged_bag": _compose(triggered)}
 
 ## Composition rules (spec §3): *_mult keys multiplicative, *_add keys additive,

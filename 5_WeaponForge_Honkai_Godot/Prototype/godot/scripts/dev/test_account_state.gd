@@ -49,7 +49,6 @@ func _ready() -> void:
 		_test_equip_rejects_class_mismatch()
 		_test_swap_between_owned_weapons()
 		_test_run_reset_does_not_touch_account()
-		_test_save_version_is_5()
 		_test_v2_save_loads_without_shards()
 		_test_shards_round_trip()
 		_test_corrupt_shard_rejected()
@@ -62,6 +61,10 @@ func _ready() -> void:
 		_test_v5_round_trip_persists_catalyst_fields()
 		_test_reset_clears_catalyst_fields()
 		_test_v5_corrupt_arrays_rejected()
+		_test_save_version_is_6()
+		_test_v5_save_migrates_to_v6()
+		_test_v6_round_trip_persists_paladin_unlocked()
+		_test_reset_clears_paladin_unlocked()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -339,10 +342,6 @@ func _test_run_reset_does_not_touch_account() -> void:
 
 ## ---------- Shard inventory + save v2->v3 migration (Stage E) ----------
 
-func _test_save_version_is_5() -> void:
-	_check("SAVE_VERSION bumped to 5 (catalyst v1)", _Account.SAVE_VERSION == 5,
-		"version=%d" % _Account.SAVE_VERSION)
-
 func _test_v2_save_loads_without_shards() -> void:
 	## A pre-shard v2 save must LOAD (not be wiped): shards default empty, and old
 	## weapon dicts lacking star_progress default it to 0.
@@ -433,7 +432,7 @@ func _test_ember_save_roundtrip() -> void:
 	AccountState.reset_account()
 	AccountState.add_ember(7)
 	var d: Dictionary = AccountState.to_save_dict()
-	_check("save dict version is 5", int(d.get("version", -1)) == 5, "ver=%s" % str(d.get("version")))
+	_check("save dict version is current", int(d.get("version", -1)) == _Account.SAVE_VERSION, "ver=%s" % str(d.get("version")))
 	_check("save dict carries ember", int(d.get("ember", -1)) == AccountState.ember, "ember=%s" % str(d.get("ember")))
 	var v3: Dictionary = {"version": 3, "gems": 100, "stage": 1, "weapons": [], "equipped": {}, "shards": []}
 	_check("v3 save loads", AccountState.load_from_dict(v3) == true, "v3 rejected")
@@ -489,7 +488,8 @@ func _test_v5_round_trip_persists_catalyst_fields() -> void:
 	a.catalyst_codex_discovered = [&"firestorm"]
 	a.pull_count = 7
 	var d: Dictionary = a.to_save_dict()
-	_check("save dict version is 5", int(d.get("version", -1)) == 5, "ver=%s" % str(d.get("version")))
+	_check("v5 catalyst fields save under current version",
+		int(d.get("version", -1)) == _Account.SAVE_VERSION, "ver=%s" % str(d.get("version")))
 	_check("save dict carries pull_count", int(d.get("pull_count", -1)) == 7,
 		"pull_count=%s" % str(d.get("pull_count")))
 	var b = _Account.new()
@@ -529,6 +529,50 @@ func _test_v5_corrupt_arrays_rejected() -> void:
 	_check("corrupt scripted_pulls_seen rejected", ok == false, "accepted bad type")
 	_check("rejected load leaves fresh defaults", b.gems == 600, "gems=%d" % b.gems)
 	a.free(); b.free()
+
+## ---------- Scripted Pacing Rework A6 — v6 schema + paladin_unlocked ----------
+
+func _test_save_version_is_6() -> void:
+	_check("SAVE_VERSION bumped to 6 (paladin)",
+		_Account.SAVE_VERSION == 6,
+		"version=%d" % _Account.SAVE_VERSION)
+
+func _test_v5_save_migrates_to_v6() -> void:
+	## v5 save (Catalyst v1) loads into v6 with paladin_unlocked defaulting false.
+	var v5: Dictionary = {"version": 5, "gems": 700, "stage": 1, "ember": 5,
+		"weapons": [], "equipped": {}, "shards": [],
+		"scripted_pulls_seen": [], "catalyst_codex_discovered": [], "pull_count": 0}
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(v5)
+	_check("v5 save still loads", ok, "rejected")
+	_check("v5 load: paladin_unlocked defaults false",
+		("paladin_unlocked" in b) and b.paladin_unlocked == false,
+		"missing or true")
+	b.free()
+
+func _test_v6_round_trip_persists_paladin_unlocked() -> void:
+	var a = _Account.new()
+	a.paladin_unlocked = true
+	var d: Dictionary = a.to_save_dict()
+	_check("save dict version is 6",
+		int(d.get("version", -1)) == 6, "ver=%s" % str(d.get("version")))
+	_check("save dict carries paladin_unlocked",
+		bool(d.get("paladin_unlocked", false)) == true,
+		"got=%s" % str(d.get("paladin_unlocked")))
+	var b = _Account.new()
+	b.load_from_dict(d)
+	_check("paladin_unlocked round-trip == true",
+		b.paladin_unlocked == true, "got=%s" % str(b.paladin_unlocked))
+	a.free(); b.free()
+
+func _test_reset_clears_paladin_unlocked() -> void:
+	var a = _Account.new()
+	a.paladin_unlocked = true
+	a.reset_account()
+	_check("reset clears paladin_unlocked",
+		("paladin_unlocked" in a) and a.paladin_unlocked == false,
+		"not cleared, paladin_unlocked=%s" % str(a.paladin_unlocked))
+	a.free()
 
 ## ---------- Test helpers ----------
 

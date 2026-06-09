@@ -64,6 +64,7 @@ func _ready() -> void:
 	_test_briefing_hides_catalyst_when_no_pair()
 	_test_briefing_shows_firestorm_when_fire_ice()
 	_test_paladin_in_catalog()
+	_test_fielded_classes_excludes_paladin_when_locked()
 
 	_summary()
 	_render_to_ui()
@@ -172,6 +173,20 @@ func _test_paladin_in_catalog() -> void:
 			h.cls == &"paladin", "cls=%s" % h.cls)
 		_check("paladin in FIELDED_HEROES",
 			&"paladin" in GameState.FIELDED_HEROES, "missing from roster")
+
+func _test_fielded_classes_excludes_paladin_when_locked() -> void:
+	## A6: GameState.fielded_classes() filters paladin via AccountState.paladin_unlocked.
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	var fc: Dictionary = GameState.fielded_classes()
+	_check("paladin NOT in fielded when locked",
+		not fc.has(&"paladin"), "leaked: %s" % str(fc.keys()))
+	AccountState.paladin_unlocked = true
+	fc = GameState.fielded_classes()
+	_check("paladin IS in fielded when unlocked",
+		fc.has(&"paladin"), "missing: %s" % str(fc.keys()))
+	## Restore neutral state.
+	AccountState.paladin_unlocked = false
 
 ## ---------- Helpers ----------
 

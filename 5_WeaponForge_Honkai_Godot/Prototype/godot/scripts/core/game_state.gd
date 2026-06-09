@@ -207,10 +207,11 @@ func get_hero(hero_id: StringName):
 func fielded_classes() -> Dictionary:
 	var out: Dictionary = {}
 	for hid in FIELDED_HEROES:
-		## A3 stub: paladin always locked until A6 lands the AccountState.paladin_unlocked
-		## gate. Skipping here keeps the new `paladin` class out of the Forge Wheel pull
-		## pool until the unlock event fires (Stage-3 boss defeat).
-		if hid == &"paladin":
+		## A6: paladin's class is fielded only after the Stage-3 Arcane Lich
+		## scripted-wipe sentinel (&"defeat_stage_3_paladin") flips
+		## AccountState.paladin_unlocked. While false the class stays out of the
+		## Forge Wheel pull pool (and out of the fielded-class set generally).
+		if hid == &"paladin" and not AccountState.paladin_unlocked:
 			continue
 		var d = heroes_by_id.get(hid)
 		if d != null:

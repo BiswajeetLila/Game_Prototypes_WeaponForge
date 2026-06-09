@@ -29,9 +29,10 @@ signal ember_changed(new_ember: int)
 
 ## v2: invalidates saves written by the pre-game-frame loop (owner playtest got
 ## stranded at 45 gems from a deprecated-flow save). Old versions load as fresh.
+## v6: scripted-pacing-rework — paladin_unlocked flag (Stage-3 lich defeat sentinel).
 ## v5: catalyst v1 — scripted-pull sentinels + codex discovery + lifetime pull_count.
-## v4 added Ember; v3 added shards; v2 was the pre-shard baseline. v2..v5 all still load.
-const SAVE_VERSION: int = 5   ## v5 adds catalyst scripted-pull tracking + codex discovery + pull_count
+## v4 added Ember; v3 added shards; v2 was the pre-shard baseline. v2..v6 all still load.
+const SAVE_VERSION: int = 6   ## v6 adds paladin_unlocked (Hot Paladin Stage-3 unlock gate)
 const SAVE_PATH: String = "user://account.json"
 const STARTING_GEMS: int = 600
 ## Run = 4 waves + boss (Wittle stage shape; boss kill ends the run). Cleared run
@@ -71,6 +72,12 @@ var catalyst_codex_discovered: Array = []   ## Array[StringName]
 
 ## Lifetime pull count. Scripted pulls schedule on pull_count + 1 (pull #1, pull #3).
 var pull_count: int = 0
+
+## Scripted-pacing-rework v6 (spec 2026-06-09 §9): unlocked via Stage 3
+## Arcane Lich scripted-wipe sentinel `&"defeat_stage_3_paladin"`. While false,
+## GameState.fielded_classes() filters paladin out — so its class never enters
+## the Forge Wheel pull pool. Flip to true post-Stage-3 victory; persists.
+var paladin_unlocked: bool = false
 
 ## All WeaponData fields that round-trip through a save. Self-contained snapshot.
 const _WEAPON_FIELDS: Array = [
@@ -151,6 +158,7 @@ func reset_account() -> void:
 	scripted_pulls_seen = []
 	catalyst_codex_discovered = []
 	pull_count = 0
+	paladin_unlocked = false
 	current_stage = 1
 	gems_changed.emit(gems)
 	ember_changed.emit(ember)
@@ -285,13 +293,14 @@ func to_save_dict() -> Dictionary:
 		"ember": ember, "weapons": ws, "equipped": eq, "shards": ss,
 		"scripted_pulls_seen": _stringnames_to_strings(scripted_pulls_seen),
 		"catalyst_codex_discovered": _stringnames_to_strings(catalyst_codex_discovered),
-		"pull_count": pull_count}
+		"pull_count": pull_count,
+		"paladin_unlocked": paladin_unlocked}
 
 ## Validate-then-commit: returns false on ANY structural problem without touching
 ## current state, so a corrupt save can never half-apply.
 func load_from_dict(d: Dictionary) -> bool:
 	var ver: int = int(d.get("version", -1))
-	if ver < 2 or ver > 5:                             ## accept v2..v5 (catalyst)
+	if ver < 2 or ver > 6:                             ## accept v2..v6 (paladin)
 		return false
 	if not (d.has("gems") and d.has("weapons") and d.has("equipped")):
 		return false
@@ -339,6 +348,8 @@ func load_from_dict(d: Dictionary) -> bool:
 		for s in d["catalyst_codex_discovered"]:
 			new_codex.append(StringName(String(s)))
 	var new_pull_count: int = int(d.get("pull_count", 0))
+	## v6 paladin_unlocked — optional (absent in v2..v5 -> defaults false).
+	var new_paladin_unlocked: bool = bool(d.get("paladin_unlocked", false))
 	gems = int(d["gems"])
 	ember = int(d.get("ember", 0))                     ## absent in v2/v3 -> 0
 	current_stage = maxi(1, int(d.get("stage", 1)))   ## optional key: older v2 saves -> stage 1
@@ -348,6 +359,7 @@ func load_from_dict(d: Dictionary) -> bool:
 	scripted_pulls_seen = new_scripted
 	catalyst_codex_discovered = new_codex
 	pull_count = new_pull_count
+	paladin_unlocked = new_paladin_unlocked
 	gems_changed.emit(gems)
 	ember_changed.emit(ember)
 	owned_weapons_changed.emit()

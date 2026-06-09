@@ -55,7 +55,7 @@ Two cohorts under `scripts/dev/`:
   godot MCP can't pass that flag → start, wait for the
   `=== N passed / M failed ===` line in `get_debug_output`, then `stop_project`.
 
-~540 tests baseline (Catalyst v1 added ~93 new asserts; grows further w/ Hot Paladin + roster).
+~640 tests baseline (Catalyst v1 + Scripted Pacing Rework added ~190 new asserts; grows further w/ remaining roster).
 
 ---
 
@@ -89,7 +89,7 @@ Default to `mcp__godot__*` for everything Godot-related.
 Save schema bumps = a NEW `_migrate_vN_to_vN+1()` fn in
 `scripts/core/account_state.gd` + a TestAccountState case that loads an
 old-format dict and asserts the v+1 defaults. Never silently widen the
-schema. Current version: v5 (Catalyst fields — scripted_pulls_seen + catalyst_codex_discovered + pull_count).
+schema. Current version: v6 (Catalyst fields + paladin_unlocked).
 
 ---
 
@@ -180,20 +180,16 @@ Skip steps only on trivial (single-file mechanical) work or owner waiver.
 - **Synergy system:** Catalyst (renamed from Resonance — Habby owns
   that term via Archero 2). Trademark check pending — fallbacks:
   Alloy / Confluence / Reaction / Harmonic.
-- **Elements:** Fire / Ice / Electric / Wind (FTUE). Earth gates at Stage 10.
-- **Roster (7 locked):** Bran / Elara / Vex (FTUE) + Hot Paladin (S2 cinematic)
+- **Elements:** Fire / Ice / Electric / Wind (FTUE) + Light (post-Stage-3 Paladin defeat). Earth gates at Stage 10.
+- **Roster (7 locked):** Bran / Elara / Vex (FTUE) + Hot Paladin (Stage 3 boss scripted-defeat)
   + 2nd Rogue + 2nd Mage + Hot Assassin. 3 deploy per stage.
 - **Stage shape:** 5 waves / boss on W5. Boss rotates slime → golem → lich;
   scales per stage. (Spec is 15 waves with W5/W10/W15 bosses; prototype
   runs the compressed 5-wave shape.)
 - **Catalyst stacking:** no-cap from stage 1, Earth-gated skip at stage < 10
   (2026-06-09 — cap-1 dropped post-playtest).
-- **Catalyst display-priority order:** alphabetical compound name —
-  Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire,
-  Earth unlocks at S10+ as Magnetic Storm > Permafrost > Sandstorm > Volcanic
-  (2026-06-09). Primary `compound` = first in this order.
-- **Catalyst first reveal:** Forge Wheel scripted pull #1 = Fire-Bran-class,
-  pull #3 = Ice-Elara-class. Starters are non-elemental until then (2026-06-09).
+- **Catalyst display-priority order:** alphabetical compound name — Auroral Veil > Blizzard > Firestorm > Glacial Storm > Halo Bloom > Plasma > Plasma Arc > Solar Flare > Stormfront > Wildfire, Earth unlocks at S10+ as Magnetic Storm > Permafrost > Sandstorm > Volcanic (2026-06-10). Primary `compound` = first in this order.
+- **Catalyst first reveal:** Forge Wheel scripted pulls — #1 Fire-Bran-class (Cinderbrand), #3 Electric-Vex-class (Voltedge Daggers), #5 Ice-Elara-class (Glacial Aegis). Stage 3 boss scripted-wipe at 50% HP unlocks Hot Paladin + Helios Cleaver (Epic light). Starters non-elemental (Common-tier B2 stripped post-2026-06-09). (2026-06-10).
 
 New decisions land in `STATUS.md §3` (table) + the relevant design spec.
 This file = rules only.

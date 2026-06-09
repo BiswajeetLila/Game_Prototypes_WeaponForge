@@ -67,6 +67,7 @@ func _ready() -> void:
 	_test_fielded_classes_excludes_paladin_when_locked()
 	_test_home_paladin_row_locked()
 	_test_home_paladin_row_unlocked()
+	_test_stage_3_briefing_shows_light_weakness()
 
 	_summary()
 	_render_to_ui()
@@ -224,6 +225,29 @@ func _test_home_paladin_row_unlocked() -> void:
 			not row.text.contains("🔒"), "text=%s" % row.text)
 		_check("unlocked paladin row enabled (not disabled)",
 			row.disabled == false, "disabled=%s" % str(row.disabled))
+	hs.queue_free()
+
+## ---------- Scripted Pacing Rework Chunk D (2026-06-10) ----------
+
+func _test_stage_3_briefing_shows_light_weakness() -> void:
+	## D2: Stage 3 boss (Arcane Lich) is weak to light pre-defeat — telegraphed
+	## in the briefing dialog. Player has no light access (Helios is scripted-
+	## grant only), so they walk in blind. Defeat triggers (C1) -> Paladin
+	## descends with Helios -> retry trivializes the boss.
+	AccountState.reset_account()
+	AccountState.current_stage = 3
+	var hs = HomeScreenT.new()
+	add_child(hs)
+	hs._open_briefing()
+	var body: String = hs._briefing.dialog_text
+	## Briefing must telegraph LIGHT weakness pre-defeat.
+	_check("Stage 3 briefing mentions light or ☀ weakness",
+		body.contains("light") or body.contains("☀"),
+		"body=%s" % body.left(300))
+	## Should also telegraph EARTH resist.
+	_check("Stage 3 briefing mentions earth or 🪨 resist",
+		body.contains("earth") or body.contains("🪨"),
+		"body=%s" % body.left(300))
 	hs.queue_free()
 
 ## ---------- Helpers ----------

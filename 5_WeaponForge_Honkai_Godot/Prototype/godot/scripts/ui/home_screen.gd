@@ -19,7 +19,7 @@ const GRID_COLS: int = 3
 const MIN_GRID_TILES: int = 6   ## dashed empties up to this count ("pull to fill")
 
 const ELEM_ICONS: Dictionary = {
-	&"fire": "🔥", &"ice": "❄", &"electric": "⚡", &"wind": "🌪", &"earth": "🪨",
+	&"fire": "🔥", &"ice": "❄", &"electric": "⚡", &"wind": "🌪", &"earth": "🪨", &"light": "☀",
 }
 const RARITY_COLORS: Array = [
 	Color(0.55, 0.55, 0.55), Color(0.35, 0.65, 1.0), Color(0.75, 0.4, 1.0),

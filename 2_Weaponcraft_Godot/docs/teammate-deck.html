@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0710">
+  <title>WeaponCraft — for teammates</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+
+  <link rel="stylesheet" href="decks/style.css">
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="hammered-noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
+        <feColorMatrix values="0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.07  0 0 0 0.06 0"/>
+      </filter>
+      <symbol id="divider-engraved" viewBox="0 0 1200 24" preserveAspectRatio="none">
+        <line x1="0" y1="12" x2="1200" y2="12" stroke="currentColor" stroke-width="1" stroke-dasharray="2 6" opacity="0.5"/>
+        <path d="M560 6 L600 18 L640 6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="600" cy="18" r="2.5" fill="currentColor"/>
+      </symbol>
+      <symbol id="anvil" viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
+        <path d="M40 90 L40 70 Q40 50 70 50 L130 50 Q160 50 160 70 L160 90 Z M70 50 L70 30 L130 30 L130 50 Z M20 90 L180 90 L170 110 L30 110 Z" fill="currentColor"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <nav class="deck-nav" aria-label="Section navigation">
+    <a href="#hero" class="deck-nav__brand">⚒ WEAPONCRAFT</a>
+    <ul class="deck-nav__list">
+      <li><a href="#bet">Bet</a></li>
+      <li><a href="#what">What</a></li>
+      <li><a href="#roster">Roster</a></li>
+      <li><a href="#loop">Loop</a></li>
+      <li><a href="#beats">Beats</a></li>
+      <li><a href="#build">Build</a></li>
+      <li><a href="#next">Next</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <section id="hero" class="section section--hero">
+      <div class="hero-bg" aria-hidden="true">
+        <svg class="hero-anvil"><use href="#anvil"/></svg>
+      </div>
+      <div class="hero-grid">
+        <div class="hero-text">
+          <h1 class="hero-title">
+            <span style="--i:0">W</span><span style="--i:1">E</span><span style="--i:2">A</span><span style="--i:3">P</span><span style="--i:4">O</span><span style="--i:5">N</span><span style="--i:6">C</span><span style="--i:7">R</span><span style="--i:8">A</span><span style="--i:9">F</span><span style="--i:10">T</span>
+          </h1>
+          <p class="hero-tagline">
+            Casual-mobile auto-battler.<br>
+            <em>The slot-machine is in the forge,</em> not the combat.
+          </p>
+          <p class="hero-ribbon">
+            playtester build  ·  Stage D 15-wave  ·  Recipe Codex core hook  ·  frozen 2026-06-01
+          </p>
+        </div>
+        <div class="hero-portraits" aria-label="Founding heroes: Bran, Elara, Vex">
+          <div class="rondel rondel--bran"><img src="decks/assets/heroes/bran.png" alt="Bran the warrior"></div>
+          <div class="rondel rondel--elara"><img src="decks/assets/heroes/elara.png" alt="Elara the mage"></div>
+          <div class="rondel rondel--vex"><img src="decks/assets/heroes/vex.png" alt="Vex the rogue"></div>
+        </div>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="bet" class="section section--bet">
+      <div class="section-inner">
+        <h2>The Bet</h2>
+        <div class="bet-grid">
+          <div>
+            <h3>Audience</h3>
+            <p>Wittle Defender cohort + the Potion Craft discovery-codex audience. Casual-mobile RPG players who'll happily install an auto-battler but want a strategic decision layer that isn't twitch-combat.</p>
+          </div>
+          <div>
+            <h3>Inversion</h3>
+            <p>The randomized roll lives in the <strong>forge</strong>, not the fight. Combat auto-resolves on your weapon's stats and tags. Strategic input — what to buy, what to merge, what tag-combo to chase — happens in a TFT-style parts shop between waves.</p>
+          </div>
+          <div>
+            <h3>Moat</h3>
+            <p>TFT parts shop + Potion-Craft-style hidden-recipe discovery + Wittle stage cadence. Each pattern is precedented separately; the <em>combination on a casual-mobile auto-battler</em> is empty space in the 50-game research scan.</p>
+          </div>
+        </div>
+        <blockquote class="pull-quote">
+          Forge weapons.<br>Discover recipes.<br>Watch your party fight.
+        </blockquote>
+        <details class="deep">
+          <summary>The first-discovery moment (the core hook)</summary>
+          <p>Per addendum 0.1.7 — the <strong>Crafting Juice pivot</strong>. When the player crafts a weapon whose tag-combo matches an undiscovered recipe (Steamburst = Fire + Ice, Inferno = Fire + Fire, etc.), combat <em>pauses</em>, a full-screen overlay pops the recipe name + effect description, and the codex badge ticks up. The Discovery moment is the dopamine spike the whole loop circles around. Codex has ~200 discoverable recipes at launch; 8 in the 0.1.9 reference build (Steamburst · Inferno · Permafrost · Skewer · Razor Wind · Hellfire · Frostbite · Quickdraw).</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="what" class="section section--what">
+      <div class="section-inner">
+        <h2>What is WeaponCraft</h2>
+        <div class="what-grid">
+          <div class="what-col">
+            <h3>Forge</h3>
+            <img src="decks/assets/parts/r_fire.png" alt="Fire rune" class="what-icon">
+            <p>Between every wave a <strong>TFT-style shop</strong> rolls 5 random parts. Buy with round currency. Slot them onto your 3-socket weapon: <strong>Head</strong> + <strong>Hilt</strong> + <strong>Rune</strong>. Reroll for 2🪙. Duplicates <strong>merge</strong> in place — L1 → L5 with <code>×1.00 / 1.50 / 2.10 / 2.85 / 3.70</code> scaling, same-rarity only.</p>
+          </div>
+          <div class="what-col">
+            <h3>Discover</h3>
+            <img src="decks/assets/parts/r_ice.png" alt="Ice rune" class="what-icon">
+            <p>Each part carries <strong>tags</strong> — element (fire / ice / pierce / lightning / shadow / holy …) + derived (crit / charge). The recipe engine watches your weapon's tag-multiset. The right combo triggers a named effect — <strong>Steamburst</strong>, <strong>Inferno</strong>, <strong>Razor Wind</strong> — and pauses combat for a first-discovery overlay.</p>
+          </div>
+          <div class="what-col">
+            <h3>Fight</h3>
+            <img src="decks/assets/enemies/slime.png" alt="A slime enemy" class="what-icon">
+            <p>Side-view auto-resolve. 1.1s ticks. 3 heroes (Bran W1 → Elara W3 → Vex W6). 15 waves per stage. Bosses on W5 / W10 / W15. Tap a hero's portrait to fire their ultimate when the gauge fills — and the gauge <strong>persists across waves</strong>. Wipe on a boss = Reforge-&-Retry: keep all parts, swap the build, try again.</p>
+          </div>
+        </div>
+        <details class="deep">
+          <summary>The first 5 minutes (FTUE arc — ultra-MVP slice)</summary>
+          <ul>
+            <li>Wave 1 forge opens. 5 parts roll. <strong>Slot-coverage guarantee</strong> while Bran isn't fully kitted: ≥1 head, ≥1 hilt, ≥1 rune on every roll.</li>
+            <li>Buy <code>h_iron_edge</code> → head slot fills. Buy <code>p_pyro_pommel</code> + <code>r_ice</code> → recipe chip lights up: <strong>Steamburst discovered</strong>. Combat pauses. Overlay pops. Codex badge 1/2.</li>
+            <li>Start Wave → 1.1s ticks. Damage pops show weak (×1.8) / resist (×0.5) prefixes per enemy affinity. Hero HP drops. Ult gauge fills.</li>
+            <li>Wave clears → +gold → forge re-opens. Ult gauge <strong>persists</strong> (only the used-flag resets).</li>
+            <li>Swap to <code>p_pyro_pommel</code> + <code>r_fire</code> → <strong>Inferno discovered</strong>. Stacking burn DoT. Codex 2/2.</li>
+            <li>W5 boss = Slime King. Reforge-&-Retry available on wipe.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="roster" class="section section--roster">
+      <div class="section-inner">
+        <h2>The Roster</h2>
+        <p class="roster-intro">3 free starters drive the FTUE. 12 launch heroes total — Rare / Epic / Legendary via gacha. <em>This is the original design, pre-pivot — the v2.2 lock-the-roster bet plays out in the fork (<code>5_WeaponForge_Honkai_Godot</code>), not here.</em></p>
+        <div class="roster-grid">
+
+          <article class="hero-card hero-card--big" data-status="ftue" data-rot="-1">
+            <div id="bran-scrub" class="hero-card__rondel" role="img" aria-label="Bran portrait at tier 1, Basic"></div>
+            <h3>Bran the Bold</h3>
+            <p class="hero-card__class">Warrior · Free · W1</p>
+            <p class="hero-card__blurb">Tank-frame melee. High HP, universal-tag friendly. Ultimate = <strong>Whirlwind</strong> (AoE melee burst).</p>
+            <div class="scrubber">
+              <label for="bran-tier" class="scrubber__label" id="bran-tier-label">Tier 1 · Basic</label>
+              <input id="bran-tier" type="range" min="0" max="4" step="1" value="0" aria-labelledby="bran-tier-label">
+              <div class="scrubber__hint">drag to evolve ★1 → ★5 (test render — design-only, not in 2_'s build)</div>
+            </div>
+          </article>
+
+          <article class="hero-card" data-status="ftue" data-rot="+1">
+            <div class="hero-card__rondel"><img src="decks/assets/heroes/elara.png" alt="Elara"></div>
+            <h3>Elara Spellweaver</h3>
+            <p class="hero-card__class">Mage · Free · W3 unlock</p>
+            <p class="hero-card__blurb">Ranged caster. Affinity for Fire / Ice / Lightning / Shadow runes. Ultimate = <strong>Meteor</strong> (delayed high-damage AoE).</p>
+          </article>
+
+          <article class="hero-card" data-status="ftue" data-rot="-1">
+            <div class="hero-card__rondel"><img src="decks/assets/heroes/vex.png" alt="Vex"></div>
+            <h3>Vex Shadowfoot</h3>
+            <p class="hero-card__class">Rogue · Free · W6 unlock</p>
+            <p class="hero-card__blurb">High crit, low HP, fast attacks. Affinity for Bleed / Pierce / Poison. Ultimate = <strong>Shadowstep</strong> (teleport + guaranteed crit).</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="+1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette"><span aria-hidden="true">?</span></div>
+            <h3>Ranger / Paladin / Druid</h3>
+            <p class="hero-card__class">Rare · Epic · gacha</p>
+            <p class="hero-card__blurb">Volley (multi-target) · Divine Shield (heal + invuln) · Wildform (transform-rage). Mid-game gacha unlocks.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="-1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette"><span aria-hidden="true">?</span></div>
+            <h3>Necromancer / Berserker / Monk</h3>
+            <p class="hero-card__class">Epic · gacha</p>
+            <p class="hero-card__blurb">Soul Drain (life-leech AoE) · Bloodlust (self-damage → ATK ramp) · Flurry (multi-hit combo).</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="+1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette"><span aria-hidden="true">?</span></div>
+            <h3>Archmage / Dragonborn / Lich King</h3>
+            <p class="hero-card__class">Legendary · 1% pull · pity 80</p>
+            <p class="hero-card__blurb">Cataclysm (multi-element ult) · Dragonbreath (line AoE w/ ramp) · Mass Resurrect (echo-clone party).</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="-1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette"><span aria-hidden="true">?</span></div>
+            <h3>Star-up ★1 → ★5</h3>
+            <p class="hero-card__class">duplicate-shard merge</p>
+            <p class="hero-card__blurb">Each tier: +5% stats + ult cosmetic upgrade. ★5 = ult cost −50%. ★1 vs ★5 power gap ~1.5×, F2P-at-★1 stays competitive.</p>
+          </article>
+
+        </div>
+        <details class="deep">
+          <summary>Why TFT-pattern "characters as roles, not power"</summary>
+          <p>All numerical depth lives in the crafting layer. Heroes are <em>roles</em> with distinct ultimates and tag-affinity preferences; stats don't bloat with hero levels. This preserves the gacha-collection hook without forcing the crafting depth to compete with hero power as the meta-progression axis. Per addendum: <strong>active-hero priority</strong> means buy/equip/merge defaults to the currently-selected hero unless an alternate is explicitly chosen.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="loop" class="section section--loop">
+      <div class="section-inner">
+        <h2>The Loop</h2>
+        <div class="loop-grid">
+          <pre class="loop-ascii" aria-label="Core gameplay loop diagram">
+       ┌──────── HOME ────────┐
+       │  chapter map         │
+       │  3-hero loadout      │
+       └──────────┬───────────┘
+                  │
+                  ▼
+       ┌─── STAGE (15w) ──────┐
+       │  ┌─ FORGE ────────┐ │
+       │  │ 5 parts roll   │ │
+       │  │ buy / merge    │ │  ← repeats
+       │  │ recipe check   │ │   every
+       │  └────────────────┘ │   wave
+       │  ┌─ COMBAT ───────┐ │
+       │  │ 1.1s ticks     │ │
+       │  │ tap-ult        │ │
+       │  └────────────────┘ │
+       │ W5 / W10 / W15: boss│
+       └──────────┬───────────┘
+                  │
+            wipe? │  → Reforge-&-Retry
+                  ▼
+       ┌──── reward ──────────┐
+       │ +gold +shards        │
+       │ heroes restored      │
+       └──────────┬───────────┘
+                  │
+                  └──→ back to HOME
+          </pre>
+          <div class="loop-axes">
+            <h3>Three progression axes</h3>
+            <ol>
+              <li><strong>Stage D combat</strong> <span class="axis-status axis-status--shipped">shipped</span> — 15-wave side-view auto-battler with 3-boss rotation, persistent ult gauge, weak/resist affinities on every enemy. ReforgeRetry on boss wipe. 144 tests green.</li>
+              <li><strong>Recipe Engine + Codex</strong> <span class="axis-status axis-status--shipped">shipped</span> — tag-multiset matching, first-discovery overlay pauses combat, per-stage codex state. 8 recipes in the 0.1.9 catalogue, ~200 designed at launch.</li>
+              <li><strong>Part-level merge L1 → L5</strong> <span class="axis-status axis-status--shipped">shipped</span> — duplicate parts level up in place (×1.0 / 1.5 / 2.1 / 2.85 / 3.7), same-rarity-only. Replaces the old 3→1 stash promotion (per addendum 0.1.7).</li>
+            </ol>
+          </div>
+        </div>
+        <details class="deep">
+          <summary>The 15-wave stage shape (Stage D, shipped)</summary>
+          <p>15 waves. Bosses anchor W5, W10, and the W15 stage-end. Each boss telegraphs an affinity row (weak/resist for fire / ice / pierce / lightning) — the player rearranges their weapon's tag mix to counter. Every enemy in the stage has its own weak/resist roll (per addendum 0.1.5) so the build choice matters wave-to-wave, not just on bosses. On boss wipe, the Reforge-&-Retry modal opens with all inventory preserved — rearrange parts, swap a rune, try again.</p>
+          <p>Combat tick = <code>TICK_MS = 1100</code>. One Timer. Per tick: each alive hero attacks a random alive enemy; all alive enemies attack the active hero; ult gauges fill (<code>6 + floor(dmg × 0.2) + ultRate/4</code>, capped 100). Hard 30s time-cap forces fill to 100 by fight end. Recipe bonuses (Steamburst splash, Inferno burn-stack) apply inside the tick.</p>
+        </details>
+        <details class="deep">
+          <summary>The 8-recipe 0.1.9 catalogue</summary>
+          <table class="compounds">
+            <thead><tr><th>Recipe</th><th>Tag pattern</th><th>Effect</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Steamburst</strong></td><td>🔥 + ❄</td><td>35% splash to all other alive enemies</td></tr>
+              <tr><td><strong>Inferno</strong></td><td>🔥 + 🔥</td><td>same-target hits stack +12% dmg (cap 3 = +36%)</td></tr>
+              <tr><td><strong>Permafrost</strong></td><td>❄ + ❄</td><td>persistent slow aura</td></tr>
+              <tr><td><strong>Hellfire</strong></td><td>🔥 + 🌑</td><td>burning DoT zones at impact</td></tr>
+              <tr><td><strong>Frostbite</strong></td><td>❄ + 📌</td><td>slow + reduced enemy defense</td></tr>
+              <tr><td><strong>Razor Wind</strong></td><td>📌 + 🎯crit</td><td>crit chance +25%, crits ricochet</td></tr>
+              <tr><td><strong>Skewer</strong></td><td>📌 + 📌</td><td>line-piercing attack</td></tr>
+              <tr><td><strong>Quickdraw</strong></td><td>⚡charge + (any)</td><td>ult charges 50% faster</td></tr>
+            </tbody>
+          </table>
+          <p>Codex grouped into <strong>Elemental</strong> / <strong>Status DoT</strong> / <strong>Class-signature</strong> sections. Undiscovered entries show the effect text but blank out the recipe — "<code>??? makes Steamburst — AoE on hit</code>." Players know <em>what</em> they're hunting; they just don't know <em>how</em>. ~200 launch recipes at full content scope.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="beats" class="section section--beats">
+      <div class="section-inner">
+        <h2>The Beats</h2>
+        <p class="beats-intro">Five D1 mockups from the 2E pass. <em>The first three are shipped in this build; the last two are design-only — they wire up in the fork (<code>5_WeaponForge_Honkai_Godot</code>).</em> Click a thumb to swap.</p>
+        <div class="beats-carousel" role="region" aria-label="Story beat carousel">
+          <button class="beats-arrow beats-arrow--prev" type="button" aria-label="Previous beat">‹</button>
+          <figure class="beats-stage">
+            <img class="beats-stage__img" id="beats-featured-img" src="decks/assets/beats/beat1-combat-read-2E.jpg" alt="Beat 1 mockup — combat read">
+            <figcaption class="beats-stage__caption">
+              <h3 class="beats-stage__title" id="beats-featured-title">Combat read</h3>
+              <p class="beats-stage__sub" id="beats-featured-sub">Stage 1, mid-wave · 3 heroes vs minions · SHIPPED</p>
+              <p class="beats-stage__desc" id="beats-featured-desc">Side-view auto-resolve. Heroes attack on 1.1s ticks. Damage numbers pop with weak/resist prefixes. Element-colored hits (fire orange, ice cyan). The persistent ult gauge bar under each hero portrait — tap to fire.</p>
+            </figcaption>
+          </figure>
+          <button class="beats-arrow beats-arrow--next" type="button" aria-label="Next beat">›</button>
+        </div>
+        <div class="beats-thumbs" role="tablist" aria-label="Beat selector">
+          <button class="beats-thumb is-active" data-idx="0" role="tab" aria-selected="true" aria-label="Beat 1 — combat read">
+            <img src="decks/assets/beats/beat1-combat-read-2E.jpg" alt="">
+            <span>1 · Combat read</span>
+          </button>
+          <button class="beats-thumb" data-idx="1" role="tab" aria-selected="false" aria-label="Beat 2 — TFT forge / recipe discovery">
+            <img src="decks/assets/beats/beat2-forge-draft-2E.png" alt="">
+            <span>2 · Forge + Codex</span>
+          </button>
+          <button class="beats-thumb" data-idx="2" role="tab" aria-selected="false" aria-label="Beat 3 — boss wave">
+            <img src="decks/assets/beats/beat3-boss-defeat-2E.png" alt="">
+            <span>3 · Boss defeat</span>
+          </button>
+          <button class="beats-thumb" data-idx="3" role="tab" aria-selected="false" aria-label="Beat 4 — Forge Wheel pull (design-only)">
+            <img src="decks/assets/beats/beat4-forge-wheel-pull-2E.jpg" alt="">
+            <span>4 · Forge Wheel (design)</span>
+          </button>
+          <button class="beats-thumb" data-idx="4" role="tab" aria-selected="false" aria-label="Beat 5 — Hot Paladin cinematic (design-only)">
+            <img src="decks/assets/beats/beat5-hot-paladin-cinematic-2E.png" alt="">
+            <span>5 · Hot Paladin (design)</span>
+          </button>
+        </div>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="build" class="section section--build">
+      <div class="section-inner">
+        <h2>The Build</h2>
+        <div class="build-grid">
+          <ol class="forge-log" aria-label="Build milestones">
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-22</time>
+              <h3>Initial GDD</h3>
+              <p>WeaponCraft v1: Robotek × TFT × Potion-Craft. Auto-resolve combat, parts-shop crafting layer, 3-slot weapons (Head / Hilt / Rune), 5-6 waves, 15-character launch.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-23</time>
+              <h3>Godot Ultra-MVP Port plan</h3>
+              <p>Port the BASE-A1 HTML prototype's core loop into Godot 4.4 (later 4.6.2 Mono). 1 hero, 5 parts, 2 recipes, 3 waves — prove the pipeline before scaling.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-25</time>
+              <h3>Stages A / B / C — 3-hero roster + juice + cap-fix</h3>
+              <p>Asset replacement to Bran / Elara / Vex. 3-hero loadout. Juice pass on Stage C (damage pops, screen shake). Cap-fix hardening on edge cases.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-26</time>
+              <h3>Stage D — 15-wave combat + bosses + retry</h3>
+              <p>15-wave shape shipped. Bosses on W5 / W10 / W15 (Slime King → Iron Golem → Arcane Lich). ReforgeRetryModal on boss wipe. Forge UX balance pass on W10. <strong>144 tests green.</strong></p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-27</time>
+              <h3>Recipe Engine + Codex (Crafting Juice pivot · 0.1.7)</h3>
+              <p>Tag-multiset matching, first-discovery overlay pauses combat, codex state machine (silhouette → discovered → mastered). 8 recipes wired (Steamburst, Inferno, Permafrost, Skewer, Razor Wind, Hellfire, Frostbite, Quickdraw).</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-27</time>
+              <h3>Part-level Merge L1 → L5 (addendum 0.1.7)</h3>
+              <p>Duplicate part purchases level up in place — <code>×1.0 / 1.5 / 2.1 / 2.85 / 3.7</code> stat scaling, same-rarity only. Replaces the old 3→1 stash promotion. Active-hero priority on acquire flow.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-27</time>
+              <h3>Wittle-inversion design lock (v2.2)</h3>
+              <p>Design pivot: weapon-gacha + locked 7-hero roster + Honkai-style anime personality. 30+ decisions locked. <em>Design only — never wired in this build.</em></p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-28</time>
+              <h3>Competitor landscape + 101 doc + SSR text</h3>
+              <p>1197-line competitor research (50 games, 170 Sensor Tower calls). Team-template 101 concept doc (~95% RICOCHET completeness). 5 SSR text artifacts authored.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-05-31</time>
+              <h3>Pre-mortem (FM-1→19) + Bran 5-tier portrait test</h3>
+              <p>19 failure modes with mitigations + 7 quarterly threat trackers. Bran 5-tier evolution rendered. <em>Test render — eval gate (FM-19) deferred to fork.</em></p>
+            </li>
+            <li class="forge-log__item" data-status="inflight">
+              <time>2026-06-01</time>
+              <h3>P1a — WeaponData unitary schema (TDD)</h3>
+              <p>10/10 tests green. <code>get_atk()/get_hp()</code> + ★-tier scaling + Forge Math 3 cases. <em>Built but not yet wired into combat.gd — the migration that prompted the fork.</em></p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>2026-06-01</time>
+              <h3>❄️ Frozen — fork to 5_WeaponForge_Honkai_Godot</h3>
+              <p>Snapshot via <code>git archive</code> at commit <code>e958745</code>. This folder = the playtester build. All Phase-1 churn (drop sockets, wire WeaponData, Forge Wheel, Forge Draft, Catalyst, Hot Paladin) continues in the fork.</p>
+            </li>
+          </ol>
+
+          <aside class="build-rail">
+            <h3>Live status</h3>
+            <dl class="kv">
+              <dt>Tests</dt><dd>144 core + 10 WeaponData</dd>
+              <dt>Branch at freeze</dt><dd><code>weaponcraft-godot/wittle-inversion-phase1</code></dd>
+              <dt>Frozen commit</dt><dd><code>e958745</code></dd>
+              <dt>Godot</dt><dd>4.6.2 Mono</dd>
+              <dt>Design spec</dt><dd>v2.2.1 (design-only)</dd>
+              <dt>Active dev</dt><dd><code>../5_WeaponForge_Honkai_Godot/</code></dd>
+            </dl>
+            <p class="build-rail__hint">Playtester build. <strong>Do not develop here.</strong></p>
+          </aside>
+        </div>
+
+        <details class="deep">
+          <summary>What plays today vs design-only</summary>
+          <p><strong>Plays today (Stage D, shipped):</strong> 3 heroes (Bran/Elara/Vex, unlock W1/W3/W6) · 15 waves · bosses W5/W10/W15 · Reforge-&-Retry on boss wipe · <strong>legacy 3-socket forge</strong> (head/hilt/rune TFT shop + part-level merge L1-L5) · Recipe Engine + Codex with first-discovery overlay · tap-portrait ultimates with persistent ult gauge · per-enemy weak/resist affinities.</p>
+          <p><strong>NOT yet built (design-only — see fork):</strong> Forge Wheel slot-machine pulls · weapon-gacha · locked 7-hero roster · Forge Draft 3-card · Catalyst compounds · Hot Paladin Stage-2 cinematic · hero personal-mission quests · portrait evolution wired into gameplay. <code>WeaponData</code> exists in code (10/10 tests) but the legacy socket weapon is what combat actually reads.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="next" class="section section--next">
+      <div class="section-inner">
+        <h2>What's Next</h2>
+        <div class="next-cols">
+          <div>
+            <h3>For this folder (frozen)</h3>
+            <ol>
+              <li>Hand to playtesters. Stage D + Recipe Codex + Merge L5 — the loop is shippable as a discovery prototype.</li>
+              <li>No further development here. If a fix is unavoidable, branch off this snapshot.</li>
+              <li>Pull screenshots / video for SSR + ad creatives off this stable build.</li>
+            </ol>
+          </div>
+          <div>
+            <h3>In the fork (active dev)</h3>
+            <ol>
+              <li>P1a remainder: drop sockets from legacy weapon, wire WeaponData into <code>combat.gd</code> + <code>game_state.gd</code>.</li>
+              <li>P1b Forge Wheel Phase 0 (slot-machine weapon pulls).</li>
+              <li>P1c Forge Draft 3-card between-wave modal.</li>
+              <li>P1f Hot Paladin Stage 2 cinematic.</li>
+              <li>First-10-min vertical slice = P1a + P1b + P1c + P1f.</li>
+              <li>Then: P1d–P1l (Mastery, Catalyst, heroes, balance, SSR, pre-launch).</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Exit gates (any 2 of 3)</h3>
+            <ul class="checklist">
+              <li>D1 retention ≥ 35%</li>
+              <li>FM-8 hero-bond probe ≥ 6/10 on both axes</li>
+              <li>ad CPI ≤ 80% of Wittle benchmark (~$3.50 → ≤ $2.80)</li>
+            </ul>
+          </div>
+        </div>
+        <p class="next-closing">Kill triggers: D1 &lt; 30% · satisfaction &lt; 6/10 · no creative within 30% of Wittle CPI · FM-8 &lt; 6/10 either axis. Exit-or-pivot decision rides on the SSR + 50-player playtest in the fork.</p>
+        <nav class="next-links" aria-label="More to read">
+          <a href="../FROZEN-2026-06-01.md">FROZEN — read first</a>
+          <a href="STATUS.md">STATUS</a>
+          <a href="01_GDD.md">GDD</a>
+          <a href="101-WeaponCraft-Concept.md">101 Concept</a>
+          <a href="superpowers/specs/2026-05-23-godot-ultra-mvp-port-design.md">Ultra-MVP Port Spec</a>
+          <a href="superpowers/specs/2026-05-27-wittle-inversion-design.md">Design Spec v2.2.1</a>
+          <a href="research/2026-05-28-competitor-landscape-synthesis.md">Competitor Synthesis</a>
+          <a href="handoffs/2026-06-01-session-handoff.md">Latest Handoff</a>
+        </nav>
+        <p class="next-footer">⚒ WeaponCraft playtester build · frozen 2026-06-01 at commit <code>e958745</code> · active dev → <code>5_WeaponForge_Honkai_Godot/</code></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="decks/scrub.js" defer></script>
+</body>
+</html>

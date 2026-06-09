@@ -30,6 +30,7 @@ func _ready() -> void:
 		_test_catalog_meets_curve()
 		_test_catalog_depth_four_per_class()
 		_test_voltedge_in_catalog()
+		_test_helios_in_catalog()
 	## ForgeWheel autoload is looked up via /root path (parse-safe while unregistered).
 	if get_node_or_null("/root/ForgeWheel") == null:
 		_check("ForgeWheel autoload registered", false, "missing (RED)")
@@ -117,6 +118,20 @@ func _test_voltedge_in_catalog() -> void:
 			"cls=%s rune=%s rarity=%d" % [w.cls, w.rune, w.rarity_idx])
 		_check("voltedge base_atk = 21", w.base_atk == 21,
 			"atk=%d" % w.base_atk)
+
+func _test_helios_in_catalog() -> void:
+	## A2: Helios Cleaver registered. Epic paladin light. Scripted-grant only —
+	## B1 will add SCRIPTED_GRANT_IDS exclusion to filter from pull pool.
+	_check("helios_cleaver exists",
+		GameState.weapons_by_id.has(&"w_helios_cleaver"), "missing")
+	var w = GameState.weapons_by_id.get(&"w_helios_cleaver")
+	if w != null:
+		_check("helios is Epic paladin light",
+			w.cls == &"paladin" and w.rune == &"light" and w.rarity_idx == 2,
+			"cls=%s rune=%s rarity=%d" % [w.cls, w.rune, w.rarity_idx])
+		_check("helios stats: atk=28 hp=30 crit=8 ult=10",
+			w.base_atk == 28 and w.base_hp == 30 and w.base_crit == 8 and w.base_ult_rate == 10,
+			"atk=%d hp=%d crit=%d ult=%d" % [w.base_atk, w.base_hp, w.base_crit, w.base_ult_rate])
 
 ## ---------- Pull ----------
 

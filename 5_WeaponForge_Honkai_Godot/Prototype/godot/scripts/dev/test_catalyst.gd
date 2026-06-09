@@ -16,6 +16,8 @@ var _lines: Array = []
 func _ready() -> void:
 	_log("=== CatalystData + CatalystResolver tests ===")
 	_test_compounds_returns_ten_records()
+	_test_for_pair_order_independent()
+	_test_for_pair_empty_element_rejected()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -30,6 +32,22 @@ func _test_compounds_returns_ten_records() -> void:
 		if int(r.get("gated_from_stage", 0)) >= 10:
 			earth_gated += 1
 	_check("4 records gated from stage 10", earth_gated == 4, "count=%d" % earth_gated)
+
+func _test_for_pair_order_independent() -> void:
+	## Spec §4 + §9 case C-2: for_pair(fire, ice) == for_pair(ice, fire) == Firestorm.
+	var ab: Dictionary = CatalystDataT.for_pair(&"fire", &"ice")
+	var ba: Dictionary = CatalystDataT.for_pair(&"ice", &"fire")
+	_check("for_pair(fire,ice) returns Firestorm", ab.get("id", &"") == &"firestorm",
+		"id=%s" % ab.get("id", &""))
+	_check("for_pair is order-independent", ab.get("pair_key", &"") == ba.get("pair_key", &""),
+		"ab=%s ba=%s" % [ab.get("pair_key"), ba.get("pair_key")])
+
+func _test_for_pair_empty_element_rejected() -> void:
+	## Spec §4 + §9 case C-3: empty-element inputs return {} (non-elemental starters skip).
+	var r: Dictionary = CatalystDataT.for_pair(&"", &"ice")
+	_check("for_pair with empty element returns {}", r.is_empty(), "id=%s" % r.get("id"))
+	var same: Dictionary = CatalystDataT.for_pair(&"fire", &"fire")
+	_check("for_pair with same-element returns {}", same.is_empty(), "id=%s" % same.get("id"))
 
 ## ---------- helpers ----------
 

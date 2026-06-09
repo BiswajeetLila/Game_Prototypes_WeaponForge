@@ -745,6 +745,11 @@ func _maybe_trigger_paladin_defeat(idx: int, boss) -> void:
 	## Record + unlock.
 	AccountState.scripted_pulls_seen.append(PALADIN_DEFEAT_SENTINEL)
 	AccountState.paladin_unlocked = true
+	## C2: ensure paladin joins GameState.squad_order so active_heroes() surfaces
+	## him to combat + UI. active_heroes() iterates squad_order — without this
+	## wire, paladin is unlocked in AccountState but invisible to the squad.
+	## unlock_hero is idempotent (early-out if already in heroes dict).
+	GameState.unlock_hero(&"paladin")
 	## Grant Helios Cleaver -> auto-equip on paladin slot.
 	var helios = GameState.weapons_by_id.get(&"w_helios_cleaver")
 	if helios != null:

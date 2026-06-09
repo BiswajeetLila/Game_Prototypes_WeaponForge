@@ -84,6 +84,8 @@ func _ready() -> void:
 	_test_paladin_defeat_trigger_at_50pct_hp()
 	_test_paladin_defeat_skips_on_retry()
 	_test_paladin_defeat_only_on_lich_boss()
+	## Scripted Pacing Rework C2 — paladin joins squad_order via unlock_hero.
+	_test_paladin_defeat_unlocks_squad_order()
 	_summary()
 	_render_to_ui()
 
@@ -1289,4 +1291,37 @@ func _test_paladin_defeat_only_on_lich_boss() -> void:
 		not emitted[0], "emitted on wrong boss")
 	_check("paladin still locked after slime fight",
 		AccountState.paladin_unlocked == false, "unlocked on wrong boss")
+	Combat.stop()
+
+func _test_paladin_defeat_unlocks_squad_order() -> void:
+	## C2: defeat trigger calls GameState.unlock_hero(&"paladin") so paladin
+	## joins active_heroes() (squad_order). Without this wire, paladin would
+	## be unlocked in AccountState but never enter combat / squad rotation.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 3
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	AccountState.scripted_pulls_seen = []
+	AccountState.current_stage = 3
+	Combat.start_wave(5, false)
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i; break
+	if lich_idx < 0:
+		_check("lich spawned for C2 unlock test", false, "no lich"); Combat.stop(); return
+	GameState.enemies[lich_idx].hp = int(float(GameState.enemies[lich_idx].max_hp) * 0.4)
+	Combat.step()
+	var paladin_in_active: bool = false
+	for h in GameState.active_heroes():
+		if h.data.id == &"paladin":
+			paladin_in_active = true
+			break
+	_check("paladin in active_heroes() after defeat trigger",
+		paladin_in_active, "paladin missing — squad_order not updated")
+	_check("paladin in squad_order array",
+		&"paladin" in GameState.squad_order,
+		"squad_order=%s" % str(GameState.squad_order))
 	Combat.stop()

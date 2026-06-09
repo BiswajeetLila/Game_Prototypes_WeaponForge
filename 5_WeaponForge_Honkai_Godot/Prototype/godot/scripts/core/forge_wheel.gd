@@ -136,8 +136,8 @@ func pull() -> Dictionary:
 			% [hero.data.name, owned.name, result.old_atk, result.new_atk, drops.size()])
 	else:
 		GameState.append_combat_log("[color=66ddff]⚒ Forge Wheel: %s → Armory  (+%d shards)[/color]" % [owned.name, drops.size()])
-	AccountState.autosave()
 	AccountState.pull_count += 1
+	AccountState.autosave()
 	pull_completed.emit(result)
 	return result
 
@@ -184,17 +184,14 @@ func _try_scripted_pick(eligible: Array):
 	if n == 1 and not (SCRIPT_PULL_1_SENTINEL in AccountState.scripted_pulls_seen):
 		var pick = _pick_first_match(eligible, &"fire", &"warrior")
 		if pick != null:
-			var seen: Array = AccountState.scripted_pulls_seen
-			seen.append(SCRIPT_PULL_1_SENTINEL)
-			AccountState.scripted_pulls_seen = seen
+			## GDScript Arrays are reference types — append mutates the live autoload array.
+			AccountState.scripted_pulls_seen.append(SCRIPT_PULL_1_SENTINEL)
 			return pick
 		return null   ## defer the script — try again next eligible pull (sentinel un-burnt)
 	elif n == 3 and not (SCRIPT_PULL_3_SENTINEL in AccountState.scripted_pulls_seen):
 		var pick = _pick_first_match(eligible, &"ice", &"mage")
 		if pick != null:
-			var seen: Array = AccountState.scripted_pulls_seen
-			seen.append(SCRIPT_PULL_3_SENTINEL)
-			AccountState.scripted_pulls_seen = seen
+			AccountState.scripted_pulls_seen.append(SCRIPT_PULL_3_SENTINEL)
 			return pick
 		return null
 	return null

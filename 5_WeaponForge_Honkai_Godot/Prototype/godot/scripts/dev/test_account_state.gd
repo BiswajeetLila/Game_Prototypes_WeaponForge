@@ -49,7 +49,7 @@ func _ready() -> void:
 		_test_equip_rejects_class_mismatch()
 		_test_swap_between_owned_weapons()
 		_test_run_reset_does_not_touch_account()
-		_test_save_version_is_3()
+		_test_save_version_is_5()
 		_test_v2_save_loads_without_shards()
 		_test_shards_round_trip()
 		_test_corrupt_shard_rejected()
@@ -58,6 +58,10 @@ func _ready() -> void:
 		_test_ember_basics()
 		_test_ember_save_roundtrip()
 		_test_star_up_spends_gems()
+		_test_v4_save_migrates_to_v5()
+		_test_v5_round_trip_persists_catalyst_fields()
+		_test_reset_clears_catalyst_fields()
+		_test_v5_corrupt_arrays_rejected()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -335,8 +339,8 @@ func _test_run_reset_does_not_touch_account() -> void:
 
 ## ---------- Shard inventory + save v2->v3 migration (Stage E) ----------
 
-func _test_save_version_is_3() -> void:
-	_check("SAVE_VERSION bumped to 4 (ember currency)", _Account.SAVE_VERSION == 4,
+func _test_save_version_is_5() -> void:
+	_check("SAVE_VERSION bumped to 5 (catalyst v1)", _Account.SAVE_VERSION == 5,
 		"version=%d" % _Account.SAVE_VERSION)
 
 func _test_v2_save_loads_without_shards() -> void:
@@ -429,7 +433,7 @@ func _test_ember_save_roundtrip() -> void:
 	AccountState.reset_account()
 	AccountState.add_ember(7)
 	var d: Dictionary = AccountState.to_save_dict()
-	_check("save dict version is 4", int(d.get("version", -1)) == 4, "ver=%s" % str(d.get("version")))
+	_check("save dict version is 5", int(d.get("version", -1)) == 5, "ver=%s" % str(d.get("version")))
 	_check("save dict carries ember", int(d.get("ember", -1)) == AccountState.ember, "ember=%s" % str(d.get("ember")))
 	var v3: Dictionary = {"version": 3, "gems": 100, "stage": 1, "weapons": [], "equipped": {}, "shards": []}
 	_check("v3 save loads", AccountState.load_from_dict(v3) == true, "v3 rejected")
@@ -456,6 +460,75 @@ func _test_star_up_spends_gems() -> void:
 	w.star_tier = w.MAX_STAR_TIER
 	AccountState.gems = 100000
 	_check("star_up refused at max", AccountState.star_up(0).get("reason") == "max_star", "not capped")
+
+## ---------- Catalyst v5 schema (Task B1) ----------
+
+func _test_v4_save_migrates_to_v5() -> void:
+	## A v4 save (pre-catalyst) must LOAD into v5: scripted_pulls_seen +
+	## catalyst_codex_discovered + pull_count default to empty arrays / 0.
+	var v4: Dictionary = {"version": 4, "gems": 700, "stage": 1, "ember": 5,
+		"weapons": [], "equipped": {}, "shards": []}
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(v4)
+	_check("v4 save still loads", ok, "rejected")
+	_check("v4 load: gems survive", b.gems == 700, "gems=%d" % b.gems)
+	_check("v4 load: scripted_pulls_seen defaults []",
+		("scripted_pulls_seen" in b) and (b.scripted_pulls_seen as Array).is_empty(),
+		"missing or non-empty")
+	_check("v4 load: catalyst_codex_discovered defaults []",
+		("catalyst_codex_discovered" in b) and (b.catalyst_codex_discovered as Array).is_empty(),
+		"missing or non-empty")
+	_check("v4 load: pull_count defaults 0",
+		("pull_count" in b) and b.pull_count == 0,
+		"pull_count missing or non-zero")
+	b.free()
+
+func _test_v5_round_trip_persists_catalyst_fields() -> void:
+	var a = _Account.new()
+	a.scripted_pulls_seen = [&"pull_1_fire_warrior", &"pull_3_ice_mage"]
+	a.catalyst_codex_discovered = [&"firestorm"]
+	a.pull_count = 7
+	var d: Dictionary = a.to_save_dict()
+	_check("save dict version is 5", int(d.get("version", -1)) == 5, "ver=%s" % str(d.get("version")))
+	_check("save dict carries pull_count", int(d.get("pull_count", -1)) == 7,
+		"pull_count=%s" % str(d.get("pull_count")))
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(d)
+	_check("v5 round-trip load ok", ok, "rejected")
+	_check("scripted_pulls_seen survives", (b.scripted_pulls_seen as Array).size() == 2,
+		"size=%d" % (b.scripted_pulls_seen as Array).size())
+	_check("catalyst_codex_discovered survives", (b.catalyst_codex_discovered as Array).size() == 1,
+		"size=%d" % (b.catalyst_codex_discovered as Array).size())
+	_check("pull_count survives", b.pull_count == 7, "pull_count=%d" % b.pull_count)
+	a.free(); b.free()
+
+func _test_reset_clears_catalyst_fields() -> void:
+	var a = _Account.new()
+	a.scripted_pulls_seen = [&"pull_1_fire_warrior"]
+	a.catalyst_codex_discovered = [&"firestorm"]
+	a.pull_count = 5
+	a.reset_account()
+	_check("reset clears scripted_pulls_seen",
+		("scripted_pulls_seen" in a) and (a.scripted_pulls_seen as Array).is_empty(),
+		"not cleared")
+	_check("reset clears catalyst_codex_discovered",
+		("catalyst_codex_discovered" in a) and (a.catalyst_codex_discovered as Array).is_empty(),
+		"not cleared")
+	_check("reset clears pull_count",
+		("pull_count" in a) and a.pull_count == 0,
+		"not cleared, pull_count=%d" % a.pull_count)
+	a.free()
+
+func _test_v5_corrupt_arrays_rejected() -> void:
+	## Validate-then-commit contract: malformed array entry must reject the whole load.
+	var a = _Account.new()
+	var d: Dictionary = a.to_save_dict()
+	d["scripted_pulls_seen"] = "not_an_array"   ## wrong type
+	var b = _Account.new()
+	var ok: bool = b.load_from_dict(d)
+	_check("corrupt scripted_pulls_seen rejected", ok == false, "accepted bad type")
+	_check("rejected load leaves fresh defaults", b.gems == 600, "gems=%d" % b.gems)
+	a.free(); b.free()
 
 ## ---------- Test helpers ----------
 

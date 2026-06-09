@@ -13,11 +13,6 @@ extends Control
 
 const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
 
-const ELEM_GLYPH: Dictionary = {
-	&"fire": "🔥", &"ice": "❄", &"electric": "⚡",
-	&"wind": "🌪", &"earth": "🪨",
-}
-
 var _header: Label
 var _list: VBoxContainer
 var _row_records: Dictionary = {}   ## Label -> source compound record (for _row_record lookup)
@@ -59,12 +54,12 @@ func _build_row(rec: Dictionary, discovered: bool, stage: int) -> Label:
 	var elements: Array = rec.get("elements", [])
 	var icons: String = ""
 	if elements.size() == 2:
-		var g1: String = String(ELEM_GLYPH.get(elements[0], ""))
-		var g2: String = String(ELEM_GLYPH.get(elements[1], ""))
+		var g1: String = String(CatalystDataT.ELEM_GLYPH.get(elements[0], ""))
+		var g2: String = String(CatalystDataT.ELEM_GLYPH.get(elements[1], ""))
 		icons = "%s+%s " % [g1, g2]
 	var locked: bool = int(rec.get("gated_from_stage", 0)) > stage
 	var prefix: String = ("🔒 " if locked else ("★ " if discovered else "  "))
-	var effect_s: String = _format_effect(rec)
+	var effect_s: String = CatalystDataT.format_effect(rec, {"compact": true})
 	l.text = "%s%s%-16s  %s" % [prefix, icons, rec.get("display_name", ""), effect_s]
 	if locked:
 		l.modulate = Color(0.6, 0.6, 0.6)
@@ -85,24 +80,3 @@ func _row_for(id: StringName) -> Label:
 ## Used by tests: fetch the source record for a given row Label.
 func _row_record(label: Label) -> Dictionary:
 	return _row_records.get(label, {})
-
-## Effect renderer — mirrors home_screen/banner formatters. Will consolidate
-## in the post-C5 cleanup (move to CatalystData.format_effect).
-func _format_effect(rec: Dictionary) -> String:
-	var mb: Dictionary = rec.get("modifier_bag", {})
-	var parts: Array = []
-	var atk_mult: float = float(mb.get(&"squad_atk_mult", 1.0))
-	if not is_equal_approx(atk_mult, 1.0):
-		parts.append("+%d%% ATK" % int(round((atk_mult - 1.0) * 100.0)))
-	var crit_add: float = float(mb.get(&"squad_crit_add", 0.0))
-	if not is_equal_approx(crit_add, 0.0):
-		parts.append("+%d%% crit" % int(round(crit_add * 100.0)))
-	var enemy_as: float = float(mb.get(&"enemy_atk_speed_mult", 1.0))
-	if not is_equal_approx(enemy_as, 1.0):
-		parts.append("-%d%% enemy atk-spd" % int(round((1.0 - enemy_as) * 100.0)))
-	var swarm: float = float(mb.get(&"squad_atk_vs_swarm_mult", 1.0))
-	if not is_equal_approx(swarm, 1.0):
-		parts.append("+%d%% vs swarm" % int(round((swarm - 1.0) * 100.0)))
-	if parts.is_empty():
-		return "—"
-	return " · ".join(parts)

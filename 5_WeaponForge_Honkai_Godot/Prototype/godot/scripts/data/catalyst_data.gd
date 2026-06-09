@@ -24,6 +24,13 @@ const EMPTY_BAG: Dictionary = {
 	&"squad_atk_vs_swarm_mult": 1.0,
 }
 
+## Element -> emoji glyph. Single source of truth for catalyst UI surfaces
+## (chip / banner / codex). Mirrors the icon vocabulary in home_screen.
+const ELEM_GLYPH: Dictionary = {
+	&"fire": "🔥", &"ice": "❄", &"electric": "⚡",
+	&"wind": "🌪", &"earth": "🪨",
+}
+
 ## Cap-1 alphabetical priority — by COMPOUND name (CLAUDE.md §13).
 ## Lower index = higher priority.
 ##   Blizzard > Firestorm > Glacial Storm > Plasma > Stormfront > Wildfire
@@ -114,3 +121,40 @@ static func by_priority() -> Array:
 	var rows: Array = compounds()
 	rows.sort_custom(func(a, b): return int(a["alphabetical_priority"]) < int(b["alphabetical_priority"]))
 	return rows
+
+## Human-readable effect string for a compound record. Consolidates the formatters
+## previously duplicated in home_screen / catalyst_banner / catalyst_codex.
+##
+## opts (all optional):
+##   "glyph_prefix": bool   prepend "🔥+❄   " (3-space tail) — banner usage
+##   "empty_str":    String body when every bag entry is neutral — default "—"
+##   "compact":      bool   shorter labels — "ATK" not "squad ATK", "vs swarm"
+##                          not "ATK vs swarm" — codex usage
+static func format_effect(rec: Dictionary, opts: Dictionary = {}) -> String:
+	var glyph_prefix: bool = bool(opts.get("glyph_prefix", false))
+	var empty_str: String = String(opts.get("empty_str", "—"))
+	var compact: bool = bool(opts.get("compact", false))
+	var atk_label: String = "ATK" if compact else "squad ATK"
+	var swarm_label: String = "vs swarm" if compact else "ATK vs swarm"
+	var mb: Dictionary = rec.get("modifier_bag", {})
+	var parts: Array = []
+	var atk_mult: float = float(mb.get(&"squad_atk_mult", 1.0))
+	if not is_equal_approx(atk_mult, 1.0):
+		parts.append("+%d%% %s" % [int(round((atk_mult - 1.0) * 100.0)), atk_label])
+	var crit_add: float = float(mb.get(&"squad_crit_add", 0.0))
+	if not is_equal_approx(crit_add, 0.0):
+		parts.append("+%d%% crit" % int(round(crit_add * 100.0)))
+	var enemy_as: float = float(mb.get(&"enemy_atk_speed_mult", 1.0))
+	if not is_equal_approx(enemy_as, 1.0):
+		parts.append("-%d%% enemy atk-spd" % int(round((1.0 - enemy_as) * 100.0)))
+	var swarm: float = float(mb.get(&"squad_atk_vs_swarm_mult", 1.0))
+	if not is_equal_approx(swarm, 1.0):
+		parts.append("+%d%% %s" % [int(round((swarm - 1.0) * 100.0)), swarm_label])
+	var body: String = empty_str if parts.is_empty() else " · ".join(parts)
+	if glyph_prefix:
+		var elements: Array = rec.get("elements", [])
+		if elements.size() == 2:
+			var g1: String = String(ELEM_GLYPH.get(elements[0], ""))
+			var g2: String = String(ELEM_GLYPH.get(elements[1], ""))
+			return "%s+%s   %s" % [g1, g2, body]
+	return body

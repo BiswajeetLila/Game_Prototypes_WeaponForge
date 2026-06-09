@@ -31,6 +31,15 @@ func _ready() -> void:
 	_test_earth_pair_triggers_at_stage10()
 	_test_stormfront_swarm_field_present()
 	_test_resolve_nocap_compounds_alpha_sorted()
+	_test_format_effect_default_atk()
+	_test_format_effect_default_crit_only()
+	_test_format_effect_default_enemy_atk_spd()
+	_test_format_effect_default_swarm()
+	_test_format_effect_compact_labels()
+	_test_format_effect_neutral_bag_returns_dash()
+	_test_format_effect_neutral_bag_custom_empty_str()
+	_test_format_effect_glyph_prefix()
+	_test_format_effect_glyph_prefix_neutral_bag()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -209,6 +218,74 @@ func _test_resolve_nocap_compounds_alpha_sorted() -> void:
 			compounds_arr[1]["id"] == &"firestorm", "id=%s" % compounds_arr[1]["id"])
 		_check("compounds[2] is Wildfire",
 			compounds_arr[2]["id"] == &"wildfire", "id=%s" % compounds_arr[2]["id"])
+
+## ---------- format_effect (C5 cleanup: triplicated formatters consolidated) ----------
+
+func _test_format_effect_default_atk() -> void:
+	## Firestorm: +20% squad_atk_mult only. Defaults: no glyph, no compact, empty_str "—".
+	var rec: Dictionary = CatalystDataT.for_pair(&"fire", &"ice")
+	var s: String = CatalystDataT.format_effect(rec)
+	_check("format_effect Firestorm default = '+20% squad ATK'",
+		s == "+20% squad ATK", "got=%s" % s)
+
+func _test_format_effect_default_crit_only() -> void:
+	## Plasma: +15% crit only.
+	var rec: Dictionary = CatalystDataT.for_pair(&"fire", &"electric")
+	var s: String = CatalystDataT.format_effect(rec)
+	_check("format_effect Plasma default = '+15% crit'",
+		s == "+15% crit", "got=%s" % s)
+
+func _test_format_effect_default_enemy_atk_spd() -> void:
+	## Blizzard: enemy_atk_speed_mult 0.80 -> "-20% enemy atk-spd".
+	var rec: Dictionary = CatalystDataT.for_pair(&"ice", &"wind")
+	var s: String = CatalystDataT.format_effect(rec)
+	_check("format_effect Blizzard default = '-20% enemy atk-spd'",
+		s == "-20% enemy atk-spd", "got=%s" % s)
+
+func _test_format_effect_default_swarm() -> void:
+	## Stormfront: squad_atk_vs_swarm_mult 1.25 -> "+25% ATK vs swarm" (default label).
+	var rec: Dictionary = CatalystDataT.for_pair(&"wind", &"electric")
+	var s: String = CatalystDataT.format_effect(rec)
+	_check("format_effect Stormfront default = '+25% ATK vs swarm'",
+		s == "+25% ATK vs swarm", "got=%s" % s)
+
+func _test_format_effect_compact_labels() -> void:
+	## compact=true shortens "squad ATK"->"ATK" and "ATK vs swarm"->"vs swarm" (codex usage).
+	var firestorm: Dictionary = CatalystDataT.for_pair(&"fire", &"ice")
+	var stormfront: Dictionary = CatalystDataT.for_pair(&"wind", &"electric")
+	var s1: String = CatalystDataT.format_effect(firestorm, {"compact": true})
+	var s2: String = CatalystDataT.format_effect(stormfront, {"compact": true})
+	_check("format_effect compact Firestorm = '+20% ATK'",
+		s1 == "+20% ATK", "got=%s" % s1)
+	_check("format_effect compact Stormfront = '+25% vs swarm'",
+		s2 == "+25% vs swarm", "got=%s" % s2)
+
+func _test_format_effect_neutral_bag_returns_dash() -> void:
+	## A record with an all-neutral bag returns the canonical "—" empty string.
+	var rec: Dictionary = {"elements": [&"fire", &"ice"], "modifier_bag": CatalystDataT.EMPTY_BAG}
+	var s: String = CatalystDataT.format_effect(rec)
+	_check("format_effect neutral bag = '—'", s == "—", "got=%s" % s)
+
+func _test_format_effect_neutral_bag_custom_empty_str() -> void:
+	## empty_str opt overrides the dash (legacy call sites can opt into "no effect" etc).
+	var rec: Dictionary = {"elements": [&"fire", &"ice"], "modifier_bag": CatalystDataT.EMPTY_BAG}
+	var s: String = CatalystDataT.format_effect(rec, {"empty_str": "no effect"})
+	_check("format_effect neutral bag custom empty_str = 'no effect'",
+		s == "no effect", "got=%s" % s)
+
+func _test_format_effect_glyph_prefix() -> void:
+	## glyph_prefix=true prepends "🔥+❄   " (3-space tail; banner usage).
+	var rec: Dictionary = CatalystDataT.for_pair(&"fire", &"ice")
+	var s: String = CatalystDataT.format_effect(rec, {"glyph_prefix": true})
+	_check("format_effect glyph_prefix Firestorm = '🔥+❄   +20% squad ATK'",
+		s == "🔥+❄   +20% squad ATK", "got=%s" % s)
+
+func _test_format_effect_glyph_prefix_neutral_bag() -> void:
+	## glyph_prefix + neutral bag still prefixes the elements; body is the empty_str.
+	var rec: Dictionary = {"elements": [&"fire", &"ice"], "modifier_bag": CatalystDataT.EMPTY_BAG}
+	var s: String = CatalystDataT.format_effect(rec, {"glyph_prefix": true})
+	_check("format_effect glyph_prefix + neutral bag = '🔥+❄   —'",
+		s == "🔥+❄   —", "got=%s" % s)
 
 ## ---------- fixtures ----------
 

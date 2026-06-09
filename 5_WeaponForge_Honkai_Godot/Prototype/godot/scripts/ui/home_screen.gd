@@ -12,6 +12,7 @@
 extends Control
 
 const ResolverT = preload("res://scripts/core/catalyst_resolver.gd")
+const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
 
 const ROSTER_IDS: Array = [&"bran", &"elara", &"vex"]
 const GRID_COLS: int = 3
@@ -332,25 +333,10 @@ func _refresh_squad_line() -> void:
 	_squad_line.text = "%s\n💠 Catalyst: %s  (%s)" % [base, name_s, effect_s]
 
 ## Renders a compound's modifier_bag as a human-readable effect string. Used by
-## the squad line + (Task C2) the pre-stage briefing dialog.
+## the squad line + the pre-stage briefing dialog. Delegates to the canonical
+## formatter on CatalystData (C5 cleanup — consolidated three duplicate copies).
 func _format_compound_effect(rec: Dictionary) -> String:
-	var mb: Dictionary = rec.get("modifier_bag", {})
-	var parts: Array = []
-	var atk_mult: float = float(mb.get(&"squad_atk_mult", 1.0))
-	if not is_equal_approx(atk_mult, 1.0):
-		parts.append("+%d%% squad ATK" % int(round((atk_mult - 1.0) * 100.0)))
-	var crit_add: float = float(mb.get(&"squad_crit_add", 0.0))
-	if not is_equal_approx(crit_add, 0.0):
-		parts.append("+%d%% crit" % int(round(crit_add * 100.0)))
-	var enemy_as: float = float(mb.get(&"enemy_atk_speed_mult", 1.0))
-	if not is_equal_approx(enemy_as, 1.0):
-		parts.append("-%d%% enemy atk-spd" % int(round((1.0 - enemy_as) * 100.0)))
-	var swarm: float = float(mb.get(&"squad_atk_vs_swarm_mult", 1.0))
-	if not is_equal_approx(swarm, 1.0):
-		parts.append("+%d%% ATK vs swarm" % int(round((swarm - 1.0) * 100.0)))
-	if parts.is_empty():
-		return "no effect"
-	return " · ".join(parts)
+	return CatalystDataT.format_effect(rec)
 
 func _refresh_detail() -> void:
 	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():

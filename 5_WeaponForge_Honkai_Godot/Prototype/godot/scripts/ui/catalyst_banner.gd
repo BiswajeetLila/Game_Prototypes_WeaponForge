@@ -15,10 +15,7 @@ extends Control
 const BANNER_HOLD_SEC: float = 1.2
 const FADE_SEC: float = 0.30
 
-const ELEM_GLYPH: Dictionary = {
-	&"fire": "🔥", &"ice": "❄", &"electric": "⚡",
-	&"wind": "🌪", &"earth": "🪨",
-}
+const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
 
 var _title: Label
 var _effect: Label
@@ -66,7 +63,7 @@ func show_compound(rec: Dictionary) -> void:
 		return
 	var name_s: String = String(rec.get("display_name", "")).to_upper()
 	_title.text = "💠 %s CATALYST ACTIVE" % name_s
-	_effect.text = _format_effect(rec)
+	_effect.text = CatalystDataT.format_effect(rec, {"glyph_prefix": true})
 	visible = true
 	modulate = Color(1, 1, 1, 0)
 	var tw := create_tween()
@@ -82,28 +79,3 @@ func _fade_out() -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, FADE_SEC)
 	tw.finished.connect(func(): visible = false)
-
-## Human-readable effect string for the banner. Mirrors home_screen's
-## _format_compound_effect but prefixes the element glyphs (e.g. "🔥+❄").
-func _format_effect(rec: Dictionary) -> String:
-	var mb: Dictionary = rec.get("modifier_bag", {})
-	var parts: Array = []
-	var atk_mult: float = float(mb.get(&"squad_atk_mult", 1.0))
-	if not is_equal_approx(atk_mult, 1.0):
-		parts.append("+%d%% squad ATK" % int(round((atk_mult - 1.0) * 100.0)))
-	var crit_add: float = float(mb.get(&"squad_crit_add", 0.0))
-	if not is_equal_approx(crit_add, 0.0):
-		parts.append("+%d%% crit" % int(round(crit_add * 100.0)))
-	var enemy_as: float = float(mb.get(&"enemy_atk_speed_mult", 1.0))
-	if not is_equal_approx(enemy_as, 1.0):
-		parts.append("-%d%% enemy atk-spd" % int(round((1.0 - enemy_as) * 100.0)))
-	var swarm: float = float(mb.get(&"squad_atk_vs_swarm_mult", 1.0))
-	if not is_equal_approx(swarm, 1.0):
-		parts.append("+%d%% ATK vs swarm" % int(round((swarm - 1.0) * 100.0)))
-	var elements: Array = rec.get("elements", [])
-	var elem_s: String = ""
-	if elements.size() == 2:
-		var g1: String = String(ELEM_GLYPH.get(elements[0], ""))
-		var g2: String = String(ELEM_GLYPH.get(elements[1], ""))
-		elem_s = "%s+%s   " % [g1, g2]
-	return elem_s + " · ".join(parts)

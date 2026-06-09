@@ -14,10 +14,7 @@ extends PanelContainer
 
 signal expand_requested
 
-const ELEM_GLYPH: Dictionary = {
-	&"fire": "🔥", &"ice": "❄", &"electric": "⚡",
-	&"wind": "🌪", &"earth": "🪨",
-}
+const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
 
 var _rows: VBoxContainer
 
@@ -54,8 +51,8 @@ func _build_row(rec: Dictionary) -> HBoxContainer:
 	var icon_text: String = "💠"
 	var elements: Array = rec.get("elements", [])
 	if elements.size() == 2:
-		var g1: String = String(ELEM_GLYPH.get(elements[0], ""))
-		var g2: String = String(ELEM_GLYPH.get(elements[1], ""))
+		var g1: String = String(CatalystDataT.ELEM_GLYPH.get(elements[0], ""))
+		var g2: String = String(CatalystDataT.ELEM_GLYPH.get(elements[1], ""))
 		icon_text = "%s+%s" % [g1, g2]
 	var icon := Label.new()
 	icon.text = icon_text

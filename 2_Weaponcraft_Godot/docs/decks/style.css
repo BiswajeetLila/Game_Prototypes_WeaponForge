@@ -553,6 +553,14 @@ details.deep > :not(summary) { margin-top: 16px; color: var(--parchment); }
   transition: opacity 0.2s ease;
   background: var(--iron-deep);
 }
+.beats-stage__video {
+  width: 100%; height: 100%;
+  object-fit: contain; object-position: center;
+  display: block;
+  background: var(--iron-deep);
+}
+/* Video stage variant — match the image grid so the caption sits to the right. */
+.beats-stage--video { /* shares .beats-stage layout; hook reserved for future tweaks. */ }
 .beats-stage__caption {
   padding: 36px 40px;
   display: flex; flex-direction: column;

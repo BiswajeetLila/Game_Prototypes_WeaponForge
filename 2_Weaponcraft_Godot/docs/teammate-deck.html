@@ -269,41 +269,25 @@
     <section id="beats" class="section section--beats">
       <div class="section-inner">
         <h2>The Beats</h2>
-        <p class="beats-intro">Five D1 mockups from the 2E pass. <em>The first three are shipped in this build; the last two are design-only — they wire up in the fork (<code>5_WeaponForge_Honkai_Godot</code>).</em> Click a thumb to swap.</p>
-        <div class="beats-carousel" role="region" aria-label="Story beat carousel">
-          <button class="beats-arrow beats-arrow--prev" type="button" aria-label="Previous beat">‹</button>
-          <figure class="beats-stage">
-            <img class="beats-stage__img" id="beats-featured-img" src="decks/assets/beats/beat1-combat-read-2E.jpg" alt="Beat 1 mockup — combat read">
-            <figcaption class="beats-stage__caption">
-              <h3 class="beats-stage__title" id="beats-featured-title">Combat read</h3>
-              <p class="beats-stage__sub" id="beats-featured-sub">Stage 1, mid-wave · 3 heroes vs minions · SHIPPED</p>
-              <p class="beats-stage__desc" id="beats-featured-desc">Side-view auto-resolve. Heroes attack on 1.1s ticks. Damage numbers pop with weak/resist prefixes. Element-colored hits (fire orange, ice cyan). The persistent ult gauge bar under each hero portrait — tap to fire.</p>
-            </figcaption>
-          </figure>
-          <button class="beats-arrow beats-arrow--next" type="button" aria-label="Next beat">›</button>
-        </div>
-        <div class="beats-thumbs" role="tablist" aria-label="Beat selector">
-          <button class="beats-thumb is-active" data-idx="0" role="tab" aria-selected="true" aria-label="Beat 1 — combat read">
-            <img src="decks/assets/beats/beat1-combat-read-2E.jpg" alt="">
-            <span>1 · Combat read</span>
-          </button>
-          <button class="beats-thumb" data-idx="1" role="tab" aria-selected="false" aria-label="Beat 2 — TFT forge / recipe discovery">
-            <img src="decks/assets/beats/beat2-forge-draft-2E.png" alt="">
-            <span>2 · Forge + Codex</span>
-          </button>
-          <button class="beats-thumb" data-idx="2" role="tab" aria-selected="false" aria-label="Beat 3 — boss wave">
-            <img src="decks/assets/beats/beat3-boss-defeat-2E.png" alt="">
-            <span>3 · Boss defeat</span>
-          </button>
-          <button class="beats-thumb" data-idx="3" role="tab" aria-selected="false" aria-label="Beat 4 — Forge Wheel pull (design-only)">
-            <img src="decks/assets/beats/beat4-forge-wheel-pull-2E.jpg" alt="">
-            <span>4 · Forge Wheel (design)</span>
-          </button>
-          <button class="beats-thumb" data-idx="4" role="tab" aria-selected="false" aria-label="Beat 5 — Hot Paladin cinematic (design-only)">
-            <img src="decks/assets/beats/beat5-hot-paladin-cinematic-2E.png" alt="">
-            <span>5 · Hot Paladin (design)</span>
-          </button>
-        </div>
+        <p class="beats-intro">Forge-loop concept video — 10s Seedance-Pro render (v3). The full beat-by-beat mockup gallery is on hold while the art set gets a content pass.</p>
+        <figure class="beats-stage beats-stage--video">
+          <video class="beats-stage__video"
+                 src="decks/assets/beats/forge-video-v3.mp4"
+                 controls
+                 preload="metadata"
+                 playsinline
+                 muted
+                 poster=""
+                 aria-label="Forge concept video v3 (Seedance Pro, 10 seconds)">
+            Your browser does not support the video tag. Direct link:
+            <a href="decks/assets/beats/forge-video-v3.mp4">forge-video-v3.mp4</a>
+          </video>
+          <figcaption class="beats-stage__caption">
+            <h3 class="beats-stage__title">Forge concept (v3)</h3>
+            <p class="beats-stage__sub">10s · Seedance Pro · video mockup</p>
+            <p class="beats-stage__desc">A first-pass cinematic of the forge moment — what the crafting beat should <em>feel</em> like, not yet what the in-engine UI looks like. Replaces the previous 5-image carousel while the static beat captions get revised.</p>
+          </figcaption>
+        </figure>
       </div>
     </section>
     <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>

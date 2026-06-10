@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0710">
+  <title>WeaponCraft — 101 Concept Slideshow</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+
+  <link rel="stylesheet" href="decks/style.css">
+  <link rel="stylesheet" href="decks/slideshow.css">
+</head>
+<body class="slideshow">
+
+  <header class="slide-topbar">
+    <a class="slide-topbar__brand" href="#1">⚒ WEAPONCRAFT · 101</a>
+    <div class="slide-topbar__counter"><strong>1</strong> / —</div>
+    <div class="slide-topbar__hint">
+      <kbd>←</kbd> <kbd>→</kbd> nav · <kbd>Home</kbd> first · <kbd>End</kbd> last
+    </div>
+  </header>
+  <div class="slide-progress" style="width:0"></div>
+
+  <main class="slide-stage" aria-live="polite">
+
+    <!-- ============================================================ -->
+    <!-- Slide 1 — Title -->
+    <section class="slide slide--title is-active" aria-label="Title">
+      <p class="slide__eyebrow">Lila Games · Concept Doc · 2026-05-28</p>
+      <h1 class="slide__title">WeaponCraft</h1>
+      <p class="slide__subtitle">
+        A casual-mobile hero-collector that <em>inverts the Wittle Defender gacha</em>
+        — you pull weapons, not heroes — wrapped around a locked 7-hero roster with
+        Honkai-style anime personality and story.
+      </p>
+      <p class="slide__meta">Status — Concept locked · design spec v2.2 · pre-Phase-1 prototype</p>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 2 — Greenlight checklist -->
+    <section class="slide" aria-label="Greenlight checklist">
+      <p class="slide__eyebrow">§1 · Greenlight</p>
+      <h2 class="slide__title">Where we are on the gauntlet</h2>
+      <p class="slide__subtitle">Stage 1–6 RICOCHET-template progress. Five text artifacts done; prototype + art set in flight.</p>
+      <ul class="slide__checklist">
+        <li data-state="done"><span class="pip">✓</span> Stage 1–6 filled out</li>
+        <li data-state="done"><span class="pip">✓</span> Core-loop text (~135w)</li>
+        <li data-state="done"><span class="pip">✓</span> Core + meta-progression (~170w)</li>
+        <li data-state="done"><span class="pip">✓</span> Store-page variant (~55w)</li>
+        <li data-state="done"><span class="pip">✓</span> First 1–5 min (~280w)</li>
+        <li data-state="done"><span class="pip">✓</span> D1–D14 journey (~340w)</li>
+        <li data-state="partial"><span class="pip">~</span> Playable gameplay (Stage D shipped — 15w combat, 144 tests)</li>
+        <li data-state="partial"><span class="pip">~</span> Playable core loop + 1 meta (P1a-c+f in build)</li>
+        <li data-state="todo"><span class="pip">·</span> Integrate AI art assets</li>
+        <li data-state="todo"><span class="pip">·</span> Mockup of gameplay screen</li>
+        <li data-state="todo"><span class="pip">·</span> Key art</li>
+        <li data-state="todo"><span class="pip">·</span> Key UI frames</li>
+        <li data-state="todo"><span class="pip">·</span> App-store icon</li>
+        <li data-state="todo"><span class="pip">·</span> SSR test results</li>
+        <li data-state="todo"><span class="pip">·</span> Internal playtest + conviction</li>
+        <li data-state="todo"><span class="pip">·</span> Fake App Store test</li>
+        <li data-state="todo"><span class="pip">·</span> Publish prototype · measure D1 + D0 games</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 3 — Identity -->
+    <section class="slide" aria-label="Identity">
+      <p class="slide__eyebrow">§2 · Identity</p>
+      <h2 class="slide__title">Who it's for, what it is</h2>
+      <dl class="slide__kv">
+        <dt>Working title</dt>           <dd>WeaponCraft</dd>
+        <dt>Genre / subgenre</dt>        <dd>Casual-mobile hero-collector / auto-battler / weapon-gacha-with-forge-meta</dd>
+        <dt>Target audience</dt>         <dd>Western + SEA mid-core male, mid-20s–30s. Currently plays <strong>Wittle Defender or Archero 2</strong>, watches Crunchyroll, owns a PSN/Steam library, lives in Discord. <em>Habby loyalist ∩ anime-curious gamer.</em></dd>
+        <dt>Audience anti-target</dt>    <dd>NOT the hypercasual-graduate (Cup Heroes) cohort. NOT the pure-anime-action-RPG (Genshin-only) cohort.</dd>
+        <dt>Audience evidence</dt>       <dd>Sensor Tower overlap (2026-05-28): Wittle players over-index on Crunchyroll <strong>31%</strong>, Discord <strong>54%</strong>, PlayStation App <strong>23%</strong>, Steam <strong>22%</strong>, NTE <strong>22%</strong>, Pokémon GO <strong>23%</strong>.</dd>
+      </dl>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 4 — Core thesis / idea -->
+    <section class="slide" aria-label="Core thesis">
+      <p class="slide__eyebrow">§3 · Core thesis</p>
+      <h2 class="slide__title">The idea, in player voice</h2>
+      <blockquote class="slide__quote">
+        "I command three heroes who hold the line in an arena while monsters pour in
+        — they auto-fight with whatever weapons I've equipped, and I tap each hero
+        to fire their ultimate. The twist is what I <em>collect</em>: I don't pull
+        heroes, I pull <strong>weapons</strong>. My seven heroes are locked, each
+        with their own story and personality, but the blades, staves and runes they
+        wield come from a slot-machine forge. Between waves I draft skill cards that
+        visibly transform my abilities — split a storm cyclone into three, chain my
+        hellfire to the next enemy. Five-minute runs. The heroes are mine; the
+        weapons are the world's."
+      </blockquote>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 5 — First 60s of D1 -->
+    <section class="slide" aria-label="Gameplay journey — first 60s">
+      <p class="slide__eyebrow">§4 · Gameplay journey · D1 first 60s</p>
+      <h2 class="slide__title">The opening minute</h2>
+      <div class="slide__body">
+        <ul>
+          <li><strong>0–5s.</strong> Studio logo → 5s cinematic: Bran the warrior raises his anime-styled sword in a dim chamber. <em>"Hold the line."</em> Tap to start.</li>
+          <li><strong>5–15s.</strong> Tutorial wave 1, no menus. Bran in the center-left of a side-view arena. Slimes waddle in from the right. Heroes auto-attack. Damage numbers pop; slimes burst into XP gems. Wave clears in ~8s.</li>
+          <li><strong>15–25s.</strong> Forge Draft modal slides up. Three cards: <code>+20% atk speed</code>, <code>+200% HP</code>, <code>Storm Cyclone splits into 3</code>. Tooltip highlights the third. Player taps.</li>
+          <li><strong>25–40s.</strong> Wave 2 — Bran's next swing conjures three cyclones instead of one. <strong>Visible cause-and-effect.</strong> Elara the mage drops into the back slot.</li>
+          <li><strong>40–60s.</strong> Wave 3 — Vex the rogue joins. By the wave-5 Slime King boss, the squad fires ultimates and wins at half HP. Reward: <em>"Forge Wheel pull available!"</em> — the "I want to forge my own weapon" moment.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 6 — Hypothesis -->
+    <section class="slide" aria-label="Hypothesis">
+      <p class="slide__eyebrow">§5 · Hypothesis</p>
+      <h2 class="slide__title">Why this would work</h2>
+      <div class="slide__cols">
+        <div class="slide__col">
+          <span class="slide__col__tag">Audience pain</span>
+          <h3>Genre's two unmet wants</h3>
+          <p>Wittle / Archero 2 mid-core grads have a loop that works ($21M/mo Wittle), but: (1) heroes are interchangeable art with <em>no story</em>; (2) the collection thrill is hero-shaped, forcing endless gacha sprawl + predatory whale tail.</p>
+        </div>
+        <div class="slide__col">
+          <span class="slide__col__tag">The bet</span>
+          <h3>Invert the gacha axis</h3>
+          <p>Equipment-is-gacha + heroes-not-pulled is <strong>precedented</strong> — Archero shipped it to $263M lifetime. What's unprecedented in our 50-game scan: hard-lock the roster to deterministic story progression, give each of 7 heroes Honkai-grade personality + mission chain + portrait evolution.</p>
+        </div>
+        <div class="slide__col">
+          <span class="slide__col__tag">Moat</span>
+          <h3>The combination</h3>
+          <p>Habby can bolt a weapon banner onto Wittle in a season patch. They <em>cannot</em> story-lock heroes without forking their hero-banner LTV model. The combination is the moat; the validation is Wittle's slot-level retention loop.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 7 — Risks -->
+    <section class="slide" aria-label="Risks">
+      <p class="slide__eyebrow">§6 · Risks</p>
+      <h2 class="slide__title">The single fragile assumption</h2>
+      <blockquote class="slide__quote">
+        Wittle's mid-core mobile audience will accept <strong>weapons-as-gacha</strong>
+        replacing heroes-as-gacha — because the combination of equipment-gacha
+        (precedented) + story-locked roster (unprecedented) preserves Wittle's
+        slot-level retention loop while adding hero-narrative depth competitors
+        don't have.
+      </blockquote>
+      <div class="slide__body">
+        <p><strong>If it breaks:</strong> players feel their locked heroes are "not premium" OR weapon pulls don't carry the dopamine of a hero pull → both anchors dilute → game falls back to <em>"Wittle with worse art."</em></p>
+        <p><strong>Stage-1 dual-anchor SSR probe:</strong> <em>"Pulling weapons feels as exciting as pulling heroes, AND I feel attached to my heroes despite not pulling them"</em> — must score <strong>≥6/10 on BOTH axes</strong> simultaneously. Else pivot to a hybrid (some heroes pullable).</p>
+        <p><strong>Re-tests:</strong> Stage-4 gameplay video re-tests the forge-pull splash. Phase-1 50-player playtest measures D1 parity with Wittle.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 8 — Reference games -->
+    <section class="slide" aria-label="Reference games">
+      <p class="slide__eyebrow">§7 · References</p>
+      <h2 class="slide__title">Three north stars</h2>
+      <p class="slide__subtitle">Genre mashup formula: <strong>Wittle Defender × Archero's inverted gacha × Honkai's character-soul</strong> — anchored by a slot-machine weapon forge.</p>
+      <div class="slide__refs">
+        <article class="slide__ref">
+          <h3>Wittle Defender</h3>
+          <p class="slide__ref__meta">Habby · 2025 · mobile</p>
+          <p>Audience + meta anchor. Share: arena auto-battle, 3-card between-wave draft, slot-not-hero level pattern, 5-min sessions, 92%-male midcore-TD-RPG cohort.</p>
+          <p><em>Don't share:</em> hero-gacha · flat no-story heroes · the 8-axis progression sprawl.</p>
+        </article>
+        <article class="slide__ref">
+          <h3>Archero 2</h3>
+          <p class="slide__ref__meta">Habby · 2025 · mobile</p>
+          <p>Inversion precedent + gacha shape. Share: equipment-gacha + shard-not-banner heroes + star-up ladder.</p>
+          <p><em>Don't share:</em> twin-stick solo combat. Rename their "Resonance" to <strong>Catalyst</strong>.</p>
+        </article>
+        <article class="slide__ref">
+          <h3>Honkai: Star Rail</h3>
+          <p class="slide__ref__meta">miHoYo · 2023 · mobile/PC</p>
+          <p>Narrative-depth + portrait-evolution aesthetic target. Share: per-character story, voiced personality, visible character growth.</p>
+          <p><em>Don't share:</em> turn-based combat · full hero-gacha · AAA animation budget.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 9 — Progression -->
+    <section class="slide" aria-label="Progression D1-D14">
+      <p class="slide__eyebrow">§8 · Progression</p>
+      <h2 class="slide__title">The D1 → D14 climb</h2>
+      <p class="slide__subtitle">Kept vague on purpose — Stage 2 SSR will pressure-test the cadence.</p>
+      <div class="slide__days">
+        <article class="slide__day">
+          <h3 class="slide__day__label">D1</h3>
+          <p>3 heroes, ~3 weapons, first Forge Draft transform seen, 4 shadow roster slots visible.</p>
+          <p>"What else can I forge?" + the visibly empty roster grid.</p>
+        </article>
+        <article class="slide__day">
+          <h3 class="slide__day__label">D3</h3>
+          <p>4–5 heroes (Hot Paladin joined), daily Boss Rush unlocked, first hero personal-mission quest.</p>
+          <p>Element-weakness boss-of-the-day → smart squad/weapon swaps.</p>
+        </article>
+        <article class="slide__day">
+          <h3 class="slide__day__label">D7</h3>
+          <p>5 heroes, first <strong>Catalyst</strong> compound (Firestorm) triggers with Fire + Ice weapons in squad.</p>
+          <p>"I want this squad-wide steam effect every match."</p>
+        </article>
+        <article class="slide__day">
+          <h3 class="slide__day__label">D14</h3>
+          <p>6 heroes, Master Smith cinematic at Stage 10 unlocks Forge Phase 1 (pull parts to upgrade rarity), weekly leaderboard.</p>
+          <p>Part-pull chase + leaderboard + signature-weapon mission progress.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 10 — Deliverables: SSR text -->
+    <section class="slide" aria-label="Deliverables — SSR text bundle">
+      <p class="slide__eyebrow">§9.1 · Deliverables · Text</p>
+      <h2 class="slide__title">Synthetic-testing text bundle</h2>
+      <p class="slide__subtitle">Five SSR artifacts authored. All in the 101 doc; all owner-approved.</p>
+      <dl class="slide__kv">
+        <dt>Core loop · ~135 words</dt>
+        <dd>Three heroes hold an arena; auto-attack; tap-portrait ultimate; 3-card draft after every wave; pick-three auto-upgrades; bosses every 5 waves; ~5 min/run.</dd>
+        <dt>Core + meta · ~170 words</dt>
+        <dd>The loop + Forge Wheel weapon-pulls + Master Smith mid-game Phase-1 part-pulls.</dd>
+        <dt>Store-page · ~55 words</dt>
+        <dd>"Forge legendary weapons. Bond with seven anime-styled heroes who each play differently. Five-minute runs. Fifteen waves. F2P."</dd>
+        <dt>First 1–5 min · ~280 words</dt>
+        <dd>Logo → Bran cinematic → tutorial wave 1 → Forge Draft → wave 2-5 → Slime King boss → first Forge Wheel pull.</dd>
+        <dt>D1–D14 journey · ~340 words</dt>
+        <dd>D1 hook (shadow roster) · D2 Hot Paladin descent · D3 daily challenge · D7 Catalyst Firestorm · D14 Master Smith Phase-1.</dd>
+      </dl>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 11 — Deliverables: Art -->
+    <section class="slide" aria-label="Deliverables — Art">
+      <p class="slide__eyebrow">§9.2 · Deliverables · Art</p>
+      <h2 class="slide__title">The art set for Stage 3</h2>
+      <p class="slide__subtitle">Hero-collector with combat emphasis. Required for SSR ad-test creatives.</p>
+      <dl class="slide__kv">
+        <dt>Gameplay screen mockup</dt>
+        <dd>TBD · single static frame: side-view arena, 3 heroes in slots, enemies entering from right, HUD (wave counter, 3 hero portraits with ult gauges), Forge Draft modal half-visible. Reads as "squad auto-battler with a forge" in 2s.</dd>
+        <dt>Key art</dt>
+        <dd>TBD · marketing hero shot: 7-hero roster (3 lit, 4 shadow), slot-machine Forge Wheel mid-spin throwing sparks, anime-styled Bran foregrounded with the Stormblaze Katana. Pixel-cyber-anime palette.</dd>
+        <dt>Key UI frames (7)</dt>
+        <dd>TBD · Combat HUD · Forge Draft 3-card modal · Forge Wheel slot-pull · Roster grid (3 + 4 shadows) · Hero detail (Mastery + portrait tiers) · Catalyst preview · Part-Pull screen (Phase 1).</dd>
+        <dt>App-store icon</dt>
+        <dd>TBD · 1024×1024 · single anime-styled hero mid-swing + glowing forged blade + slot-machine reel hint. Tested for 88×88 thumbnail readability.</dd>
+        <dt>Bran 5-tier portrait test</dt>
+        <dd><strong>Done.</strong> <code>docs/research/portrait-tier-test/bran_5tier_evolution.png</code>. Pending 20-Honkai-player approval gate (ship 5-tier vs fall to 3-tier).</dd>
+      </dl>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 12 — Playable prototype state -->
+    <section class="slide" aria-label="Playable prototype">
+      <p class="slide__eyebrow">§9.3 · Deliverables · Prototype</p>
+      <h2 class="slide__title">What the playable build is</h2>
+      <div class="slide__cols slide__cols--2">
+        <div class="slide__col">
+          <span class="slide__col__tag">Shipped</span>
+          <h3>Stage D — the 15-wave substrate</h3>
+          <p>Godot 4.6.2 Mono. <strong>3 heroes</strong> (Bran W1 / Elara W3 / Vex W6). <strong>15 waves</strong>, bosses W5 / W10 / W15. <strong>ReforgeRetry</strong> on boss wipe. Legacy 3-socket forge (head/hilt/rune TFT shop + part-level merge L1→L5). Tap-portrait ultimates with persistent ult gauge. <strong>144/144 tests green</strong> + WeaponData 10/10.</p>
+        </div>
+        <div class="slide__col">
+          <span class="slide__col__tag">In build (P1a-c + f)</span>
+          <h3>First-10-min vertical slice</h3>
+          <p>Forge Wheel Phase 0 weapon pulls · Forge Draft 3-card modal · Hot Paladin Stage-2 cinematic. Combat substrate already exists (Stage D); new work = WeaponData wiring + UI panels. <em>Must be feel-representative on a real Android device.</em></p>
+          <p><strong>No meta gacha economy at prototype.</strong></p>
+        </div>
+      </div>
+      <div class="slide__body" style="margin-top:24px">
+        <p><strong>Gameplay video target (Stage 4):</strong> 30–90s, five beats — onboarding read · first Forge Draft transform (Storm Cyclone splits) · first Forge Wheel pull splash · Stage-2 Hot Paladin cinematic · first boss kill. The Forge-pull + cinematic beats are make-or-break.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 13 — Strategic notes -->
+    <section class="slide" aria-label="Strategic notes">
+      <p class="slide__eyebrow">§10 · Strategic notes</p>
+      <h2 class="slide__title">Four positioning calls</h2>
+      <div class="slide__cols slide__cols--2">
+        <div class="slide__col">
+          <span class="slide__col__tag">Rename · done</span>
+          <h3>Resonance → Catalyst</h3>
+          <p>Habby owns "Resonance" via Archero 2 + CapybaraGo. Trademark check pending on Catalyst before any external asset. Fallbacks: Alloy · Confluence · Reaction · Harmonic.</p>
+        </div>
+        <div class="slide__col">
+          <span class="slide__col__tag">Progression cap</span>
+          <h3>Four axes max</h3>
+          <p>Weapons · heroes · Recipe Codex · Forge shards. Deliberate guard against Wittle's 8-axis <em>"red-dot hell."</em></p>
+        </div>
+        <div class="slide__col">
+          <span class="slide__col__tag">Quarterly threat</span>
+          <h3>Habby's weapon-banner copy</h3>
+          <p>6–18 mo before Habby could season-patch a weapon banner onto Wittle. Ship the <strong>craftable part-pull forge early</strong> to stay ahead of a plain "weapon gacha."</p>
+        </div>
+        <div class="slide__col">
+          <span class="slide__col__tag">Marketing wedge</span>
+          <h3>Moat = the combination</h3>
+          <p>Lead ad creative with <strong>hero portrait-evolution + story beats</strong>. Habby's creatives never show character story. That's the visible gap.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- Slide 14 — End card / links -->
+    <section class="slide slide--end" aria-label="End card">
+      <p class="slide__eyebrow">End</p>
+      <h2 class="slide__title">⚒ Forge weapons. Bond with heroes.</h2>
+      <p class="slide__subtitle">
+        Full design SSOT: <code>docs/superpowers/specs/2026-05-27-wittle-inversion-design.md</code> v2.2.
+        Build state: <code>docs/STATUS.md</code>. Resume context: latest handoff.
+      </p>
+      <nav class="slide__links" aria-label="More to read">
+        <a href="101-WeaponCraft-Concept.md">101 source doc</a>
+        <a href="STATUS.md">STATUS</a>
+        <a href="01_GDD.md">GDD</a>
+        <a href="teammate-deck.html">Teammate deck</a>
+        <a href="superpowers/specs/2026-05-27-wittle-inversion-design.md">Design Spec v2.2</a>
+        <a href="research/2026-05-28-competitor-landscape-synthesis.md">Competitor Synthesis</a>
+        <a href="../FROZEN-2026-06-01.md">FROZEN doc</a>
+      </nav>
+      <p class="slide__meta" style="margin-top:36px">WeaponCraft · 101 Concept · 2026-05-28 · Lila Games</p>
+    </section>
+
+  </main>
+
+  <nav class="slide-nav" aria-label="Slide navigation">
+    <button class="slide-nav__btn slide-nav__btn--prev" type="button" aria-label="Previous slide">← Prev</button>
+    <ul class="slide-dots" aria-label="Slide jump dots"></ul>
+    <button class="slide-nav__btn slide-nav__btn--next" type="button" aria-label="Next slide">Next →</button>
+  </nav>
+
+  <script src="decks/slideshow.js" defer></script>
+</body>
+</html>

@@ -83,12 +83,26 @@ func stage_atk_mult(stage: int) -> float:
 func boss_for_stage(stage: int) -> StringName:
 	return STAGE_BOSS_ROTATION[(maxi(stage, 1) - 1) % STAGE_BOSS_ROTATION.size()]
 
+const CatalystResolverT = preload("res://scripts/core/catalyst_resolver.gd")
+const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
+
+## Per-stage Catalyst modifier bag (spec §3). EMPTY_BAG until start_wave reads it.
+## v1 NOTE: enemy_atk_speed_mult is read into the bag but NOT yet applied —
+## enemy-side attack frequency would require either a per-enemy tick-skip roll
+## or a Combat.TICK_SEC scale. Deferred to v1.1; Blizzard's combat effect ships
+## dormant in v1 (the merged-bag math is still exercised correctly).
+var _catalyst_bag: Dictionary = CatalystDataT.EMPTY_BAG.duplicate()
+
 signal tick_completed
 signal hero_hit_enemy(hero_id: StringName, enemy_idx: int, dmg: int, source: StringName, is_crit: bool)
 signal enemy_hit_hero(enemy_idx: int, hero_id: StringName, dmg: int)
 signal ult_fired(hero_id: StringName, total_dmg: int)
 ## Stage D — pre-wave banner. Main listens and displays before Combat.start_wave.
 signal boss_telegraph(text: String)
+## Scripted-pacing-rework C1: emitted once when the Stage 3 Arcane Lich crosses
+## 50% HP with paladin not yet unlocked. main.gd listens and triggers the Hot
+## Paladin descent cinematic + scripted retry-stage-3 flow.
+signal paladin_descend
 
 var _tick_timer: Timer
 var _time_cap_timer: Timer
@@ -119,6 +133,8 @@ func _ready() -> void:
 func start_wave(wave: int, auto_tick: bool = true) -> void:
 	_current_wave = wave
 	_tick_counter = 0
+	## Refresh Catalyst bag from deployed squad weapons + current stage. Once per wave.
+	_refresh_catalyst_bag()
 	GameState.set_wave(wave)
 	_spawn_enemies(wave)
 	ForgeDraft.reset_wave_baseline()   ## kill meter: new wave's dead-count starts at 0
@@ -348,8 +364,17 @@ func _hero_attack(hero) -> void:
 
 	## Total atk = hero baseAtk + sum of part contributions (matches prototype's
 	## weaponStats(hero) formula). weapon.get_atk() alone is parts-only.
-	var stats_atk: int = hero.data.atk_base + hero.eff_atk()
-	var stats_crit: int = hero.eff_crit()
+	## Catalyst v1 (spec §3): squad_atk_mult applies always; squad_atk_vs_swarm_mult
+	## only when >= 3 alive enemies (Stormfront's gate per CLAUDE.md §13).
+	var stats_atk_raw: int = hero.data.atk_base + hero.eff_atk()
+	var atk_mult: float = float(_catalyst_bag.get(&"squad_atk_mult", 1.0))
+	## Stormfront swarm gate (CLAUDE.md §13): >=3 alive enemies. Reuses the local
+	## `alive` from line ~355 instead of re-querying _alive_enemy_indices().
+	if alive.size() >= 3:
+		atk_mult *= float(_catalyst_bag.get(&"squad_atk_vs_swarm_mult", 1.0))
+	var stats_atk: int = int(floor(float(stats_atk_raw) * atk_mult))
+	## Catalyst v1: squad_crit_add adds flat percentage points (e.g. Plasma 0.15 -> +15%).
+	var stats_crit: int = hero.eff_crit() + int(round(100.0 * float(_catalyst_bag.get(&"squad_crit_add", 0.0))))
 	var stats_ultrate: int = hero.eff_ult_rate()
 	var weapon_tags: Array = hero.eff_tags()
 	var bonuses: Dictionary = Recipes.get_recipe_bonuses(hero)
@@ -670,7 +695,18 @@ const LICH_PHASE_1_ATK_MULT: float = 1.2
 const LICH_PHASE_2_RATIO: float = 0.33
 const LICH_PHASE_2_AOE_RATIO: float = 0.15   ## softened 0.5 -> 0.30 -> 0.15 (2026-06-09 owner: still too punishing)
 
+## Scripted-pacing-rework C1: one-shot sentinel tag persisted in
+## AccountState.scripted_pulls_seen once the Hot Paladin descent fires.
+const PALADIN_DEFEAT_SENTINEL: StringName = &"defeat_stage_3_paladin"
+## HP threshold (fraction of max_hp) at or below which the descent trigger arms.
+const PALADIN_DEFEAT_HP_RATIO: float = 0.5
+
 func _boss_tick_arcane_lich(idx: int, boss) -> void:
+	## C1: scripted descent trigger runs BEFORE phase-1/2 logic. If it fires, the
+	## squad is wiped (forced defeat); Combat.step's win/loss check then routes
+	## through _on_wipe() -> ReforgeRetryModal. Sentinel guard short-circuits the
+	## retry path so phase-1/2 play normally on the second attempt.
+	_maybe_trigger_paladin_defeat(idx, boss)
 	var hp_ratio: float = float(boss.hp) / float(boss.max_hp)
 	if hp_ratio < LICH_PHASE_1_RATIO and not bool(boss.get(&"phase_1_applied", false)):
 		boss.atk = int(floor(float(boss.atk) * LICH_PHASE_1_ATK_MULT))
@@ -680,6 +716,55 @@ func _boss_tick_arcane_lich(idx: int, boss) -> void:
 		for h in GameState.active_heroes():
 			var dmg: int = int(floor(float(h.max_hp) * LICH_PHASE_2_AOE_RATIO))
 			_boss_strike_hero(idx, h, dmg)
+
+## Scripted-pacing-rework C1: scripted-wipe trigger when the Arcane Lich (Stage 3
+## boss) crosses 50% HP for the first time. One-shot per account via
+## PALADIN_DEFEAT_SENTINEL in AccountState.scripted_pulls_seen.
+##
+## Effects (in order):
+## - Record sentinel + flip AccountState.paladin_unlocked = true.
+## - Grant Helios Cleaver to paladin slot (acquire_weapon + equip).
+## - 999-dmg AOE to every alive deployed non-paladin hero -> forced defeat
+##   (_boss_strike_hero handles hp clamp / is_dead flag / signals).
+## - autosave + emit paladin_descend (main.gd C-chunk D3 wires the cinematic).
+##
+## Retry path: sentinel-guard short-circuits -> normal phase-1/2 plays through.
+##
+## Stage-1 neutrality contract: this helper is only called from
+## _boss_tick_arcane_lich, so slime / golem bosses never see it. The
+## _test_paladin_defeat_only_on_lich_boss case pins this.
+##
+## Note: each per-hero hit fires `enemy_hit_hero` via _boss_strike_hero, so HP
+## bars do update correctly — but the cinematic overlay (C-chunk D3) will mask
+## the wipe regardless. ATK-stat irrelevant: we pass a fixed 999 dmg.
+func _maybe_trigger_paladin_defeat(idx: int, boss) -> void:
+	if PALADIN_DEFEAT_SENTINEL in AccountState.scripted_pulls_seen:
+		return   ## already triggered; retry proceeds with normal phase-1/2
+	if float(boss.hp) > float(boss.max_hp) * PALADIN_DEFEAT_HP_RATIO:
+		return   ## haven't crossed threshold yet
+	## Record + unlock.
+	AccountState.scripted_pulls_seen.append(PALADIN_DEFEAT_SENTINEL)
+	AccountState.paladin_unlocked = true
+	## C2: ensure paladin joins GameState.squad_order so active_heroes() surfaces
+	## him to combat + UI. active_heroes() iterates squad_order — without this
+	## wire, paladin is unlocked in AccountState but invisible to the squad.
+	## unlock_hero is idempotent (early-out if already in heroes dict).
+	GameState.unlock_hero(&"paladin")
+	## Grant Helios Cleaver -> auto-equip on paladin slot.
+	var helios = GameState.weapons_by_id.get(&"w_helios_cleaver")
+	if helios != null:
+		var owned = AccountState.acquire_weapon(helios)
+		AccountState.equip(&"paladin", AccountState.owned_weapons.size() - 1)
+		if owned != null and GameState.has_method("equip_weapon_data"):
+			GameState.equip_weapon_data(&"paladin", owned)
+	AccountState.autosave()
+	## Overwhelming AOE: forced-defeat every alive deployed non-paladin hero.
+	## _boss_strike_hero handles hp clamp / is_dead / hero_died / enemy_hit_hero
+	## signals so Combat.any_alive() correctly returns false -> _on_wipe fires.
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin":
+			_boss_strike_hero(idx, h, 999)
+	emit_signal(&"paladin_descend")
 
 ## Shared damage path for boss-special attacks (golem AoE / lich phase 2 AoE).
 ## Mirrors _enemy_attack's death-notification + signal contract minus the
@@ -735,3 +820,15 @@ func _log_hero_hit(hero, enemy, dmg: int, is_crit: bool) -> void:
 	if is_crit:
 		prefix += "⚡"
 	GameState.append_combat_log("[color=ffd070]%s%s → %s for %d[/color]" % [prefix, hero.data.name, enemy.name, dmg])
+
+## ---------- Catalyst v1 (B5) ----------
+
+## Builds the squad-weapon list from active heroes and resolves the merged bag.
+## Reads AccountState.current_stage so cap-1 (S1-4) vs no-cap (S5+) is automatic.
+func _refresh_catalyst_bag() -> void:
+	var squad_weapons: Array = []
+	for h in GameState.active_heroes():
+		if h.weapon_data != null:
+			squad_weapons.append(h.weapon_data)
+	var resolved: Dictionary = CatalystResolverT.resolve(squad_weapons, AccountState.current_stage)
+	_catalyst_bag = resolved.get("merged_bag", CatalystDataT.EMPTY_BAG.duplicate())

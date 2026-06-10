@@ -36,7 +36,7 @@ combat interface (Stage 1 of the combat migration). The actual `combat.gd` switc
 - WeaponData combat interface: `base_crit`/`base_ult_rate` (flat), `get_crit()`, `get_ult_rate()`, `get_all_tags()` (rune + derived crit/charge), `get_hp_bonus()` (alias of `get_hp()`).
 - Test counts: TestWeaponData **32/32**, TestSkillCardData **14/14**, core suite **144/144**.
 
-**DEFERRED (do NOT attempt standalone):** the `combat.gd`/`game_state.gd`/`hero_state.gd` switch onto WeaponData + retiring sockets from `weapon.gd`. Blocked because a unitary weapon can't reproduce multi-part recipe tag-combos; the replacement (Forge Draft P1c + Catalyst P1e) isn't built. **Full staged plan + gap analysis + file:line map: `docs/2026-06-01-combat-weapon-migration-plan.md`.**
+**DEFERRED (do NOT attempt standalone):** the `combat.gd`/`game_state.gd`/`hero_state.gd` switch onto WeaponData + retiring sockets from `weapon.gd`. Blocked because a unitary weapon can't reproduce multi-part recipe tag-combos; the replacement (Forge Draft P1c + Catalyst P1e) isn't built. **Full staged plan + gap analysis + file:line map: `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`.**
 
 ## Headless test gotchas (learned this session — important)
 
@@ -53,6 +53,6 @@ combat interface (Stage 1 of the combat migration). The actual `combat.gd` switc
 
 ## Suggested next-session opener
 
-> "Resume WeaponForge from `5_WeaponForge_Honkai_Godot/docs/handoffs/2026-06-01-session-handoff-p1a-fork.md` on `weaponcraft-godot/wittle-inversion-phase1`. P1a schema work is done; the combat migration is deferred per `docs/2026-06-01-combat-weapon-migration-plan.md`. Next: P1b Forge Wheel Phase 0 (or push the branch / merge to main first)."
+> "Resume WeaponForge from `5_WeaponForge_Honkai_Godot/docs/handoffs/2026-06-01-session-handoff-p1a-fork.md` on `weaponcraft-godot/wittle-inversion-phase1`. P1a schema work is done; the combat migration is deferred per `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`. Next: P1b Forge Wheel Phase 0 (or push the branch / merge to main first)."
 
 *Session 2 closed 2026-06-01. 4 commits on phase1, not yet pushed. 2_ frozen, 5_ active.*

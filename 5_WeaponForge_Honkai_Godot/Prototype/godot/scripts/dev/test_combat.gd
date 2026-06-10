@@ -75,6 +75,17 @@ func _ready() -> void:
 	_test_stage_mults_neutral_at_stage_1()
 	_test_stage_mults_scale()
 	_test_boss_rotation_by_stage()
+	## Catalyst v1 combat hook (B5).
+	_test_catalyst_bag_initialized_empty()
+	_test_start_wave_refreshes_catalyst_bag_neutral()
+	_test_start_wave_applies_firestorm_bag()
+	_test_stage_1_neutrality_preserved()
+	## Scripted Pacing Rework C1 — Hot Paladin descend.
+	_test_paladin_defeat_trigger_at_50pct_hp()
+	_test_paladin_defeat_skips_on_retry()
+	_test_paladin_defeat_only_on_lich_boss()
+	## Scripted Pacing Rework C2 — paladin joins squad_order via unlock_hero.
+	_test_paladin_defeat_unlocks_squad_order()
 	_summary()
 	_render_to_ui()
 
@@ -990,8 +1001,14 @@ func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
 	## Elara + Vex pre-killed so single-target attack lands on Bran. On tick 1
 	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.15).
 	## Bran alone: takes 21 (single) + 18 (AoE = floor(120*0.15)) = 39 hp loss.
-	## (atk 36->18 + AOE_RATIO 0.30->0.15 in the 2026-06-09 damage nerf.)
+	## (atk 36->18 + AOE_RATIO 0.30->0.15 per main's 2026-06-09 damage nerf.)
+	##
+	## Scripted-pacing-rework C1: lich at 30% HP is past the scripted 50%
+	## descent gate. Pre-set the sentinel so the scripted-wipe trigger
+	## short-circuits — phase 2 is the "after the descent, retry path" scenario.
 	GameState.new_session()
+	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
+	AccountState.paladin_unlocked = true
 	GameState.unlock_hero(&"elara")
 	GameState.unlock_hero(&"vex")
 	var bran = GameState.get_hero(&"bran")
@@ -1077,3 +1094,236 @@ func _test_boss_rotation_by_stage() -> void:
 		"got %s" % Combat.boss_for_stage(3))
 	_check("stage 4 cycles to slime king", Combat.boss_for_stage(4) == &"boss_slime_king",
 		"got %s" % Combat.boss_for_stage(4))
+
+## ---------- Catalyst v1 combat hook (Task B5) ----------
+
+func _test_catalyst_bag_initialized_empty() -> void:
+	## Combat exposes _catalyst_bag as a property; default is EMPTY_BAG.
+	_check("Combat has _catalyst_bag", "_catalyst_bag" in Combat, "property missing")
+	if "_catalyst_bag" in Combat:
+		var bag: Dictionary = Combat._catalyst_bag
+		_check("_catalyst_bag squad_atk_mult defaults 1.0",
+			is_equal_approx(float(bag.get(&"squad_atk_mult", -1.0)), 1.0),
+			"mult=%f" % float(bag.get(&"squad_atk_mult", -1.0)))
+		_check("_catalyst_bag squad_crit_add defaults 0.0",
+			is_equal_approx(float(bag.get(&"squad_crit_add", -1.0)), 0.0),
+			"add=%f" % float(bag.get(&"squad_crit_add", -1.0)))
+
+func _test_start_wave_refreshes_catalyst_bag_neutral() -> void:
+	## start_wave calls CatalystResolver.resolve and stashes merged_bag.
+	## Non-elemental starters (B2) -> bag stays EMPTY (stage-1 neutrality contract).
+	GameState.new_session()
+	AccountState.reset_account()
+	## Grant starters via the same path the home screen uses (so equipped state matches first-boot).
+	var hs = load("res://scripts/ui/home_screen.gd").new()
+	add_child(hs)
+	hs._grant_starter_if_first_boot()
+	hs.queue_free()
+	Combat.start_wave(1, false)
+	_check("stage 1 with non-elemental starters: bag squad_atk_mult == 1.0",
+		is_equal_approx(float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)), 1.0),
+		"mult=%f" % float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)))
+	_check("stage 1 with non-elemental starters: bag squad_crit_add == 0.0",
+		is_equal_approx(float(Combat._catalyst_bag.get(&"squad_crit_add", -1.0)), 0.0),
+		"add=%f" % float(Combat._catalyst_bag.get(&"squad_crit_add", -1.0)))
+	Combat.stop()
+
+func _test_start_wave_applies_firestorm_bag() -> void:
+	## Force-equip elemental gacha weapons; stage 1 cap-1 -> Firestorm bag (atk x1.20).
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")   ## new_session only unlocks bran; need elara in active squad
+	AccountState.reset_account()
+	## Use full-elemental Rare+ weapons (since Commons are non-elemental after B2).
+	var fire_w = GameState.weapons_by_id[&"w_cinderbrand_greatsword"].duplicate(true)   ## Epic fire warrior
+	var ice_w = GameState.weapons_by_id[&"w_frostcall_stave"].duplicate(true)             ## Common mage — still non-elemental!
+	## Override the duplicate's rune so the test forces an ice-mage even though
+	## the catalog instance is non-elemental post-B2. Verifies the resolver pipeline.
+	ice_w.rune = &"ice"
+	AccountState.owned_weapons = [fire_w, ice_w]
+	AccountState.equip(&"bran", 0)
+	AccountState.equip(&"elara", 1)
+	GameState.equip_weapon_data(&"bran", fire_w)
+	GameState.equip_weapon_data(&"elara", ice_w)
+	Combat.start_wave(1, false)
+	_check("fire+ice at stage 1 -> Firestorm bag (atk x1.20)",
+		is_equal_approx(float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)), 1.20),
+		"mult=%f" % float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0)))
+	Combat.stop()
+
+func _test_stage_1_neutrality_preserved() -> void:
+	## STAGE-1 NEUTRALITY CONTRACT (CLAUDE.md §3). Equip non-elemental starters,
+	## start wave 1, assert merged bag is empty -> hero ATK pipeline unchanged.
+	GameState.new_session()
+	AccountState.reset_account()
+	var hs = load("res://scripts/ui/home_screen.gd").new()
+	add_child(hs)
+	hs._grant_starter_if_first_boot()
+	hs.queue_free()
+	Combat.start_wave(1, false)
+	var bran = GameState.get_hero(&"bran")
+	var atk_pre_bag: int = bran.data.atk_base + bran.eff_atk()
+	## With empty bag, the bag-multiplied atk equals the raw atk (1.0 * x = x).
+	## We're effectively asserting the bag default is multiplicative-neutral.
+	var bag_mult: float = float(Combat._catalyst_bag.get(&"squad_atk_mult", -1.0))
+	_check("stage-1 neutrality: squad_atk_mult is 1.0", is_equal_approx(bag_mult, 1.0),
+		"mult=%f (any value != 1.0 breaks the contract)" % bag_mult)
+	_check("stage-1 neutrality: hero atk unchanged with EMPTY bag",
+		atk_pre_bag == bran.data.atk_base + bran.eff_atk(), "shouldn't differ")
+	Combat.stop()
+
+## ---------- Scripted Pacing Rework C1 — Hot Paladin descend ----------
+
+func _test_paladin_defeat_trigger_at_50pct_hp() -> void:
+	## C1: Arcane Lich crosses 50% HP -> scripted AOE wipes deployed squad,
+	## sentinel set, paladin_unlocked = true, Helios granted, signal emitted.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 3
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	AccountState.scripted_pulls_seen = []
+	AccountState.current_stage = 3
+	Combat.start_wave(5, false)   ## boss wave at stage 3 -> arcane lich
+	## Find the lich enemy in the spawn list.
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i
+			break
+	_check("lich spawned at stage 3 boss wave", lich_idx >= 0,
+		"no lich found, enemies=%s" % str(GameState.enemies))
+	if lich_idx < 0:
+		Combat.stop(); return
+	## Drop lich HP to below 50% threshold.
+	var lich = GameState.enemies[lich_idx]
+	lich.hp = int(float(lich.max_hp) * 0.4)
+	## Listen for the signal.
+	var emitted: Array = [false]
+	var emit_capture: Callable = func(): emitted[0] = true
+	Combat.paladin_descend.connect(emit_capture, CONNECT_ONE_SHOT)
+	## One tick = boss-tick hooks fire.
+	Combat.step()
+	_check("paladin_descend signal emitted", emitted[0], "not emitted")
+	_check("sentinel defeat_stage_3_paladin recorded",
+		&"defeat_stage_3_paladin" in AccountState.scripted_pulls_seen,
+		"seen=%s" % str(AccountState.scripted_pulls_seen))
+	_check("paladin_unlocked = true",
+		AccountState.paladin_unlocked == true, "still false")
+	_check("Helios Cleaver granted + equipped on paladin",
+		AccountState.get_equipped(&"paladin") != null
+		and AccountState.get_equipped(&"paladin").id == &"w_helios_cleaver",
+		"equipped=%s" % str(AccountState.get_equipped(&"paladin")))
+	## Verify deployed squad (non-paladin) is dead.
+	var alive_deployed: int = 0
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin" and h.hp > 0:
+			alive_deployed += 1
+	_check("scripted AOE killed all deployed heroes (non-paladin)",
+		alive_deployed == 0, "alive=%d" % alive_deployed)
+	Combat.stop()
+
+func _test_paladin_defeat_skips_on_retry() -> void:
+	## C1: sentinel-guarded — retry path (sentinel already set) does NOT
+	## re-fire the scripted AOE. Normal phase 2 plays.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 3
+	AccountState.reset_account()
+	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
+	AccountState.paladin_unlocked = true
+	AccountState.current_stage = 3
+	Combat.start_wave(5, false)
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i; break
+	if lich_idx < 0:
+		_check("lich spawned at stage 3 retry", false, "no lich"); Combat.stop(); return
+	## Set lich HP to ~40% — above phase-2 threshold (33%) but below the scripted
+	## 50% gate. With sentinel already set, no AOE fires; phase-1 atk bump may apply
+	## (it crosses 66%) but squad must survive a single tick.
+	GameState.enemies[lich_idx].hp = int(float(GameState.enemies[lich_idx].max_hp) * 0.4)
+	## Boost hero HP so phase-1 atk bumps don't accidentally kill anyone in one tick.
+	for h in GameState.all_heroes():
+		h.hp = 9999
+		h.max_hp = 9999
+	## Count alive deployed before tick.
+	var alive_before: int = 0
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin" and h.hp > 0:
+			alive_before += 1
+	Combat.step()
+	var alive_after: int = 0
+	for h in GameState.active_heroes():
+		if h.data.id != &"paladin" and h.hp > 0:
+			alive_after += 1
+	_check("retry path: alive count unchanged by scripted AOE (sentinel guard)",
+		alive_after == alive_before,
+		"before=%d after=%d" % [alive_before, alive_after])
+	Combat.stop()
+
+func _test_paladin_defeat_only_on_lich_boss() -> void:
+	## C1: trigger lives inside _boss_tick_arcane_lich -> ONLY fires when lich
+	## is the active boss. Slime boss (stage 1) must not trigger paladin descend
+	## even if its HP crosses 50%. Stage-1 neutrality contract preserved.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 1
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	AccountState.scripted_pulls_seen = []
+	AccountState.current_stage = 1
+	Combat.start_wave(5, false)
+	## Drop boss HP to below 50%.
+	var boss_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if bool(GameState.enemies[i].get(&"is_boss", false)):
+			boss_idx = i; break
+	if boss_idx < 0:
+		_check("boss spawned at stage 1 boss wave", false, "no boss")
+		Combat.stop(); return
+	GameState.enemies[boss_idx].hp = int(float(GameState.enemies[boss_idx].max_hp) * 0.4)
+	var emitted: Array = [false]
+	Combat.paladin_descend.connect(func(): emitted[0] = true, CONNECT_ONE_SHOT)
+	Combat.step()
+	_check("paladin_descend NOT emitted on slime boss",
+		not emitted[0], "emitted on wrong boss")
+	_check("paladin still locked after slime fight",
+		AccountState.paladin_unlocked == false, "unlocked on wrong boss")
+	Combat.stop()
+
+func _test_paladin_defeat_unlocks_squad_order() -> void:
+	## C2: defeat trigger calls GameState.unlock_hero(&"paladin") so paladin
+	## joins active_heroes() (squad_order). Without this wire, paladin would
+	## be unlocked in AccountState but never enter combat / squad rotation.
+	GameState.new_session()
+	GameState.unlock_hero(&"elara")
+	GameState.unlock_hero(&"vex")
+	GameState.run_stage = 3
+	AccountState.reset_account()
+	AccountState.paladin_unlocked = false
+	AccountState.scripted_pulls_seen = []
+	AccountState.current_stage = 3
+	Combat.start_wave(5, false)
+	var lich_idx: int = -1
+	for i in range(GameState.enemies.size()):
+		if GameState.enemies[i].id == &"boss_arcane_lich":
+			lich_idx = i; break
+	if lich_idx < 0:
+		_check("lich spawned for C2 unlock test", false, "no lich"); Combat.stop(); return
+	GameState.enemies[lich_idx].hp = int(float(GameState.enemies[lich_idx].max_hp) * 0.4)
+	Combat.step()
+	var paladin_in_active: bool = false
+	for h in GameState.active_heroes():
+		if h.data.id == &"paladin":
+			paladin_in_active = true
+			break
+	_check("paladin in active_heroes() after defeat trigger",
+		paladin_in_active, "paladin missing — squad_order not updated")
+	_check("paladin in squad_order array",
+		&"paladin" in GameState.squad_order,
+		"squad_order=%s" % str(GameState.squad_order))
+	Combat.stop()

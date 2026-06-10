@@ -42,7 +42,11 @@ const RUN_FINAL_WAVE: int = GameState.RUN_FINAL_WAVE
 var _draft_modal: ColorRect = null
 var _pending_next_wave: int = -1
 var _kill_bar: ProgressBar = null
-var _strip_labels: Dictionary = {}
+var _catalyst_banner: Control = null
+var _catalyst_chip: Control = null
+## D3: Hot Paladin descend cinematic overlay (full-screen, fades in on
+## Combat.paladin_descend; dismissed on Continue tap → Home scene).
+var _paladin_cinematic_overlay: Control = null
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -88,7 +92,6 @@ func _start_run() -> void:
 	GameState.restore_squad_full()
 	GameState.run_stage = AccountState.current_stage
 	ForgeDraft.reset_run()
-	_refresh_strip()
 	_notifications.show_banner("🏰 STAGE %d" % GameState.run_stage, Color(0.8, 0.9, 1.0), 1.2)
 	_begin_wave(1)
 
@@ -158,6 +161,55 @@ func _on_squad_wiped() -> void:
 func _on_boss_telegraph(text: String) -> void:
 	_notifications.show_banner(text, Color(1, 0.55, 0.55), 1.6)
 
+## Catalyst banner trigger — fires after boss_telegraph each wave.
+## Resolves the current squad+stage compound and shows the banner. Also records
+## codex discovery on AccountState.catalyst_codex_discovered (spec §7.5 data hook).
+func _on_stage_telegraph_for_catalyst(_text: String) -> void:
+	var resolver = preload("res://scripts/core/catalyst_resolver.gd")
+	var squad_weapons: Array = []
+	for h in GameState.active_heroes():
+		if h.weapon_data != null:
+			squad_weapons.append(h.weapon_data)
+	var resolved: Dictionary = resolver.resolve(squad_weapons, AccountState.current_stage)
+	var compound = resolved.get("compound", null)
+	if compound == null and not (resolved.get("compounds", []) as Array).is_empty():
+		compound = (resolved["compounds"] as Array)[0]
+	if compound != null:
+		_catalyst_banner.show_compound(compound)
+		_record_codex_discovery(resolved)
+	else:
+		_catalyst_banner.hide_banner()
+
+## Catalyst chip refresh — fires per Combat.boss_telegraph (same signal as the banner).
+## Resolves the current compound list and updates the chip's rows.
+func _on_stage_telegraph_for_chip(_text: String) -> void:
+	var resolver = preload("res://scripts/core/catalyst_resolver.gd")
+	var squad_weapons: Array = []
+	for h in GameState.active_heroes():
+		if h.weapon_data != null:
+			squad_weapons.append(h.weapon_data)
+	var resolved: Dictionary = resolver.resolve(squad_weapons, AccountState.current_stage)
+	var compounds_arr: Array = resolved.get("compounds", [])
+	if compounds_arr.is_empty() and resolved.get("compound", null) != null:
+		compounds_arr = [resolved["compound"]]
+	_catalyst_chip.set_compounds(compounds_arr)
+
+## Append every compound rendered to the player into AccountState.catalyst_codex_discovered.
+## Idempotent (deduped by id presence). Persists via autosave (called on AccountState mutations).
+func _record_codex_discovery(resolved: Dictionary) -> void:
+	var seen: Array = AccountState.catalyst_codex_discovered
+	var mutated: bool = false
+	var primary = resolved.get("compound", null)
+	if primary != null and not (primary["id"] in seen):
+		seen.append(primary["id"])
+		mutated = true
+	for c in resolved.get("compounds", []):
+		if not (c["id"] in seen):
+			seen.append(c["id"])
+			mutated = true
+	if mutated:
+		AccountState.autosave()
+
 func _on_hero_died(hero_id: StringName) -> void:
 	## Per-individual death — informational only. Squad keeps fighting as long
 	## as any_alive(); the stage-failure modal opens via _on_squad_wiped above.
@@ -183,41 +235,35 @@ func _build_battle_overlay(layer: CanvasLayer) -> void:
 	_kill_bar.size = Vector2(vp.x - 220.0, 10.0)
 	layer.add_child(_kill_bar)
 	ForgeDraft.meter_changed.connect(_on_meter_changed_ui)
+	## The weapon strip that used to sit at vp.y - 44 is gone. Per-hero weapon
+	## name + ATK + run-card pips now render inside HeroCard.tscn (no more
+	## right-edge clip on narrow mobile-portrait viewports).
 
-	## Weapon strip: three columns under the portraits — weapon, ATK, upgrade pips.
-	var strip := HBoxContainer.new()
-	strip.position = Vector2(0.0, vp.y - 44.0)
-	strip.size = Vector2(vp.x, 40.0)
-	strip.add_theme_constant_override(&"separation", 6)
-	layer.add_child(strip)
-	for id in [&"bran", &"elara", &"vex"]:
-		var l := Label.new()
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.add_theme_font_size_override(&"font_size", 11)
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		strip.add_child(l)
-		_strip_labels[id] = l
-	GameState.weapon_data_changed.connect(func(_h): _refresh_strip())
-	ForgeDraft.draft_applied.connect(func(_c): _refresh_strip())
+	## Catalyst banner — fades in when a compound is active for the stage.
+	_catalyst_banner = preload("res://scripts/ui/catalyst_banner.gd").new()
+	_catalyst_banner.position = Vector2(0, 90.0)
+	_catalyst_banner.size = Vector2(vp.x, 88.0)
+	layer.add_child(_catalyst_banner)
+	## Hook the existing boss_telegraph signal — fires per Combat.start_wave.
+	Combat.boss_telegraph.connect(_on_stage_telegraph_for_catalyst, CONNECT_DEFERRED)
+
+	## Catalyst HUD chip — top-right, persistent for the stage. Shows active
+	## compound(s); 1 row in cap-1 (S1-4), up to 3 in no-cap (S5+).
+	_catalyst_chip = preload("res://scripts/ui/catalyst_chip.gd").new()
+	_catalyst_chip.position = Vector2(vp.x - 160.0, 16.0)
+	layer.add_child(_catalyst_chip)
+	Combat.boss_telegraph.connect(_on_stage_telegraph_for_chip, CONNECT_DEFERRED)
+
+	## D3: Hot Paladin descend cinematic — fires when Combat.paladin_descend
+	## emits (C1 trigger at lich 50% HP). Deferred so the combat tick that
+	## fired the signal finishes cleanly before we freeze + overlay.
+	Combat.paladin_descend.connect(_on_paladin_descend, CONNECT_DEFERRED)
 
 func _on_meter_changed_ui(kills: int, needed: int) -> void:
 	if _kill_bar == null:
 		return
 	_kill_bar.value = mini(kills, needed)
 	_kill_bar.modulate = Color(1.0, 0.85, 0.2) if kills >= needed else Color(1, 1, 1)
-
-func _refresh_strip() -> void:
-	for id in _strip_labels:
-		var l: Label = _strip_labels[id]
-		var hero = GameState.get_hero(id)
-		if hero == null:
-			l.text = ""
-			continue
-		var weapon_str: String = "— no weapon"
-		if hero.weapon_data != null:
-			weapon_str = "⚔ %s  ATK %d" % [hero.weapon_data.name, hero.eff_atk()]
-		var pips: int = clampi(hero.run_card_count, 0, 3)
-		l.text = "%s\n%s%s" % [weapon_str, "●".repeat(pips), "○".repeat(3 - pips)]
 
 ## Battle over (or HOME button): back to the meta layer.
 func _on_back_home() -> void:
@@ -226,3 +272,84 @@ func _on_back_home() -> void:
 
 func _on_reset_pressed() -> void:
 	_on_back_home()
+
+## ---------- D3: Hot Paladin descend cinematic ----------
+## Per spec §11b: when Combat.paladin_descend fires (lich 50% HP on Stage 3),
+## freeze combat and present a full-screen cinematic — dim background,
+## paladin_entry.png ref image, "💎 HOT PALADIN DESCENDS" title, Helios
+## Cleaver subtitle, CONTINUE button. Fades in over 0.6s. Continue tap
+## dismisses + routes back to Home for the retry-stage-3 flow.
+
+func _on_paladin_descend() -> void:
+	## Freeze combat until the player dismisses — paladin entry is the
+	## scripted-wipe pivot; the fight is over from the player's POV.
+	Combat.stop()
+	## Re-entrancy guard: if the signal somehow fires twice (deferred
+	## double-dispatch), tear down the prior overlay before building afresh.
+	if _paladin_cinematic_overlay != null:
+		_paladin_cinematic_overlay.queue_free()
+		_paladin_cinematic_overlay = null
+
+	var overlay := Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 100
+
+	## Dim background (88% black) — pushes the cinematic image forward.
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.88)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dim)
+
+	## Paladin entry reference image (1.4MB, committed in 549c35f).
+	var img := TextureRect.new()
+	img.texture = load("res://assets/generated/cinematics/paladin_entry.png")
+	img.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	img.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(img)
+
+	## Title near top.
+	var title := Label.new()
+	title.text = "💎 HOT PALADIN DESCENDS"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override(&"font_size", 28)
+	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	title.offset_top = 48
+	overlay.add_child(title)
+
+	## Subtitle (smaller, dimmer) — flavor text from the spec.
+	var sub := Label.new()
+	sub.text = "Helios Cleaver — Light burns the lich."
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override(&"font_size", 16)
+	sub.modulate = Color(1, 1, 1, 0.85)
+	sub.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	sub.offset_top = 90
+	overlay.add_child(sub)
+
+	## Continue button near bottom-center.
+	var btn := Button.new()
+	btn.text = "CONTINUE"
+	btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	btn.offset_left = -80
+	btn.offset_right = 80
+	btn.offset_top = -100
+	btn.offset_bottom = -60
+	btn.pressed.connect(_dismiss_paladin_cinematic)
+	overlay.add_child(btn)
+
+	## Fade in over 0.6s.
+	overlay.modulate = Color(1, 1, 1, 0)
+	overlay.visible = true
+	add_child(overlay)
+	_paladin_cinematic_overlay = overlay
+	var tw := create_tween()
+	tw.tween_property(overlay, "modulate:a", 1.0, 0.6)
+
+## D3: dismiss the cinematic + route to Home for the retry-stage-3 flow.
+func _dismiss_paladin_cinematic() -> void:
+	if _paladin_cinematic_overlay != null:
+		_paladin_cinematic_overlay.queue_free()
+		_paladin_cinematic_overlay = null
+	get_tree().change_scene_to_file("res://scenes/Home.tscn")

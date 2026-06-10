@@ -1,220 +1,276 @@
-# WeaponCraft — Game Design Doc
+# WeaponForge — Game Design Document
 
-**Working title:** WeaponCraft
-**Working folder:** `Game_Prototypes/1_Robotek_WeaponCraft/`
-**Target platform:** Vertical mobile (iOS + Android)
-**Target audience:** Casual-mobile RPG players (Wittle Defender, AFK Journey, AFK Arena, Hero Wars cohort)
+> ⚙️ **This is the consolidated, top-of-hierarchy design doc.** When the design
+> changes, update this file first; the detail specs in `docs/superpowers/specs/`
+> may lag. Anything stale is amended here; anything new is folded in here.
+> Volatile sections (in-flight features still iterating in playtest) are
+> flagged inline.
 
----
-
-## Context
-
-A casual-mobile game concept that fuses two influences:
-
-1. **Robotek** (Hexage, 2011) — turn-based tactical combat with slot-machine-flavored randomness, a "send my unit out to fight" feel, and a node-map campaign.
-2. **A weapon-crafting layer** — a randomized parts feed (hilts, runes, blades, upgrades) the player composes into weapons each round.
-
-Initial sketch shows a vertical mobile screen with combat on top, crafting bay below, weapon list on the left, parts strip on the bottom, and a "send the weapon up" arrow connecting the two halves.
-
-The concept settled into a **fantasy 3-character party auto-battler with deep weapon crafting**. Core hook: the "randomized dice roll" is moved out of combat and into crafting, where the player's strategic input lives. Combat auto-resolves on weapon stats with a single-tap ultimate as the drama beat.
+**Project:** WeaponForge (working title; trademark check pending on "Catalyst" — see §13).
+**Engine / repo:** Godot 4.6.2 Mono, `5_WeaponForge_Honkai_Godot/` subproject, forked
+from `2_Weaponcraft_Godot/` @ `e958745` on 2026-06-01.
+**Maintainer note:** keep this current; it is the entry point for the design.
+For *state* (what's done / queued) see `docs/STATUS.md`. For *rules* see
+`5_WeaponForge_Honkai_Godot/CLAUDE.md`.
 
 ---
 
-## High-concept pitch
+## 1. One-liner
 
-> "Forge weapons, send heroes. WeaponCraft is a casual-mobile auto-battler where you craft randomized weapons in a TFT-style shop, equip your 3-hero fantasy party, and watch them fight. Discover hundreds of weapon recipes by combining elemental and structural parts. Counter every boss with a new build. Collect heroes, master classes, and forge legends."
-
----
-
-## Core loop (moment-to-moment)
-
-A single **stage** (~3–4 min, Wittle-style) plays as:
-
-1. **Pre-stage** — player picks 3 heroes from unlocked roster (Warrior / Mage / Rogue / etc.) using **Auto-pick + manual override** UX.
-2. **Wave 1**
-   - **Forge moment** opens. TFT-style shop displays 5 random parts. Player buys with round currency, drags onto 3 weapon slots (one per hero). Class-affinity parts auto-route to matching hero; universal parts queue for manual placement. Reroll button refreshes shop for currency cost.
-   - Player confirms loadout. **Combat** plays out auto, side-view single-lane, party-on-left vs. monsters-on-right (Robotek-style framing).
-   - During combat, each hero's **Ultimate gauge** fills from damage dealt. Player taps hero portrait when ready to fire single-use ultimate.
-   - Wave clears → reward (currency, occasional parts/shards) → next wave.
-3. **Waves 2–5** — same forge → fight beat. Weapons persist across waves and can be upgraded (add parts, swap parts, scrap-and-rebuild).
-4. **Wave 5/6 = Boss** — full-kit fight. If beaten, stage clears, banks XP/loot. If lost, **boss-retry** screen opens: rearrange lineup + reforge weapons (parts already collected stay in inventory) + try again. Boss has visible **affinity** (resists fire / weak to pierce / etc.) telegraphing counter-build needed.
-5. **Post-stage** — stage rewards drop. Player returns to chapter map. Stamina ticks down.
-
-**Idle / offline layer (AFK Journey pattern):**
-- Currency, gold, scrap-parts, hero XP accrue at a slow rate while offline (12hr cap).
-- On reopen, player claims "AFK rewards" → instant shop currency for next session.
+A casual-mobile RPG / hero-collector that **inverts the Wittle-Defender gacha** —
+you pull *weapons* (not heroes) from a slot-machine Forge Wheel, and master a
+**locked 7-hero roster** with anime-style personality + story. Side-view
+auto-resolve squad-of-3 combat. Single-tap ultimates. Per-stage Forge Draft
+between waves.
 
 ---
 
-## Locked design decisions
+## 2. The Bet (the strategic frame)
 
-### Combat pacing
-Turn-based, Robotek-cadence. Combat pauses between waves. No real-time pressure on crafting.
+- **Audience.** Wittle Defender ∩ anime-curious. Casual-mobile RPG players who
+  would happily install a hero-collector but want more story than the genre
+  normally delivers.
+- **Inversion.** Wittle pulls heroes. We pull *weapons*. The roster is locked
+  at seven — time invested becomes character + bond, not duplicate inventory.
+- **Moat.** Equipment-gacha is precedented (Archero $263M LTV). Story-locked
+  roster is unprecedented. **The combination is the moat** — neither half is
+  novel; the union is.
 
-### Combat agency
-Hybrid auto + single-tap ultimate. Combat auto-resolves on weapon stats. Player taps hero portrait to fire that hero's signature ultimate, once per fight. Ultimate is the main player-engagement beat during combat.
-
-### Weapon lifetime + meta progression
-Weapons are per-stage (called "per-run" in the casual-mobile sense). Persistent meta lives in:
-- Hero roster (unlocked characters, levels, Star-Up tier).
-- Recipe codex (discovered combos).
-- Part shard collection (legendary part shards).
-- Build Templates (saved successful weapon configs).
-- Character "weapon mastery" passives (unlocked at character levels).
-
-> Alternatives considered and rejected: disposable per-round, per-run weapon evolving, persistent weapon collection.
-
-### Combat scale
-3-character fantasy party vs monster waves, side-view single-lane (Robotek-style). Heroes on left, monsters waddle in from right, auto-attack, health bars. Tap hero portrait to fire ultimate.
-
-**Roster ramp:** Player starts with 1 hero (Warrior). 2nd hero (Mage) unlocks at stage 3–5. 3rd hero (Rogue) unlocks at chapter 1 boss. Subsequent heroes via gacha.
-
-### Parts → weapon assignment
-Auto-assign with override. Class-affinity parts auto-route to that class's weapon slot. Universal parts queue for manual drag. Combined with the TFT shop: shop displays 5 parts, player buys, bought parts flow into the auto-route system.
-
-### World / run structure
-Chapter map at launch. Live-ops roadmap adds an Endless Tower event mode in Season 2.
-
-Chapter map is the campaign spine. Each chapter has ~10–15 stages culminating in a chapter boss.
-
-> Alternatives considered and rejected: endless tower as main spine, roguelike runs (contradicts boss-retry mechanic).
-
-### Weapon anatomy
-3-slot weapons: **Head + Hilt + Rune**. All weapons have 3 part slots. **Late-game unlock**: a 4th "Modifier" slot opens for each hero at character mastery level 20+ (modifier slots host passive triggers: bleed-on-hit, ricochet, life-leech, etc.). Gives a clean late-game depth ramp.
-
-### Parts feed mechanic
-TFT-style shop with reroll. Each forge moment: shop displays 5 random parts. Player buys with round currency. Reroll button refreshes shop for currency cost. Unbought parts vanish at confirm. Same shop UX language as character gacha = consistent learning curve.
-
-### Ultimate charge mechanic
-Damage-dealt + Charge Rune accelerator + time-cap backstop. Base charge fills from damage dealt (better weapon → faster ult). Optionally accelerated by **Charge Rune** archetype parts (build choice matters). Time-cap backstop ensures ult is ready by fight end at minimum.
-
-### Recipe discovery flow
-Hybrid (codex hints + recipe scrolls + tutorial seed), enriched with three Potion-Craft-inspired enhancements:
-1. **Many-paths-to-one-effect.** Each named effect (Steamburst, Hemorrhage, Twilight) has 2–4 valid part-combos. Players love finding *their* combo.
-2. **Effect-name visible, recipe hidden silhouettes.** Codex shows "??? makes *Steamburst — AoE on hit*" with recipe blanks. Goal-known, path-unknown discovery flavor.
-3. **Saved Build Templates.** Player pins favorite weapon configs. Quick-rebuild any run if parts available.
-
-Plus original features:
-- Tutorial seeds the first 5–10 recipes.
-- Recipe scrolls drop from bosses / quests / premium currency (preemptive recipe reveals).
-- Hint silhouettes for undiscovered combos.
-- Every craft produces *something* (no wasted attempts).
-
-### Stage structure
-**Wittle Defender cadence + AFK Journey idle + Robotek node-map.**
-- **5–6 waves per stage**, ~3–4 min per stage.
-- **Forge moment between every wave** — TFT shop opens, parts roll, player crafts, confirms, next wave fires.
-- **Weapons persist and upgrade across waves** within a stage.
-- **Currency banks across waves within stage**, resets between stages.
-- **Boss on every 5th stage** (stages 1–4 normal, stage 5 chapter sub-boss; chapter end has a bigger boss).
-- **Stamina-gated** — 3 plays free, 4th costs stamina, refills over time.
-- **Star Challenge** mode for completed stages (Wittle pattern).
-- **AFK idle layer** — currency / gold / scrap / hero XP accrue offline (12hr cap) → claim on reopen.
-- **Robotek node-map UI** for chapter view: stage nodes connected on a hand-drawn map, with boss / elite / normal node types visually distinct.
-
-### Monetization
-**Hybrid model with five layered hooks:**
-- **Gacha (primary pillar)** — character pulls + part shard packs + recipe scroll packs.
-- **Battle Pass** — seasonal (~$5–10/season), free + premium track.
-- **Rewarded ads** — free pulls / 2× rewards / extra stamina.
-- **Light energy** — stamina-gated stage plays, refill packs.
-- **Cosmetics** — hero skins, weapon visual effects, ultimate animation skins.
-- **IAP bundles** — starter packs, monthly card, holiday events.
-
-### Part schema (combat math foundation)
-Every part contributes three layers:
-1. **Flat stats** — Iron Edge: +5 ATK. Steel Hilt: +10% crit chance. Fire Rune: +3 fire damage.
-2. **Class affinity tag** — Warrior-only / Mage-only / Rogue-only / Universal. Drives auto-routing.
-3. **Element / keyword tag** — Fire / Ice / Bleed / Holy / Shadow / Lightning / Pierce / Poison / etc.
-
-**Named effects emerge from tag combinations within a weapon:**
-- Fire + Ice = **Steamburst** (AoE on hit)
-- Bleed + Crit = **Hemorrhage** (compounded DoT)
-- Holy + Shadow = **Twilight Edge** (alternating damage type each swing)
-- Poison + Bleed = **Necrosis** (DoT stacks compound)
-- Iron + Storm = **Thunderclap Grip** (chain lightning on crit)
-- ... ~30 base parts × 4 rarities → ~200+ discoverable combos (Potion Craft-scale codex).
-
-**Effects are also class-tinted.** Mage Steamburst (cone of steam) ≠ Warrior Steamburst (steam-coated strike) ≠ Rogue Steamburst (steam smokebomb). Same name, three flavor variants per class.
-
-### Roster launch shape
-- **15 characters at launch.**
-- **3 free starter heroes**: Warrior (free at tutorial), Mage (stage 3–5 unlock), Rogue (chapter 1 boss unlock).
-- **12 gacha-only heroes**: 4 Rare / 5 Epic / 3 Legendary.
-- **Pull rates**: Common 70% / Rare 22% / Epic 7% / Legendary 1%.
-- **Pity system**: Epic guaranteed every 30 pulls, Legendary guaranteed every 80 pulls.
-- **10-pull discount**: 10× cost 9× single price + 1 guaranteed Rare+.
-- **Shard duplicates** drive **Star-Up** (★1 → ★5). Each tier: minor passive perk + ult cosmetic upgrade. Damage scaling is gentle so F2P-at-★1 stays competitive.
-- **Banner cadence**: 1–2 new heroes/month post-launch via featured banner.
+Detail: `docs/superpowers/specs/2026-05-27-wittle-inversion-design.md` v2.2
+(banner-marked as detail reference; this GDD wins on amendments).
+Competitor synthesis: `docs/research/2026-05-28-competitor-landscape-synthesis.md`.
 
 ---
 
-## Locked extras (side-thread decisions)
+## 3. Identity (locked decisions, current as of 2026-06-09)
 
-### Hybrid TFT-pattern for characters
-Characters are **roles, not power**. Each class has unique signature ultimate + small kit identity. Stats don't bloat with levels. All numerical depth lives in the crafting layer. This preserves character collection / gacha hooks while keeping crafting as the depth axis.
-
-### Merge mechanics
-- **Parts merge (passive, in stash)**: 3× Common → 1× Rare → Epic → Legendary. Auto-stacks silently. Stash sink + dupe solution. Sell merge accelerators for monetization.
-- **Character Star-Up via duplicates**: TFT-style. Pulling a dupe gives shards. X shards → next star tier. Standard casual-mobile gacha pattern.
-
-### Boss-retry counter-build (core hook)
-Bosses have visible affinities (resists fire, weak to pierce, immune to bleed). First attempt usually fails. Game keeps all unlocks + parts. Player rearranges lineup + reforges weapons + retries. Strong dopamine loop. Pulls from AFK Arena elemental rock-paper-scissors + Slay the Spire boss adaptation.
-
-### Class-specific ultimates
-Each class has a unique signature ultimate scaling with crafted weapon stats:
-- **Warrior**: Whirlwind (AoE melee burst).
-- **Mage**: Meteor (delayed AoE).
-- **Rogue**: Shadowstep (teleport + crit strike).
-- **Paladin**: Divine Shield (party-heal + invuln).
-- **Ranger**: Volley (multi-target ranged barrage).
-- **Druid**: Wildform (transform-and-rage).
-- **Necromancer**: Soul Drain (life-leech AoE).
-- (... 15 total at launch.)
-
-Gacha sells *characters with their unique ultimates* — collection AND power in one pull.
-
-### Bench characters as resource
-Benched heroes (not in active 3) can be **"sacrificed" / fused** into an active hero's weapon for stat boost or rerouted Element tag. Solves roster bloat after weeks of pulling.
-
-### Recipe codex by class
-Each class has its own recipe tree. Warrior recipes ≠ Mage recipes. Long-term completion meta: "complete all class codexes." Massive content runway, low art cost (data-driven recipes).
-
-### Party synergies (demoted)
-Originally proposed as match-the-tags-across-party. Demoted to either:
-- **Passive pair bonuses**: a flat buff that just exists when X + Y are in lineup (e.g., Warrior + Paladin → +5% party HP).
-- **Late-game opt-in only**: synergies surface after the player unlocks all 3 chars + fills a chunk of the codex.
-
-No cognitive tax in the first 5 hours of play.
+| Area | Decision |
+|---|---|
+| Gacha unit | **Weapons** (not heroes). Locked 7-hero roster. |
+| Pull currency | **Ember.** 5 per pull. Earned from boss-clears (+1) and stage victory (+2). |
+| Forge currency | **Gems.** Used for star-up + (S10+) part-pull. Earned from dupes (C 20 / R 40 / E 80 / L 160). |
+| Forge consumable | **Shards.** Dropped from C/R pulls (2 each, halved per Ember-economy spec). Spent on rarity-up via deterministic Forge button. |
+| Elements (FTUE) | Fire / Ice / Electric / Wind. **Earth gates at Stage 10** (with Forge Wheel Phase 1). |
+| Synergy system | **Catalyst** — element-pair compounds. (Renamed from "Resonance" — Habby owns that term.) Trademark check pending; fallback names: Alloy / Confluence / Reaction / Harmonic. |
+| Stage shape | **5 waves / boss on W5** for the prototype. Design intent is 15 waves w/ W5/W10/W15 bosses; prototype runs the compressed shape. |
+| Save schema | v4 (Ember + scripted-pull bookkeeping + counter-build state). |
 
 ---
 
-## Open questions (deferred — not blocking GDD sign-off)
+## 4. Roster (7 locked, 3 FTUE + 4 unlocks)
 
-These should be answered during pre-prototype design refinement. Each has a stub spec file in the appropriate subfolder.
+- 🟢 **Bran** — Warrior. FTUE. Stoic, dependable, front-line tank.
+- 🟢 **Elara** — Mage. FTUE. Quiet prodigy w/ a meteor lineage (signature arc, §11).
+- 🟢 **Vex** — Rogue. FTUE. Shadow-corps assassin; crits + chains with Elara.
+- 📋 **Hot Paladin** — Lance. Unlocks via Stage-2 scripted-defeat cinematic (§11).
+- 📋 **2nd Rogue** — variant Rogue, mid-game unlock. Identity TBD.
+- 📋 **2nd Mage** — variant Mage, mid-game unlock. Identity TBD.
+- 📋 **Hot Assassin** — late-game unlock. Identity TBD.
 
-1. **Combat resolution math** — exact damage formula (additive vs multiplicative scaling, defense reduction curve). → `02_systems/combat_math.md`
-2. **Stamina economics** — how many free plays/day, how much each refill costs, refill rate. → `04_economy/stamina.md`
-3. **Battle Pass content scope** — exact reward tiers per season. → `04_economy/battle_pass.md`
-4. **Cosmetic taxonomy** — hero skins / weapon glow / ultimate VFX skins / banner frames / etc. → `04_economy/cosmetics.md`
-5. **PvP arena format** — async ghost vs sync vs blind-pick. → `02_systems/pvp_arena.md`
-6. **Onboarding arc** — first 30 minutes script (tutorial pacing, free pull sequence, BAM-new-character moments). → `02_systems/onboarding.md`
-7. **Boss affinity taxonomy** — list of resistances/weaknesses and how telegraphed. → `03_content/boss_affinities.md`
-8. **Currency layering** — gold / gems / shards / scrolls / dust — exact economy graph. → `04_economy/currency.md`
-9. **Sound + music direction** — needed pre-mockup phase. → `02_systems/audio.md`
-10. **Art direction** — cute Wittle-flavor vs grimdark vs stylized fantasy. → `02_systems/art_direction.md`
+3 deploy per stage; 4-slot squad opens after Stage 2 (Paladin entry).
 
 ---
 
-## References used during design
+## 5. Forge Wheel (the gacha)
 
-- **Wittle Defender** (Habby, 2024) — stage structure, hero gacha, AFK idle, casual-mobile combat cadence.
-- **AFK Journey** (Farlight, 2024) — AFK rewards model, stage scale, season phases.
-- **AFK Arena** (Lilith Games, 2019) — affinity-based boss counters, character collection meta.
-- **Hero Wars / Empires & Puzzles** (Nexters / Zynga) — battle pass + chapter map + gacha economy.
-- **Robotek** (Hexage, 2011) — combat framing, single-lane side-view, node-map campaign metaphor.
-- **Teamfight Tactics** (Riot, 2019) — shop mechanic, item-combine philosophy, character-as-role pattern.
-- **Potion Craft: Alchemist Simulator** (Niceplay Games, 2021) — discovery codex, many-paths-to-one-effect, recipe-book-as-saved-routes, fog-of-war progression.
-- **Brotato / Vampire Survivors** (analyzed as anti-pattern for our locked decisions).
-- **Slay the Spire / Hades** (analyzed as variable-node-type alternative, ultimately not picked).
-- **Little Alchemy / Doodle God / Infinite Craft** (analyzed for pure-discovery model, ultimately layered into our hybrid).
+Two-phase. Same slot-machine UI both phases.
+
+**Phase 0 — Stages 1-9.** Whole-weapon pulls. Equal odds, class-matched to
+unlocked roster. **Scripted reveals** preserve the stage-1 neutrality contract
+and pace the first Catalyst trigger:
+
+- Pull #1 = guaranteed **Fire weapon, Bran-class**.
+- Pull #3 = guaranteed **Ice weapon, Elara-class**.
+- Pull #2 + pull ≥4 = normal RNG.
+- Starter weapons are **non-elemental** until the scripted pulls land. (Catalyst
+  v1 reverses an earlier v2.2 decision that pre-equipped distinct elements.)
+
+**Phase 1 — Stage 10+.** Unlocks via the Master-Smith cinematic. Adds **part-pull**
+(150 gems): pick head / hilt / rune; class-matched; 5-tier Forge Math
+(same-tier +50% / +1 instant / +2 ½×2 / +3 ⅓×3 / +4 banked). Earth runes drop here.
+
+Spin cinematic (≤0.6 s anvil-strike reel, skippable) is **queued**, not yet built.
+
+---
+
+## 6. Combat (the loop)
+
+Side-view auto-resolve, squad-of-3 vs a wave of enemies. Each stage = 5 waves;
+boss on W5. Heroes restored to full HP at stage start.
+
+**Per-wave beat:**
+1. Heroes attack on their own timers (per WeaponData stats).
+2. Single-tap ultimates fire when each hero's ult gauge fills.
+3. A **kill meter** (`ForgeDraft.KILLS_PER_DRAFT`) fills with each kill.
+4. Meter full → combat **pauses** → Forge Draft modal opens.
+
+**Forge Draft.** 3 cards on a normal wave, **5 cards on the W5 boss wave** (Wittle
+1:1). Card types: stat / ability / element / hero-tagged. Cards = run-scoped buffs
+applied to the picked hero's pip row (●○○ → ●●○ → ●●●). RNG draft — the strategic
+layer lives **pre-stage**, not in-run.
+
+**Hit math.** Base damage from WeaponData; **weak ×1.8 / resist ×0.5** (counter-build);
+crit / ult-rate per hero; stage-scaling bands (+15% HP / +8% ATK per stage at the
+prototype curve).
+
+**End conditions.**
+- Stage clear → +Ember rewards + stage++ + heroes restored.
+- Squad wiped → return to Home loadout screen (no retry modal — sidesteps FM-14).
+
+Detail: `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md`.
+
+---
+
+## 7. Pre-stage briefing (the puzzle)
+
+A modal on Home that telegraphs the upcoming stage before the player enters.
+Tells the player **two strategic axes**:
+
+**Axis 1 — Counter-build** (shipped 2026-06-08). Bosses are tagged
+Fire/Ice/Electric/Wind. `StageAffinity` (pure static) determines per-stage minion
+weak+resist deterministically: stage 1 mirrors the boss (teaching), stage ≥2
+spreads + occasionally conflicts (≥⅓ rate). Minions roll 80% the stage affinity /
+20% un-classed (flavor). Briefing shows boss weak/resist + minion affinity +
+squad coverage (✅ / ⚠).
+
+**Axis 2 — Catalyst** (in-flight, §8). Briefing shows the active compound(s)
+the player's current squad triggers.
+
+---
+
+## 8. Catalyst (element-pair synergy) — **in-flight, MVP-6 simple v1**
+
+Squad-of-3 carrying weapons of two distinct elements triggers a **named compound**
+that buffs the squad. 10 compounds total (6 FTUE-active + 4 Earth-gated S10):
+
+| Pair | Compound | v1 effect (Numbers Policy starting values) |
+|---|---|---|
+| 🔥 + ❄ | Firestorm | +20% squad ATK |
+| 🔥 + 🌪 | Wildfire | +15% ATK · +10% crit |
+| 🔥 + ⚡ | Plasma | +15% squad crit |
+| ❄ + 🌪 | Blizzard | −20% enemy attack speed |
+| ❄ + ⚡ | Glacial Storm | +15% squad ATK |
+| 🌪 + ⚡ | Stormfront | +25% ATK *when ≥3 enemies alive* |
+| 🔥 + 🪨 | Volcanic (S10) | +30% ATK (v2 adds −20% self move speed) |
+| ❄ + 🪨 | Permafrost (S10) | +15% ATK placeholder (v2 = root on heavy hit) |
+| 🌪 + 🪨 | Sandstorm (S10) | +15% ATK placeholder (v2 = −30% enemy accuracy) |
+| 🪨 + ⚡ | Magnetic Storm (S10) | +15% ATK placeholder (v2 = pull-cluster + 50% AoE) |
+
+**Stacking.** Cap-1 stages 1-4 (alphabetical-by-compound-name priority, Blizzard
+wins ties). No-cap stages 5+ (multiplicative bag compose).
+
+**Trigger.** ≥2 distinct equipped weapon elements in the deployed squad matching
+a defined pair. Non-elemental starter weapons (`rune = &""`) never count.
+Earth-gated compounds skip when `current_stage < 10`.
+
+**Stage-1 neutrality contract.** Starters are non-elemental → no Catalyst
+possible on stage 1 → TestCombat's exact-damage assertions stay green.
+
+⚠ Volatile: numbers are Numbers-Policy starts. Tune via playtest, not architecture.
+
+Detail: `docs/superpowers/specs/2026-06-09-catalyst-design.md`.
+
+---
+
+## 9. Economy (4 concurrent axes + a 5th squad-puzzle)
+
+Per `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` §18
+"≤4 concurrent" — older axes fade to background as new ones unlock.
+
+1. **🔥 Ember** (pull currency). Boss +1 / victory +2. Forge Wheel 5/pull.
+2. **💎 Gems** (forge currency). Dupes earn (C20/R40/E80/L160). Star-up 100×tier
+   (caps ★10). Part-pull 150 (S10+).
+3. **🔧 Shards** (rarity consumable). Drop on C/R pulls (2 each), 0 on E+. Spent
+   on rarity-up via Forge button.
+4. **Talents** (per-hero progression). Gem-spend per node. Small-B Elara tree
+   unlocks via signature arc (§11); full-B (Bran/Vex) follows.
+5. **Catalyst** (free; squad-loadout puzzle). The pre-stage axis 2 of §7.
+
+Stamina = 10 free spins/day + Forge Rings refill. Outfits = +1% per outfit
+cap +20% (locked, not built). Prestige Skins = uncapped cosmetic (post-launch).
+
+Detail: `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md`.
+
+---
+
+## 10. Cinematics + signature moments
+
+- **Stage 1 W3** — Elara unlock (still-frame portrait + 80-word panel).
+- **Stage 1 W6** — Vex unlock (same).
+- **Stage 2 mid** — **Hot Paladin scripted-defeat entry**. The FM-8 hero-bond
+  probe (option A). Mid-stage cinematic; Paladin descends + wipes minions; 4-hero
+  slot opens; retry-with-4 path. 📋 Queued.
+- **Elara signature arc** — first crit-kill of a boss with Elara in squad fires
+  "A Spark of Power" cinematic → spark-chain mechanic in combat → small-B Meteor
+  talent tree unlocks. FM-8 hero-bond probe (option B). 📋 Queued.
+- **Stage 10 — Master Smith** — Forge Wheel Phase 1 unlock + Earth runes + 5-tier
+  Forge Math + part-pull. 📋 Queued.
+
+Detail: storyboard per-beat in `docs/prototype-screen-beats.md`.
+
+---
+
+## 11. Exit gates (prototype-end) + kill triggers
+
+**Pass = any 2 of 3:**
+- D1 retention ≥ 35%.
+- FM-8 hero-bond probe ≥ 6/10 on BOTH axes (attachment + build-investment).
+- ad CPI ≤ 80% of Wittle benchmark (~$3.50 → ≤ $2.80).
+
+\+ 10 h internal self-play, "want to come back?" ≥ 70%.
+
+**Kill triggers:** D1 < 30% · satisfaction < 6/10 · no creative within 30% of
+Wittle CPI · FM-8 < 6/10 on either axis.
+
+---
+
+## 12. Risk register (pre-mortem highlights)
+
+19 failure modes locked in the v2.2 spec (FM-1 → FM-19). Highest-priority:
+
+- **FM-1** Hero-collector players reject locked-roster. Mitigation: sell weapons
+  as the "collection" axis; sell heroes as "your mains."
+- **FM-8** Hero-bond probe fails. Mitigation: Paladin entry (option A) +
+  Elara arc (option B); test both during prototype.
+- **FM-14** Reforge-retry feels punishing. Mitigation: removed retry modal
+  2026-06-08; defeat → loadout-adjust screen with no penalty.
+- **FM-17** "Catalyst" trademarked. Mitigation: USPTO/EUIPO check before any
+  external asset; fallback names locked.
+- **FM-19** Bran 5-tier portrait doesn't motivate grind. Mitigation: 20-Honkai-
+  player eval gate; fall back to 3-tier if < 14/20.
+
+Full register: `docs/superpowers/specs/2026-05-27-wittle-inversion-design.md` §pre-mortem.
+
+---
+
+## 13. Open trademark + portrait gates (non-code)
+
+- **"Catalyst" TM check** (FM-17) — USPTO TESS + EUIPO eSearch. Pending.
+- **Bran 5-tier portrait eval** (FM-19) — 20 Honkai players, ≥14/20 give ≥7 to
+  lock 5-tier; else fall to 3-tier. Pending.
+
+---
+
+## 14. Document map (where the details live)
+
+| Doc | Role |
+|---|---|
+| `docs/STATUS.md` | **state** — done / queued / repo + engine rules. |
+| `5_WeaponForge_Honkai_Godot/CLAUDE.md` | **rules** for agents + team. |
+| `docs/prototype-screen-beats.md` | **storyboard** — per-screen mockups, ~50 beats. |
+| `docs/teammate-deck.html` | **pitch deck** — internal team + leadership. |
+| `docs/101-WeaponCraft-Concept.md` | **RICOCHET-template pitch / SSR submission** (current content, name pre-rename). |
+| `docs/05_roadmap.md` | **post-launch live-ops** — historical, not prototype scope. |
+| `docs/superpowers/specs/2026-05-27-wittle-inversion-design.md` v2.2 | foundational design (banner-marked DETAIL REFERENCE — amendments above win). |
+| `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` | full-game depth map. |
+| `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md` | Ember-pivot economy + Elara arc spec. |
+| `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md` | counter-build (shipped). |
+| `docs/superpowers/specs/2026-06-09-catalyst-design.md` | Catalyst v1 (in-flight). |
+| `docs/superpowers/specs/2026-06-09-teammate-deck-design.md` | deck design. |
+| `docs/superpowers/plans/*` | implementation plans. |
+| `docs/research/` | competitor + reference research (global, monorepo-wide). |
+| `docs/_archive/` | **non-authoritative** stale docs (see `_archive/README.md`). |
+
+---
+
+*Last updated: 2026-06-09 — consolidated from v2.2 (2026-05-27) + economy-architecture (2026-06-06) + economy-restructure (2026-06-06) + counter-build (2026-06-08) + Catalyst v1 (2026-06-09). When this drifts, update HERE first; the detail specs may lag.*

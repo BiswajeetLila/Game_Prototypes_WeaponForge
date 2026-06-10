@@ -48,6 +48,12 @@ func _ready() -> void:
 	_test_juiceconfig_basic_has_no_burst()
 	_test_screen_flash_has_public_flash_method()
 	_test_herocard_has_hp_delta_bar()
+	## Combat-card redesign (forgeloop/catalyst-element-pairs UI polish):
+	## weapon row + pips inside the card, circle-masked portrait.
+	_test_herocard_has_weapon_label()
+	_test_herocard_has_weapon_icon()
+	_test_herocard_has_pips_label()
+	_test_herocard_portrait_has_circle_shader()
 	_summary()
 	_render_to_ui()
 
@@ -318,6 +324,48 @@ func _test_herocard_has_hp_delta_bar() -> void:
 	_check("HeroCard has HpBarDelta (red trail behind HpBar)",
 		delta != null and delta is ColorRect,
 		"got %s" % str(delta))
+	card.queue_free()
+
+## ---------- Combat-card redesign cases ----------
+
+func _test_herocard_has_weapon_label() -> void:
+	## The card must show the equipped weapon's name + ATK INSIDE the card
+	## (formerly a separate strip in main.gd that clipped the right edge).
+	var card = _build_bran_card()
+	var lbl = card.find_child("WeaponLabel", true, false)
+	var ok: bool = lbl is Label and (("ATK" in lbl.text) or ("atk" in lbl.text))
+	_check("HeroCard has WeaponLabel showing name + ATK",
+		ok, "got %s text=%s" % [str(lbl), str(lbl.text) if lbl is Label else "—"])
+	card.queue_free()
+
+func _test_herocard_has_weapon_icon() -> void:
+	## Placeholder icon = rarity-colored box + element emoji (no art yet).
+	var card = _build_bran_card()
+	var icon = card.find_child("WeaponIcon", true, false)
+	_check("HeroCard has WeaponIcon (placeholder rarity box + element emoji)",
+		icon != null and icon is Control,
+		"got %s" % str(icon))
+	card.queue_free()
+
+func _test_herocard_has_pips_label() -> void:
+	## Run-card pips ●●○ moved from main.gd strip into the card.
+	var card = _build_bran_card()
+	var pips = card.find_child("Pips", true, false)
+	var ok: bool = pips is Label and pips.text.length() == 3
+	_check("HeroCard has Pips label (3 chars: ● / ○)",
+		ok, "got %s text=%s len=%d" % [str(pips), str(pips.text) if pips is Label else "—",
+			pips.text.length() if pips is Label else -1])
+	card.queue_free()
+
+func _test_herocard_portrait_has_circle_shader() -> void:
+	## Circle-mask shader applied to the portrait TextureRect for the
+	## headshot-in-circle look.
+	var card = _build_bran_card()
+	var portrait = card.find_child("Portrait", true, false)
+	var mat = portrait.material if portrait != null else null
+	_check("HeroCard Portrait has a ShaderMaterial (circle mask)",
+		mat != null and mat is ShaderMaterial,
+		"got %s" % str(mat))
 	card.queue_free()
 
 ## ---------- Test helpers ----------

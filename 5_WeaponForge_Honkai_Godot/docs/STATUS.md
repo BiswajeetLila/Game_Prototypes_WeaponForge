@@ -22,27 +22,25 @@ Casual-mobile RPG / hero-collector for the Wittle Defender ∩ anime-curious aud
 
 | Doc | Purpose |
 |---|---|
-| **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** (v2.2) | **THE design spec.** Identity, anchors, fragile assumption, roster, Forge Wheel, combat, synergy, monetization, SSR text bundle, pre-mortem (FM-1→19), exit gates, implementation plan, risk register. |
-| `docs/research/2026-05-28-competitor-landscape-synthesis.md` | Competitor landscape (50 games, 170 Sensor Tower calls). Drives v2.2 deltas. |
-| `docs/handoffs/2026-05-27-wittle-inversion-brainstorm.md` | Brainstorm session capture (design rationale). |
-| `docs/research/ricochet/WIP_DESIGN_DOC.md` | Tarun's RICOCHET concept (template-perfect SSR exemplar). |
-| `docs/research/reference-games/` | Wittle Defender, Archero 2, BALL x PIT, Gear Defenders design specs. |
-| `docs/research/weaponcraft-forge-mockups/` | F1-F4 nano-banana forge mockups (historic exploration — direction dropped). |
-| This file (`docs/STATUS.md`) | Done / planned / remaining + decision log. |
+| **`docs/01_GDD.md`** | **THE design SSOT** — consolidated top-of-hierarchy. Identity, roster, Forge Wheel, combat, Catalyst, economy, exit gates, risks. Amends everything below. |
+| **`docs/STATUS.md`** (this file) | **THE state SSOT** — done / queued / repo + engine rules. |
+| **`5_WeaponForge_Honkai_Godot/CLAUDE.md`** | **THE rules SSOT** — agent behavior + branch / commit / TDD / save / Numbers Policy. |
+| `docs/handoffs/<newest>.md` | session RESUME doc — read newest on resume. |
+| `docs/prototype-screen-beats.md` | beat-by-beat storyboard (~50 per-screen ASCII mockups). |
+| `docs/teammate-deck.html` | pitch deck for internal team + leadership. |
+| `docs/101-WeaponCraft-Concept.md` | RICOCHET-template pitch / SSR submission (current content; name pre-rename). |
+| `docs/superpowers/specs/2026-05-27-wittle-inversion-design.md` v2.2 | foundational design (banner-marked DETAIL REFERENCE — GDD wins on amendments). |
+| `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` | full-game depth map. |
+| `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md` | Ember-pivot economy + Elara arc spec. |
+| `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md` | counter-build (shipped). |
+| `docs/superpowers/specs/2026-06-09-catalyst-design.md` | Catalyst v1 (in-flight). |
+| `docs/superpowers/specs/2026-06-09-teammate-deck-design.md` | deck design. |
+| `docs/superpowers/plans/*` | implementation plans (incl. socket-retirement migration, Ember economy, counter-build, Catalyst, deck). |
+| `docs/research/` | competitor synthesis + monorepo-wide research (50-game landscape, anime-autobattler cluster, reference-games). |
+| `docs/_archive/` | **non-authoritative** stale docs (see `_archive/README.md`). |
 
-**2026-06-08 design suite (NEW — read alongside the v2.2 spec):**
-- `docs/superpowers/specs/2026-06-06-progression-economy-architecture.md` — full-game depth map (15 layers, currency table, core loop, B small/full, ≤4-concurrent pacing).
-- `docs/superpowers/specs/2026-06-06-economy-restructure-elara-quest-design.md` — economy pivot (Cores/gems/shards, dupe→gems, shard nerf, Elara spark-chain).
-- `docs/superpowers/specs/2026-06-08-prestage-counterbuild-design.md` — pre-stage counter-build (the core-loop "is it fun" fix) + `docs/superpowers/plans/2026-06-08-prestage-counterbuild.md` (the ACTIVE build).
-- `docs/research/anime_autobattlers/` — anime auto-battler cluster study (NOT a direct threat; validates the moat + the uncontested counter-build loop).
-
-**THE THREE SSOTs (read these; ignore stale next-step lists anywhere else):**
-1. **`docs/STATUS.md`** (this file) — current state + the canonical build queue (§4 NEXT) + repo/branch + engine/MCP rules. **Start here.**
-2. **`docs/superpowers/specs/2026-05-27-wittle-inversion-design.md`** — the locked DESIGN (identity / roster / Forge Wheel / combat / synergy / exit-gates).
-3. **`docs/handoffs/<newest>.md`** — the session RESUME doc (read the newest on resume).
-
-`docs/05_roadmap.md` is the post-LAUNCH live-ops roadmap ONLY, and predates the inversion pivot (TFT-shop/recipe content) — historical, **not** the prototype queue. The prototype queue is §4 NEXT below.
-Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts, not canonical.
+`docs/05_roadmap.md` is post-LAUNCH live-ops, NOT the prototype queue.
+Plan-mode scratch in `C:/Users/Biswa/.claude/plans/` is session-only.
 
 ---
 
@@ -58,6 +56,27 @@ Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts
 - **AI-Leverage Inventory** — design spec §23.1 (pipeline accel table, ~1.6× multiplier).
 - **Bran 5-tier portrait test render** — `docs/research/portrait-tier-test/bran_5tier_evolution.png`. Awaits 20-Honkai-player eval gate (FM-19).
 - **P1a STARTED (TDD)** — `WeaponData` unitary schema: get_atk/get_hp + ★-tier scaling (+5%/tier) + Forge Math (apply_forge_part: same-tier +50%, one-higher instant, lower no-op). **10/10 tests green** (`scripts/data/weapon_data.gd`, `scripts/dev/test_weapon_data.gd`, `scenes/dev/TestWeaponData.tscn`). Headless runner established.
+- **Teammate deck shipped (2026-06-09, branch `forgeloop/teammate-deck`)** — self-contained HTML one-pager (`docs/teammate-deck.html` + `docs/decks/style.css` + `docs/decks/scrub.js` + 12 asset copies in `docs/decks/assets/`). Forge industrial × anime rondel aesthetic, Cinzel + Manrope + JetBrains Mono, 7 sections w/ `<details>` collapsibles, sticky nav, Bran 5-tier scrubber as the unforgettable hook, scroll-triggered engraved dividers, print fallback, reduced-motion fallback. Spec: `docs/superpowers/specs/2026-06-09-teammate-deck-design.md`. Plan: `docs/superpowers/plans/2026-06-09-teammate-deck.md`.
+- **Catalyst v1 SHIPPED (2026-06-09, branch `forgeloop/catalyst-element-pairs`)** — element-pair synergy compounds layer over the squad loadout. 10 records (6 FTUE: Firestorm/Wildfire/Plasma/Blizzard/Glacial Storm/Stormfront + 4 Earth-gated at S10: Volcanic/Permafrost/Sandstorm/Magnetic Storm). Modifier-bag architecture (zero new combat callbacks); `_hero_attack` applies `squad_atk_mult` + additive `squad_crit_add`; Stormfront's `squad_atk_vs_swarm_mult` gates on `>=3 alive enemies`. Cap-1 stages 1-4 / no-cap stages 5+ with alphabetical-priority winner. Earth gate at stage 10. AccountState v4→v5 migration adds `scripted_pulls_seen`, `catalyst_codex_discovered`, `pull_count`. Forge Wheel scripted pulls #1 (Fire-warrior → Cinderbrand Greatsword Epic) + #3 (Ice-mage → Glacial Aegis Staff Legendary) — first elemental pulls are also rare reveal moments. Common-tier weapons stripped to non-elemental (`rune = &""`) so stage-1 neutrality contract holds. UI: Home squad-line + pre-stage briefing Catalyst section + battle-start banner + persistent HUD chip + Catalyst Codex sub-screen w/ ★ discovered / 🔒 locked markers. Codex auto-populates on stage-start banner render. 393 tests green across the 7 catalyst-touched suites (TestCatalyst 34, TestCatalystUI 29, TestAccountState 96, TestForgeWheel 73, TestHomeScreen 18, TestCombat 73, TestWeaponData 70). Spec: `docs/superpowers/specs/2026-06-09-catalyst-design.md`. Plan: `docs/superpowers/plans/2026-06-09-catalyst-element-pairs.md`. Commit range `dc10780..22da4e4` (19 commits incl. cleanups). v1.1 deferrals: `enemy_atk_speed_mult` combat application (Blizzard's combat behavior dormant), Catalyst Codex completion rewards, per-compound rich effects (chain lightning / freeze cones / etc), Earth-pair v2 effects, **battle HUD chip + codex auto-discovery currently wired to `Combat.boss_telegraph` (boss-wave-only signal)** — chip stays empty W1-W4 even with active Catalyst per spec §7.4 ("persistent for the duration of the stage"). Owner-deferred post-playtest 2026-06-09 (Home squad-line + briefing dialog cover the pre-battle case fine). Fix path: emit a new `Combat.stage_started(stage: int)` signal from `start_wave(1)` (or any W1 entry); main.gd re-wires `_on_stage_telegraph_for_chip` + codex discovery to it. Cap-1 stacking rule dropped 2026-06-09 post-playtest (commit `327f34d`) — no-cap from stage 1, Earth-gated skip at stage < 10; alpha-priority sort kept for display ordering.
+- **Scripted Pacing Rework SHIPPED (2026-06-10, branch `forgeloop/scripted-pacing-rework`)** — 4-beat narrative layer on Catalyst v1:
+  - Pull #1 Bran Epic fire (Cinderbrand, unchanged from Catalyst v1).
+  - Pull #3 Vex Rare electric — **NEW Voltedge Daggers** (was Elara ice).
+  - Stage 3 boss W5 50% HP — **Arcane Lich scripted-wipe** → Hot Paladin descends with **Helios Cleaver** (Epic paladin light, scripted-grant only — `SCRIPTED_GRANT_IDS` exclusion keeps it off the gacha pool).
+  - Pull #5 Elara Legendary ice — Glacial Aegis Staff (moved from pull #3).
+
+  New element: **light** ☀ (FTUE post-defeat). 4 new Catalyst compounds: Solar Flare (light+fire +20% ATK) / Halo Bloom (light+ice +15% ATK +10% crit) / Plasma Arc (light+electric +25% ATK) / Auroral Veil (light+wind -20% enemy atk-spd). Codex grows 10 → 14 rows.
+
+  Hot Paladin as 4th roster slot (deploy stays 3 per CLAUDE.md §13). Unlocks via Stage 3 boss `defeat_stage_3_paladin` sentinel. Pre-defeat boss briefing telegraphs `weak: ☀ light · resist: 🪨 earth` (cold telegraph — player walks in blind → wiped → Paladin arrives with light → retry trivializes lich).
+
+  AccountState v5 → v6 (adds `paladin_unlocked: bool`). Ember economy bumped — boss bonus 1→3, victory bonus 2→4, total per-stage 7 ember (was 3); supports 1 pull/stage cadence so the 4-beat timeline lands consistently. Pull cost unchanged at 5.
+
+  Scripted pulls force-equip over non-elemental starters (Bug 1 targeted fix — RNG pulls keep current go-to-bench behavior). Descend cinematic uses `assets/generated/cinematics/paladin_entry.png` (1.4MB ref from `Mockup/all-mockups/A13_paladin-entry_2E-ref.png`).
+
+  **504 tests green across the 7 touched suites** (TestCatalyst 74, TestCatalystUI 39, TestAccountState 106, TestForgeWheel 94, TestHomeScreen 37, TestCombat 84, TestWeaponData 70 — +100 asserts vs Catalyst v1 baseline 404). Stage-1 neutrality contract preserved.
+
+  Spec: `docs/superpowers/specs/2026-06-09-scripted-pacing-rework-design.md`. Plan: `docs/superpowers/plans/2026-06-10-scripted-pacing-rework.md`. Commit range `549c35f..2105c2a` (17 commits incl. C5-consolidation predecessor 2e97774).
+
+  **v1.1 deferrals:** full Hot Paladin kit (ult, ability, voice — currently placeholder Solar Burst 2.5x AOE); light-pair rich effects (chain heal / holy AoE cleanse); cinematic motion design + voiced dialogue; future scripted-grant events (Master Smith S10, Hot Assassin entry).
 
 ### Key locked decisions (full log in design spec)
 
@@ -112,19 +131,16 @@ Plan-mode scratch files in `C:/Users/Biswa/.claude/plans/` are session artifacts
   reforge-retry now resets ult; weapon detail is a FIXED opaque panel between squad + armory
   with quick-swap (popup reverted); stage-3 Arcane Lich nerfed (hp 850→600, phase-2 AOE
   0.5→0.30). **~423 tests green.** Detail + commits: `docs/handoffs/2026-06-05-session-handoff.md`.
-- **P1a — most cycles done (2026-06-01, in `5_WeaponForge_Honkai_Godot`).** WeaponData unitary schema + Forge Math (all diff cases incl. diff≥2 bank: diff2 instant+50% bank, diff3 ½×2, diff4 ⅓×3), `skill_card_data.gd` (SkillCardData Forge-Draft schema: 4 hero-tagged card types), and the WeaponData **combat interface** (`get_crit`/`get_ult_rate`/`get_all_tags`/`get_hp_bonus` — Stage 1 of the combat migration) all DONE under TDD. TestWeaponData 32/32, TestSkillCardData 14/14, **144-suite green (zero regression)**. **Remaining P1a (DEFERRED):** the actual `combat.gd`/`GameState` switch onto WeaponData + socket retirement on `weapon.gd` — blocked because the unitary model can't reproduce multi-part recipe tag-combos, so it needs Forge Draft (P1c) + Catalyst (P1e) built first. Full analysis + staged plan: `docs/2026-06-01-combat-weapon-migration-plan.md`.
+- **P1a — most cycles done (2026-06-01, in `5_WeaponForge_Honkai_Godot`).** WeaponData unitary schema + Forge Math (all diff cases incl. diff≥2 bank: diff2 instant+50% bank, diff3 ½×2, diff4 ⅓×3), `skill_card_data.gd` (SkillCardData Forge-Draft schema: 4 hero-tagged card types), and the WeaponData **combat interface** (`get_crit`/`get_ult_rate`/`get_all_tags`/`get_hp_bonus` — Stage 1 of the combat migration) all DONE under TDD. TestWeaponData 32/32, TestSkillCardData 14/14, **144-suite green (zero regression)**. **Remaining P1a (DEFERRED):** the actual `combat.gd`/`GameState` switch onto WeaponData + socket retirement on `weapon.gd` — blocked because the unitary model can't reproduce multi-part recipe tag-combos, so it needs Forge Draft (P1c) + Catalyst (P1e) built first. Full analysis + staged plan: `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`.
 - **First-10-min vertical slice = P1a + P1b + P1c + P1f** (full Phase-1 sequence P1b→P1l in design spec §23).
 
 ### NEXT — prototype build queue (OWNER-AGREED ORDER, 2026-06-05) ← THE one true queue
 Not scheduled "now"; this is the order for upcoming sessions:
-1. **#2 — Elemental / ability draft cards** (finishes P1c). Rune cards vs enemy weak/resist + ability transforms → makes the boss 5-card draft matter. Shard `element` field is already wired for it.
-2. **#3 — Hot Paladin scripted-defeat entry** (P1f, the FM-8 hero-attachment probe). Re-map the spec's "Stage 2 wave 14" trigger to the 5-wave stage structure; add the Paladin hero + a Paladin starter weapon + the descend cinematic + the retry-with-4-hero-squad flow.
-   → **Do #2 + #3 together = the testable FM-8 vertical slice.**
-3. **#4 — Catalyst compounds** (P1e, squad element-pair synergy) → THEN **socket retirement 9a–e** (delete legacy sockets/shop/merge + ~80 legacy tests; contracts in `docs/2026-06-01-combat-weapon-migration-plan.md`).
-4. **#1 — Spin cinematic** (the last unfinished bit of the Forge Wheel — skippable ≤0.6s anvil-strike reel).
-   → **Do #4 + #1 together.**
-5. **Human gates** (not code): Bran 5-tier portrait eval (20 Honkai players) + "Catalyst" trademark check.
-6. **Merge `phase1` → `main`** — ONLY on explicit owner say.
+1. **Elemental / ability draft cards** (finishes P1c). Rune cards vs enemy weak/resist + ability transforms → makes the boss 5-card draft matter. Shard `element` field is already wired for it. (FM-8 hero-attachment probe vertical slice now shipped via Scripted Pacing Rework — Hot Paladin Stage-3 scripted-defeat entry SHIPPED 2026-06-10.)
+2. **Socket retirement 9a–e** — delete legacy sockets/shop/merge + ~80 legacy tests; contracts in `docs/superpowers/plans/2026-06-01-socket-retirement-migration.md`.
+3. **Spin cinematic** (the last unfinished bit of the Forge Wheel — skippable ≤0.6s anvil-strike reel).
+4. **Human gates** (not code): Bran 5-tier portrait eval (20 Honkai players) + "Catalyst" trademark check.
+5. **Merge `phase1` → `main`** — ONLY on explicit owner say.
 
 ### Exit gates (any 2 of 3): D1≥35% + FM-8 dual-anchor ≥6/10 both axes / ad CPI -20% vs Wittle / 10h internal self-play.
 ### Kill triggers: D1<30% / satisfaction<6/10 / no creative within 30% Wittle CPI / FM-8 probe <6/10 either axis.

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="HeroData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"paladin"
+name = "Hot Paladin"
+cls = &"paladin"
+hp_base = 100
+atk_base = 8
+ult_name = "Solar Burst"
+ult_desc = "AoE all alive enemies for atk * 2.5"
+ult_atk_multiplier = 2.5
+ult_key = &"solar_burst"

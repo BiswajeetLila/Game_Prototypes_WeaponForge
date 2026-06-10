@@ -1,0 +1,354 @@
+{
+  "app": "Honkai: Star Rail",
+  "unified_app_id": "63e5633fded9c9175b7fca1e",
+  "source": "Sensor Tower MCP download_revenue_estimates (os=unified, monthly)",
+  "note": "Worldwide totals = sum across all countries returned. Revenue converted cents->USD.",
+  "lifetime_to_date": {
+    "downloads": 66833817,
+    "revenue_usd": 1642034918.21
+  },
+  "monthly": [
+    {
+      "month": "2023-04",
+      "ww_downloads": 13769762,
+      "ww_revenue_usd": 46184624.94,
+      "android_downloads": 5756139,
+      "android_revenue_usd": 7396260.95,
+      "ios_downloads": 8013623,
+      "ios_revenue_usd": 38788363.99
+    },
+    {
+      "month": "2023-05",
+      "ww_downloads": 7922014,
+      "ww_revenue_usd": 129028866.21,
+      "android_downloads": 4318414,
+      "android_revenue_usd": 36205232.2,
+      "ios_downloads": 3603600,
+      "ios_revenue_usd": 92823634.01
+    },
+    {
+      "month": "2023-06",
+      "ww_downloads": 2584699,
+      "ww_revenue_usd": 85064949.52,
+      "android_downloads": 1471836,
+      "android_revenue_usd": 22745038.57,
+      "ios_downloads": 1112863,
+      "ios_revenue_usd": 62319910.95
+    },
+    {
+      "month": "2023-07",
+      "ww_downloads": 2579854,
+      "ww_revenue_usd": 59342373.41,
+      "android_downloads": 1517134,
+      "android_revenue_usd": 17117832.22,
+      "ios_downloads": 1062720,
+      "ios_revenue_usd": 42224541.19
+    },
+    {
+      "month": "2023-08",
+      "ww_downloads": 2267667,
+      "ww_revenue_usd": 74340222.83,
+      "android_downloads": 1315042,
+      "android_revenue_usd": 18449115.8,
+      "ios_downloads": 952625,
+      "ios_revenue_usd": 55891107.03
+    },
+    {
+      "month": "2023-09",
+      "ww_downloads": 1815167,
+      "ww_revenue_usd": 60169601.54,
+      "android_downloads": 1032850,
+      "android_revenue_usd": 15878180.26,
+      "ios_downloads": 782317,
+      "ios_revenue_usd": 44291421.28
+    },
+    {
+      "month": "2023-10",
+      "ww_downloads": 2244677,
+      "ww_revenue_usd": 75406261.58,
+      "android_downloads": 1391244,
+      "android_revenue_usd": 20062722.47,
+      "ios_downloads": 853433,
+      "ios_revenue_usd": 55343539.11
+    },
+    {
+      "month": "2023-11",
+      "ww_downloads": 1538761,
+      "ww_revenue_usd": 27680212.1,
+      "android_downloads": 914361,
+      "android_revenue_usd": 8461541.46,
+      "ios_downloads": 624400,
+      "ios_revenue_usd": 19218670.64
+    },
+    {
+      "month": "2023-12",
+      "ww_downloads": 2025994,
+      "ww_revenue_usd": 44580360.73,
+      "android_downloads": 1115184,
+      "android_revenue_usd": 12482344.74,
+      "ios_downloads": 910810,
+      "ios_revenue_usd": 32098015.99
+    },
+    {
+      "month": "2024-01",
+      "ww_downloads": 1770088,
+      "ww_revenue_usd": 28583881.09,
+      "android_downloads": 1045059,
+      "android_revenue_usd": 9327030.86,
+      "ios_downloads": 725029,
+      "ios_revenue_usd": 19256850.23
+    },
+    {
+      "month": "2024-02",
+      "ww_downloads": 2389564,
+      "ww_revenue_usd": 48336734.88,
+      "android_downloads": 1603607,
+      "android_revenue_usd": 13645221.12,
+      "ios_downloads": 785957,
+      "ios_revenue_usd": 34691513.76
+    },
+    {
+      "month": "2024-03",
+      "ww_downloads": 2186220,
+      "ww_revenue_usd": 79851346.75,
+      "android_downloads": 1423632,
+      "android_revenue_usd": 22498320.46,
+      "ios_downloads": 762588,
+      "ios_revenue_usd": 57353026.29
+    },
+    {
+      "month": "2024-04",
+      "ww_downloads": 1806335,
+      "ww_revenue_usd": 67844987.78,
+      "android_downloads": 1108739,
+      "android_revenue_usd": 22848738.37,
+      "ios_downloads": 697596,
+      "ios_revenue_usd": 44996249.41
+    },
+    {
+      "month": "2024-05",
+      "ww_downloads": 1759428,
+      "ww_revenue_usd": 56304216.03,
+      "android_downloads": 917765,
+      "android_revenue_usd": 16228914.16,
+      "ios_downloads": 841663,
+      "ios_revenue_usd": 40075301.87
+    },
+    {
+      "month": "2024-06",
+      "ww_downloads": 1754841,
+      "ww_revenue_usd": 58957012.31,
+      "android_downloads": 882442,
+      "android_revenue_usd": 15112728.09,
+      "ios_downloads": 872399,
+      "ios_revenue_usd": 43844284.22
+    },
+    {
+      "month": "2024-07",
+      "ww_downloads": 1714118,
+      "ww_revenue_usd": 29188048.93,
+      "android_downloads": 1051859,
+      "android_revenue_usd": 8959347.27,
+      "ios_downloads": 662259,
+      "ios_revenue_usd": 20228701.66
+    },
+    {
+      "month": "2024-08",
+      "ww_downloads": 1313946,
+      "ww_revenue_usd": 26048826.76,
+      "android_downloads": 782993,
+      "android_revenue_usd": 7773958.13,
+      "ios_downloads": 530953,
+      "ios_revenue_usd": 18274868.63
+    },
+    {
+      "month": "2024-09",
+      "ww_downloads": 1125702,
+      "ww_revenue_usd": 47307551.18,
+      "android_downloads": 705079,
+      "android_revenue_usd": 16683518.53,
+      "ios_downloads": 420623,
+      "ios_revenue_usd": 30624032.65
+    },
+    {
+      "month": "2024-10",
+      "ww_downloads": 1035864,
+      "ww_revenue_usd": 28656810.07,
+      "android_downloads": 651399,
+      "android_revenue_usd": 10080670.44,
+      "ios_downloads": 384465,
+      "ios_revenue_usd": 18576139.63
+    },
+    {
+      "month": "2024-11",
+      "ww_downloads": 831771,
+      "ww_revenue_usd": 16106830.64,
+      "android_downloads": 528069,
+      "android_revenue_usd": 5495672.07,
+      "ios_downloads": 303702,
+      "ios_revenue_usd": 10611158.57
+    },
+    {
+      "month": "2024-12",
+      "ww_downloads": 1024211,
+      "ww_revenue_usd": 35793291.81,
+      "android_downloads": 605405,
+      "android_revenue_usd": 10830794.25,
+      "ios_downloads": 418806,
+      "ios_revenue_usd": 24962497.56
+    },
+    {
+      "month": "2025-01",
+      "ww_downloads": 1068748,
+      "ww_revenue_usd": 35811926.41,
+      "android_downloads": 585688,
+      "android_revenue_usd": 12881144.85,
+      "ios_downloads": 483060,
+      "ios_revenue_usd": 22930781.56
+    },
+    {
+      "month": "2025-02",
+      "ww_downloads": 720915,
+      "ww_revenue_usd": 30795830.83,
+      "android_downloads": 400661,
+      "android_revenue_usd": 9580829.8,
+      "ios_downloads": 320254,
+      "ios_revenue_usd": 21215001.03
+    },
+    {
+      "month": "2025-03",
+      "ww_downloads": 630982,
+      "ww_revenue_usd": 22504687.55,
+      "android_downloads": 327510,
+      "android_revenue_usd": 8412148.19,
+      "ios_downloads": 303472,
+      "ios_revenue_usd": 14092539.36
+    },
+    {
+      "month": "2025-04",
+      "ww_downloads": 849314,
+      "ww_revenue_usd": 63438252.8,
+      "android_downloads": 377183,
+      "android_revenue_usd": 17982623.72,
+      "ios_downloads": 472131,
+      "ios_revenue_usd": 45455629.08
+    },
+    {
+      "month": "2025-05",
+      "ww_downloads": 679526,
+      "ww_revenue_usd": 33475263.77,
+      "android_downloads": 291541,
+      "android_revenue_usd": 10358296.99,
+      "ios_downloads": 387985,
+      "ios_revenue_usd": 23116966.78
+    },
+    {
+      "month": "2025-06",
+      "ww_downloads": 519661,
+      "ww_revenue_usd": 15813994.93,
+      "android_downloads": 238375,
+      "android_revenue_usd": 5927024.4,
+      "ios_downloads": 281286,
+      "ios_revenue_usd": 9886970.53
+    },
+    {
+      "month": "2025-07",
+      "ww_downloads": 876984,
+      "ww_revenue_usd": 68254320.04,
+      "android_downloads": 399562,
+      "android_revenue_usd": 19950583.92,
+      "ios_downloads": 477422,
+      "ios_revenue_usd": 48303736.12
+    },
+    {
+      "month": "2025-08",
+      "ww_downloads": 637342,
+      "ww_revenue_usd": 24480880.29,
+      "android_downloads": 326532,
+      "android_revenue_usd": 10786884.33,
+      "ios_downloads": 310810,
+      "ios_revenue_usd": 13693995.96
+    },
+    {
+      "month": "2025-09",
+      "ww_downloads": 627332,
+      "ww_revenue_usd": 27463429.97,
+      "android_downloads": 374085,
+      "android_revenue_usd": 6978648.43,
+      "ios_downloads": 253247,
+      "ios_revenue_usd": 20484781.54
+    },
+    {
+      "month": "2025-10",
+      "ww_downloads": 483216,
+      "ww_revenue_usd": 17053993.59,
+      "android_downloads": 248151,
+      "android_revenue_usd": 6091389.59,
+      "ios_downloads": 235065,
+      "ios_revenue_usd": 10962604.0
+    },
+    {
+      "month": "2025-11",
+      "ww_downloads": 648228,
+      "ww_revenue_usd": 47249457.13,
+      "android_downloads": 336019,
+      "android_revenue_usd": 7875710.98,
+      "ios_downloads": 312209,
+      "ios_revenue_usd": 39373746.15
+    },
+    {
+      "month": "2025-12",
+      "ww_downloads": 514748,
+      "ww_revenue_usd": 19429096.73,
+      "android_downloads": 296720,
+      "android_revenue_usd": 6925524.93,
+      "ios_downloads": 218028,
+      "ios_revenue_usd": 12503571.8
+    },
+    {
+      "month": "2026-01",
+      "ww_downloads": 437623,
+      "ww_revenue_usd": 5966944.19,
+      "android_downloads": 261137,
+      "android_revenue_usd": 2174913.73,
+      "ios_downloads": 176486,
+      "ios_revenue_usd": 3792030.46
+    },
+    {
+      "month": "2026-02",
+      "ww_downloads": 739172,
+      "ww_revenue_usd": 14872345.26,
+      "android_downloads": 390947,
+      "android_revenue_usd": 4888111.51,
+      "ios_downloads": 348225,
+      "ios_revenue_usd": 9984233.75
+    },
+    {
+      "month": "2026-03",
+      "ww_downloads": 686388,
+      "ww_revenue_usd": 24698155.15,
+      "android_downloads": 453320,
+      "android_revenue_usd": 8253959.16,
+      "ios_downloads": 233068,
+      "ios_revenue_usd": 16444195.99
+    },
+    {
+      "month": "2026-04",
+      "ww_downloads": 691223,
+      "ww_revenue_usd": 37481369.73,
+      "android_downloads": 426102,
+      "android_revenue_usd": 10945748.86,
+      "ios_downloads": 265121,
+      "ios_revenue_usd": 26535620.87
+    },
+    {
+      "month": "2026-05",
+      "ww_downloads": 561732,
+      "ww_revenue_usd": 28467958.75,
+      "android_downloads": 324609,
+      "android_revenue_usd": 11813019.0,
+      "ios_downloads": 237123,
+      "ios_revenue_usd": 16654939.75
+    }
+  ]
+}

@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0710">
+  <title>WeaponForge — for teammates</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+
+  <link rel="stylesheet" href="decks/style.css">
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="hammered-noise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
+        <feColorMatrix values="0 0 0 0 0.05  0 0 0 0 0.04  0 0 0 0 0.07  0 0 0 0.06 0"/>
+      </filter>
+      <symbol id="divider-engraved" viewBox="0 0 1200 24" preserveAspectRatio="none">
+        <line x1="0" y1="12" x2="1200" y2="12" stroke="currentColor" stroke-width="1" stroke-dasharray="2 6" opacity="0.5"/>
+        <path d="M560 6 L600 18 L640 6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="600" cy="18" r="2.5" fill="currentColor"/>
+      </symbol>
+      <symbol id="anvil" viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
+        <path d="M40 90 L40 70 Q40 50 70 50 L130 50 Q160 50 160 70 L160 90 Z M70 50 L70 30 L130 30 L130 50 Z M20 90 L180 90 L170 110 L30 110 Z" fill="currentColor"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <nav class="deck-nav" aria-label="Section navigation">
+    <a href="#hero" class="deck-nav__brand">⚒ WEAPONFORGE</a>
+    <ul class="deck-nav__list">
+      <li><a href="#bet">Bet</a></li>
+      <li><a href="#what">What</a></li>
+      <li><a href="#roster">Roster</a></li>
+      <li><a href="#loop">Loop</a></li>
+      <li><a href="#beats">Beats</a></li>
+      <li><a href="#build">Build</a></li>
+      <li><a href="#next">Next</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <section id="hero" class="section section--hero">
+      <div class="hero-bg" aria-hidden="true">
+        <svg class="hero-anvil"><use href="#anvil"/></svg>
+      </div>
+      <div class="hero-grid">
+        <div class="hero-text">
+          <h1 class="hero-title">
+            <span style="--i:0">W</span><span style="--i:1">E</span><span style="--i:2">A</span><span style="--i:3">P</span><span style="--i:4">O</span><span style="--i:5">N</span><span style="--i:6">F</span><span style="--i:7">O</span><span style="--i:8">R</span><span style="--i:9">G</span><span style="--i:10">E</span>
+          </h1>
+          <p class="hero-tagline">
+            Casual-mobile RPG.<br>
+            You pull <em>weapons</em>. You bond with <em>heroes</em>.
+          </p>
+          <p class="hero-ribbon">
+            prototype build  ·  5-wave stages  ·  3-boss rotation  ·  forked 2026-06-01
+          </p>
+        </div>
+        <div class="hero-portraits" aria-label="Founding heroes: Bran, Elara, Vex">
+          <div class="rondel rondel--bran"><img src="decks/assets/heroes/bran.png" alt="Bran the warrior"></div>
+          <div class="rondel rondel--elara"><img src="decks/assets/heroes/elara.png" alt="Elara the mage"></div>
+          <div class="rondel rondel--vex"><img src="decks/assets/heroes/vex.png" alt="Vex the rogue"></div>
+        </div>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="bet" class="section section--bet">
+      <div class="section-inner">
+        <h2>The Bet</h2>
+        <div class="bet-grid">
+          <div>
+            <h3>Audience</h3>
+            <p>Wittle Defender ∩ anime-curious. Casual-mobile RPG players who'd happily install a hero-collector but want more story than the genre normally delivers.</p>
+          </div>
+          <div>
+            <h3>Inversion</h3>
+            <p>Wittle pulls heroes. We pull <strong>weapons</strong>. The roster is locked at seven — you master a specific cast instead of chasing a slot machine. Time invested becomes character, not duplicate inventory.</p>
+          </div>
+          <div>
+            <h3>Moat</h3>
+            <p>Equipment-gacha is precedented (Archero $263M). Story-locked roster is unprecedented. <em>The combination is the moat.</em></p>
+          </div>
+        </div>
+        <blockquote class="pull-quote">
+          Forge weapons.<br>Bond with heroes.
+        </blockquote>
+        <details class="deep">
+          <summary>Competitor landscape (1-paragraph synth)</summary>
+          <p>50-game research set, 170 Sensor Tower API calls. Hero-gacha + auto-battler is crowded (AFK Arena, Honkai Star Rail, Wuthering Waves). Weapon-collection is rare and scattered (Archero is the closest analogue but is bullet-hell, not RPG). No competitor combines locked roster + weapon gacha + anime personality + casual auto-resolve combat — the lane is empty. Full doc: <a href="research/2026-05-28-competitor-landscape-synthesis.md">docs/research/2026-05-28-competitor-landscape-synthesis.md</a>.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="what" class="section section--what">
+      <div class="section-inner">
+        <h2>What is WeaponForge</h2>
+        <div class="what-grid">
+          <div class="what-col">
+            <h3>Pull</h3>
+            <img src="decks/assets/parts/r_fire.png" alt="Fire rune" class="what-icon">
+            <p>A slot-machine Forge Wheel drops <strong>weapons</strong> for your locked roster. Pull a Common, a Rare, an Epic. Forge them up. Star them up. The economy revolves around weapons, not heroes.</p>
+          </div>
+          <div class="what-col">
+            <h3>Equip</h3>
+            <img src="decks/assets/heroes/elara.png" alt="Elara the mage" class="what-icon what-icon--portrait">
+            <p>Three heroes deploy per stage, drawn from a locked cast of seven. Each weapon ties to a class and an element. The squad you choose <em>is</em> the strategy.</p>
+          </div>
+          <div class="what-col">
+            <h3>Fight</h3>
+            <img src="decks/assets/enemies/slime.png" alt="A slime enemy" class="what-icon">
+            <p>Side-view auto-resolve combat. Five waves per stage; boss on wave 5. Mid-wave the kill meter fills → combat pauses → pick a Forge Draft card → resume. Single-tap ultimates.</p>
+          </div>
+        </div>
+        <details class="deep">
+          <summary>The first 10 minutes (FTUE arc)</summary>
+          <ul>
+            <li>Boot → 5 Ember granted → 3 starter weapons equipped on Bran / Elara / Vex.</li>
+            <li>Stage 1 begins. Elara unlocks on Wave 3 cinematic. Vex on Wave 6.</li>
+            <li>Wave 5 boss = Slime King. First Forge Draft modal opens between waves.</li>
+            <li>Stage clear → +2 Ember → first Forge Wheel pull tutorialized. Pull #1 is scripted Fire-Bran-class.</li>
+            <li>Stage 2-4 layers in: Counter-build (boss-weakness telegraph) → counter-loadout.</li>
+            <li>~Stage 5: Pull #3 scripted Ice-Elara-class → first <strong>Catalyst</strong> triggers (Firestorm: 🔥+❄).</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="roster" class="section section--roster">
+      <div class="section-inner">
+        <h2>The Roster — the moat</h2>
+        <p class="roster-intro">Seven heroes. Locked. The cast you master, the bond you build. <em>Equipment is the gacha. People are the lore.</em></p>
+        <div class="roster-grid">
+
+          <article class="hero-card hero-card--big" data-status="ftue" data-rot="-1">
+            <div id="bran-scrub" class="hero-card__rondel" role="img" aria-label="Bran portrait at tier 1, Basic"></div>
+            <h3>Bran</h3>
+            <p class="hero-card__class">Warrior · FTUE</p>
+            <p class="hero-card__blurb">Stoic, dependable, takes the front. Anchor of every starter squad. Inherited his father's hammer.</p>
+            <div class="scrubber">
+              <label for="bran-tier" class="scrubber__label" id="bran-tier-label">Tier 1 · Apprentice</label>
+              <input id="bran-tier" type="range" min="0" max="4" step="1" value="0" aria-labelledby="bran-tier-label">
+              <div class="scrubber__hint">drag to evolve ★1 → ★5</div>
+            </div>
+          </article>
+
+          <article class="hero-card" data-status="ftue" data-rot="+1">
+            <div class="hero-card__rondel"><img src="decks/assets/heroes/elara.png" alt="Elara"></div>
+            <h3>Elara</h3>
+            <p class="hero-card__class">Mage · FTUE</p>
+            <p class="hero-card__blurb">Quiet prodigy. Frost-bolt scholar with a secret meteor lineage. Signature arc unlocks her tree.</p>
+          </article>
+
+          <article class="hero-card" data-status="ftue" data-rot="-1">
+            <div class="hero-card__rondel"><img src="decks/assets/heroes/vex.png" alt="Vex"></div>
+            <h3>Vex</h3>
+            <p class="hero-card__class">Rogue · FTUE</p>
+            <p class="hero-card__blurb">From the shadow corps. Critting on his off-hand is the love language. Pairs explosively with Elara's chain.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="+1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>Hot Paladin</h3>
+            <p class="hero-card__class">Lance · Stage 2</p>
+            <p class="hero-card__blurb">Descends mid-stage in a scripted-defeat cinematic. The FM-8 hero-bond probe.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="-1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>2nd Rogue</h3>
+            <p class="hero-card__class">Rogue variant · TBD</p>
+            <p class="hero-card__blurb">Personality + identity to be designed. Mid-game unlock.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="+1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>2nd Mage</h3>
+            <p class="hero-card__class">Mage variant · TBD</p>
+            <p class="hero-card__blurb">Personality + identity to be designed. Mid-game unlock.</p>
+          </article>
+
+          <article class="hero-card" data-status="tbd" data-rot="-1">
+            <div class="hero-card__rondel hero-card__rondel--silhouette">
+              <span aria-hidden="true">?</span>
+            </div>
+            <h3>Hot Assassin</h3>
+            <p class="hero-card__class">Assassin · TBD</p>
+            <p class="hero-card__blurb">Personality + identity to be designed. Late-game unlock.</p>
+          </article>
+
+        </div>
+        <details class="deep">
+          <summary>Why a locked roster?</summary>
+          <p>Hero-collectors win on power-fantasy variety; we win on attachment. A locked 7-hero cast means each character can carry actual personality + story without diluting it across hundreds of pulls. The pre-mortem flag here (FM-1) is "players raised on Archero / AFK Arena expect to collect heroes too." Mitigation: weapon gacha satisfies the slot-machine itch, while the locked cast is sold as "your mains" — the language of competitive games, not gachas.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="loop" class="section section--loop">
+      <div class="section-inner">
+        <h2>The Loop</h2>
+        <div class="loop-grid">
+          <pre class="loop-ascii" aria-label="Core gameplay loop diagram">
+       ┌──────── HOME ────────┐
+       │  pull → equip       │
+       │  briefing telegraph │
+       └──────────┬──────────┘
+                  │
+                  ▼
+       ┌────── STAGE ─────────┐
+       │ W1 → W2 → W3 → W4    │
+       │ ↓ mid-wave: meter    │
+       │ ↓ Forge Draft pick   │
+       │ W5 = BOSS            │
+       └──────────┬───────────┘
+                  │
+                  ▼
+       ┌──── reward / wipe ───┐
+       │ +Ember +stage++      │
+       │ heroes restored      │
+       └──────────┬───────────┘
+                  │
+                  └──→ back to HOME
+          </pre>
+          <div class="loop-axes">
+            <h3>Three progression axes</h3>
+            <ol>
+              <li><strong>Counter-build</strong> <span class="axis-status axis-status--shipped">shipped</span> — pre-stage briefing tells you the boss + minion weak/resist; you pick a squad that exploits it.</li>
+              <li><strong>Catalyst</strong> <span class="axis-status axis-status--inflight">in-flight</span> — squad element-pairs trigger named compound buffs (Firestorm, Wildfire, Plasma...). Cap-1 stages 1-4, no-cap stages 5+.</li>
+              <li><strong>Forge Wheel</strong> <span class="axis-status axis-status--shipped">shipped</span> — the weapon gacha. Ember currency, dupe-into-gems, shard-into-rarity, gem-into-star-up.</li>
+            </ol>
+          </div>
+        </div>
+        <details class="deep">
+          <summary>The 5-wave stage shape</summary>
+          <p>Five waves per stage. Boss on wave 5. The boss rotates by stage: Slime King → Iron Golem → Arcane Lich → repeat (with per-stage scaling). Slime heals to 50%, Golem windups + AoE-slams, Lich phase-shifts at 33% HP. The Forge Draft modal opens mid-stage when the kill-meter fills; on the W5 boss wave it shows 5 cards instead of 3. Heroes restored to full HP at the start of every stage. Wipes route back to a loadout-adjust screen — no retry penalty.</p>
+        </details>
+        <details class="deep">
+          <summary>What's a Catalyst? (6 FTUE compounds)</summary>
+          <table class="compounds">
+            <thead><tr><th>Pair</th><th>Compound</th><th>v1 effect (Numbers Policy)</th></tr></thead>
+            <tbody>
+              <tr><td>🔥 + ❄</td><td>Firestorm</td><td>+20% squad ATK</td></tr>
+              <tr><td>🔥 + 🌪</td><td>Wildfire</td><td>+15% ATK · +10% crit</td></tr>
+              <tr><td>🔥 + ⚡</td><td>Plasma</td><td>+15% squad crit</td></tr>
+              <tr><td>❄ + 🌪</td><td>Blizzard</td><td>−20% enemy attack speed</td></tr>
+              <tr><td>❄ + ⚡</td><td>Glacial Storm</td><td>+15% squad ATK</td></tr>
+              <tr><td>🌪 + ⚡</td><td>Stormfront</td><td>+25% ATK vs ≥3 enemies</td></tr>
+            </tbody>
+          </table>
+          <p>Earth-pair compounds (Volcanic / Permafrost / Sandstorm / Magnetic Storm) gate at Stage 10. The first Catalyst reveal lands organically around Stage 4-5: Forge Wheel pull #1 is scripted Fire-Bran-class, pull #3 is Ice-Elara-class. Until then, starter weapons are non-elemental — preserving the stage-1 neutrality contract.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="beats" class="section section--beats">
+      <div class="section-inner">
+        <h2>The Beats</h2>
+        <p class="beats-intro">Six key moments from the prototype loop, drawn during the 2E mockup pass. Click a thumbnail to swap the featured beat.</p>
+        <div class="beats-carousel" role="region" aria-label="Story beat carousel">
+          <button class="beats-arrow beats-arrow--prev" type="button" aria-label="Previous beat">‹</button>
+          <figure class="beats-stage">
+            <img class="beats-stage__img" id="beats-featured-img" src="decks/assets/beats/beat1-combat-read-2E.jpg" alt="Beat 1 mockup — combat read">
+            <figcaption class="beats-stage__caption">
+              <h3 class="beats-stage__title" id="beats-featured-title">Combat read</h3>
+              <p class="beats-stage__sub" id="beats-featured-sub">Stage 1, mid-wave · 3 heroes vs minions</p>
+              <p class="beats-stage__desc" id="beats-featured-desc">Side-view auto-resolve. Heroes attack on their own timers. A kill meter fills with each kill; full meter pauses combat for the Forge Draft. Single-tap ultimates fire when each hero's gauge fills.</p>
+            </figcaption>
+          </figure>
+          <button class="beats-arrow beats-arrow--next" type="button" aria-label="Next beat">›</button>
+        </div>
+        <div class="beats-thumbs" role="tablist" aria-label="Beat selector">
+          <button class="beats-thumb is-active" data-idx="0" role="tab" aria-selected="true" aria-label="Beat 1 — combat read">
+            <img src="decks/assets/beats/beat1-combat-read-2E.jpg" alt="">
+            <span>1 · Combat read</span>
+          </button>
+          <button class="beats-thumb" data-idx="1" role="tab" aria-selected="false" aria-label="Beat 2 — Forge Draft modal">
+            <img src="decks/assets/beats/beat2-forge-draft-2E.png" alt="">
+            <span>2 · Forge Draft</span>
+          </button>
+          <button class="beats-thumb" data-idx="2" role="tab" aria-selected="false" aria-label="Beat 3 — boss wave 5">
+            <img src="decks/assets/beats/beat3-boss-defeat-2E.png" alt="">
+            <span>3 · Boss defeat</span>
+          </button>
+          <button class="beats-thumb" data-idx="3" role="tab" aria-selected="false" aria-label="Beat 4 — Forge Wheel pull">
+            <img src="decks/assets/beats/beat4-forge-wheel-pull-2E.jpg" alt="">
+            <span>4 · Forge Wheel pull</span>
+          </button>
+          <button class="beats-thumb" data-idx="4" role="tab" aria-selected="false" aria-label="Beat 4b — Phase-1 part-pull">
+            <img src="decks/assets/beats/beat4b-forge-phase1-part-pull-2E.jpg" alt="">
+            <span>4b · Phase-1 part-pull</span>
+          </button>
+          <button class="beats-thumb" data-idx="5" role="tab" aria-selected="false" aria-label="Beat 5 — Hot Paladin cinematic">
+            <img src="decks/assets/beats/beat5-hot-paladin-cinematic-2E.png" alt="">
+            <span>5 · Hot Paladin</span>
+          </button>
+          <button class="beats-thumb" data-idx="6" role="tab" aria-selected="false" aria-label="Beat 6 — Elara signature mission">
+            <img src="decks/assets/beats/beat6-elara-signature-mission.png" alt="">
+            <span>6 · Elara signature</span>
+          </button>
+          <button class="beats-thumb" data-idx="7" role="tab" aria-selected="false" aria-label="Beat 7 — Elara talent tree">
+            <img src="decks/assets/beats/beat7-elara-talent-tree.png" alt="">
+            <span>7 · Elara talents</span>
+          </button>
+          <button class="beats-thumb" data-idx="8" role="tab" aria-selected="false" aria-label="Beat 8 — Elara gear screen">
+            <img src="decks/assets/beats/beat8-elara-gear-screen.png" alt="">
+            <span>8 · Elara gear</span>
+          </button>
+        </div>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="build" class="section section--build">
+      <div class="section-inner">
+        <h2>The Build</h2>
+        <div class="build-grid">
+          <ol class="forge-log" aria-label="Build milestones">
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-01</time>
+              <h3>Forked from Weaponcraft</h3>
+              <p>Hot-fork e958745. Frozen playtester build preserved at ../2_Weaponcraft_Godot/.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-01</time>
+              <h3>P1a — WeaponData unitary schema</h3>
+              <p>10/10 tests green. New combat-interface methods landed (get_atk / get_crit / get_ult_rate / get_all_tags / get_hp_bonus).</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-02</time>
+              <h3>Game Frame</h3>
+              <p>HOME → STAGE → BOSS loop playable end-to-end. 368 tests green.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-03</time>
+              <h3>Forge & Infuse Economy</h3>
+              <p>Shards-into-rarity + dupes-into-stars + 12-weapon catalog. 415 tests green.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-05</time>
+              <h3>Playtest Polish</h3>
+              <p>Full HP at stage start, softer stage curve, fixed weapon detail panel, Lich phase-2 nerfed. 423 tests green.</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-08</time>
+              <h3>Counter-build</h3>
+              <p>Bosses retagged Fire/Ice/Electric/Wind. Deterministic StageAffinity. Pre-stage briefing telegraphs. Defeat → loadout (no retry modal).</p>
+            </li>
+            <li class="forge-log__item" data-status="done">
+              <time>2026-06-08</time>
+              <h3>Ember Economy</h3>
+              <p>Ember = the pull currency (5/pull, earn from boss+win). Gems → forge currency (star-up). Dupes → gems. Save v3 → v4.</p>
+            </li>
+            <li class="forge-log__item" data-status="inflight">
+              <time>2026-06-09</time>
+              <h3>Catalyst</h3>
+              <p>Element-pair squad synergy. 6 FTUE compounds + 4 Earth-gated. MVP-6 simple (stat-modifier bag). Spec locked, plan locked, code in-flight.</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Spin Cinematic</h3>
+              <p>The last Forge Wheel polish: a 0.6s anvil-strike reel on pull, skippable.</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Hot Paladin (FM-8 anchor)</h3>
+              <p>Stage 2 scripted-defeat cinematic. Probes hero-bond + build-investment.</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Elara Signature Arc</h3>
+              <p>Spark-chain mechanic + small-B Meteor talent tree. FM-8 hero-bond probe (option B).</p>
+            </li>
+            <li class="forge-log__item" data-status="queued">
+              <time>—</time>
+              <h3>Stage 10 — Master Smith</h3>
+              <p>Phase-1 Forge Wheel unlocks: part-pull (150 gems) + 5-tier Forge Math + Earth runes.</p>
+            </li>
+          </ol>
+
+          <aside class="build-rail">
+            <h3>Live status</h3>
+            <dl class="kv">
+              <dt>Tests</dt><dd>~450 green</dd>
+              <dt>Branch</dt><dd>forgeloop/teammate-deck</dd>
+              <dt>Last commit</dt><dd>(manually updated)</dd>
+              <dt>Godot</dt><dd>4.6.2 Mono</dd>
+              <dt>Save schema</dt><dd>v4</dd>
+            </dl>
+            <p class="build-rail__hint">Static — owner edits when stale.</p>
+          </aside>
+        </div>
+
+        <details class="deep">
+          <summary>What shipped this session</summary>
+          <p>Counter-build + Ember economy merged to main 2026-06-08. Combat hero-card redesign (weapon row + circle-mask portrait) landed on the Catalyst branch 2026-06-09. Catalyst v1 design spec locked. CLAUDE.md + this deck spec authored.</p>
+        </details>
+      </div>
+    </section>
+    <svg class="divider-engraved" role="presentation" aria-hidden="true"><use href="#divider-engraved"/></svg>
+    <section id="next" class="section section--next">
+      <div class="section-inner">
+        <h2>What's Next</h2>
+        <div class="next-cols">
+          <div>
+            <h3>Build queue</h3>
+            <ol>
+              <li>Catalyst (in-flight)</li>
+              <li>Spin cinematic</li>
+              <li>Hot Paladin (S2 entry)</li>
+              <li>Elara signature arc + talents</li>
+              <li>Stage 10 — Phase 1 Forge Wheel</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Human gates</h3>
+            <ol>
+              <li>Bran 5-tier portrait eval (≥14/20 Honkai players)</li>
+              <li>"Catalyst" trademark check (USPTO + EUIPO)</li>
+              <li>10 h internal self-play log</li>
+            </ol>
+          </div>
+          <div>
+            <h3>Exit gates (any 2 of 3)</h3>
+            <ul class="checklist">
+              <li>D1 retention ≥ 35%</li>
+              <li>FM-8 hero-bond probe ≥ 6/10 on both axes</li>
+              <li>ad CPI ≤ 80% of Wittle benchmark</li>
+            </ul>
+          </div>
+        </div>
+        <p class="next-closing">Prototype-end gate at 2 of 3 + 10 h self-play. Kill triggers: D1 &lt; 30% · sat &lt; 6/10 · no creative within 30% of Wittle CPI · FM-8 &lt; 6/10 either axis.</p>
+        <nav class="next-links" aria-label="More to read">
+          <a href="STATUS.md">STATUS</a>
+          <a href="prototype-screen-beats.md">Storyboard</a>
+          <a href="superpowers/specs/2026-05-27-wittle-inversion-design.md">Design Spec v2.2</a>
+          <a href="superpowers/specs/2026-06-09-catalyst-design.md">Catalyst Spec</a>
+          <a href="../CLAUDE.md">CLAUDE.md</a>
+        </nav>
+        <p class="next-footer">⚒ WeaponForge prototype · forked 2026-06-01 · spec v2.2</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="decks/scrub.js" defer></script>
+</body>
+</html>

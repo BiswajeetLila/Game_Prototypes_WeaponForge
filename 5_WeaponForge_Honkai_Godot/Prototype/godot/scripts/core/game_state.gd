@@ -107,7 +107,7 @@ var unlocked_classes: Dictionary = {}  ## StringName cls -> true (shop class fil
 ## The deployable roster — the gacha pull pool keys off THIS (via fielded_classes),
 ## NOT unlocked_classes (which only fills as heroes unlock mid-combat). Q1 fix: at
 ## Home pre-battle only bran(warrior) was unlocked, so every pull was a warrior weapon.
-const FIELDED_HEROES: Array = [&"bran", &"elara", &"vex"]
+const FIELDED_HEROES: Array = [&"bran", &"elara", &"vex", &"paladin"]
 
 ## Back-compat shim. Reads first squad member (Bran in ultra-MVP). Writable
 ## for legacy callsites in tests that re-assign GameState.hero = HeroStateT.new(...).
@@ -207,6 +207,12 @@ func get_hero(hero_id: StringName):
 func fielded_classes() -> Dictionary:
 	var out: Dictionary = {}
 	for hid in FIELDED_HEROES:
+		## A6: paladin's class is fielded only after the Stage-3 Arcane Lich
+		## scripted-wipe sentinel (&"defeat_stage_3_paladin") flips
+		## AccountState.paladin_unlocked. While false the class stays out of the
+		## Forge Wheel pull pool (and out of the fielded-class set generally).
+		if hid == &"paladin" and not AccountState.paladin_unlocked:
+			continue
 		var d = heroes_by_id.get(hid)
 		if d != null:
 			out[d.cls] = true

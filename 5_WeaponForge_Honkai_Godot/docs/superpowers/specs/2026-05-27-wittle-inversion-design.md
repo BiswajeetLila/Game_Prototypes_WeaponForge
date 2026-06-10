@@ -1,5 +1,25 @@
 # WeaponCraft — Phase 1 Design Spec (Wittle Inversion)
 
+> ⚠ **DETAIL REFERENCE — NOT THE CURRENT DESIGN SSOT.** This spec captured
+> the foundational design at 2026-05-27 + small-edit follow-up 2026-05-28.
+> Substantive sections have been amended by later specs (economy pivot
+> 2026-06-06, counter-build 2026-06-08, Catalyst v1 2026-06-09). Where this
+> doc conflicts with the current consolidated GDD, **the GDD wins**:
+>
+> **Current consolidated design = [`docs/01_GDD.md`](../../01_GDD.md).**
+>
+> Specific amendments since v2.2:
+> - Starter weapons are now **non-elemental** (Catalyst v1 spec); v2.2 said
+>   distinct elements at FTUE.
+> - Catalyst stacking is **cap-1 stages 1-4, no-cap stages 5+** (was: no cap).
+> - Currency model is **Ember pull + gems forge + dupes-to-gems**
+>   (Ember-economy pivot 2026-06-08); v2.2 used a different layering.
+> - Stage shape: prototype runs **5-wave compressed** (boss W5); v2.2's
+>   15-wave shape is post-prototype.
+> - Catalyst effects narrowed to **MVP-6 simple stat-modifier bag** for v1.
+> - Save schema is **v4** (Ember + scripted-pull bookkeeping +
+>   counter-build state).
+
 **Date:** 2026-05-28
 **Author:** Brainstorm grill + competitor-landscape-synthesis integration
 **Version:** 2.2 — post-competitor-research integration

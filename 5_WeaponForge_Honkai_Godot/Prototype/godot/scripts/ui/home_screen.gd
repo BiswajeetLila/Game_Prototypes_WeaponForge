@@ -11,12 +11,15 @@
 ##     above the grid (compound names light up when P1e lands).
 extends Control
 
-const ROSTER_IDS: Array = [&"bran", &"elara", &"vex"]
+const ResolverT = preload("res://scripts/core/catalyst_resolver.gd")
+const CatalystDataT = preload("res://scripts/data/catalyst_data.gd")
+
+const ROSTER_IDS: Array = [&"bran", &"elara", &"vex", &"paladin"]   ## paladin = 4th roster slot, gated via AccountState.paladin_unlocked (Stage 3 defeat unlock — Combat C1)
 const GRID_COLS: int = 3
 const MIN_GRID_TILES: int = 6   ## dashed empties up to this count ("pull to fill")
 
 const ELEM_ICONS: Dictionary = {
-	&"fire": "🔥", &"ice": "❄", &"electric": "⚡", &"wind": "🌪", &"earth": "🪨",
+	&"fire": "🔥", &"ice": "❄", &"electric": "⚡", &"wind": "🌪", &"earth": "🪨", &"light": "☀",
 }
 const RARITY_COLORS: Array = [
 	Color(0.55, 0.55, 0.55), Color(0.35, 0.65, 1.0), Color(0.75, 0.4, 1.0),
@@ -88,12 +91,16 @@ func _build_ui() -> void:
 	_gems_label = Label.new()
 	_gems_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_gems_label.add_theme_font_size_override(&"font_size", 16)
+	_gems_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_gems_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(_gems_label)
 
 	_shard_label = Label.new()
 	_shard_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_shard_label.add_theme_font_size_override(&"font_size", 12)
 	_shard_label.modulate = Color(0.7, 0.85, 1.0)
+	_shard_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_shard_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(_shard_label)
 
 	var squad_title := Label.new()
@@ -111,11 +118,13 @@ func _build_ui() -> void:
 		v.add_child(row)
 		_hero_rows[id] = row
 
-	## Squad-level element trio (Catalyst readout — compound names land with P1e).
+	## Squad-level element trio (Catalyst readout — compound names land with the Catalyst build).
 	_squad_line = Label.new()
 	_squad_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_squad_line.add_theme_font_size_override(&"font_size", 12)
 	_squad_line.modulate = Color(0.8, 0.9, 1.0)
+	_squad_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_squad_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_child(_squad_line)
 
 	## Weapon detail — a FIXED opaque panel between the squad and the armory. It always
@@ -215,14 +224,14 @@ func _elem_icon(rune: StringName) -> String:
 	return String(ELEM_ICONS.get(rune, "•"))
 
 func _refresh() -> void:
-	_gems_label.text = "🔥 %d Ember   ·   💎 %d gems (forge)   ·   🏰 Stage %d" % [
+	_gems_label.text = "🔥 %d Ember  ·  💎 %d gems  ·  🏰 Stage %d" % [
 		AccountState.ember, AccountState.gems, AccountState.current_stage]
 	_battle_btn.text = "⚔ START BATTLE — STAGE %d" % AccountState.current_stage
 	var broke: bool = AccountState.ember < AccountState.PULL_COST_EMBER
 	_pull_btn.disabled = broke
-	_pull_btn.text = ("⚒ FORGE WHEEL — need %d🔥 Ember (boss/victory earns it!)" % AccountState.PULL_COST_EMBER if broke
-		else "⚒ FORGE WHEEL — PULL WEAPON (%d🔥 Ember)" % AccountState.PULL_COST_EMBER)
-	_shard_label.text = "🔧 %d Forge Shards   (tap a weapon, then Forge)" % AccountState.shards.size()
+	_pull_btn.text = ("⚒ FORGE WHEEL — need %d🔥 (boss+win)" % AccountState.PULL_COST_EMBER if broke
+		else "⚒ FORGE WHEEL — PULL (%d🔥)" % AccountState.PULL_COST_EMBER)
+	_shard_label.text = "🔧 %d Forge Shards  ·  tap a weapon, then Forge" % AccountState.shards.size()
 	_refresh_hero_rows()
 	_refresh_grid()
 	_refresh_squad_line()
@@ -236,6 +245,14 @@ func _refresh_hero_rows() -> void:
 		if data == null:
 			row.text = ""
 			continue
+		## C3: paladin starts locked; unlocks via Stage 3 defeat (Combat C1).
+		## Locked row is a disabled placeholder — no weapon, no class highlight.
+		if id == &"paladin" and not AccountState.paladin_unlocked:
+			row.text = "  🔒 Hot Paladin — locked"
+			row.disabled = true
+			row.modulate = Color(1, 1, 1, 0.55)
+			continue
+		row.disabled = false
 		var w = AccountState.get_equipped(id)
 		var weapon_str: String = "—  tap a weapon below to equip"
 		if w != null:
@@ -302,10 +319,32 @@ func _make_empty_tile() -> Panel:
 
 func _refresh_squad_line() -> void:
 	var icons: Array = []
+	var squad_weapons: Array = []
 	for id in ROSTER_IDS:
 		var w = AccountState.get_equipped(id)
 		icons.append(_elem_icon(w.rune) if w != null else "·")
-	_squad_line.text = "Squad elements:  %s  (Catalyst compounds land in P1e)" % "  ".join(icons)
+		if w != null:
+			squad_weapons.append(w)
+	var base: String = "Squad elements:  %s" % "  ".join(icons)
+	## Catalyst readout (spec §7.1): when >= 2 distinct elements form a defined
+	## pair, append the compound name + effect. Hidden otherwise (pre-pair state).
+	var resolved: Dictionary = ResolverT.resolve(squad_weapons, AccountState.current_stage)
+	var compound = resolved.get("compound", null)
+	## stage >= 5 (no-cap) — show the FIRST triggering compound (alpha priority).
+	if compound == null and not (resolved.get("compounds", []) as Array).is_empty():
+		compound = (resolved["compounds"] as Array)[0]
+	if compound == null:
+		_squad_line.text = base
+		return
+	var name_s: String = String(compound.get("display_name", ""))
+	var effect_s: String = _format_compound_effect(compound)
+	_squad_line.text = "%s\n💠 Catalyst: %s  (%s)" % [base, name_s, effect_s]
+
+## Renders a compound's modifier_bag as a human-readable effect string. Used by
+## the squad line + the pre-stage briefing dialog. Delegates to the canonical
+## formatter on CatalystData (C5 cleanup — consolidated three duplicate copies).
+func _format_compound_effect(rec: Dictionary) -> String:
+	return CatalystDataT.format_effect(rec)
 
 func _refresh_detail() -> void:
 	if _selected_idx < 0 or _selected_idx >= AccountState.owned_weapons.size():
@@ -425,6 +464,20 @@ func _open_briefing() -> void:
 	lines.append("Your squad: %s" % "  ".join(squad_elems.map(func(e): return ic.call(e))))
 	if b[&"minion_resist_brought"] or b[&"boss_resist_brought"]:
 		lines.append("⚠️ You're bringing a RESISTED element (½ damage on that target).")
+	## Catalyst v1 (spec §7.2): list every active compound + its effect string.
+	## Hidden when no compound triggers (0/1 element or three-same squad).
+	var squad_weapons: Array = []
+	for id in ROSTER_IDS:
+		var w = AccountState.get_equipped(id)
+		if w != null:
+			squad_weapons.append(w)
+	var resolved: Dictionary = ResolverT.resolve(squad_weapons, stage)
+	var actives: Array = resolved.get("compounds", [])
+	if not actives.is_empty():
+		lines.append("")
+		lines.append("💠 ACTIVE CATALYST")
+		for c in actives:
+			lines.append("  • %s — %s" % [c.get("display_name", ""), _format_compound_effect(c)])
 	_briefing.dialog_text = "\n".join(lines)
 	_briefing.popup_centered()
 

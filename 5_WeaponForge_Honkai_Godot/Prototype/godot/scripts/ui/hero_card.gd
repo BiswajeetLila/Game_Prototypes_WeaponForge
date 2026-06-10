@@ -17,6 +17,27 @@ signal selected(hero_id: StringName)
 @onready var _hp_text: Label = %HpText
 @onready var _ult_bar: ProgressBar = %UltBar
 @onready var _ult_btn: Button = %UltBtn
+@onready var _weapon_icon: Panel = %WeaponIcon
+@onready var _weapon_label: Label = %WeaponLabel
+@onready var _pips: Label = %Pips
+
+const ELEM_EMOJI: Dictionary = {
+	&"fire": "🔥", &"ice": "❄", &"electric": "⚡", &"wind": "🌪", &"earth": "🪨",
+}
+const RARITY_BG: Array = [
+	Color(0.35, 0.35, 0.35, 1.0),   ## common  — gray
+	Color(0.22, 0.42, 0.65, 1.0),   ## rare    — blue
+	Color(0.48, 0.25, 0.66, 1.0),   ## epic    — purple
+	Color(0.65, 0.49, 0.16, 1.0),   ## legend  — amber
+	Color(0.65, 0.19, 0.19, 1.0),   ## mythic  — red
+]
+const RARITY_BORDER: Array = [
+	Color(0.62, 0.62, 0.62, 1.0),
+	Color(0.42, 0.72, 1.00, 1.0),
+	Color(0.78, 0.46, 1.00, 1.0),
+	Color(1.00, 0.78, 0.30, 1.0),
+	Color(1.00, 0.36, 0.36, 1.0),
+]
 
 ## Ult-ready button styling — static yellow per user feedback
 ## ('PLEASE don't have the ult keep increasing/decreasing in size, just have it
@@ -64,14 +85,34 @@ func _ready() -> void:
 	GameState.hero_hp_changed.connect(_on_hp_changed)
 	GameState.hero_ult_changed.connect(_on_ult_changed)
 	GameState.weapon_changed.connect(_on_weapon_changed)
+	## Unitary-weapon signal (new system) — fires when the equipped weapon is
+	## swapped / forged. Same handler; legacy `weapon_changed` stays connected
+	## so the test-shop / merge paths keep updating the card too.
+	if GameState.has_signal(&"weapon_data_changed"):
+		GameState.weapon_data_changed.connect(_on_weapon_changed)
+	## Forge Draft -> pips reflect run_card_count.
+	var fd = get_node_or_null(^"/root/ForgeDraft")
+	if fd != null and fd.has_signal(&"draft_applied"):
+		fd.draft_applied.connect(func(_c): _refresh_weapon_row())
 	_ult_btn.pressed.connect(_on_ult_btn_pressed)
 	gui_input.connect(_on_gui_input)
 	_build_styles()
 	_apply_selection_style()
+	_apply_portrait_circle_mask()
 	_build_info_btn()
 	_build_hp_delta_bar()
 	if _hero_id != &"":
 		_refresh_all()
+
+## Circle-mask shader on the portrait — gives the headshot-in-circle look
+## like the reference cards (face crop is best-effort against the full-body
+## source art; replace with headshot textures later for a tighter fit).
+func _apply_portrait_circle_mask() -> void:
+	if _portrait == null:
+		return
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://scripts/ui/circle_mask.gdshader")
+	_portrait.material = mat
 
 ## Juice PR2: wraps the existing HpBar in a Control slot + adds an HpBarDelta
 ## sibling drawn behind the main bar. Both share PRESET_FULL_RECT inside the
@@ -207,7 +248,57 @@ func _refresh_all() -> void:
 	_ult_bar.max_value = float(Combat.ULT_GAUGE_MAX)
 	_ult_bar.value = float(hero.ult_gauge)
 	_refresh_ult_btn()
+	_refresh_weapon_row()
 	modulate = Color(0.5, 0.5, 0.5, 0.8) if hero.is_dead else Color.WHITE
+
+## Weapon row: a placeholder rarity-colored box + element emoji on the left,
+## "name · ATK N" in the middle, run-card pips on the right. Replaces the
+## former main.gd bottom strip (which clipped on narrow viewports).
+func _refresh_weapon_row() -> void:
+	if _weapon_label == null:
+		return
+	var hero = _hero()
+	if hero == null:
+		_weapon_label.text = "— no weapon"
+		_pips.text = "○○○"
+		_set_weapon_icon(&"", 0)
+		return
+	var rune: StringName = &""
+	var rarity_idx: int = 0
+	var wname: String = "— no weapon"
+	var atk: int = 0
+	if hero.weapon_data != null:
+		wname = hero.weapon_data.name
+		atk = hero.eff_atk()
+		rune = hero.weapon_data.rune if &"rune" in hero.weapon_data else &""
+		rarity_idx = hero.weapon_data.rarity_idx if &"rarity_idx" in hero.weapon_data else 0
+	elif hero.weapon != null:   ## legacy socket-weapon fallback
+		wname = String(hero.weapon.get(&"display_name")) if hero.weapon.get(&"display_name") != null else "weapon"
+		atk = hero.eff_atk() if hero.has_method(&"eff_atk") else 0
+	_weapon_label.text = "%s  ATK %d" % [wname, atk]
+	var pip_count: int = clampi(hero.run_card_count if &"run_card_count" in hero else 0, 0, 3)
+	_pips.text = "●".repeat(pip_count) + "○".repeat(3 - pip_count)
+	_set_weapon_icon(rune, rarity_idx)
+
+func _set_weapon_icon(rune: StringName, rarity_idx: int) -> void:
+	if _weapon_icon == null:
+		return
+	var r: int = clampi(rarity_idx, 0, RARITY_BG.size() - 1)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = RARITY_BG[r]
+	sb.border_color = RARITY_BORDER[r]
+	sb.border_width_left = 1
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_left = 4
+	sb.corner_radius_bottom_right = 4
+	_weapon_icon.add_theme_stylebox_override(&"panel", sb)
+	var emoji_node = _weapon_icon.get_node_or_null(^"WeaponIconEmoji")
+	if emoji_node is Label:
+		emoji_node.text = String(ELEM_EMOJI.get(rune, "·"))
 
 func _refresh_ult_btn() -> void:
 	var hero = _hero()

@@ -6,11 +6,11 @@
 script = ExtResource("1")
 id = &"boss_arcane_lich"
 name = "Arcane Lich"
-hp_base = 600
+hp_base = 300
 hp_per_wave = 0
 dmg_base = 0
 dmg_per_wave = 0.0
 is_boss = true
-atk_override = 36
+atk_override = 18
 weak_tag = &"light"
 resist_tag = &"earth"

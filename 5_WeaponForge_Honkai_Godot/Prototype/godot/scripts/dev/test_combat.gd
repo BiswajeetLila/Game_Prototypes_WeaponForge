@@ -782,10 +782,10 @@ func _test_boss_iron_golem_tres_loads() -> void:
 func _test_boss_arcane_lich_tres_loads() -> void:
 	var def = GameState.get_enemy_def(&"boss_arcane_lich")
 	var ok: bool = def != null \
-		and def.hp_base == 600 \
+		and def.hp_base == 300 \
 		and bool(def.get(&"is_boss")) == true \
-		and int(def.get(&"atk_override")) == 36
-	_check("boss_arcane_lich tres: hp=600 atk=36 is_boss=true",
+		and int(def.get(&"atk_override")) == 18
+	_check("boss_arcane_lich tres: hp=300 atk=18 is_boss=true  (HP-50%% + dmg-50%% nerfs 2026-06-09)",
 		ok, "def=%s" % str(def))
 
 func _test_revive_squad_for_retry_resets_all() -> void:
@@ -979,31 +979,33 @@ func _test_iron_golem_aoe_every_4_ticks() -> void:
 
 func _test_arcane_lich_phase1_atk_bump_below_66pct() -> void:
 	## Lich at hp=510/max=850 (60% < 66%). On first tick, phase 1 fires: atk goes
-	## floor(36*1.2) = 43. Persists on subsequent ticks (one-shot via phase_1_applied).
+	## floor(18*1.2) = 21. Persists on subsequent ticks (one-shot via phase_1_applied).
+	## (atk_override halved 36 -> 18 in the 2026-06-09 damage nerf.)
 	_fresh_session_with_weapon([])
 	GameState.set_wave(15)
 	Combat.start_wave(15, false)
-	_force_enemies([{"id": &"boss_arcane_lich", "hp": 510, "max_hp": 850, "is_boss": true, "atk": 36, "weak": &"", "resist": &""}])
+	_force_enemies([{"id": &"boss_arcane_lich", "hp": 510, "max_hp": 850, "is_boss": true, "atk": 18, "weak": &"", "resist": &""}])
 	GameState.hero.hp = 9999
 	GameState.hero.max_hp = 9999
 	Combat.step()
 	var atk_after_t1: int = GameState.enemies[0].atk
 	Combat.step()
 	var atk_after_t2: int = GameState.enemies[0].atk
-	_check("arcane_lich phase 1 (<66%%): atk floor(36*1.2)=43, persists",
-		atk_after_t1 == 43 and atk_after_t2 == 43,
-		"atk_t1=%d atk_t2=%d (expected 43,43)" % [atk_after_t1, atk_after_t2])
+	_check("arcane_lich phase 1 (<66%%): atk floor(18*1.2)=21, persists",
+		atk_after_t1 == 21 and atk_after_t2 == 21,
+		"atk_t1=%d atk_t2=%d (expected 21,21)" % [atk_after_t1, atk_after_t2])
 	Combat.stop()
 
 func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
 	## Lich at hp=255/max=850 (30% < 33%). phase_1_applied=true (skip phase 1).
 	## Elara + Vex pre-killed so single-target attack lands on Bran. On tick 1
-	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.30).
-	## Bran alone: takes 43 (single) + 36 (AoE = floor(120*0.30)) = 79 hp loss.
+	## phase 2 fires: AoE hits each alive hero for floor(max_hp * 0.15).
+	## Bran alone: takes 21 (single) + 18 (AoE = floor(120*0.15)) = 39 hp loss.
+	## (atk 36->18 + AOE_RATIO 0.30->0.15 per main's 2026-06-09 damage nerf.)
 	##
-	## C1: lich at 30% HP is past the scripted 50% descent gate. Pre-set the
-	## sentinel so the scripted-wipe trigger short-circuits — phase 2 is the
-	## "after the descent, retry path" scenario.
+	## Scripted-pacing-rework C1: lich at 30% HP is past the scripted 50%
+	## descent gate. Pre-set the sentinel so the scripted-wipe trigger
+	## short-circuits — phase 2 is the "after the descent, retry path" scenario.
 	GameState.new_session()
 	AccountState.scripted_pulls_seen = [&"defeat_stage_3_paladin"]
 	AccountState.paladin_unlocked = true
@@ -1022,15 +1024,15 @@ func _test_arcane_lich_phase2_aoe_below_33pct() -> void:
 		"hp": 255,
 		"max_hp": 850,
 		"is_boss": true,
-		"atk": 43,
+		"atk": 21,
 		"phase_1_applied": true,
 		"weak": &"",
 		"resist": &"",
 	}])
 	Combat.step()
 	var bran_loss: int = bran_start - bran.hp
-	_check("arcane_lich phase 2 (<33%%): Bran-solo loses 43 (single) + 36 (AoE 30%%) = 79",
-		bran_loss == 79, "loss=%d (expected 79)" % bran_loss)
+	_check("arcane_lich phase 2 (<33%%): Bran-solo loses 21 (single) + 18 (AoE 15%%) = 39",
+		bran_loss == 39, "loss=%d (expected 39)" % bran_loss)
 	Combat.stop()
 
 ## ---------- Test helpers ----------

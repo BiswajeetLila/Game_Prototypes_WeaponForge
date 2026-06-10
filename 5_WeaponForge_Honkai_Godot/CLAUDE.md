@@ -12,8 +12,11 @@ Agent-facing standing rules. Auto-loaded for any session under
 
 - **Active dev folder:** `5_WeaponForge_Honkai_Godot/` (this folder).
 - **Active Godot project:** `Prototype/godot/project.godot` (Godot **4.6.2 Mono**).
-- **Frozen playtester build:** `../2_Weaponcraft_Godot/` — never develop
-  there. Open only to demo. See its `FROZEN-2026-06-01.md`.
+- **`../2_Weaponcraft_Godot/`** — **auxiliary dev folder (unfrozen 2026-06-10).**
+  Originally the playtester build (forked into 5_ on 2026-06-01). Now open
+  for new work — mockups, research, gameplay-mockup videos, beat-renders,
+  etc. Still NOT the primary Godot project; **5_ is the active dev folder**.
+  Don't introduce new game code in 2_; keep new code in 5_.
 - **Godot version is pinned.** Do not upgrade without owner sign-off —
   `.import` UID drift breaks the asset graph repo-wide.
 
@@ -156,7 +159,9 @@ Skip steps only on trivial (single-file mechanical) work or owner waiver.
 
 ## 12. Don't list
 
-- ❌ Don't develop in `2_Weaponcraft_Godot/` (frozen).
+- ❌ Don't introduce new GAME CODE in `2_Weaponcraft_Godot/` (5_ is the
+  active Godot project). Mockups / research / docs are fine post-unfreeze
+  (2026-06-10).
 - ❌ Don't create `.claude/worktrees/*` (owner pref).
 - ❌ Don't write `user://account.json` from headless.
 - ❌ Don't `git add -A` (catches `.import` autosave noise).

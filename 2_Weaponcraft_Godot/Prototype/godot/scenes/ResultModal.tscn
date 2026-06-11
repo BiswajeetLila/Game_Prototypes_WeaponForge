@@ -56,6 +56,7 @@ theme_override_constants/margin_bottom = 14
 
 [node name="HeroRows" type="VBoxContainer" parent="Margin/VBox/RewardPanel/RewardMargin"]
 unique_name_in_owner = true
+alignment = 1
 layout_mode = 2
 theme_override_constants/separation = 10
 

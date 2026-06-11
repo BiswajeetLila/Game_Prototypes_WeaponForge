@@ -23,3 +23,13 @@
 - [04:30] Plan3 COMPLETE via sonnet (96k tokens): ensure_defaults (Bran+Elara owned), new_session(squad) param, in-run W3/W6 unlocks REMOVED, WC_AUTOSHOT capture tool, Home.tscn+home.gd (roster grid/squad-select/BATTLE). Commits b56c3b5/a0da58c/c5f294c/5e82a29. Sweep 195/195.
 - [04:35] VISUAL QC (home_render.png vs home_01 art): structure+palette+logic correct (real Total Lv, owned-only cards, locked ?, disabled BATTLE). Nits logged: elara sprite purple vs ice-blue target (asset regen task, not code), dead vertical gap mid-screen (polish later). VERDICT: pass P0 bar.
 - [04:36] DECISION: scripted pull triggers on FIRST W5 boss clear (not full-stage clear) — demoable in ~2min, Vex joins ROSTER (not the locked in-run squad), visible on Home after run. Result screen shows run XP + level-ups; CONTINUE -> Home. Scout intel = Home strip reading first-boss weak_tag (1-of-3 reveal per spec §6).
+- [05:40] Plan4 COMPLETE via sonnet (127k tokens): run-XP tracking + result_rows + account flags (save schema v2 w/ v1 migration) + maybe_grant_first_pull; rich Victory screen; PullOverlay (Vex reveal, W5 first-clear trigger); scout-intel strip on Home; damage-pop font scaling; ShotResult/ShotPull render rigs. Commits 3d6f53b/8a8d58d/64ec187/56b1b48. Deviation (agent, sound): HeroProgress via preload not class_name in result_modal (cold-load registry race — matches codebase pattern).
+- [05:50] Visual QC round 2: result_render (VICTORY + Lv 1->2 + LEVEL UP! + XP bars) ✅ · pull_render (NEW HERO! card + stars + tap hint) ✅ · home_render2 (scout strip live) ✅. Fixed result rows top-pinned -> centered (HeroRows alignment=1). Boot validation: default boot lands on Home ✅, Main.tscn loads w/ PullOverlay ✅, all exit 0.
+- [05:55] FINAL SWEEP: 210/210 green across 7 suites. Night run complete — morning report follows.
+
+## Known nits (morning polish list — none blocking)
+1. Elara + Vex portraits are the legacy purple-mage / green-hood sprites; art targets (home_01/pull_01) show ice-blue mage + violet rogue. Asset regen task (nano-banana edit vs ref), not code.
+2. Home: vertical gap between roster grid and FORM SQUAD on tall screens (grid expands). Cosmetic.
+3. LEVEL UP! gold-on-parchment contrast slightly low in victory rows.
+4. Result "+300 XP" repeats per row (uniform award) — fine, but a single "+300 XP each" header would read cleaner.
+5. Out-of-scope root-research deletions remain uncommitted in the worktree (permission guard) — user decision.

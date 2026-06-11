@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+AccountState="*res://scripts/core/account_state.gd"
 GameState="*res://scripts/core/game_state.gd"
 ScreenshotHelper="*res://scripts/core/screenshot_helper.gd"
 RNG="*res://scripts/core/rng.gd"

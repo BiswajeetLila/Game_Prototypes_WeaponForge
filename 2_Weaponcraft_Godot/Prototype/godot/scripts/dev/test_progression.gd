@@ -17,6 +17,7 @@ func _ready() -> void:
 	_test_level_for_xp_thresholds()
 	_test_cumulative_and_to_next()
 	_test_stat_mult()
+	_test_account_state()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -45,6 +46,42 @@ func _test_stat_mult() -> void:
 	_check("stat_mult(2) == 1.05", is_equal_approx(HeroProgressT.stat_mult(2), 1.05), "got %f" % HeroProgressT.stat_mult(2))
 	_check("stat_mult(20) == 1.95", is_equal_approx(HeroProgressT.stat_mult(20), 1.95), "got %f" % HeroProgressT.stat_mult(20))
 	_check("stat_mult(99) clamps to 1.95", is_equal_approx(HeroProgressT.stat_mult(99), 1.95), "got %f" % HeroProgressT.stat_mult(99))
+
+func _test_account_state() -> void:
+	## AccountState is an autoload; reach it by global name.
+	var acc = get_node("/root/AccountState")
+	if acc == null:
+		_check("AccountState autoload present", false, "node /root/AccountState missing")
+		return
+	## Use a test-only save path so we never clobber a real player save.
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+
+	_check("fresh xp == 0", acc.get_xp(&"bran") == 0, "got %d" % acc.get_xp(&"bran"))
+	_check("fresh level == 1", acc.get_level(&"bran") == 1, "got %d" % acc.get_level(&"bran"))
+	_check("fresh not owned after reset", acc.is_owned(&"bran") == false, "owned=%s" % acc.is_owned(&"bran"))
+
+	var new_level: int = acc.add_hero_xp(&"bran", 1500)
+	_check("add 1500 xp -> level 2", new_level == 2, "got %d" % new_level)
+	_check("stat_mult tracks level", is_equal_approx(acc.stat_mult(&"bran"), 1.05), "got %f" % acc.stat_mult(&"bran"))
+
+	acc.award_squad_xp([&"elara", &"vex"], 100)
+	_check("award_squad_xp elara +100", acc.get_xp(&"elara") == 100, "got %d" % acc.get_xp(&"elara"))
+	_check("award_squad_xp vex +100", acc.get_xp(&"vex") == 100, "got %d" % acc.get_xp(&"vex"))
+
+	acc.set_owned(&"bran", true)
+	## Round-trip: save, wipe in-memory, load back.
+	acc.save_account()
+	acc.reset()
+	_check("after reset xp gone", acc.get_xp(&"bran") == 0, "got %d" % acc.get_xp(&"bran"))
+	acc.load_account()
+	_check("after load xp restored (1500)", acc.get_xp(&"bran") == 1500, "got %d" % acc.get_xp(&"bran"))
+	_check("after load owned restored", acc.is_owned(&"bran") == true, "owned=%s" % acc.is_owned(&"bran"))
+
+	## Cleanup the test save file + in-memory state.
+	if FileAccess.file_exists("user://account_test.json"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://account_test.json"))
+	acc.reset()
 
 ## ---------- helpers ----------
 

@@ -69,6 +69,9 @@ const TOTAL_WAVES: int = 15  ## Stage D — 15-wave stage with bosses at W5/W10/
 ## boss-only spawn (1 enemy via id lookup). Keep in sync with boss tres ids.
 const BOSS_WAVES: Array = [5, 10, 15]
 
+## XP granted to every deployed hero per cleared wave (spec §9.4 starting value).
+const XP_PER_WAVE: int = 100
+
 var wave: int = 1
 var gold: int = STARTING_GOLD
 
@@ -209,6 +212,12 @@ func revive_squad_for_retry() -> void:
 		h.last_target_name = &""
 		emit_signal("hero_hp_changed", h.data.id)
 		emit_signal("hero_ult_changed", h.data.id)
+
+## Persistent progression: every deployed hero earns XP per cleared wave.
+## Saves immediately so progress survives app close mid-stage.
+func award_wave_xp() -> void:
+	AccountState.award_squad_xp(squad_order, XP_PER_WAVE)
+	AccountState.save_account()
 
 ## Instantiates a HeroState from the catalog, appends to squad_order, marks the
 ## hero's class as unlocked (widens shop pool), and emits hero_unlocked.

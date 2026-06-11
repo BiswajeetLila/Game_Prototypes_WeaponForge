@@ -59,6 +59,7 @@ func _on_wave_start_requested() -> void:
 	Combat.start_wave(GameState.wave)
 
 func _on_wave_cleared(wave: int) -> void:
+	GameState.award_wave_xp()
 	var reward: int = 5 + wave * 2
 	_notifications.show_card(
 		"✓ WAVE %d CLEAR" % wave,

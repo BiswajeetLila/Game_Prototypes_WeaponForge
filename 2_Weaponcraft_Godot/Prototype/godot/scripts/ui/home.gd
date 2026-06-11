@@ -25,10 +25,12 @@ var _roster_cards: Dictionary = {}  ## StringName -> Button
 @onready var _squad_row: HBoxContainer = %SquadRow
 @onready var _battle_btn: Button = %BattleBtn
 @onready var _total_lv: Label = %TotalLv
+@onready var _scout_label: Label = %ScoutLabel
 
 func _ready() -> void:
 	_style_static()
 	_build_roster()
+	_scout_label.text = "🔭 " + GameState.scout_intel()
 	_refresh()
 	_battle_btn.pressed.connect(_on_battle)
 

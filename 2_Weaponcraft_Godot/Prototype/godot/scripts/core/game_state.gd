@@ -322,6 +322,15 @@ func result_rows() -> Array:
 		})
 	return rows
 
+## Pre-run scout report: reveals the FIRST boss's weakness only (1-of-3
+## telegraph per design spec §6). Reads the W5 boss definition.
+func scout_intel() -> String:
+	var first_boss_id: StringName = &"boss_slime_king"
+	var def = get_enemy_def(first_boss_id)
+	if def == null or String(def.weak_tag) == "":
+		return "Scouts report: a boss guards Wave 5."
+	return "Scouts report: %s at Wave 5 — weak to %s!" % [def.name, String(def.weak_tag).to_upper()]
+
 ## First-ever W5 boss clear grants Vex (the scripted pull beat). Returns true
 ## exactly once per account; caller shows the PullOverlay on true.
 func maybe_grant_first_pull(wave_num: int) -> bool:

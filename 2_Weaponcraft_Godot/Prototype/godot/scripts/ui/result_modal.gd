@@ -6,6 +6,8 @@ extends ColorRect
 
 signal restart_requested
 
+const HeroProgressT = preload("res://scripts/core/hero_progress.gd")
+
 const COL_PANEL := Color("6b4a32")
 const COL_PANEL_BORDER := Color("4a3826")
 const COL_CARD := Color("e8d0a9")
@@ -109,8 +111,8 @@ func _make_row(row: Dictionary) -> Control:
 	bar.show_percentage = false
 	var lv: int = int(row["lv_to"])
 	var xp: int = AccountState.get_xp(row["id"])
-	var into: int = xp - HeroProgress.cumulative_xp_for_level(lv)
-	var span: int = HeroProgress.xp_to_next(lv)
+	var into: int = xp - HeroProgressT.cumulative_xp_for_level(lv)
+	var span: int = HeroProgressT.xp_to_next(lv)
 	bar.max_value = float(span) if span > 0 else 1.0
 	bar.value = float(into) if span > 0 else 1.0
 	var fill := StyleBoxFlat.new()

@@ -290,7 +290,7 @@ func _on_hero_hit_enemy(_hero_id: StringName, enemy_idx: int, dmg: int, source: 
 	var origin: Vector2 = card.global_position + Vector2(card.size.x * 0.5, 0)
 	_spawn_pop(origin,
 		"%s%d" % [String(profile.prefix), dmg],
-		profile.color, int(profile.font_pt))
+		profile.color, int(profile.font_pt) + clampi(dmg / 4, 0, 12))
 
 func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
 	SignalTrace.note(&"battleview._on_enemy_hit_hero", {
@@ -308,7 +308,7 @@ func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
 			_flash_sprite_in(_hero_anchor, float(profile.flash_dur))
 		var origin: Vector2 = _hero_anchor.global_position + Vector2(_hero_anchor.size.x * 0.5, 0)
 		_spawn_pop(origin, "%s%d" % [String(profile.prefix), dmg],
-			profile.color, int(profile.font_pt))
+			profile.color, int(profile.font_pt) + clampi(dmg / 4, 0, 12))
 
 func _on_ult_fired(_hero_id: StringName, total_dmg: int) -> void:
 	SignalTrace.note(&"battleview._on_ult_fired", {"hero": _hero_id, "total": total_dmg})
@@ -317,7 +317,7 @@ func _on_ult_fired(_hero_id: StringName, total_dmg: int) -> void:
 	var profile: Dictionary = JuiceConfigT.PROFILES[&"ult"]
 	var origin: Vector2 = _enemy_row.global_position + Vector2(_enemy_row.size.x * 0.5, 0)
 	_spawn_pop(origin, "%s%d" % [String(profile.prefix), total_dmg],
-		profile.color, int(profile.font_pt) + 4)
+		profile.color, int(profile.font_pt) + 4 + clampi(total_dmg / 4, 0, 12))
 
 ## Juice PR2: spawn a one-shot element-burst sprite at the enemy card's
 ## screen-center. Parents to BattleView root with top_level=true so the

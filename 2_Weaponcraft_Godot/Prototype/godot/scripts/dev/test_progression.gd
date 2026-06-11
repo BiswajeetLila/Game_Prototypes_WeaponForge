@@ -25,6 +25,7 @@ func _ready() -> void:
 	_test_account_defaults()
 	_test_new_session_squad_param()
 	_test_home_squad_selection()
+	_test_scout_intel()
 	_test_run_xp_tracking()
 	_test_flags_roundtrip()
 	_test_first_pull_grant()
@@ -185,6 +186,11 @@ func _test_account_defaults() -> void:
 	_check("defaults: elara owned", acc.is_owned(&"elara") == true, "")
 	_check("defaults: vex NOT owned", acc.is_owned(&"vex") == false, "")
 	acc.reset()
+
+func _test_scout_intel() -> void:
+	var gs = get_node("/root/GameState")
+	var intel: String = gs.scout_intel()
+	_check("scout intel mentions first boss weakness", intel.contains("ICE"), "got %s" % intel)
 
 func _test_run_xp_tracking() -> void:
 	var acc = get_node("/root/AccountState")

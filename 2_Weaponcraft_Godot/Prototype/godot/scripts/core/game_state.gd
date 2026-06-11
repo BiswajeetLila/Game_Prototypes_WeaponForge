@@ -222,7 +222,7 @@ func unlock_hero(hero_id: StringName) -> void:
 	if data == null:
 		push_error("GameState.unlock_hero: missing HeroData for %s" % hero_id)
 		return
-	var hs = HeroStateT.new(data)
+	var hs = HeroStateT.new(data, AccountState.stat_mult(hero_id))
 	heroes[hero_id] = hs
 	squad_order.append(hero_id)
 	unlocked_classes[data.cls] = true

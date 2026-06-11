@@ -19,6 +19,7 @@ func _ready() -> void:
 	_test_stat_mult()
 	_test_account_state()
 	_test_hero_state_level_mult()
+	_test_unlock_applies_level_mult()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -101,6 +102,18 @@ func _test_hero_state_level_mult() -> void:
 	var h2 = HeroStateT.new(bran_data, 1.5)
 	_check("mult 1.5: max_hp == round(120*1.5)=180", h2.max_hp == 180, "got %d" % h2.max_hp)
 	_check("mult 1.5: base_atk == round(6*1.5)=9", h2.base_atk() == 9, "got %d" % h2.base_atk())
+
+func _test_unlock_applies_level_mult() -> void:
+	var acc = get_node("/root/AccountState")
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+	acc.add_hero_xp(&"bran", 1000)  ## level 2 -> mult 1.05
+	var gs = get_node("/root/GameState")
+	gs.new_session()
+	var bran = gs.get_hero(&"bran")
+	_check("unlock_hero applies level mult: bran max_hp 126", bran.max_hp == 126, "got %d" % bran.max_hp)
+	acc.reset()
+	gs.new_session()
 
 ## ---------- helpers ----------
 

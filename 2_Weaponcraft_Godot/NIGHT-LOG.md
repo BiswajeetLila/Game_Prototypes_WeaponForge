@@ -16,3 +16,7 @@
 - [02:41] Budget decision: Plan1 T1-T3 executed by ONE sonnet subagent (same files, sequential, plan self-contained) instead of 3 dispatches. Main loop verifies + runs T4 regression.
 - [03:05] Plan1 COMPLETE. T1-T3 via sonnet subagent (64k tokens): hero_progress.gd (16 checks), AccountState autoload + JSON round-trip (26 cum), HeroState level_mult back-compat (30 cum). Commits 20c23a8/6fce7ae/a5845f5.
 - [03:10] T4: added headless auto-quit to 5 GUI-run suites (test-infra, TDD-exempt). FULL SWEEP: 184/184 green across 7 suites, exit 0. Test corpus now one-command CI-able. Pushed.
+- [03:45] Plan2 COMPLETE via sonnet (85k tokens): hermetic test resets, unlock_hero spawns at persistent level, combat+hero-card read base_atk(), wave clears award 100 XP/hero + save. Commits 4cb162c/c4281ee/a2297ff/e1662f0. Sweep 188/188. Progression is LIVE in-game.
+- [03:50] DECISION: skip pixel-cutting UI chrome from AI screens (baked text/perspective risk). HOME built from existing portraits + StyleBox theme matched to art palette; art = layout/palette truth. Cut pieces only if something specific is missing.
+- [03:51] DECISION: ONE Home screen (roster grid + FORM SQUAD row + BATTLE) per home_01 art; separate squad_01 screen redundant -> dropped for P0. Boot -> Home.tscn; BATTLE -> new_session(selected squad) -> Main.tscn. In-run W3/W6 unlocks removed (squad-select replaces, per spec).
+- [03:52] DECISION: fresh account = Bran+Elara owned; Vex NOT owned until the scripted pull beat (post-first-victory, pull_01 art) -> account flag pull_seen. Matches pitch beat 2.

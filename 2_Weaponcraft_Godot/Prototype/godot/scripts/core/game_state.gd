@@ -146,7 +146,7 @@ func _load_dir(dir_path: String, _expect_class: String) -> Dictionary:
 	return out
 
 ## Called by Main at session start AND on restart-after-wipe / restart-after-clear.
-func new_session() -> void:
+func new_session(squad: Array = [&"bran"]) -> void:
 	wave = 1
 	gold = STARTING_GOLD
 	shop_parts = []
@@ -162,8 +162,10 @@ func new_session() -> void:
 	unlocked_classes = {}
 	hero = null
 
-	## Bran starts unlocked. Elara + Vex unlock on wave 2 + 4 clear (see Main).
-	unlock_hero(&"bran")
+	## Deploy exactly the selected squad (Home screen passes the picked ids).
+	## Default keeps legacy single-Bran behavior for tests/dev scenes.
+	for hero_id in squad:
+		unlock_hero(hero_id)
 
 	emit_signal("gold_changed", gold)
 	emit_signal("wave_changed", wave)

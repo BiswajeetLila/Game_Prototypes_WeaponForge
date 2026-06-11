@@ -54,8 +54,6 @@ func _ready() -> void:
 	_test_h_iron_edge_cost_4()
 	_test_p_steel_grip_cost_4()
 	_test_r_pierce_cost_4()
-	_test_elara_unlock_wave_constant_3()
-	_test_vex_unlock_wave_constant_6()
 	## Stage D — bosses + retry + 15-wave balance.
 	_test_enemy_data_is_boss_default_false()
 	_test_boss_slime_king_tres_loads()
@@ -722,18 +720,6 @@ func _test_r_pierce_cost_4() -> void:
 	_check("r_pierce.cost == 4 (explicit override)",
 		def != null and def.cost == 4,
 		"got %s" % str(def.cost if def else "null"))
-
-func _test_elara_unlock_wave_constant_3() -> void:
-	const MainT = preload("res://scripts/ui/main.gd")
-	var v = MainT.ELARA_UNLOCK_WAVE
-	_check("Main.ELARA_UNLOCK_WAVE == 3",
-		v == 3, "got %s" % str(v))
-
-func _test_vex_unlock_wave_constant_6() -> void:
-	const MainT = preload("res://scripts/ui/main.gd")
-	var v = MainT.VEX_UNLOCK_WAVE
-	_check("Main.VEX_UNLOCK_WAVE == 6",
-		v == 6, "got %s" % str(v))
 
 ## ---------- Stage D — bosses + retry + 15-wave balance ----------
 

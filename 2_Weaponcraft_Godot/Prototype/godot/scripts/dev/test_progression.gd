@@ -23,6 +23,7 @@ func _ready() -> void:
 	_test_combat_reads_scaled_atk()
 	_test_award_wave_xp()
 	_test_account_defaults()
+	_test_new_session_squad_param()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -144,6 +145,14 @@ func _test_unlock_applies_level_mult() -> void:
 	_check("unlock_hero applies level mult: bran max_hp 126", bran.max_hp == 126, "got %d" % bran.max_hp)
 	acc.reset()
 	gs.new_session()
+
+func _test_new_session_squad_param() -> void:
+	var gs = get_node("/root/GameState")
+	gs.new_session([&"bran", &"elara"])
+	_check("squad param: order is [bran, elara]",
+		gs.squad_order == [&"bran", &"elara"], "got %s" % str(gs.squad_order))
+	gs.new_session()
+	_check("squad default: [bran] only", gs.squad_order == [&"bran"], "got %s" % str(gs.squad_order))
 
 func _test_account_defaults() -> void:
 	var acc = get_node("/root/AccountState")

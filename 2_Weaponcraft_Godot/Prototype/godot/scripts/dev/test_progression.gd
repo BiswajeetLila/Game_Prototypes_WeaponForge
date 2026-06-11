@@ -18,6 +18,7 @@ func _ready() -> void:
 	_test_cumulative_and_to_next()
 	_test_stat_mult()
 	_test_account_state()
+	_test_hero_state_level_mult()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -82,6 +83,24 @@ func _test_account_state() -> void:
 	if FileAccess.file_exists("user://account_test.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://account_test.json"))
 	acc.reset()
+
+func _test_hero_state_level_mult() -> void:
+	var HeroStateT = preload("res://scripts/data/hero_state.gd")
+	var gs = get_node("/root/GameState")
+	if gs == null or not gs.heroes_by_id.has(&"bran"):
+		_check("GameState + bran HeroData present", false, "GameState/bran missing")
+		return
+	var bran_data = gs.heroes_by_id[&"bran"]  ## hp_base 120, atk_base 6
+
+	## Default (no mult arg) preserves old behavior — this is the regression guard.
+	var h1 = HeroStateT.new(bran_data)
+	_check("default mult: max_hp == hp_base (120)", h1.max_hp == bran_data.hp_base, "got %d" % h1.max_hp)
+	_check("default mult: base_atk == atk_base (6)", h1.base_atk() == bran_data.atk_base, "got %d" % h1.base_atk())
+
+	## With a 1.5 multiplier, base stats scale (rounded).
+	var h2 = HeroStateT.new(bran_data, 1.5)
+	_check("mult 1.5: max_hp == round(120*1.5)=180", h2.max_hp == 180, "got %d" % h2.max_hp)
+	_check("mult 1.5: base_atk == round(6*1.5)=9", h2.base_atk() == 9, "got %d" % h2.base_atk())
 
 ## ---------- helpers ----------
 

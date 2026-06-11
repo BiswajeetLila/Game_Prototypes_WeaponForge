@@ -13,7 +13,11 @@ const WeaponT = preload("res://scripts/data/weapon.gd")
 var data = null            ## HeroData
 
 var hp: int = 0
-var max_hp: int = 0       ## recomputed from data.hp_base + weapon.get_hp_bonus()
+var max_hp: int = 0       ## recomputed from round(data.hp_base * level_mult) + weapon.get_hp_bonus()
+
+## Persistent hero-level multiplier applied to innate base stats (HP + atk).
+## Defaults to 1.0 so legacy callers (HeroStateT.new(data)) are unchanged.
+var level_mult: float = 1.0
 var is_dead: bool = false
 
 var weapon = null         ## Weapon
@@ -27,15 +31,25 @@ var ult_used: bool = false
 var last_target_name: StringName = &""
 var burn_stack: int = 0
 
-func _init(p_data) -> void:
+func _init(p_data, p_level_mult: float = 1.0) -> void:
 	data = p_data
+	level_mult = p_level_mult
 	weapon = WeaponT.new()
-	max_hp = data.hp_base
+	max_hp = _scaled_base_hp()
 	hp = max_hp
+
+## Innate HP after the level multiplier (no weapon bonus).
+func _scaled_base_hp() -> int:
+	return int(round(float(data.hp_base) * level_mult))
+
+## Innate ATK after the level multiplier (no weapon bonus). Combat may read this
+## in a later plan; today nothing calls it except tests.
+func base_atk() -> int:
+	return int(round(float(data.atk_base) * level_mult))
 
 func refresh_max_hp() -> void:
 	var bonus: int = weapon.get_hp_bonus() if weapon != null else 0
-	var new_max: int = data.hp_base + bonus
+	var new_max: int = _scaled_base_hp() + bonus
 	var delta: int = new_max - max_hp
 	max_hp = new_max
 	## Equipping +HP raises current HP by the same amount; unequipping clamps down.

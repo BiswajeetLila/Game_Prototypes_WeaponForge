@@ -174,7 +174,7 @@ No gacha · no Star-up · no Mastery/portraits · no new heroes · no passive ki
 | Phase | Adds | Validates / unlocks |
 |---|---|---|
 | **P0** ⬅ first prototype | persistence + HOME + squad-select + Hero Level + juice/audio | "do people return when heroes persist?" |
-| **P1** | gacha pull + Star-up + 2–3 new heroes + **stage-affinity telegraph** + Gems/Shards economy + stamina gate | the collection + counter-build hooks; first monetizable shape |
+| **P1** | gacha pull + Star-up + 2–3 new heroes + **stage-affinity telegraph** + Gems/Shards economy + stamina gate + **monetization probe** (mock store live + pull-intent / craft-fan-engagement playtest signal) | the collection + counter-build hooks; first monetizable shape; **de-risks the core bet early** |
 | **P2** | Mastery/bond + portrait evolution + **permanent knowledge unlocks** | narrative attachment + crafting permanence |
 | **P3** | passive kits + **hero signature weapons** + squad synergy | full hero richness; build diversity |
 | **Roadmap / live-ops** | **expeditions/discovery** (send benched heroes → recipes/runes/XP + new currency; Yakuza-0-Majima-flavored, solves roster bloat) · resettable monthly **seasons** · **Elite/Nightmare** difficulty replays · battle pass · cosmetics | evergreen retention |
@@ -198,4 +198,21 @@ No gacha · no Star-up · no Mastery/portraits · no new heroes · no passive ki
 - **OPEN:** does the FTUE boot into a run-then-reveal-HOME, or HOME-first? (leaning run-first for first session only.)
 
 ## 13. Cross-project note
-`5_WeaponForge_Honkai_Godot` = the **weapon-gacha** take (pull weapons, lock heroes). This project (`2_Weaponcraft_Godot`) = the **hero-gacha + crafting-core** take (craft weapons, collect heroes). Keep them distinct: **do not** add a weapon gacha here.
+`5_WeaponForge_Honkai_Godot` = the **weapon-gacha** take (pull weapons, lock heroes). This project (`2_Weaponcraft_Godot`) = the **hero-gacha + crafting-core** take (craft weapons, collect heroes). **Focus = 2_WC only** — per the CEO review, ignore `5_WeaponForge` and any overlap; the goal is ONE shipped product. The only carryover guard: **do not** add a weapon gacha here.
+
+---
+
+## CEO review (2026-06-12) — decisions & deferred
+
+**Mode:** Selective Expansion (hold P0 scope; cherry-pick strategic forks).
+
+**Decided:**
+- **Focus = 2_WC only.** Ignore `5_WeaponForge` and any project overlap; ship ONE product from these iterations.
+- **ACCEPTED → P1 monetization probe** (folded into §10/P1). Mock store live in P1 + instrument "would you pull?" and "do crafting-lovers engage the gacha?" Front-loads the scariest assumption (does craft + hero-gacha monetize without repelling craft fans), instead of learning it at P3.
+
+**Deferred (TODO — revisit at P1 economy tuning):**
+- **Moat guardrail** (monetization-vs-pillar): codify "heroes monetize via identity / utility / synergy / roster-breadth / cosmetics, NOT raw stat dominance" + a tested invariant (maxed hero + no weapon CANNOT clear). Deferred per user; the `craft ≥60%` prose holds until then. ⚠ The habit forms *during* revenue tuning — hardest to walk back late.
+- **Gem-sink cliff:** a 6–9 hero roster caps gem demand fast (FM-9). Needs a 2nd gem sink (expedition currency or a craft-side gem use) before it stalls.
+- **Audience-mismatch validation:** craft-depth fans skew gacha-resistant; gacha whales skew non-craft. The P1 probe must explicitly measure whether ONE player wants BOTH — the bet's core unproven premise.
+
+**Sequencing note:** P0 validates the *cheap* assumption (return-on-persistence). The P1 probe now validates the *scary* one (the business model). A green P0 alone does not de-risk monetization.

@@ -1,4 +1,6 @@
 > **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+>
+> **⟳ Reconciled 2026-06-12 (hero-squad direction):** Launch currencies cap at **4 — Gold · Gems · Hero Shards · Hero XP**. The 9-currency table below is **superseded**: "Mastery XP" → renamed **Hero XP**; Part Shards, Recipe Scrolls, Battle Pass XP, Tower Coins are NOT launch currencies (fold or defer to live-ops). A 5th (expedition) currency only at the roadmap stage. See [hero-squad spec §5](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 
 # Currency Layering — Stub
 
@@ -32,7 +34,7 @@ Full currency economy graph. What currencies exist, where they come from, what t
 
 ## Recommended approach
 
-Lean toward the **AFK Journey currency model** — 7–9 active currencies, clear sources/sinks for each, occasional event-only currencies that don't dilute the main economy.
+**Superseded.** The original "AFK Journey 7–9 currency" recommendation is rejected — locked direction caps launch at **4 currencies** (Gold / Gems / Hero Shards / Hero XP) to avoid Wittle-style "red-dot hell" (~12–14 currencies). Keep clear source+sink per currency; a 5th (expedition) only at live-ops.
 
 ## References to consult
 

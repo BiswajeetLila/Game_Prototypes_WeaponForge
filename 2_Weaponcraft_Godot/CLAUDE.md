@@ -9,6 +9,7 @@
 - `docs/01_GDD.md` is the design SSOT. Everything in `docs/` either **is** the SSOT or is a spec that **points to** it.
 - The **Godot build is authoritative for all current-state facts.** Where any doc and the build disagree, **the build wins** — update the doc, not the build. (Example: heal potion = **15%** max HP, per code; any doc saying otherwise is stale and must be corrected.)
 - Design intent that is not yet implemented is tagged **[ROADMAP]** in the GDD. It is valid future direction, not current state.
+- **Current direction (locked 2026-06-11):** crafting-core run + persistent hero-squad gacha meta. Full spec + phasing: [`docs/superpowers/specs/2026-06-11-hero-squad-meta-design.md`](docs/superpowers/specs/2026-06-11-hero-squad-meta-design.md). First prototype = **P0** (persistence + HOME + squad-select + Hero Level + juice/audio; no gacha yet).
 
 ## Active docs (forward work happens here)
 
@@ -18,8 +19,9 @@
 | `docs/02_systems/` | System specs (combat math, onboarding, pvp, audio, art direction) — elaborate GDD open questions. |
 | `docs/03_content/` | Content specs (characters, parts, recipes, boss affinities). |
 | `docs/04_economy/` | Economy specs (currency, stamina, battle pass, cosmetics). |
-| `docs/05_roadmap.md` | Live-ops / post-launch roadmap. |
+| `docs/roadmap-2026-06-12.md` | Roadmap / phasing (P0 → full game). |
 | `docs/story-beats.md` | Observable beats of the current build. |
+| `docs/superpowers/specs/` | **Active** design specs from brainstorming. Current: `2026-06-11-hero-squad-meta-design.md`. (The *old* fork-era specs are in `_archive/docs/superpowers/` — different tree.) |
 
 Every active spec carries a header banner pointing back to the SSOT. When a spec decision is finalised and reflected in the build, fold the fact into `01_GDD.md`.
 

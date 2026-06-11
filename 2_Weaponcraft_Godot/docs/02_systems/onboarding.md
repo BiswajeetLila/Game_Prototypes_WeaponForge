@@ -1,4 +1,6 @@
 > **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+>
+> **⟳ Reconciled 2026-06-12 (hero-squad direction):** P0 FTUE = **run-first, reveal HOME after stage 1**. Scripted in-run hero unlocks (Mage @ stage 3–5 / Rogue @ boss) are **removed** → replaced by **pre-run squad-select (≤3 owned)**. No gacha / free-pull in P0 onboarding (pull FTUE = P1+). See [hero-squad spec §9](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 
 # Onboarding Arc — Stub
 

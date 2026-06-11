@@ -1,4 +1,6 @@
 > **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+>
+> **⟳ Reconciled 2026-06-12 (hero-squad direction):** Battle Pass is a **live-ops** item (post-core), not launch. Track BP progress **without minting a 5th top-level currency** (4-currency cap holds). Align any hero-shard grants to **50 / 100** pity. See [hero-squad spec §5, §10](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 
 # Battle Pass — Stub
 

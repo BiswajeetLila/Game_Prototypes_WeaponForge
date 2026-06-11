@@ -1,4 +1,6 @@
 > **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+>
+> **⟳ Reconciled 2026-06-12 (hero-squad direction):** **Hero Level** is the P0 stat spine (**+5% ATK & HP / level**, cap 20); Star-up (P1) is the gentle dupe-tier layer on top. Whatever damage model is chosen, keep **craft ≥ 60%** of effective run power (a maxed hero with no weapon must not clear content). See [hero-squad spec §4, §9.4](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 
 # Combat Resolution Math — Stub
 

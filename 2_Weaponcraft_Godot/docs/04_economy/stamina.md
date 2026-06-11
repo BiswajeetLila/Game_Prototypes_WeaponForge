@@ -1,4 +1,6 @@
 > **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+>
+> **⟳ Reconciled 2026-06-12 (hero-squad direction):** Stamina is the **P1 farm-exploit gate** (added before persistent currency; NOT in P0). It is a gate, **not one of the 4 currencies**. See [hero-squad spec §9.7, §10](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 
 # Stamina Economics — Stub
 

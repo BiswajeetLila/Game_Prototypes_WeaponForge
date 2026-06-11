@@ -1,4 +1,6 @@
 > **SSOT:** [01_GDD.md](01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This doc elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+>
+> **⟳ Forward note (2026-06-12):** This records the **current/frozen build**. Beat 6's in-run hero unlock (Elara @ W3 / Vex @ W6) is **superseded for forward work** by pre-run **squad-select**; the hero-squad gacha meta is the locked direction. See [hero-squad spec §9](superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 
 # WeaponCraft (2_WC frozen) — Story Beats
 

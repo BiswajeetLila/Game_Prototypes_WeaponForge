@@ -13,6 +13,9 @@
 
 Folder rules live in [`../CLAUDE.md`](../CLAUDE.md). Historical / superseded material — the abandoned "Wittle-inversion" weapon-gacha fork (now its own project, `5_WeaponForge_Honkai_Godot`), plus old handoffs, research, decks, and mockups — lives in [`../_archive/`](../_archive/) and **must not** be used for forward work. Archive is reference-only.
 
+### Current direction (locked 2026-06-11)
+Forward design = **crafting-core run + persistent hero-squad gacha meta.** Crafting (TFT shop → 3-slot weapons → recipe discovery → 15-wave counter-build) stays the moment-to-moment hook (**≥60% of run power**); a persistent, collectible hero squad is the day-to-day progression hook (heroes bring ult + passive + class + squad synergy + exclusive recipes; Level + Star + Mastery/bond). This *returns to* this GDD's original hero-gacha vision, now layered on the shipped craft build. **Full spec + phasing (P0→full game): [`superpowers/specs/2026-06-11-hero-squad-meta-design.md`](superpowers/specs/2026-06-11-hero-squad-meta-design.md).** Note: the weapon-gacha alternative lives in the separate `5_WeaponForge` project — do NOT add a weapon gacha here.
+
 ### As-built deltas (build = truth)
 - **15 waves per run**, boss waves at **W5 / W10 / W15** (supersedes older "5–6 waves" prose below).
 - **3 heroes, scripted unlock**: Bran (start) · Elara (on clearing W3) · Vex (on clearing W6). No hero gacha in build.
@@ -22,6 +25,8 @@ Folder rules live in [`../CLAUDE.md`](../CLAUDE.md). Historical / superseded mat
 
 ### [ROADMAP] — designed here, NOT in the build yet
 Hero gacha + 15-character roster · multi-stage chapter map · idle/AFK layer · stamina · Star-Up · Build Templates · recipe scrolls · 4th "Modifier" slot · bench-fusion · battle pass / monetization · PvP arena · party synergies. All remain valid design targets — treat as future, not current.
+
+**Superseded specifics:** older prose below citing a **15-hero / 12-gacha** roster, **80-pull** Legendary pity, **in-run hero unlocks** (Mage @ stage 3–5 / Rogue @ boss), and a **7–9-currency** economy is out of date. Current (per the hero-squad spec) = **3 free + 6–9 pullable** roster, pity **50 / 100**, **pre-run squad-select**, **4 currencies** (Gold / Gems / Hero Shards / Hero XP).
 
 ---
 

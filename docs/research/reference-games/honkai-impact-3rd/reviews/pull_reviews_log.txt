@@ -1,0 +1,118 @@
+Package:  com.miHoYo.bh3oversea
+Output:   C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\docs\research\reference-games\honkai-impact-3rd\reviews
+Streams:  3 sorts × 52 countries × 19 languages = 2964
+Early-stop: after 5 consecutive empty streams
+
+[1/2964  NEWEST / US / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +2985 new, cumulative: 2985
+
+[2/2964  NEWEST / IN / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 2985
+
+[3/2964  NEWEST / GB / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 2985
+
+[4/2964  NEWEST / CA / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 2985
+
+[5/2964  NEWEST / AU / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 2985
+
+[6/2964  NEWEST / DE / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 2985
+
+[early-stop] 5 consecutive streams added 0 new reviews. Stopping.
+
+Collected 2985 unique reviews after 6 streams.
+Wrote C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\docs\research\reference-games\honkai-impact-3rd\reviews\reviews.csv
+Wrote C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\docs\research\reference-games\honkai-impact-3rd\reviews\reviews.jsonl

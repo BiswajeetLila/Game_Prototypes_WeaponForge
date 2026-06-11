@@ -1,0 +1,18 @@
+{
+  "rating_average": 3.847034454345703,
+  "rating_count": 514522,
+  "rating_distribution": {
+    "5": 295004,
+    "4": 47452,
+    "3": 28977,
+    "2": 14198,
+    "1": 105513
+  },
+  "rating_distribution_sum": 491144,
+  "rating_distribution_implied_average": 3.839,
+  "rating_distribution_matches_average": true,
+  "title": "Honkai: Star Rail - Apps on Google Play",
+  "package": "com.HoYoverse.hkrpgoversea",
+  "source_url": "https://play.google.com/store/apps/details?id=com.HoYoverse.hkrpgoversea&hl=en_US",
+  "source": "play_store_listing_page"
+}

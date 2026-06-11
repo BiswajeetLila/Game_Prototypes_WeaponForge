@@ -1,0 +1,334 @@
+Package:  com.HoYoverse.hkrpgoversea
+Output:   C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\docs\research\reference-games\honkai-star-rail\reviews
+Streams:  3 sorts × 52 countries × 19 languages = 2964
+Early-stop: after 5 consecutive empty streams
+
+[1/2964  NEWEST / US / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +2985 new, cumulative: 2985
+
+[2/2964  NEWEST / IN / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +378 new, cumulative: 3363
+
+[3/2964  NEWEST / GB / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +9 new, cumulative: 3372
+
+[4/2964  NEWEST / CA / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +2 new, cumulative: 3374
+
+[5/2964  NEWEST / AU / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +4 new, cumulative: 3378
+
+[6/2964  NEWEST / DE / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3378
+
+[7/2964  NEWEST / FR / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +4 new, cumulative: 3382
+
+[8/2964  NEWEST / BR / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3382
+
+[9/2964  NEWEST / MX / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3382
+
+[10/2964  NEWEST / JP / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3382
+
+[11/2964  NEWEST / KR / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3382
+
+[12/2964  NEWEST / ID / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +4 new, cumulative: 3386
+
+[13/2964  NEWEST / PH / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +3 new, cumulative: 3389
+
+[14/2964  NEWEST / TH / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3389
+
+[15/2964  NEWEST / VN / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3389
+
+[16/2964  NEWEST / RU / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3389
+
+[17/2964  NEWEST / TR / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3389
+
+[18/2964  NEWEST / EG / hl=en]
+    page 1: 199 reviews, next_token=yes
+    page 2: 199 reviews, next_token=yes
+    page 3: 199 reviews, next_token=yes
+    page 4: 199 reviews, next_token=yes
+    page 5: 199 reviews, next_token=yes
+    page 6: 199 reviews, next_token=yes
+    page 7: 199 reviews, next_token=yes
+    page 8: 199 reviews, next_token=yes
+    page 9: 199 reviews, next_token=yes
+    page 10: 199 reviews, next_token=yes
+    page 11: 199 reviews, next_token=yes
+    page 12: 199 reviews, next_token=yes
+    page 13: 199 reviews, next_token=yes
+    page 14: 199 reviews, next_token=yes
+    page 15: 199 reviews, next_token=yes
+  +0 new, cumulative: 3389
+
+[early-stop] 5 consecutive streams added 0 new reviews. Stopping.
+
+Collected 3389 unique reviews after 18 streams.
+Wrote C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\docs\research\reference-games\honkai-star-rail\reviews\reviews.csv
+Wrote C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\docs\research\reference-games\honkai-star-rail\reviews\reviews.jsonl

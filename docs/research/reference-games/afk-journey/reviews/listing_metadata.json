@@ -1,0 +1,18 @@
+{
+  "rating_average": 4.497674465179443,
+  "rating_count": 296395,
+  "rating_distribution": {
+    "5": 209727,
+    "4": 43696,
+    "3": 6769,
+    "2": 6086,
+    "1": 17027
+  },
+  "rating_distribution_sum": 283305,
+  "rating_distribution_implied_average": 4.493,
+  "rating_distribution_matches_average": true,
+  "title": "AFK Journey - Apps on Google Play",
+  "package": "com.farlightgames.igame.gp",
+  "source_url": "https://play.google.com/store/apps/details?id=com.farlightgames.igame.gp&hl=en_US",
+  "source": "play_store_listing_page"
+}

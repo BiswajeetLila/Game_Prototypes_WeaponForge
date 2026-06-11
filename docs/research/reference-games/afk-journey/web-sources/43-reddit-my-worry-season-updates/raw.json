@@ -1,0 +1,1 @@
+{"error": "FETCH FAILED", "reason": "HTTP 403 Blocked - Reddit blocks server-side .json requests without authenticated session", "url": "https://old.reddit.com/r/AFKJourney/comments/1c1iyrc/.json", "fetch_date": "2026-06-11"}

@@ -1,0 +1,18 @@
+{
+  "rating_average": 4.454545497894287,
+  "rating_count": 498664,
+  "rating_distribution": {
+    "5": 405632,
+    "4": 0,
+    "3": 11267,
+    "2": 22535,
+    "1": 45070
+  },
+  "rating_distribution_sum": 484504,
+  "rating_distribution_implied_average": 4.442,
+  "rating_distribution_matches_average": true,
+  "title": "Honkai Impact 3 - Apps on Google Play",
+  "package": "com.miHoYo.bh3oversea",
+  "source_url": "https://play.google.com/store/apps/details?id=com.miHoYo.bh3oversea&hl=en_US",
+  "source": "play_store_listing_page"
+}

@@ -1,0 +1,1 @@
+{"error": "FETCH FAILED", "reason": "Reddit JSON API blocked (HTTP 403). Reddit requires authentication/cookies for JSON API access. Content was retrieved via Redlib proxy at https://redlib.perennialte.ch/r/AFKJourney/comments/1ckk4t1/ which does not expose raw JSON.", "original_url": "https://old.reddit.com/r/AFKJourney/comments/1ckk4t1/.json", "fetch_date": "2026-06-11"}

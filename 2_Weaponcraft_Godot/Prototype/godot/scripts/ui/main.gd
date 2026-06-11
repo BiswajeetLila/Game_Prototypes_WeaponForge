@@ -109,5 +109,4 @@ func _on_hero_died(hero_id: StringName) -> void:
 
 func _on_reset_pressed() -> void:
 	Combat.stop()
-	GameState.new_session()
-	_open_forge_moment()
+	get_tree().change_scene_to_file("res://scenes/Home.tscn")

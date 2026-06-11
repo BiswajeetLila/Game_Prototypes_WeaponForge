@@ -24,6 +24,7 @@ func _ready() -> void:
 	_test_award_wave_xp()
 	_test_account_defaults()
 	_test_new_session_squad_param()
+	_test_home_squad_selection()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -145,6 +146,24 @@ func _test_unlock_applies_level_mult() -> void:
 	_check("unlock_hero applies level mult: bran max_hp 126", bran.max_hp == 126, "got %d" % bran.max_hp)
 	acc.reset()
 	gs.new_session()
+
+func _test_home_squad_selection() -> void:
+	var acc = get_node("/root/AccountState")
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+	acc.ensure_defaults()
+	var home = load("res://scenes/Home.tscn").instantiate()
+	add_child(home)
+	_check("home: starts empty squad", home.get_squad().is_empty(), "")
+	home.toggle_hero(&"bran")
+	home.toggle_hero(&"elara")
+	_check("home: squad order [bran, elara]", home.get_squad() == [&"bran", &"elara"], "got %s" % str(home.get_squad()))
+	home.toggle_hero(&"bran")
+	_check("home: toggle removes", home.get_squad() == [&"elara"], "got %s" % str(home.get_squad()))
+	home.toggle_hero(&"vex")
+	_check("home: unowned hero rejected", home.get_squad() == [&"elara"], "got %s" % str(home.get_squad()))
+	home.queue_free()
+	acc.reset()
 
 func _test_new_session_squad_param() -> void:
 	var gs = get_node("/root/GameState")

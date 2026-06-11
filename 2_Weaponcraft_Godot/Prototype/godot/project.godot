@@ -12,7 +12,7 @@ config_version=5
 
 config/name="WeaponCraft Godot Ultra-MVP"
 config/description="WeaponCraft prototype (Godot 4.6 Mono). Crafting-Juice core hook: 3-slot Head/Hilt/Rune anvil + TFT gold shop/reroll, merge L1-L5, 8 named recipes (Steamburst/Inferno/...), Codex + First-Discovery overlay. 3 heroes (Bran start, Elara W3, Vex W6), 15 waves, bosses W5/W10/W15, Reforge-&-Retry on wipe. SSOT: docs/01_GDD.md."
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/Home.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 

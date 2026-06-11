@@ -10,6 +10,18 @@
 ##     Sort-Object LastWriteTime -Descending | Select-Object -First 1
 extends Node
 
+func _ready() -> void:
+	## Non-interactive capture: WC_AUTOSHOT=<absolute png path> renders the
+	## main scene ~1.5s, saves a screenshot, and quits. Dev/CI tooling only.
+	var auto_path: String = OS.get_environment("WC_AUTOSHOT")
+	if auto_path != "":
+		var t := get_tree().create_timer(1.5)
+		t.timeout.connect(func():
+			var img := get_viewport().get_texture().get_image()
+			img.save_png(auto_path)
+			get_tree().quit(0)
+		)
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"debug_screenshot"):
 		_capture()

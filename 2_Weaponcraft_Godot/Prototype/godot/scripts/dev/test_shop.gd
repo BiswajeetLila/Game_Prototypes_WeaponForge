@@ -44,6 +44,9 @@ func _ready() -> void:
 	_test_potion_buy_does_not_enter_inventory()
 	_summary()
 	_render_to_ui()
+	## Headless auto-quit with exit code = failure count (0 = all green).
+	if DisplayServer.get_name() == "headless":
+		get_tree().quit(_failed)
 
 ## ---------- Cases ----------
 

@@ -73,6 +73,9 @@ func _ready() -> void:
 	_test_arcane_lich_phase2_aoe_below_33pct()
 	_summary()
 	_render_to_ui()
+	## Headless auto-quit with exit code = failure count (0 = all green).
+	if DisplayServer.get_name() == "headless":
+		get_tree().quit(_failed)
 
 ## ---------- Helpers ----------
 

@@ -33,6 +33,9 @@ func _ready() -> void:
 	_test_all_eight_recipes_registered()
 	_summary()
 	_render_to_ui()
+	## Headless auto-quit with exit code = failure count (0 = all green).
+	if DisplayServer.get_name() == "headless":
+		get_tree().quit(_failed)
 
 ## ---------- Cases ----------
 

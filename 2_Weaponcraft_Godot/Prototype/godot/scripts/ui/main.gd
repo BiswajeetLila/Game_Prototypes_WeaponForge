@@ -25,6 +25,7 @@ extends Control
 @onready var _result_modal: Control = %ResultModal
 @onready var _reforge_retry_modal: Control = %ReforgeRetryModal
 @onready var _notifications: Control = %Notifications
+@onready var _pull_overlay: Control = $PullOverlay
 
 func _ready() -> void:
 	_reset_btn.pressed.connect(_on_reset_pressed)
@@ -52,6 +53,9 @@ func _on_wave_start_requested() -> void:
 
 func _on_wave_cleared(wave: int) -> void:
 	GameState.award_wave_xp()
+	## Scripted pull beat: first-ever W5 boss clear grants Vex to the roster.
+	if GameState.maybe_grant_first_pull(wave):
+		_pull_overlay.open(&"vex")
 	var reward: int = 5 + wave * 2
 	_notifications.show_card(
 		"✓ WAVE %d CLEAR" % wave,

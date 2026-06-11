@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://bweaponcraftmainscene"]
+[gd_scene load_steps=14 format=3 uid="uid://bweaponcraftmainscene"]
 
 [ext_resource type="Script" path="res://scripts/ui/main.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/screen_flash.gd" id="9"]
@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" uid="uid://bweaponcraftresultmodal" path="res://scenes/ResultModal.tscn" id="8"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftnotifications" path="res://scenes/Notifications.tscn" id="10"]
 [ext_resource type="PackedScene" uid="uid://bweaponcraftreforgeretry" path="res://scenes/ReforgeRetryModal.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/PullOverlay.tscn" id="13"]
 
 [node name="Main" type="Control"]
 theme = ExtResource("11")
@@ -89,3 +90,5 @@ visible = false
 [node name="ReforgeRetryModal" parent="." instance=ExtResource("12")]
 unique_name_in_owner = true
 visible = false
+
+[node name="PullOverlay" parent="." instance=ExtResource("13")]

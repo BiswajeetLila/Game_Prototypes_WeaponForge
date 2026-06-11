@@ -16,6 +16,9 @@ var save_path: String = "user://account.json"
 ## String(hero_id) -> { "xp": int, "owned": bool }
 var _heroes: Dictionary = {}
 
+## Account-level boolean flags (FTUE beats, etc.). Persisted with the save.
+var _flags: Dictionary = {}
+
 func _ready() -> void:
 	load_account()
 	ensure_defaults()
@@ -28,9 +31,16 @@ func ensure_defaults() -> void:
 	if not is_owned(&"elara"):
 		set_owned(&"elara", true)
 
+func get_flag(flag: StringName) -> bool:
+	return bool(_flags.get(String(flag), false))
+
+func set_flag(flag: StringName) -> void:
+	_flags[String(flag)] = true
+
 ## Wipe in-memory progression (tests + new-account).
 func reset() -> void:
 	_heroes = {}
+	_flags = {}
 
 func _entry(hero_id) -> Dictionary:
 	var key: String = String(hero_id)
@@ -69,30 +79,31 @@ func save_account() -> void:
 	if f == null:
 		push_warning("AccountState: could not open %s for write" % save_path)
 		return
-	f.store_string(JSON.stringify(_heroes))
+	f.store_string(JSON.stringify({"heroes": _heroes, "flags": _flags}))
 	f.close()
 
 func load_account() -> void:
+	_heroes = {}
+	_flags = {}
 	if not FileAccess.file_exists(save_path):
-		_heroes = {}
 		return
 	var f := FileAccess.open(save_path, FileAccess.READ)
 	if f == null:
-		_heroes = {}
 		return
 	var txt: String = f.get_as_text()
 	f.close()
 	var parsed = JSON.parse_string(txt)
 	if typeof(parsed) != TYPE_DICTIONARY:
-		_heroes = {}
 		return
-	## JSON restores numbers as floats; normalize xp back to int.
-	var out: Dictionary = {}
-	for key in parsed.keys():
-		var row = parsed[key]
-		if typeof(row) == TYPE_DICTIONARY:
-			out[String(key)] = {
+	## v2 schema: {"heroes": {...}, "flags": {...}}; v1 legacy: flat heroes dict.
+	var heroes_src: Dictionary = parsed.get("heroes", parsed) if parsed.has("heroes") else parsed
+	if typeof(parsed.get("flags", null)) == TYPE_DICTIONARY:
+		for k in parsed["flags"].keys():
+			_flags[String(k)] = bool(parsed["flags"][k])
+	for key in heroes_src.keys():
+		var row = heroes_src[key]
+		if typeof(row) == TYPE_DICTIONARY and (row.has("xp") or row.has("owned")):
+			_heroes[String(key)] = {
 				"xp": int(row.get("xp", 0)),
 				"owned": bool(row.get("owned", false)),
 			}
-	_heroes = out

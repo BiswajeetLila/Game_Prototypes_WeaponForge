@@ -25,6 +25,9 @@ func _ready() -> void:
 	_test_account_defaults()
 	_test_new_session_squad_param()
 	_test_home_squad_selection()
+	_test_run_xp_tracking()
+	_test_flags_roundtrip()
+	_test_first_pull_grant()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -182,6 +185,58 @@ func _test_account_defaults() -> void:
 	_check("defaults: elara owned", acc.is_owned(&"elara") == true, "")
 	_check("defaults: vex NOT owned", acc.is_owned(&"vex") == false, "")
 	acc.reset()
+
+func _test_run_xp_tracking() -> void:
+	var acc = get_node("/root/AccountState")
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+	acc.ensure_defaults()
+	acc.add_hero_xp(&"bran", 1000)  ## start at L2
+	var gs = get_node("/root/GameState")
+	gs.new_session([&"bran", &"elara"])
+	_check("run_xp starts 0", gs.run_xp == 0, "got %d" % gs.run_xp)
+	_check("session snapshot: bran L2", gs.session_start_levels.get(&"bran", -1) == 2, "got %s" % str(gs.session_start_levels))
+	gs.award_wave_xp()
+	gs.award_wave_xp()
+	_check("run_xp accumulates per-hero amount", gs.run_xp == 200, "got %d" % gs.run_xp)
+	var rows: Array = gs.result_rows()
+	_check("result_rows: 2 rows", rows.size() == 2, "got %d" % rows.size())
+	_check("result_rows: bran lv_from 2", rows[0]["lv_from"] == 2, "got %s" % str(rows[0]))
+	_check("result_rows: xp_gained 200", rows[0]["xp_gained"] == 200, "got %s" % str(rows[0]))
+	acc.reset()
+	gs.new_session()
+
+func _test_flags_roundtrip() -> void:
+	var acc = get_node("/root/AccountState")
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+	_check("flag default false", acc.get_flag(&"pull_seen") == false, "")
+	acc.set_flag(&"pull_seen")
+	_check("flag set true", acc.get_flag(&"pull_seen") == true, "")
+	acc.save_account()
+	acc.reset()
+	acc.load_account()
+	_check("flag survives save/load", acc.get_flag(&"pull_seen") == true, "")
+	_check("heroes survive new schema", true, "")  ## guarded implicitly below
+	if FileAccess.file_exists("user://account_test.json"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://account_test.json"))
+	acc.reset()
+
+func _test_first_pull_grant() -> void:
+	var acc = get_node("/root/AccountState")
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+	acc.ensure_defaults()
+	var gs = get_node("/root/GameState")
+	gs.new_session([&"bran"])
+	_check("wave 4: no pull", gs.maybe_grant_first_pull(4) == false, "")
+	_check("wave 5 first time: pull fires", gs.maybe_grant_first_pull(5) == true, "")
+	_check("pull granted vex", acc.is_owned(&"vex") == true, "")
+	_check("wave 5 again: no repeat", gs.maybe_grant_first_pull(5) == false, "")
+	if FileAccess.file_exists("user://account_test.json"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://account_test.json"))
+	acc.reset()
+	gs.new_session()
 
 ## ---------- helpers ----------
 

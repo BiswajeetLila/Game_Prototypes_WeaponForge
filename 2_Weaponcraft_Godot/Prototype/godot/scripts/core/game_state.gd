@@ -87,6 +87,10 @@ var heroes: Dictionary = {}         ## StringName -> HeroState
 var squad_order: Array = []         ## ordered list of StringName ids (unlock order = display order)
 var unlocked_classes: Dictionary = {}  ## StringName cls -> true (shop class filter)
 
+## Per-run progression display data (results screen).
+var run_xp: int = 0                       ## XP gained per deployed hero this run
+var session_start_levels: Dictionary = {} ## StringName -> level at run start
+
 ## Back-compat shim. Reads first squad member (Bran in ultra-MVP). Writable
 ## for legacy callsites in tests that re-assign GameState.hero = HeroStateT.new(...).
 var hero = null
@@ -167,6 +171,11 @@ func new_session(squad: Array = [&"bran"]) -> void:
 	for hero_id in squad:
 		unlock_hero(hero_id)
 
+	run_xp = 0
+	session_start_levels = {}
+	for hero_id in squad_order:
+		session_start_levels[hero_id] = AccountState.get_level(hero_id)
+
 	emit_signal("gold_changed", gold)
 	emit_signal("wave_changed", wave)
 	emit_signal("inventory_changed")
@@ -218,6 +227,7 @@ func revive_squad_for_retry() -> void:
 ## Persistent progression: every deployed hero earns XP per cleared wave.
 ## Saves immediately so progress survives app close mid-stage.
 func award_wave_xp() -> void:
+	run_xp += XP_PER_WAVE
 	AccountState.award_squad_xp(squad_order, XP_PER_WAVE)
 	AccountState.save_account()
 
@@ -296,3 +306,30 @@ func mark_discovered(recipe_id: StringName) -> void:
 
 func _emit_codex_badge() -> void:
 	emit_signal("codex_badge_changed", discovered_recipes.size(), recipe_ids.size())
+
+## Rows for the victory screen: one per deployed hero.
+func result_rows() -> Array:
+	var rows: Array = []
+	for hero_id in squad_order:
+		var data = heroes_by_id.get(hero_id)
+		rows.append({
+			"id": hero_id,
+			"name": data.name if data != null else String(hero_id),
+			"portrait": data.portrait if data != null else null,
+			"lv_from": int(session_start_levels.get(hero_id, 1)),
+			"lv_to": AccountState.get_level(hero_id),
+			"xp_gained": run_xp,
+		})
+	return rows
+
+## First-ever W5 boss clear grants Vex (the scripted pull beat). Returns true
+## exactly once per account; caller shows the PullOverlay on true.
+func maybe_grant_first_pull(wave_num: int) -> bool:
+	if wave_num != 5:
+		return false
+	if AccountState.get_flag(&"pull_seen"):
+		return false
+	AccountState.set_flag(&"pull_seen")
+	AccountState.set_owned(&"vex", true)
+	AccountState.save_account()
+	return true

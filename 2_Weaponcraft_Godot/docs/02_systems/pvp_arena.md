@@ -1,3 +1,5 @@
+> **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+
 # PvP Arena — Stub
 
 **Status:** Deferred from initial GDD. Roadmap target: **Month 9 post-launch**.

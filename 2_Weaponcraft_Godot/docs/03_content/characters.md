@@ -1,3 +1,5 @@
+> **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+
 # Characters — Launch Roster
 
 **Status:** Scaffold. Detailed kits, art briefs, and balance numbers to be filled during content production.

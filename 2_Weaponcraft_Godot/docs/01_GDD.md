@@ -1,9 +1,27 @@
 # WeaponCraft — Game Design Doc
 
 **Working title:** WeaponCraft
-**Working folder:** `Game_Prototypes/1_Robotek_WeaponCraft/`
+**Working folder:** `Game_Prototypes/2_Weaponcraft_Godot/`
 **Target platform:** Vertical mobile (iOS + Android)
 **Target audience:** Casual-mobile RPG players (Wittle Defender, AFK Journey, AFK Arena, Hero Wars cohort)
+
+---
+
+## ⚠ SSOT & build reconciliation (read first)
+
+**This document is the single source of truth (SSOT) for `2_Weaponcraft_Godot`.** The shipped Godot build in [`Prototype/godot/`](../Prototype/godot/) is **authoritative for all current-state facts** — where this doc's prose and the build disagree, **the build wins**. Design intent not yet in the build is tagged **[ROADMAP]**.
+
+Folder rules live in [`../CLAUDE.md`](../CLAUDE.md). Historical / superseded material — the abandoned "Wittle-inversion" weapon-gacha fork (now its own project, `5_WeaponForge_Honkai_Godot`), plus old handoffs, research, decks, and mockups — lives in [`../_archive/`](../_archive/) and **must not** be used for forward work. Archive is reference-only.
+
+### As-built deltas (build = truth)
+- **15 waves per run**, boss waves at **W5 / W10 / W15** (supersedes older "5–6 waves" prose below).
+- **3 heroes, scripted unlock**: Bran (start) · Elara (on clearing W3) · Vex (on clearing W6). No hero gacha in build.
+- **Weapon = 3 slots**: Head + Hilt + Rune. Built via a **TFT-style gold shop + paid reroll** — no premium pulls.
+- **Named effects** emerge from part tag-combos (Steamburst = Fire+Ice, Inferno = Fire+Fire, …) — 8 recipes live.
+- **Merge** L1→L5. **Heal potion = 15% max HP**. **Boss Reforge-&-Retry** on wipe.
+
+### [ROADMAP] — designed here, NOT in the build yet
+Hero gacha + 15-character roster · multi-stage chapter map · idle/AFK layer · stamina · Star-Up · Build Templates · recipe scrolls · 4th "Modifier" slot · bench-fusion · battle pass / monetization · PvP arena · party synergies. All remain valid design targets — treat as future, not current.
 
 ---
 
@@ -102,7 +120,7 @@ Plus original features:
 
 ### Stage structure
 **Wittle Defender cadence + AFK Journey idle + Robotek node-map.**
-- **5–6 waves per stage**, ~3–4 min per stage.
+- **5–6 waves per stage**, ~3–4 min per stage. *([AS-BUILT] prototype runs a single **15-wave** run with boss waves at W5/W10/W15; the multi-stage chapter cadence below is [ROADMAP].)*
 - **Forge moment between every wave** — TFT shop opens, parts roll, player crafts, confirms, next wave fires.
 - **Weapons persist and upgrade across waves** within a stage.
 - **Currency banks across waves within stage**, resets between stages.

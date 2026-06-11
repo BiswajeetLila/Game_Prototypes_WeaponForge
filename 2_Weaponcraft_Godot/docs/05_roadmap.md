@@ -1,3 +1,5 @@
+> **SSOT:** [01_GDD.md](01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This doc elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+
 # WeaponCraft — Live-ops Roadmap
 
 This roadmap follows the "ship A, grow into D" plan: launch with a focused chapter-map progression RPG (Q6 option A), expand to a chapter-map + weekly endless event hybrid (Q6 option D) by Season 2.

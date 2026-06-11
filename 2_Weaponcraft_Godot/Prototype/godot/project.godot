@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="WeaponCraft Godot Ultra-MVP"
-config/description="Ultra-MVP port of WeaponCraft (BASE-A1 0.1.9 reference) to Godot 4.4. Validates the Godot + MCP + Kenney art pipeline + Crafting Juice core hook (merge L1-L5 + 2 recipes Steamburst/Inferno + Codex + First-Discovery overlay). 1 hero (Bran), 3 waves, 5 parts, no boss, no retry."
+config/description="WeaponCraft prototype (Godot 4.6 Mono). Crafting-Juice core hook: 3-slot Head/Hilt/Rune anvil + TFT gold shop/reroll, merge L1-L5, 8 named recipes (Steamburst/Inferno/...), Codex + First-Discovery overlay. 3 heroes (Bran start, Elara W3, Vex W6), 15 waves, bosses W5/W10/W15, Reforge-&-Retry on wipe. SSOT: docs/01_GDD.md."
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
@@ -30,6 +30,10 @@ HitPause="*res://scripts/core/hit_pause.gd"
 Heartbeat="*res://scripts/core/heartbeat.gd"
 SignalTrace="*res://scripts/core/signal_trace.gd"
 
+[debug]
+
+file_logging/enable_file_logging=true
+
 [display]
 
 window/size/viewport_width=420
@@ -37,12 +41,6 @@ window/size/viewport_height=800
 window/size/window_width_override=420
 window/size/window_height_override=800
 window/stretch/mode="canvas_items"
-
-[debug]
-
-file_logging/enable_file_logging=true
-file_logging/enable_file_logging.pc=true
-file_logging/enable_file_logging.pc=true
 
 [dotnet]
 

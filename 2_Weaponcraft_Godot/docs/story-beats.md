@@ -1,10 +1,12 @@
+> **SSOT:** [01_GDD.md](01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This doc elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+
 # WeaponCraft (2_WC frozen) — Story Beats
 
 > **What this is.** 8 major story beats extracted from the frozen 2_WC playtester build. Each beat = one observable narrative-or-mechanical moment the player experiences. Read this for: pitch decks, marketing trailer cuts, design-review framing, AI-render prompts.
 >
-> **What 2_WC is** (per `FROZEN-2026-06-01.md`): the 15-wave Stage-D prototype with 3 heroes, legacy 3-socket forge (head/hilt/rune TFT shop + merge), part-level merge L1→L5, recipe codex + first-discovery moment, tap-portrait ultimates, bosses at W5/W10/W15, Reforge-&-Retry on wipe. **Frozen 2026-06-01.** Active development continues in `../../5_WeaponForge_Honkai_Godot/` as a different game.
+> **What 2_WC is** (per the Godot build): the 15-wave prototype with 3 heroes, 3-socket forge (head/hilt/rune TFT shop + merge), part-level merge L1→L5, recipe codex + first-discovery moment, tap-portrait ultimates, bosses at W5/W10/W15, Reforge-&-Retry on wipe. This is the **current game** for `2_Weaponcraft_Godot`. (The separate Wittle-inversion fork continued as `../../5_WeaponForge_Honkai_Godot/` — out of scope here.)
 >
-> **Visual layout reference** (the canonical 9:16 wireframe — see `Mockup/gameplay-mockups/wireframe-ref-2026-06-09.png` if added, or pull from build via F12 screenshot helper). Vertical strip layout, top→bottom:
+> **Visual layout reference** — pull from the running build via the F12 screenshot helper. Vertical strip layout, top→bottom:
 > 1. **Combat Arena** — hero sprite(s) left, enemy wave right (pre-wave: empty right side)
 > 2. **Combat log strip** — dark brown horizontal bar (damage narration)
 > 3. **Hero card** — portrait + name + HP `120/120` green bar + `ULT 0%` button + shield icon
@@ -16,14 +18,13 @@
 >
 > Wood/parchment palette w/ green primary CTA + violet recipe accent + tan slots + fire-orange element badges.
 >
-> **Source docs mined:**
-> - `01_GDD.md` (canonical WeaponCraft design)
-> - `superpowers/specs/2026-05-23-godot-ultra-mvp-port-design.md` (Godot port spec — what was built)
-> - `superpowers/specs/2026-05-25-juice-foundation-design.md` (game-feel layer)
-> - `superpowers/specs/2026-05-22-BASE-A1-prototype.md` (BASE-A1 reference impl)
-> - `FROZEN-2026-06-01.md` (current playable state)
-> - In-build wireframe screenshot (2026-06-09 — layout reference)
-> - `Mockup/gameplay-mockups/vid_analysis/REPORT.md` (Robotek-blueprint design heritage from May 22 mockup videos)
+> **Source docs mined** (historical build specs now archived under [`../_archive/`](../_archive/) — reference-only):
+> - [`01_GDD.md`](01_GDD.md) — canonical WeaponCraft design (**SSOT**)
+> - `_archive/docs/superpowers/specs/2026-05-23-godot-ultra-mvp-port-design.md` (Godot port spec — what was built)
+> - `_archive/docs/superpowers/specs/2026-05-25-juice-foundation-design.md` (game-feel layer)
+> - `_archive/docs/superpowers/specs/2026-05-22-BASE-A1-prototype.md` (BASE-A1 reference impl)
+> - The running build itself (F12 screenshot helper for layout reference)
+> - `_archive/Mockup/gameplay-mockups/vid_analysis/REPORT.md` (Robotek-blueprint design heritage)
 >
 > Updated 2026-06-09 v2 (layout intel baked in). Status: ✅ = shipped in frozen build, 🛠 = was in-flight at freeze, 📋 = design-locked only.
 
@@ -318,7 +319,7 @@ If shop refresh doesn't have the right counter — **Reroll(2g)** button is righ
 
 > Context — not part of the frozen build, but worth knowing.
 
-The earliest mockups in `Mockup/gameplay-mockups/` (`wf_mockup_1.png`, `Vid_wf_mockup_1.mp4`, `Vid_wf_mockup_2.mp4`, dated 2026-05-22) pitched a **different crafting model** that informed the GDD's "Robotek + TFT fusion" framing but **never shipped** in the frozen build:
+The earliest mockups (now in `_archive/Mockup/gameplay-mockups/`: `wf_mockup_1.png`, `Vid_wf_mockup_1.mp4`, `Vid_wf_mockup_2.mp4`, dated 2026-05-22) pitched a **different crafting model** that informed the GDD's "Robotek + TFT fusion" framing but **never shipped** in the frozen build:
 
 | Mockup video pitch | Frozen build today |
 |---|---|
@@ -335,8 +336,8 @@ The earliest mockups in `Mockup/gameplay-mockups/` (`wf_mockup_1.png`, `Vid_wf_m
 
 **If commissioning new art** for marketing/pitch: render the **frozen-build layout** (Head/Hilt/Rune anvil + violet recipe pills + 5-slot shop) — NOT the blueprint-w/-sockets variant. The mockup videos are useful for *style* reference (painterly 5-6-head register, warm forge palette, crowd silhouettes, banners + torches arena) but the *UI* should match the actual playable build.
 
-Full mockup-video analysis: `Mockup/gameplay-mockups/vid_analysis/REPORT.md`.
+Full mockup-video analysis: `_archive/Mockup/gameplay-mockups/vid_analysis/REPORT.md`.
 
 ---
 
-*Pair this with `01_GDD.md` for full system design + `superpowers/specs/2026-05-23-godot-ultra-mvp-port-design.md` for the build-as-shipped reference + `Mockup/gameplay-mockups/vid_analysis/REPORT.md` for the abandoned Robotek-blueprint heritage.*
+*Pair this with [`01_GDD.md`](01_GDD.md) (SSOT) for full system design + `_archive/docs/superpowers/specs/2026-05-23-godot-ultra-mvp-port-design.md` for the build-as-shipped reference + `_archive/Mockup/gameplay-mockups/vid_analysis/REPORT.md` for the abandoned Robotek-blueprint heritage.*

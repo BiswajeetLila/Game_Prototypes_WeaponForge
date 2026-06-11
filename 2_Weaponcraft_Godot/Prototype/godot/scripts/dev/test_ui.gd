@@ -25,6 +25,8 @@ var _failed: int = 0
 var _lines: Array = []
 
 func _ready() -> void:
+	AccountState.save_path = "user://account_test.json"
+	AccountState.reset()
 	_log("=== UI tests ===")
 	_test_anvil_labels_exist()
 	_test_anvil_labels_visible()

@@ -15,6 +15,8 @@ var _failed: int = 0
 var _lines: Array = []
 
 func _ready() -> void:
+	AccountState.save_path = "user://account_test.json"
+	AccountState.reset()
 	_log("=== Recipes engine tests ===")
 	_test_empty_weapon_no_recipes()
 	_test_pyro_pommel_alone_no_recipe()

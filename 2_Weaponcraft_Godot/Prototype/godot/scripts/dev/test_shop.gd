@@ -14,6 +14,8 @@ var _failed: int = 0
 var _lines: Array = []
 
 func _ready() -> void:
+	AccountState.save_path = "user://account_test.json"
+	AccountState.reset()
 	_log("=== Shop tests ===")
 	_test_refresh_free_produces_five_parts()
 	_test_eligibility_warrior_and_universal_only()

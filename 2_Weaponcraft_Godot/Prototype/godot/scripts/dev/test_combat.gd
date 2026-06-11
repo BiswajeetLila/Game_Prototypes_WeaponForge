@@ -15,6 +15,8 @@ var _failed: int = 0
 var _lines: Array = []
 
 func _ready() -> void:
+	AccountState.save_path = "user://account_test.json"
+	AccountState.reset()
 	_log("=== Combat tests ===")
 	_test_start_wave_spawns_2_or_3_enemies()
 	_test_spawned_enemies_have_weak_always_and_resist_70pct()

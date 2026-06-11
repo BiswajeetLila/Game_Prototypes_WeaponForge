@@ -13,6 +13,8 @@ var _failed: int = 0
 var _lines: Array = []
 
 func _ready() -> void:
+	AccountState.save_path = "user://account_test.json"
+	AccountState.reset()
 	_log("=== Merge tests ===")
 	_test_acquire_into_empty_slot()
 	_test_acquire_levels_up_equipped_duplicate()

@@ -18,9 +18,15 @@ var _heroes: Dictionary = {}
 
 func _ready() -> void:
 	load_account()
-	## Bran is the free starter — owned by default on a fresh account.
+	ensure_defaults()
+
+## Free-starter ownership for a fresh (or wiped) account. Bran + Elara start
+## owned; Vex is granted by the scripted pull beat (P0 slice, pull_01).
+func ensure_defaults() -> void:
 	if not is_owned(&"bran"):
 		set_owned(&"bran", true)
+	if not is_owned(&"elara"):
+		set_owned(&"elara", true)
 
 ## Wipe in-memory progression (tests + new-account).
 func reset() -> void:

@@ -22,6 +22,7 @@ func _ready() -> void:
 	_test_unlock_applies_level_mult()
 	_test_combat_reads_scaled_atk()
 	_test_award_wave_xp()
+	_test_account_defaults()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -143,6 +144,16 @@ func _test_unlock_applies_level_mult() -> void:
 	_check("unlock_hero applies level mult: bran max_hp 126", bran.max_hp == 126, "got %d" % bran.max_hp)
 	acc.reset()
 	gs.new_session()
+
+func _test_account_defaults() -> void:
+	var acc = get_node("/root/AccountState")
+	acc.save_path = "user://account_test.json"
+	acc.reset()
+	acc.ensure_defaults()
+	_check("defaults: bran owned", acc.is_owned(&"bran") == true, "")
+	_check("defaults: elara owned", acc.is_owned(&"elara") == true, "")
+	_check("defaults: vex NOT owned", acc.is_owned(&"vex") == false, "")
+	acc.reset()
 
 ## ---------- helpers ----------
 

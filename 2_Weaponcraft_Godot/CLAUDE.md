@@ -21,7 +21,7 @@
 | `docs/04_economy/` | Economy specs (currency, stamina, battle pass, cosmetics). |
 | `docs/roadmap-2026-06-12.md` | Roadmap / phasing (P0 → full game). |
 | `docs/story-beats.md` | Observable beats of the current build. |
-| `docs/superpowers/specs/` | **Active** design specs from brainstorming. Current: `2026-06-11-hero-squad-meta-design.md`. (The *old* fork-era specs are in `_archive/docs/superpowers/` — different tree.) |
+| `docs/superpowers/specs/` | **Active** design specs. Current set: `2026-06-11-hero-squad-meta-design.md` (direction), `2026-06-12-retention-arc-d1-d20.md` (D1→D20 retention), `2026-06-12-greenlight-pitch.md` (CEO pitch). (The *old* fork-era specs are in `_archive/docs/superpowers/` — different tree.) |
 
 Every active spec carries a header banner pointing back to the SSOT. When a spec decision is finalised and reflected in the build, fold the fact into `01_GDD.md`.
 

@@ -4,6 +4,7 @@
 **Status:** Design locked (brainstorm complete). Implementation not started.
 **SSOT:** elaborates [`../../01_GDD.md`](../../01_GDD.md). Where this doc and the Godot build disagree on *current-state facts*, the build wins; this doc defines *forward direction*.
 **Folder rules:** [`../../../CLAUDE.md`](../../../CLAUDE.md). Archive is reference-only.
+**Companion docs:** [retention arc D1→D20](2026-06-12-retention-arc-d1-d20.md) · [greenlight pitch (CEO)](2026-06-12-greenlight-pitch.md).
 
 ---
 

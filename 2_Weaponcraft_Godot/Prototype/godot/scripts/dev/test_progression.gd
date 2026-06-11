@@ -20,6 +20,7 @@ func _ready() -> void:
 	_test_account_state()
 	_test_hero_state_level_mult()
 	_test_unlock_applies_level_mult()
+	_test_combat_reads_scaled_atk()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -102,6 +103,18 @@ func _test_hero_state_level_mult() -> void:
 	var h2 = HeroStateT.new(bran_data, 1.5)
 	_check("mult 1.5: max_hp == round(120*1.5)=180", h2.max_hp == 180, "got %d" % h2.max_hp)
 	_check("mult 1.5: base_atk == round(6*1.5)=9", h2.base_atk() == 9, "got %d" % h2.base_atk())
+
+func _test_combat_reads_scaled_atk() -> void:
+	var HeroStateT = preload("res://scripts/data/hero_state.gd")
+	var gs = get_node("/root/GameState")
+	gs.new_session()
+	var h = HeroStateT.new(gs.heroes_by_id[&"bran"], 1.5)  ## base_atk() == 9
+	gs.heroes = {&"bran": h}
+	gs.squad_order = [&"bran"]
+	gs.enemies = [{ "id": &"slime", "name": "Slime_T", "hp": 50, "max_hp": 50, "weak": &"", "resist": &"", "sprite": null, "frozen": false, "debuffed": false, "debuff_dur": 0, "debuff_mult": 1.0 }]
+	Combat._hero_attack(h)  ## no weapon, 0 crit -> deterministic damage = base_atk
+	_check("combat reads base_atk(): slime 50 -> 41", gs.enemies[0].hp == 41, "hp=%d" % gs.enemies[0].hp)
+	gs.new_session()
 
 func _test_unlock_applies_level_mult() -> void:
 	var acc = get_node("/root/AccountState")

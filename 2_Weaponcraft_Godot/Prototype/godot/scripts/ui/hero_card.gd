@@ -376,7 +376,7 @@ func _build_back_panel(hero) -> void:
 	_back_panel.add_child(vbox)
 
 	var stat_l := Label.new()
-	stat_l.text = "ATK %d  •  HP %d" % [hero.data.atk_base, hero.data.hp_base]
+	stat_l.text = "ATK %d  •  HP %d" % [hero.base_atk(), hero.max_hp]
 	stat_l.add_theme_color_override(&"font_color", Color(0.961, 0.902, 0.784, 1))
 	stat_l.add_theme_font_size_override(&"font_size", 9)
 	vbox.add_child(stat_l)

@@ -1,28 +1,31 @@
-# Function Catalog + Status Reaction Matrix — Design Lock
+# Function Catalog + Status Reaction Matrix — Design Spec
 
 > **SSOT for forward implementation.** Parent design rationale: [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md). This doc translates the addendum's pillars into the unambiguous cell-by-cell contract that Phase 4 (vertical slice) and Phase 5 (full rewrite) implement.
 
-**Date:** 2026-06-12 · **Status:** DRAFT — pending user review gate (see §10).
+**Date:** 2026-06-12 · **Status:** **REVIEW-2** — Wittle-style central-grid revision after first review pass. Awaiting LOCK sign-off.
 
-**Scope:** locks the 12-Function catalog (× 3 slot behaviors = 36 cells), the 5-status output table, the 15-cell reaction matrix, per-hero base weapons, the 3×3 grid coordinate scheme, and targeting/advance rules. Numbers are starting points designed to be tunable in code — feel-passes will revisit them in Phase 4.
+**Revision history**
+- `DRAFT` (`1bf7986`) — initial mirrored-3×3 layout, 8 open questions
+- `REVIEW-2` (this rev) — central 4×4 grid w/ 4-edge spawn; WATER → +-cross splash; Vex innate confirmed; boss skip in slice; Modifier-without-Active warps base; wave+forge cadence + hero Ults + FTUE staged unlock added
 
 ---
 
 ## 1. Cardinal rules (read first)
 
-1. **Every Function is useful in every slot.** No Function is dead weight in Active, Modifier, or Passive. That's the whole point of the Transistor matrix — zero shop-slot stalling.
-2. **Modifier warps the Active beneath it.** If no Active is socketed, Modifier warps the hero's **base weapon** instead (never dead).
+1. **Every Function is useful in every slot.** No Function is dead weight in Active, Modifier, or Passive — that's the whole point of the Transistor matrix.
+2. **Modifier warps the Active beneath it.** If Active is empty, Modifier warps the hero's **base weapon** (never dead).
 3. **Passive disables the Function's mechanical attack shapes** and emits a continuous trait/aura instead. Same Function in Passive ≠ same Function in Active.
-4. **Statuses live on enemy tiles, not enemies.** When an enemy advances onto a tile carrying a status, it inherits the status. When an enemy dies/leaves a tile, the status remains for its duration.
-5. **A reaction fires when an incoming damage tag hits an existing status on the target tile.** The damage tag comes from the *Active* slot of the firing hero (or hero's base weapon if no Active). Modifier and Passive do **not** carry damage tags themselves.
-6. **One reaction per hit.** If multiple statuses match, resolve in this priority: `Wet > Burning > Chilled > Cracked > Shocked` (alphabetically tied; resolved by status-stack age — oldest first).
-7. **Reactions consume their input status unless the matrix says otherwise.** Default-cleanse simplifies reaction chaining.
+4. **Statuses live on tiles, not enemies.** When an enemy advances onto a tile carrying a status, it inherits the status. When an enemy dies/leaves, status remains on tile for its duration.
+5. **Reactions fire when an incoming damage tag hits an existing status on the target tile.** Damage tag comes from the Active socket of the firing hero (or base weapon if Active empty). Modifier can add a secondary tag. Passive carries no damage tag.
+6. **One reaction per hit.** If multiple statuses match, resolve by priority: `Wet > Burning > Chilled > Cracked > Shocked`; tied — oldest stack first.
+7. **Reactions consume their input status unless the matrix says otherwise.** Default-cleanse simplifies chaining.
+8. **All targeting is Manhattan-distance based from hero tile.** No "row/column" concept — heroes face all 4 directions, enemies spawn from all 4 edges, distance is `|dx| + |dy|`.
 
 ---
 
 ## 2. The 12 Functions
 
-Three categories. Each Function id is the in-code constant and visual label.
+Three categories. Each id is the in-code constant and visual label.
 
 | Category | Functions |
 |---|---|
@@ -30,295 +33,392 @@ Three categories. Each Function id is the in-code constant and visual label.
 | **Patterns (attack shape)** | `AOE`, `BEAM`, `BOUNCE`, `BURST` |
 | **Tactical (targeting + trait)** | `SEEKER`, `LEECH`, `KNOCKBACK` |
 
-Elements emit a status when in Active. Patterns + Tactical do not carry a status themselves — they need an Active element underneath (via the hero's base weapon, or stacked into the same hero's Active slot, in which case Modifier warps the result). See §3 for slot-combination rules.
+Elements emit a status when in Active. Patterns + Tactical do not emit unless they carry an Element via Modifier.
 
-### Slot stacking — what fires first
+### Slot stacking — resolution order per attack tick
 
-A hero has 3 sockets: **Active / Modifier / Passive**. Resolution per attack tick:
+1. **Active socket** defines projectile/shape + the damage tag.
+2. **Modifier socket** warps Active's pattern (shape/fan/bounce/etc.) and may add a secondary damage tag.
+3. **Passive socket** runs every tick independently — never fires the attack; modifies hero stats, applies auras, grants traits.
 
-1. **Active socket** defines the projectile/shape and the damage tag.
-2. **Modifier socket** warps Active's pattern (shape, fan, bounce, etc.) and may add a secondary damage tag.
-3. **Passive socket** runs every tick independently — never fires the attack; it adjusts hero stats, applies auras, or grants traits.
-
-If Active is empty, the hero attacks with their **base weapon** (see §6); Modifier still warps it; Passive still runs.
+If Active is empty, hero attacks with **base weapon** (§6); Modifier still warps it; Passive still runs.
 
 ---
 
 ## 3. The 36-cell Function × Slot matrix
 
-For each Function, locked behavior per slot. **Damage tag** is the element key emitted when this Function is in Active and a hit lands. **Modifier warp** is what this Function does to *another* Active beneath it. **Passive trait** is the continuous effect.
+**Damage tag** = element key emitted when this Function is in Active and a hit lands.
+**Modifier warp** = what this Function does to *another* Active beneath it.
+**Passive trait** = continuous effect, no attack fired.
+
+All targeting in this section assumes **Manhattan-closest enemy** from hero's tile unless stated otherwise.
 
 ### 3.1 Elements
 
 #### `FIRE`
-- **Active:** melee single-target on closest enemy in same column; damage tag = `FIRE`; applies `Burning` to hit tile.
-- **Modifier:** adds `FIRE` damage tag to Active's hits (multi-tag attack — any reaction match resolves on the highest-multiplier tag). +20% base dmg. Does not change Active's shape.
-- **Passive:** "Forge Aura" — all allied heroes' attacks gain +10% dmg vs `Burning` and `Chilled` targets (exploiter).
+- **Active:** melee single-target, range 1 (any Manhattan-adjacent enemy tile); damage tag = `FIRE`; applies `Burning` to hit tile.
+- **Modifier:** adds `FIRE` damage tag to Active's hits (multi-tag attack — reactions resolve on highest-multiplier tag). +20% base dmg. Active's shape unchanged.
+- **Passive:** "Forge Aura" — all allied heroes' attacks gain +10% dmg vs `Burning` and `Chilled` targets (exploiter aura).
 
 #### `ICE`
-- **Active:** ranged 2-tile straight-line on closest enemy in same column; damage tag = `ICE`; applies `Chilled` to hit tile.
-- **Modifier:** adds `ICE` damage tag to Active's hits. +15% base dmg. Active's hits also slow target's advance by 1 tick (post-reaction).
+- **Active:** ranged single-target, no range cap; damage tag = `ICE`; applies `Chilled` to hit tile.
+- **Modifier:** adds `ICE` damage tag. +15% base dmg. Active's hits slow target's next advance by 1 cadence tick.
 - **Passive:** "Frost Field" — enemy advance cadence increases by +1 tick globally (all enemies advance slower while this hero is alive).
 
 #### `LIGHTNING`
-- **Active:** chain-jump — primary hit on closest enemy in same row; arcs to 1 adjacent enemy tile (Manhattan-1) at 50% dmg; damage tag = `LIGHTNING`; applies `Shocked` to both hit tiles.
-- **Modifier:** adds `LIGHTNING` damage tag. +25% base dmg, but Active's attack now jitters: 20% miss chance on the primary hit (chaos modifier).
-- **Passive:** "Static Charge" — every 5 ticks, the hero discharges 1 dmg to all enemies on the column directly in front of them; applies `Shocked` (no reaction unless an Active hit follows).
+- **Active:** chain — primary hit on closest enemy; arcs to 1 next-nearest enemy tile at 50% dmg; damage tag = `LIGHTNING`; applies `Shocked` to both hit tiles.
+- **Modifier:** adds `LIGHTNING` damage tag. +25% base dmg, BUT Active gains 20% miss chance on primary hit (chaos modifier).
+- **Passive:** "Static Charge" — every 5 ticks, the hero discharges 1 dmg to all enemies in a 4-tile Manhattan-3 radius around itself; applies `Shocked` (no reaction unless an Active hit follows).
 
 #### `WATER`
-- **Active:** ranged 3-tile cone (3 tiles wide at row 2 — see §7 grid); damage tag = `WATER`; applies `Wet` to all hit tiles; base dmg low (0.5× hero base).
+- **Active:** +-cross splash — target = closest enemy; hits target tile + 4 Manhattan-adjacent tiles (5-tile + pattern); damage tag = `WATER`; applies `Wet` to all hit tiles; base dmg low (0.5× per tile).
 - **Modifier:** adds `WATER` damage tag. Active's hits also apply `Wet` to the hit tile (in addition to Active's own status). Damage unchanged.
-- **Passive:** "Tidepool" — every 4 ticks, applies `Wet` to a random enemy column (front row tile). Pure utility — sets up other heroes' reactions.
+- **Passive:** "Tidepool" — every 4 ticks, applies `Wet` to a random outer-ring enemy tile (front of advance). Pure utility — sets up reactions.
 
 #### `EARTH`
-- **Active:** melee single-target on closest enemy in same column; damage tag = `EARTH`; applies `Cracked` (stackable up to 3) to hit tile; high base dmg (1.5× hero base), slow attack speed (1 attack per 2 ticks instead of 1).
-- **Modifier:** adds `EARTH` damage tag. Active's hits also stack `Cracked` (1 stack per hit). +30% base dmg, -20% attack speed.
-- **Passive:** "Tectonic Plate" — hero gains +30% HP and +10% dmg reduction; rooted (irrelevant v1 since heroes are static — reserved for future movement).
+- **Active:** melee single-target, range 1; damage tag = `EARTH`; applies `Cracked` (stacks up to 3) to hit tile; high base dmg (1.5×), slow attack speed (1 atk per 2 ticks).
+- **Modifier:** adds `EARTH` damage tag. Active's hits also stack `Cracked` (+1 per hit). +30% base dmg, -20% attack speed.
+- **Passive:** "Tectonic Plate" — hero gains +30% HP and +10% dmg reduction.
 
 ### 3.2 Patterns
 
 #### `AOE`
-- **Active:** radial blast on a 1-tile radius around closest enemy in same column (hits up to 5 tiles in a + shape); damage tag = **none** (no inherent element — uses hero's base weapon dmg tag if any, else neutral); base dmg 0.7× per tile hit.
-- **Modifier:** Active's shape becomes radial — instead of single-target, Active strikes the target tile + all 4 Manhattan-adjacent tiles. Per-tile dmg = Active base × 0.7. Status emission from Active spreads to all hit tiles.
-- **Passive:** "Concussion Aura" — once per 6 ticks, the hero emits a silent blast on the row in front of them: 1 dmg + minor knockback (advance reset on hit enemies). No status.
+- **Active:** radial blast on target = closest enemy; hits target + 4 Manhattan-adjacent tiles (5-tile + shape); damage tag = none; base dmg 0.7× per tile hit.
+- **Modifier:** Active's shape becomes radial — Active strikes target tile + all 4 Manhattan-adjacent. Per-tile dmg = Active base × 0.7. Status emission from Active spreads to all hit tiles.
+- **Passive:** "Concussion Aura" — once per 6 ticks, emits a silent blast on 4 Manhattan-adjacent tiles to hero: 1 dmg + minor advance reset on hit enemies. No status.
 
 #### `BEAM`
-- **Active:** straight-line piercing — fires down the hero's column, hits every enemy tile from front row to back; damage tag = **none**; base dmg 0.6× per tile, attack speed 1 per 2 ticks (slow).
-- **Modifier:** Active's shape becomes piercing — Active continues through its first target and strikes every enemy tile in the same line/column behind it. Per-tile dmg falls 20% per pierce. Status emission applies to every pierced tile.
-- **Passive:** "Long Sight" — hero's column is revealed: enemy HP visible, +15% dmg vs enemies on back row (row 2). Pure utility — no attack.
+- **Active:** straight-line piercing in the cardinal direction of the closest enemy (N/S/E/W from hero); hits every enemy tile on that line through grid edge; damage tag = none; base dmg 0.6× per tile, 1 atk per 2 ticks.
+- **Modifier:** Active's projectile becomes piercing — continues through first target in a 4-cardinal line, hits every enemy tile behind it. Per-tile dmg falls 20% per pierce. Status emission applies to every pierced tile.
+- **Passive:** "Long Sight" — enemy HP visible across grid; +15% dmg vs enemies on outer ring (any tile with `|col-1.5| + |row-1.5| ≥ 2.5`, i.e., corner + edge tiles).
 
 #### `BOUNCE`
-- **Active:** ricochets between enemy tiles — primary hit on closest in column, then bounces to next-closest enemy by Manhattan distance, up to 3 hits total; damage tag = **none**; base dmg 0.8× per hit, no falloff.
-- **Modifier:** Active's projectile gains 2 bounces after impact — each bounce hits next-closest enemy tile at 70% of prior dmg. Status emission applies on each bounce.
-- **Passive:** "Echo" — 20% chance per hero attack to trigger a free secondary hit on the same target tile (same Active behavior, half dmg). Triggers off any attack the hero fires.
+- **Active:** ricochet — primary hit on closest enemy, then bounces to next-closest enemy tile by Manhattan from impact, up to 3 hits total; damage tag = none; base dmg 0.8× per hit, no falloff.
+- **Modifier:** Active's projectile gains 2 bounces after impact — each bounce hits next-closest by Manhattan from prior impact at 70% prior dmg. Status emission applies per bounce.
+- **Passive:** "Echo" — 20% chance per hero attack to trigger a free secondary hit on same target tile (same Active behavior, half dmg). Triggers off any attack the hero fires.
 
 #### `BURST`
-- **Active:** 3-shot fan — fires at closest enemy + the 2 nearest-adjacent enemy tiles in a 3-tile fan; damage tag = **none**; base dmg 0.45× per shot (3 × 0.45 = 1.35× total).
-- **Modifier:** Active fires 3 shots in a 3-tile fan instead of 1. Per-shot dmg = Active × 0.45. Status emission applies per shot — three separate hits, three reaction opportunities.
-- **Passive:** "Rapid Fire" — hero attack speed +40% (1 attack per 0.6 ticks). Affects whatever Active is socketed (or base weapon).
+- **Active:** 3-shot fan — fires at closest enemy + 2 next-nearest enemy tiles in a fan; damage tag = none; base dmg 0.45× per shot (3 × 0.45 = 1.35× total).
+- **Modifier:** Active fires 3 shots in a fan instead of 1 — primary target + 2 next-nearest. Per-shot dmg = Active × 0.45. Status emission applies per shot — 3 separate reaction opportunities.
+- **Passive:** "Rapid Fire" — hero attack speed +40% (1 atk per 0.6 ticks). Affects whatever Active is socketed (or base weapon).
 
 ### 3.3 Tactical
 
 #### `SEEKER`
-- **Active:** auto-targets the lowest-current-HP enemy on the grid regardless of position; ranged single-target, damage tag = **none**; base dmg 0.9×; ignores cover/positioning.
-- **Modifier:** overrides Active's targeting — Active now strikes lowest-HP enemy instead of closest. Shape and damage tag of Active preserved. No dmg change.
-- **Passive:** "Executioner" — hero's attacks deal +50% dmg to enemies under 30% HP. Massive late-fight scaling.
+- **Active:** auto-targets lowest-current-HP enemy on grid regardless of position; ranged single-target, damage tag = none; base dmg 0.9×; ignores cover/positioning.
+- **Modifier:** overrides Active's targeting — Active now strikes lowest-HP enemy instead of closest. Shape + damage tag of Active preserved.
+- **Passive:** "Executioner" — hero attacks deal +50% dmg to enemies under 30% HP. Late-fight scaling.
 
 #### `LEECH`
-- **Active:** melee single-target on closest enemy in same column; damage tag = **none**; base dmg 0.6×; heals self for 50% of dmg dealt.
-- **Modifier:** Active's hits heal the firing hero for 25% of dmg dealt. Shape, dmg tag, status preserved.
-- **Passive:** "Lifelink" — hero passively heals 1 HP per tick (every tick, regardless of attack). Also disables mechanical attacks from Modifier/Active (per addendum §II) — when in Passive, this hero **does not fire**, only sustains the squad.
+- **Active:** melee single-target, range 1; damage tag = none; base dmg 0.6×; heals self for 50% of dmg dealt.
+- **Modifier:** Active's hits heal the firing hero for 25% of dmg dealt. Shape + dmg tag + status preserved.
+- **Passive:** "Lifelink" — hero passively heals 1 HP per tick (every tick, regardless of attack). Also DISABLES mechanical attacks (Modifier + Active) — when LEECH is in Passive, this hero does not fire, only sustains.
 
 #### `KNOCKBACK`
-- **Active:** melee single-target on closest enemy in same column; damage tag = **none**; base dmg 0.5×; pushes target back 1 row (resets advance timer for that tile).
-- **Modifier:** Active's hits push target back 1 row on connect. Stacks with Active's status emission (push happens after damage, so reactions still resolve on the pre-push tile).
-- **Passive:** "Repulse Field" — when any enemy advances onto the row directly in front of this hero, push them back 1 row (1× per tick max). Defensive zoning.
+- **Active:** melee single-target, range 1; damage tag = none; base dmg 0.5×; pushes target back 1 tile away from hero (toward spawn edge).
+- **Modifier:** Active's hits push target 1 tile away from hero on connect. Stacks with Active's status emission (push happens after damage, so reaction still resolves on pre-push tile).
+- **Passive:** "Repulse Field" — when any enemy advances onto a tile Manhattan-adjacent to this hero, push them back 1 tile (1× per tick max). Defensive zoning.
 
 ---
 
 ## 4. Status output table
 
-5 statuses are emitted by Element Functions in Active. Patterns + Tactical do not emit unless they carry an Element via Modifier.
+5 statuses emitted by Element Functions in Active. Patterns + Tactical do not emit unless they carry an Element via Modifier.
 
 | Function (Active) | Status | Duration | Stack rules | Decay / cleanse |
 |---|---|---|---|---|
 | `FIRE` | **Burning** | 3 ticks | refresh on re-apply (no stack) | natural decay; cleansed by `WATER`-tag reaction |
 | `ICE` | **Chilled** | 3 ticks | refresh | cleansed by `FIRE`-tag reaction |
-| `LIGHTNING` | **Shocked** | 2 ticks | refresh | natural decay only; short duration is intentional |
+| `LIGHTNING` | **Shocked** | 2 ticks | refresh | natural decay only (short by design) |
 | `WATER` | **Wet** | 4 ticks | refresh | cleansed by `FIRE`-tag reaction (Steam) |
-| `EARTH` | **Cracked** | 4 ticks | stacks to 3 (each stack +15% incoming dmg) | natural decay; no element cleanse |
+| `EARTH` | **Cracked** | 4 ticks | stacks to 3 (+15% incoming dmg per stack) | natural decay; no element cleanse |
 
-**Tile-level behavior.** A status applies to the hit *enemy tile*. If the tile is empty when struck (e.g., enemy died on contact), the status persists on the tile for its duration. Next enemy to advance onto that tile inherits the status. This is the core of cross-hero combo setup — hero A pre-loads tiles, hero B detonates.
+**Tile-level passive effect** (active even without a reaction firing):
 
-**Effective gameplay impact (independent of reactions):**
-
-| Status | Tile-level effect (passive) |
+| Status | Effect on occupying enemy |
 |---|---|
-| Burning | -2 HP per tick to occupying enemy |
-| Chilled | enemy advance speed halved (next advance roll takes 2× ticks) |
+| Burning | -2 HP per tick |
+| Chilled | next advance takes 2× cadence ticks |
 | Shocked | -1 HP per tick + 10% chance to skip own attack |
-| Wet | no inherent dmg; pure reaction-enabler |
-| Cracked | enemies on tile take +15% dmg per stack (max +45% at 3 stacks) |
+| Wet | no inherent dmg; reaction-enabler only |
+| Cracked | +15% incoming dmg per stack (max +45% at 3) |
 
 ---
 
 ## 5. The reaction matrix (15 reactions, v1)
 
-A reaction fires when an **incoming damage tag** strikes a tile carrying an **existing status**. Tag comes from the Active socket of the firing hero (Modifier can add a secondary tag). Per-hit, only the highest-multiplier reaction matches (rule 6 above).
-
 | # | Incoming tag | × Status | → Reaction | Dmg mult | Splash | Status mutation | VFX hook |
 |---|---|---|---|---|---|---|---|
-| 1 | `LIGHTNING` | × Wet | **Electrocute** | 2.0× | 1-tile Manhattan (all 4 adj) | cleanse Wet on origin + adj tiles; apply Shocked to splashed | `vfx_arc_chain` |
-| 2 | `FIRE` | × Wet | **Steam** | 1.0× (no bonus) | 1-tile radius | cleanse Wet + Burning on origin + adj; apply `Blind` (1-tick miss) to splashed enemies | `vfx_steam_puff` |
+| 1 | `LIGHTNING` | × Wet | **Electrocute** | 2.0× | 1-tile Manhattan (4 adj) | cleanse Wet on origin + adj; apply Shocked to splashed | `vfx_arc_chain` |
+| 2 | `FIRE` | × Wet | **Steam** | 1.0× | 1-tile radius (5-tile +) | cleanse Wet + Burning on origin + adj; apply `Blind` to splashed enemies | `vfx_steam_puff` |
 | 3 | `FIRE` | × Chilled | **Thaw** | 1.5× | none | cleanse Chilled; no new status | `vfx_fire_burst` |
 | 4 | `FIRE` | × Cracked | **Magma Burst** | 1.8× | 1-tile Manhattan | consume 1 Cracked stack; apply Burning to splashed | `vfx_magma` |
-| 5 | `ICE` | × Wet | **Freeze Solid** | 1.5× | none | cleanse Wet; apply `Frozen` (1-tick skip own turn — distinct from Chilled) | `vfx_freeze_solid` |
+| 5 | `ICE` | × Wet | **Freeze Solid** | 1.5× | none | cleanse Wet; apply `Frozen` (1-tick skip own turn) | `vfx_freeze_solid` |
 | 6 | `ICE` | × Burning | **Frostbite** | 1.3× | none | cleanse Burning; apply Chilled | `vfx_frostbite` |
 | 7 | `ICE` | × Shocked | **Capacitor** | 1.4× | none | refresh Shocked for 2× duration; cleanse Chilled if any | `vfx_arc_freeze` |
 | 8 | `WATER` | × Burning | **Quench** | 0.8× | none | cleanse Burning; apply Wet | `vfx_steam_small` |
-| 9 | `WATER` | × Shocked | **Backsplash** | 0.5× | 1-tile Manhattan (only tiles already Wet) | propagate Shocked to splashed Wet tiles (Wet becomes Shocked) | `vfx_water_arc` |
-| 10 | `WATER` | × Cracked | **Mudslide (Water)** | 1.2× | none | consume 1 Cracked stack; apply slow (advance +2 ticks) | `vfx_mudslide` |
-| 11 | `EARTH` | × Wet | **Mudslide (Earth)** | 1.4× | none | cleanse Wet; apply slow (advance +2 ticks) | `vfx_mudslide` |
-| 12 | `EARTH` | × Burning | **Ash Cloud** | 1.2× | 1-tile Manhattan | cleanse Burning on origin; apply `Blind` (1-tick miss) to splashed | `vfx_ash_cloud` |
-| 13 | `EARTH` | × Chilled | **Avalanche** | 1.6× | none | cleanse Chilled; knockback target 1 row | `vfx_rock_slam` |
-| 14 | `LIGHTNING` | × Cracked | **Stonesmith** | 2.0× | none | consume 1 Cracked stack; apply Shocked (Cracked stacks may remain) | `vfx_arc_stone` |
+| 9 | `WATER` | × Shocked | **Backsplash** | 0.5× | 1-tile Manhattan (only tiles already Wet) | propagate Shocked to splashed Wet tiles | `vfx_water_arc` |
+| 10 | `WATER` | × Cracked | **Mudslide (W)** | 1.2× | none | consume 1 Cracked stack; apply slow (+2 ticks to next advance) | `vfx_mudslide` |
+| 11 | `EARTH` | × Wet | **Mudslide (E)** | 1.4× | none | cleanse Wet; apply slow (+2 ticks) | `vfx_mudslide` |
+| 12 | `EARTH` | × Burning | **Ash Cloud** | 1.2× | 1-tile Manhattan | cleanse Burning on origin; apply `Blind` to splashed | `vfx_ash_cloud` |
+| 13 | `EARTH` | × Chilled | **Avalanche** | 1.6× | none | cleanse Chilled; knockback 1 tile away from grid center | `vfx_rock_slam` |
+| 14 | `LIGHTNING` | × Cracked | **Stonesmith** | 2.0× | none | consume 1 Cracked stack; apply Shocked | `vfx_arc_stone` |
 | 15 | `LIGHTNING` | × Burning | **Arc Storm** | 1.5× | 1-tile Manhattan | spread Shocked to splashed; consume Burning on origin only | `vfx_arc_storm` |
 
-**Not in matrix (no reaction — base dmg only):** any tag × no status; `WATER` × Wet; `WATER` × Chilled; `FIRE` × Burning; `ICE` × Chilled; `EARTH` × Cracked; `EARTH` × Shocked; `LIGHTNING` × Shocked. These either self-stack (status refreshes) or are dead pairs to keep the table tractable.
+**Not in matrix (base dmg only):** any tag × no status; `WATER` × Wet; `WATER` × Chilled; `FIRE` × Burning; `ICE` × Chilled; `EARTH` × Cracked; `EARTH` × Shocked; `LIGHTNING` × Shocked. Self-stack or pruned for table tractability.
 
-**Auxiliary statuses introduced by reactions:**
+**Auxiliary statuses introduced by reactions only:**
 
 | Status | Effect | Duration |
 |---|---|---|
 | `Blind` | enemy's next attack misses | 1 attack instance |
 | `Frozen` | enemy skips next attack + advance | 1 tick |
+| `Bleed` (Vex Ult only — see §12) | enemy loses 5% max HP per tick | 4 ticks |
 
-These are reaction-only — no Function emits them directly. Cleanse: natural decay only.
+Cleanse: natural decay only.
 
 ---
 
 ## 6. Per-hero base weapons (3 heroes — Bran, Elara, Vex)
 
-What each hero does with **ZERO Functions socketed**. Base attack is the implicit "Active" if Active socket is empty; Modifier still warps it; Passive still runs.
+What each hero does with **ZERO Functions socketed**. Base attack is implicit "Active" if Active socket empty; Modifier still warps it; Passive still runs.
 
-### Bran — Warrior
-- **Base attack:** melee single-target, closest enemy in same column; range = 1 row (front-most enemy in his column).
-- **Damage tag:** none (neutral).
-- **Status emission:** none.
-- **Base dmg:** 1.0× (reference unit).
-- **Attack cadence:** 1 attack per tick.
-- **Squad role:** front-row anchor; benefits most from `BEAM` / `BURST` Modifier or `LEECH` for self-sustain.
+| Hero | Base attack | Damage tag | Status emit | Base dmg | Atk cadence | Crit | HP |
+|---|---|---|---|---|---|---|---|
+| **Bran (Warrior)** | melee single-target, range 1 (any Manhattan-adj enemy) | none | none | 1.0× | 1 atk/tick | 0% | 100 |
+| **Elara (Mage)** | ranged single-target, no range cap (any enemy tile on grid) | none | none | 0.8× | 1 atk/tick | 0% | 70 |
+| **Vex (Rogue)** | melee single-target, range 1 | none | none, **but +20% dmg vs `Burning` targets** (innate trait) | 0.9× | 1.2 atk/tick | 15% (2× crit) | 80 |
 
-### Elara — Mage
-- **Base attack:** ranged single-target, closest enemy in same column, 3-row reach (can hit back row from front row).
-- **Damage tag:** none (neutral).
-- **Status emission:** none.
-- **Base dmg:** 0.8×.
-- **Attack cadence:** 1 attack per tick.
-- **Squad role:** back-row caster; benefits most from `LIGHTNING` / `AOE` / `FIRE` Active for reaction-setup.
-
-### Vex — Rogue
-- **Base attack:** melee single-target, closest enemy in same column; range = 1 row.
-- **Damage tag:** none (neutral).
-- **Status emission:** none — but innate +20% dmg vs `Burning` targets (built-in exploiter; this is *not* a Passive Function — it's hero-intrinsic).
-- **Base dmg:** 0.9×, crit chance 15% (2× crit dmg).
-- **Attack cadence:** 1 attack per tick (1.2× speed flag — i.e. attacks slightly more often given multi-hero tick budget; see §8).
-- **Squad role:** finisher; deploy after Elara stacks Burning, Vex executes.
-
-**Hero stat baselines (v1 starting numbers — tunable in `hero_data.gd`):**
-
-| Hero | HP | DMG | Speed | Crit % |
-|---|---|---|---|---|
-| Bran | 100 | 1.0× | 1.0 atk/tick | 0% |
-| Elara | 70 | 0.8× | 1.0 atk/tick | 0% |
-| Vex | 80 | 0.9× | 1.2 atk/tick | 15% |
+**Squad role guidance:**
+- **Bran** = front-line. Benefits most from `BEAM` / `BURST` Modifier or `LEECH` self-sustain.
+- **Elara** = caster + status setter. Benefits most from `LIGHTNING` / `AOE` / `FIRE` / `WATER` Active for reaction setup.
+- **Vex** = executor. Pair after Burning is on board. Auto-exploits via innate trait.
 
 ---
 
-## 7. Grid scheme
+## 7. Grid scheme — central 4×4, enemies from 4 sides
 
-**3×3 player grid + 3×3 enemy grid, mirrored.** 9 tiles per side; 3 heroes leaves 6 player tiles empty (reserved for terrain/buffs/summons in later phases).
+**16-tile single battlefield** (no mirrored player/enemy grids). Inner 2×2 = hero deploy zone (4 slots, 3 used for trio + 1 reserved for future summon/terrain). Outer 12 tiles = battlefield where enemies advance through.
+
+![grid layout reference](grid-4x4-wittle-style.png)
 
 ```
-        PLAYER GRID                     ENEMY GRID
-   col=0   col=1   col=2           col=0   col=1   col=2
- ┌───────┬───────┬───────┐       ┌───────┬───────┬───────┐
- │ (0,0) │ (1,0) │ (2,0) │ row=0 │ (0,0) │ (1,0) │ (2,0) │  row=0  (front, enemies advance here last)
- ├───────┼───────┼───────┤       ├───────┼───────┼───────┤
- │ (0,1) │ (1,1) │ (2,1) │ row=1 │ (0,1) │ (1,1) │ (2,1) │  row=1
- ├───────┼───────┼───────┤       ├───────┼───────┼───────┤
- │ (0,2) │ (1,2) │ (2,2) │ row=2 │ (0,2) │ (1,2) │ (2,2) │  row=2  (back — spawn here)
- └───────┴───────┴───────┘       └───────┴───────┴───────┘
-              ⇆ (mirrored — player.col maps to enemy.col)
+              N spawn edge (4 spawn tiles)
+              ↓     ↓     ↓     ↓
+           ┌──────┬──────┬──────┬──────┐
+           │ (0,0)│ (1,0)│ (2,0)│ (3,0)│  row 0
+           ├──────┼──────┼──────┼──────┤
+    W →    │ (0,1)│ (1,1)│ (2,1)│ (3,1)│  row 1   ← E
+  spawn    │      │  H   │  H   │      │
+   tiles   ├──────┼──────┼──────┼──────┤
+    W →    │ (0,2)│ (1,2)│ (2,2)│ (3,2)│  row 2   ← E
+  (0,1)    │      │  H   │  H   │      │
+  (0,2)    ├──────┼──────┼──────┼──────┤
+           │ (0,3)│ (1,3)│ (2,3)│ (3,3)│  row 3
+           └──────┴──────┴──────┴──────┘
+              ↑     ↑     ↑     ↑
+              S spawn edge (4 spawn tiles)
 ```
 
-**Coord conventions:**
-- **Player grid:** row=0 is **back** (mage row), row=2 is **front** (Vex/Bran row). Player column 0 is left.
-- **Enemy grid:** row=0 is **front** (closest to player, where contact lands), row=2 is **back** (spawn row).
-- "Same column" means `player.col == enemy.col`. "Same row" means same `row` index — but cross-grid distance is measured in *Manhattan steps across both grids* (treat the join between front rows as one cell apart).
+**Coord convention:** `(col, row)`, both 0-indexed, top-left = `(0,0)`. Total 16 tiles.
 
-**Distance** (for "closest by Manhattan"): `|p.col - e.col| + (p.row_inverted) + (e.row)`, where `p.row_inverted = 2 - p.row` (so Bran on player row 2 / front is 0 distance to enemy row 0). Implementation detail — `grid_state.gd` exports a `distance(player_tile, enemy_tile)` function.
+**Hero deploy zone (inner 2×2):** `(1,1)`, `(2,1)`, `(1,2)`, `(2,2)`. Heroes are static in v1 — deploy on run start (or scripted unlock for Bran/Vex per FTUE — see §13).
 
-**Heroes are static in v1** — they occupy a player tile at deploy and cannot move. Future phases may add movement; targeting must be coord-derived so movement plugs in cleanly.
+**Spawn edges (outer ring, 12 tiles):**
+- **N edge** = row 0, all 4 cols: `(0,0)`, `(1,0)`, `(2,0)`, `(3,0)`
+- **S edge** = row 3, all 4 cols: `(0,3)`, `(1,3)`, `(2,3)`, `(3,3)`
+- **W edge** = col 0, mid rows: `(0,1)`, `(0,2)` (corners belong to N/S)
+- **E edge** = col 3, mid rows: `(3,1)`, `(3,2)`
 
-**Boss footprint:** a Boss occupies a single column × 2 rows (e.g., (0,1)+(0,0) — back-row spawn extending to mid-row). Treats as one entity with one HP bar; either tile being hit applies status to that tile; advance is by entity not by tile (boss moves both tiles together).
+Total = 12 spawn tiles. Wave directors (Phase 4 throwaway, Phase 5 proper) pick which spawn tiles activate per wave.
+
+**Manhattan distance** (canonical, used by all targeting): `distance(a, b) = |a.col - b.col| + |a.row - b.row|`. Exported by `grid_state.gd`.
+
+**Grid center** = midpoint between `(1,1)`, `(2,1)`, `(1,2)`, `(2,2)`. For "advance toward center" math, an enemy at `(c, r)` moves toward the inner-2×2 tile with lowest Manhattan distance — see §8.2.
+
+**Boss footprint** (Phase 5 only — skipped in vertical slice per §10 Q7): 2×1 or 2×2 footprint on the spawn edge, single HP bar, scripted advance. Out of scope for slice.
 
 ---
 
-## 8. Targeting + movement + cadence rules
+## 8. Targeting + advance + cadence rules
 
-### 8.1 Targeting (derived from Active Function)
+### 8.1 Targeting (Manhattan-closest from hero tile)
 
-The Active Function (or base weapon if Active empty) dictates the hero's target selection algorithm:
+All targeting derives from the **firing hero's tile** + the **Active socket** (or base weapon if empty). Tie-breakers (deterministic, no RNG): lowest col index, then lowest row index.
 
 | Active type | Selection algorithm |
 |---|---|
-| Melee single (FIRE / ICE-melee / EARTH / KNOCKBACK / LEECH / Bran base / Vex base) | closest enemy in *same column*, by row index (lowest row = closest, since enemy row 0 = front) |
-| Ranged single (LIGHTNING primary / Elara base) | closest enemy in *same row* (mirrored row, see §7), tie-broken by column distance |
-| Cone (WATER) | 3 tiles wide on enemy row 2 — wraps to row 1 if row 2 empty (recompute per tick) |
-| Radial / pierce (AOE / BEAM Active) | closest enemy in column as the *anchor*, then shape spreads from there |
-| Bounce (BOUNCE Active) | closest in column → next-closest by Manhattan from impact, max 3 hops |
-| Multi-shot (BURST Active) | closest in column + 2 nearest-adjacent enemy tiles (3-tile fan) |
-| Seeker (SEEKER Active or SEEKER Modifier) | enemy with lowest current HP, regardless of column/row |
+| Melee single (FIRE / EARTH / KNOCKBACK / LEECH / Bran / Vex) | closest enemy by Manhattan, capped at range 1 (must be Manhattan-adj to hero tile). If no enemy in range → no attack this tick. |
+| Ranged single (LIGHTNING primary / Elara base) | closest enemy by Manhattan, no range cap |
+| Cross splash (WATER) | closest enemy = target tile; hit = target + 4 Manhattan-adj tiles (5-tile +) |
+| Radial (AOE Modifier or Active) | closest enemy = anchor; hit = anchor + 4 Manhattan-adj (5-tile +) |
+| Pierce (BEAM Active or Modifier) | closest enemy determines cardinal direction (N/S/E/W from hero); fire a line in that cardinal from hero's tile through every enemy tile until grid edge |
+| Bounce (BOUNCE Active or Modifier) | primary = closest by Manhattan; next bounces choose next-closest by Manhattan from previous impact, up to 3 hits |
+| Multi-shot (BURST Active or Modifier) | primary = closest; +2 next-closest by Manhattan (3-shot fan, 3 separate hits) |
+| Seeker (SEEKER Active or Modifier) | lowest current-HP enemy on grid, no range cap |
 
-**Tie-breakers:** lowest column index, then lowest row index. Deterministic — no RNG in target selection.
+**ICE** Active is **ranged single** with `ICE` damage tag (not melee — overrides any §3 text suggesting otherwise).
 
 ### 8.2 Enemy advance
 
-- Enemies spawn on row 2 (back of enemy grid).
-- Each enemy has an **advance counter** (default 4 ticks). When counter ticks down to 0, enemy advances 1 row toward player (row 2 → 1 → 0). Counter resets to 4.
-- **Reaching player grid:** when an enemy on enemy row 0 advances, they "cross over" and start dealing 1 dmg/tick to all 3 heroes (squad-wide tick damage — heroes still attack normally; the enemy is gone from the grid).
-- `Chilled` status: enemy's next advance takes 2× ticks (8 instead of 4).
-- `KNOCKBACK` reaction (Avalanche, etc.): pushes enemy back 1 row (row reduces? — no: enemy row goes back to spawn row, so row index increases by 1, capped at 2).
+- **Spawn:** enemy appears on its assigned spawn tile (one of 12 outer-ring tiles).
+- **Advance step:** every cadence tick (default = 4 ticks/step), enemy moves 1 tile toward grid center.
+  - Step direction = the cardinal that reduces Manhattan distance to **nearest hero tile** most. If multiple equal, prefer cardinal in this priority: ↓ (south), → (east), ↑ (north), ← (west) — deterministic.
+  - Edge corners (e.g., spawn `(0,0)` — NW corner) move diagonally if both N→S and W→E reduce distance equally → in 1 cadence step, it moves to either `(1,0)` or `(0,1)` per priority above (south wins → `(0,1)`).
+- **Contact with hero:** when an enemy's next advance would land on a hero-occupied tile, it engages instead — enemy stays on its current ring tile, deals **1 dmg/tick** to that hero. Hero auto-attacks resolve normally.
+- **Hero death:** if hero dies, the engaging enemy advances onto the now-vacant hero tile, then continues advancing past the inner zone. Enemies that traverse the full inner zone "exit" the grid → squad-wide damage of 2 dmg/tick to all surviving heroes per such enemy until killed (off-grid enemies can still be Seeker-targeted).
+- **`Chilled` status:** next advance takes 2× cadence ticks (8 instead of 4).
+- **`Frozen` status:** skip next advance entirely (1 tick).
+- **Knockback (Avalanche / KNOCKBACK Active):** push enemy 1 tile *away from grid center* (toward its origin spawn edge). If at edge already, no effect.
 
 ### 8.3 Tick cadence
 
-- 1 tick = 1 game second (configurable for slow-mo / juice in code; tunable via `combat.gd` const).
-- Per tick: (1) status decay pass, (2) enemy advance pass, (3) hero attack pass (in deploy order), (4) reaction resolution pass, (5) death + cleanup pass.
-- A wave ends when all enemies are dead (player win) OR all heroes are dead (player loss). Player tile cross-over does NOT kill heroes directly — only HP attrition does.
-
-### 8.4 Boss rules
-
-- Boss spawns on row 2 occupying 1 column × 2 rows (see §7).
-- Boss does NOT advance on standard cadence; instead has scripted phases (Phase 5 detail — for vertical slice, treat boss as a stationary 5× HP enemy at row 1).
-- Boss can be hit on either tile of its footprint; status applies to the boss entity, not the tile (single status pool per boss).
-
----
-
-## 9. Forge UI implications (Phase 4 / 5)
-
-Not implementation — design contract for the UI rewrite. The shop and forge layers must communicate the matrix structure clearly:
-
-- **Shop card** shows: Function id, category color (Element red/blue/yellow/cyan/brown, Pattern purple, Tactical green), and a 3-row preview of Active/Modifier/Passive behavior summaries (4–6 words each — see §3 cells for source text).
-- **Hero forge panel** shows: 3 stacked sockets (Active on top, Modifier middle, Passive bottom), each labeled. Empty Active reads "Base weapon". Dragging a card into a socket previews the resulting combined effect (e.g., "Base + ICE Mod = ranged + chill on hit").
-- **No recipes.** The merge system (L1→L5 Function auto-merge) survives unchanged at the slot level — drop a 2nd `FIRE` on a 1-star `FIRE` Function to get a 2-star (1.5× values), but Function behavior remains identical per slot. (Merge details out of scope for this spec — defer to existing `merge.gd` behavior with Function-card data shape.)
+- 1 tick = 0.5 game-sec at 1× speed. Player may toggle 2× speed in HUD. All tunable in `combat.gd` consts.
+- Per tick, in order:
+  1. **Status decay pass** — decrement duration of every active status on every tile/enemy.
+  2. **Enemy advance pass** — decrement advance counters; resolve advance steps; resolve knockback/freeze interactions.
+  3. **Hero attack pass** — in deploy order (Bran → Elara → Vex or whoever's live), call `resolve_active(hero) → AttackResult` per hero with ≥1 atk-per-tick or accumulated speed budget.
+  4. **Reaction resolve pass** — every hit emitted by step 3 checked against `tile_status[target]` by `element_mediator.gd`; dispatches reactions per §5 matrix.
+  5. **Death + cleanup pass** — remove dead enemies, leave status on tile until natural decay.
+- A wave ends when all spawned enemies for that wave are dead. Player tile cross-over does NOT immediately lose the wave — only squad HP attrition does.
 
 ---
 
-## 10. User review gate (HARD STOP)
+## 9. Wave / Shop / Pacing — the run loop
 
-This spec is the implementation contract for Phase 4 (vertical slice) and Phase 5 (full rewrite). **No code is written against it until the user signs off.**
+Game is wave-based with discrete forge breaks. Not pure-continuous Wittle. Mapping closer to Brotato + TFT than the addendum's reference set.
 
-**Open questions for review (revise inline before sign-off):**
+### 9.1 Per-run loop
 
-1. **Function set** — is the 12-Function v1 cut correct, or should we swap one (e.g., drop `KNOCKBACK` for `TELEPORT` per the addendum's example)?
-2. **Reaction count** — 15 reactions is dense but tractable. Reduce to 10 (cleaner) or expand to 20 (more depth)? Lean toward 15 for v1.
-3. **Status durations** — Burning 3 / Chilled 3 / Shocked 2 / Wet 4 / Cracked 4 ticks. Feel right? Bias short for mobile readability.
-4. **Grid size** — 3×3 mirrored is locked here per plan §13. Confirm vs addendum's 3×4 / 4×4 mention.
-5. **Cone targeting** — `WATER`-Active uses a 3-tile cone. Confirm or simplify to "row-wide hit"?
-6. **Per-hero innate trait** (Vex's +20% vs Burning) — keep as hard-coded hero identity, or make it a removable Passive seed? Currently locked as innate.
-7. **Boss in vertical slice** — treat as stationary 5× HP enemy (per §8.4). Confirm or skip boss entirely for Phase 4?
-8. **Modifier-without-Active** — when a Modifier is socketed but Active is empty, Modifier warps the *base weapon* (rule 2 in §1). Confirm this is the desired behavior over "Modifier inert without Active".
+| Phase | Duration | Time scale | What happens |
+|---|---|---|---|
+| **Deploy** (run start, once) | ~15 sec | paused | shop rolls 5 Functions. Player drags into 9 sockets (3 heroes × 3 slots; locked heroes invisible during FTUE — see §13). Tap **Ready** → wave 1 starts. |
+| **Wave** (combat) | ~10–15 sec | real-time | enemies spawn at assigned edges + advance inward. Heroes auto-fire per Active. Reactions resolve. Player watches + taps **Ultimate** when charged. |
+| **Forge break** | ~6–8 sec | paused | wave clears → shop re-rolls 5 new Functions. Auto-merge L1→L5 runs automatically. Player drags new Functions into sockets (replace = discard old for gold). Tap **Continue** → next wave. |
+| **Boss wave** (every 5 waves, Phase 5+) | ~30 sec | real-time | bigger enemy, scripted phases, longer forge break after. Skipped in vertical slice. |
+| **Run end** | — | — | after wave 10–12 victory, or full squad death = defeat. Meta-XP awarded. |
 
-Once these are answered + spec adjusted, commit a **`status: LOCKED`** revision and proceed to Phase 4 branch cut.
+### 9.2 Stack assembly speed
+
+- **Deploy** = 15 sec / 9 sockets = ~1.6 sec per socket. Tight but workable since Functions are color-coded (Element red/blue/yellow/cyan/brown, Pattern purple, Tactical green) and snap-to-socket has magnetic UX.
+- **Forge break** = 6–8 sec / 3–5 swaps = ~1.5 sec per swap.
+- **Speed aids (Phase 5 polish — Phase 4 stubs only):**
+  - **Lock pin** per shop slot — that slot does not re-roll next break.
+  - **Category filter chip** — Elements / Patterns / Tactical tabs filter shop view.
+  - **Auto-merge** — duplicate Function drops on existing socket auto-merges L1+L1→L2 with no extra tap.
+  - **Magnetic snap zones** with haptic feedback (mobile).
+
+### 9.3 Shop rules
+
+- 5 slots, each carrying 1 Function card.
+- Cost per Function = scaling with wave (W1 = 1 gold, W3 = 2 gold, W6 = 3 gold, etc.).
+- Re-roll cost = 1 gold (Phase 5 polish).
+- Gold earned per kill = 1 (Phase 5 tunes).
+- **No mid-wave shop access.** Shop opens only on forge break + deploy. Keeps wave focus.
 
 ---
 
-## Appendix A — Implementation hooks (for Phase 4 dev reference, not normative)
+## 10. Hero Ultimates — the juicy combo moments
 
-- `function_data.gd` (Resource): `id: String`, `category: enum`, `active_behavior: Dict`, `modifier_behavior: Dict`, `passive_behavior: Dict`, `damage_tag: StringName` (empty for non-elements), `status_emit: StringName` (empty for non-emitters).
-- `status_data.gd` (Resource or enum): `id`, `duration`, `stack_max`, `tile_effect`, `decay_rule`.
-- `reaction_data.gd` (Resource): `incoming_tag`, `existing_status`, `dmg_mult`, `splash_radius`, `splash_filter` (none / Manhattan-1 / Manhattan-1-wet-only), `status_mutation` (Dict of cleanse/apply ops), `vfx_hook`.
-- `grid_state.gd` (autoload): `tile_status: Dict[Vector2i, Array[StatusInstance]]`, `enemy_occupants: Dict[Vector2i, Enemy]`, `hero_occupants: Dict[Vector2i, Hero]`. Exports `distance(p_tile, e_tile) → int`.
-- `element_mediator.gd` (autoload): subscribes to `hit_landed(attacker, target_tile, damage, tags)` signal; checks `tile_status[target_tile]` vs `tags`; dispatches reaction from `reaction_data.gd` registry; emits `reaction_triggered` signal back to combat for VFX + dmg apply.
-- `combat.gd` rewrite (`combat_v2.gd` during vertical slice): tick loop driving §8.3 pass order; per-hero attack pass calls `resolve_active(hero) → AttackResult`; result feeds `element_mediator`.
+Each hero has **1 hero-locked Ultimate**, not a Function. Charge resource = squad-shared **Reaction Charge** bar.
+
+**Charge rule:** every 3 reactions triggered by any hero (any reaction in §5) → +1 Ult bar. Max 3 bars stored. Bars persist across waves until used.
+
+**Tap hero portrait** (HUD) when ≥1 bar → fires that hero's Ult, consumes 1 bar.
+
+### 10.1 Bran — "Leap & Slam" (the requested kinetic moment)
+- 1-tick wind-up: Bran sprite arcs upward off the grid (visible airborne).
+- Crashes onto the enemy tile furthest from grid center (back-row enemy by Manhattan from `(1.5, 1.5)`); explodes for **5× base dmg** in a 5-tile + radial pattern (target + 4 Manhattan-adj).
+- Applies `Cracked` (+2 stacks) to all hit tiles.
+- Returns to home tile in 1 tick (animation only, invulnerable during 2-tick total).
+- Best paired with EARTH or LIGHTNING Active for Magma Burst / Stonesmith chains on return swing.
+
+### 10.2 Elara — "Chain Storm"
+- Spawns 8 LIGHTNING arc-jumps that chain across every grid tile carrying `Wet` status.
+- Each jump = 2× base dmg + applies `Shocked` to hit tile.
+- If no Wet tiles → degrades to "all enemies on grid take 1× LIGHTNING dmg" (failsafe — never dead Ult).
+- Hard reward for setup: pre-Wet the grid via WATER Active → Elara Ult = grid-clear.
+
+### 10.3 Vex — "Phantom Strike"
+- Teleports adjacent to lowest-HP enemy regardless of position (cosmetic — Vex's "home" deploy slot returned to after).
+- 3 strikes at 200% each, crit-locked (always crit).
+- Applies `Burning` + `Bleed` to target tile. `Bleed` = 4 ticks at 5% max-HP/tick (Vex-Ult-only, not in standard matrix).
+- Cleanup ability — drops 1–3 enemies per use.
+
+**VFX hooks (Phase 4 stubs as colored flashes; Phase 5 art-pass):** `vfx_bran_leap`, `vfx_elara_storm`, `vfx_vex_phantom`.
+
+---
+
+## 11. Forge UI implications (Phase 4 / 5)
+
+Design contract for UI rewrite (not implementation).
+
+- **Shop card** shows: Function id, category color (see §9.2), and a 3-row preview of Active/Modifier/Passive behavior summaries (4–6 words each — pull from §3).
+- **Hero forge panel** shows: 3 stacked sockets (Active top, Modifier middle, Passive bottom), each labeled. Empty Active reads "Base weapon". Dragging a card into a socket previews the combined effect (e.g., "Base + ICE Mod = ranged + chill on hit").
+- **Hud during wave:** 3 hero portraits with Ult bar fill, squad HP indicator, wave counter, reaction-chain counter (for charge feedback).
+- **No recipes.** Merge (L1→L5 auto-merge) survives at slot level — drop a 2nd `FIRE` on a 1-star `FIRE` Function = 2-star (1.5× values), behavior identical per slot. Details defer to existing `merge.gd` with Function-card data shape.
+
+---
+
+## 12. FTUE — staged hero unlock (replays on debug reset)
+
+Goal: ease player into the forge → status → reaction → Magicka-chain progression by introducing heroes one at a time across the first 6 waves.
+
+**Replay condition:** FTUE plays on first run AND replays whenever `AccountState.reset()` clears the `ftue_complete` flag (debug reset button on Home already does this — no new code path needed). Useful for demos / showcase to multiple people.
+
+**Wave-by-wave FTUE script:**
+
+| Wave | Heroes live | Shop | Enemy spawn | Tutorial overlay |
+|---|---|---|---|---|
+| **1** | Elara solo at `(1,2)` | forced cards: `FIRE` + `WATER` only | 3 weak goblins, N edge only | "Drag FIRE to Elara's Active. Watch FIRE projectiles + Burning status." |
+| **2** | Elara solo | normal 5-roll | 4 enemies, N + S edges | "Try a Modifier — warps the Active beneath. Try WATER as Mod for a Wet+FIRE multi-hit." |
+| **3** | + **Bran joins** at `(2,2)` (cinematic via `PullOverlay`) | normal 5-roll | 5 enemies, N + S + W edges | "Elara WATER on a tile + Bran swing with FIRE Mod = **STEAM** reaction. First Magicka moment." |
+| **4** | Elara + Bran | normal | 5 enemies, 3 edges | hint: "Stack reactions to fill Ult bar (top-left)." |
+| **5** | Elara + Bran | normal | 6 enemies, 3 edges | hint: "Tap Bran portrait when Ult bar full = **Leap & Slam**." |
+| **6** | + **Vex joins** at `(2,1)` (cinematic via `PullOverlay`) | normal | 7 enemies, all 4 edges | "Vex executes Burning targets. Chain reactions across all 3 heroes = full Magicka loop." |
+| **7–10** | full squad | normal | scaling, all 4 edges | no overlays. Open play. |
+
+**Mechanics during FTUE:**
+- Locked heroes are not shown in HUD or forge panel (gradual reveal).
+- Forced shop cards (W1) ensure first reaction is reachable.
+- Cinematic at Bran/Vex unlock = reuse `pull_overlay.gd` from 2_WC P0 — show character portrait + flavor line ("Bran joins the forge.").
+- Once `ftue_complete = true`, subsequent runs deploy all 3 heroes from W1 with normal shop rolls.
+
+**Implementation notes (Phase 5 — Phase 4 stubs only):**
+- `AccountState` gains `ftue_complete: bool` (default false). Set true on victory of wave 10 of first run. Cleared by `reset()`.
+- `WaveDirector` (new, Phase 5) reads `ftue_complete` + current wave to drive scripted vs open play.
+- Reuse `pull_overlay.gd` for cinematic unlock (already proven in P0).
+
+---
+
+## 13. Locked decisions (REVIEW-2 sign-off pending)
+
+| # | Decision | Status |
+|---|---|---|
+| 1 | 12-Function set: FIRE/ICE/LIGHTNING/WATER/EARTH + AOE/BEAM/BOUNCE/BURST + SEEKER/LEECH/KNOCKBACK | ✅ LOCKED |
+| 2 | 15-reaction matrix (Electrocute, Steam, Thaw, Magma Burst, Freeze Solid, Frostbite, Capacitor, Quench, Backsplash, Mudslide-W, Mudslide-E, Ash Cloud, Avalanche, Stonesmith, Arc Storm) | ✅ LOCKED |
+| 3 | Status durations: Burning 3 / Chilled 3 / Shocked 2 / Wet 4 / Cracked 4 ticks | ✅ LOCKED |
+| 4 | Central 4×4 grid, enemies from 4 sides, heroes static in inner 2×2 | ✅ LOCKED |
+| 5 | WATER Active = +-cross 5-tile splash (replaces cone) | ✅ LOCKED |
+| 6 | Vex innate Burning exploiter (+20% dmg vs Burning), hard-coded hero trait | ✅ LOCKED |
+| 7 | Boss skipped in vertical slice; reintroduced in Phase 5 | ✅ LOCKED |
+| 8 | Modifier without Active warps base weapon (never dead) | ✅ LOCKED |
+| 9 | FTUE staged unlock (Elara W1-2 → +Bran W3 → +Vex W6); replays on `AccountState.reset()` (debug menu) | ✅ LOCKED |
+| 10 | Wave + forge break cadence (10–15s wave / 6–8s break, ~10–12 waves per run) | ✅ LOCKED |
+| 11 | Hero Ults: Leap & Slam (Bran) / Chain Storm (Elara) / Phantom Strike (Vex), 3-reaction charge | ✅ LOCKED |
+
+**LOCK gate:** user reads this revision end-to-end + signs off → status flips to `LOCKED`, Phase 4 vertical slice branch cuts. Below this line, no design churn — implementation only.
+
+---
+
+## Appendix A — Implementation hooks (Phase 4 dev reference)
+
+- `function_data.gd` (Resource): `id: String`, `category: enum`, `active_behavior: Dict`, `modifier_behavior: Dict`, `passive_behavior: Dict`, `damage_tag: StringName` (empty for non-elements), `status_emit: StringName` (empty for non-emitters), `base_dmg_mult: float`, `atk_speed_mod: float`.
+- `status_data.gd` (Resource): `id`, `duration`, `stack_max`, `tile_effect`, `decay_rule`.
+- `reaction_data.gd` (Resource): `incoming_tag`, `existing_status`, `dmg_mult`, `splash_radius`, `splash_filter` (none / Manhattan-1 / Manhattan-1-wet-only / Manhattan-1-Cross-5), `status_mutation` (Dict of cleanse/apply ops), `vfx_hook`.
+- `grid_state.gd` (autoload): `tile_status: Dict[Vector2i, Array[StatusInstance]]`, `enemy_occupants: Dict[Vector2i, Enemy]`, `hero_occupants: Dict[Vector2i, Hero]`. Exports `distance(a: Vector2i, b: Vector2i) -> int` (Manhattan).
+- `element_mediator.gd` (autoload): subscribes to `hit_landed(attacker, target_tile, damage, tags)` signal; checks `tile_status[target_tile]` vs `tags`; dispatches reaction from `reaction_data.gd` registry; emits `reaction_triggered` signal back to combat for VFX + dmg apply. Increments squad-shared `reaction_count` counter; emits `ult_charged` signal when count crosses every 3rd increment.
+- `combat_v2.gd` (vertical slice; graduates to `combat.gd` Phase 5): tick loop driving §8.3 pass order; per-hero attack pass calls `resolve_active(hero) → AttackResult`; result feeds `element_mediator`.
+- `wave_director.gd` (Phase 5; Phase 4 hardcodes 5 waves): reads `ftue_complete` + wave index → spawns scripted vs open-play enemies + edges.
+- `ult_controller.gd` (Phase 5; Phase 4 stubs with colored flash): handles Ult charge accumulation, portrait-tap input, hero-specific Ult routines (Leap/Storm/Phantom).
+- Reuse from 2_WC P0: `pull_overlay.gd` for FTUE cinematics (Bran/Vex unlock); `account_state.gd` extended with `ftue_complete` bool; `hero_progress.gd` unchanged (still drives between-run meta-XP).

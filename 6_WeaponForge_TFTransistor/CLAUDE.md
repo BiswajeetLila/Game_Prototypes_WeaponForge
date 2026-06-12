@@ -24,63 +24,11 @@
 
 Every active spec carries a "Subordinate to" or "SSOT" banner pointing at `01_GDD.md`. When a spec decision is finalised and reflected in the build, fold the fact into `01_GDD.md`.
 
-## Historical docs (banner-marked, do NOT use for forward work)
+## Pre-pivot 2_WC docs (archived 2026-06-13)
 
-All carry a `HISTORICAL` banner at the top pointing at the current SSOT + pivot rationale. They describe the previous `2_Weaponcraft_Godot` direction (anatomical Head/Hilt/Rune crafting + single-lane combat + recipe discovery). Kept for design archeology only — to be archived after Phase 3 spec lands LOCKED + Phase 4 slice freezes.
+22 docs describing the previous `2_Weaponcraft_Godot` direction (anatomical Head/Hilt/Rune crafting + single-lane combat + recipe discovery + hero-squad gacha meta) have been moved to [`_archive/docs-pre-pivot-2026-06-12/`](_archive/docs-pre-pivot-2026-06-12/). Inventory + rationale in that folder's [README](_archive/docs-pre-pivot-2026-06-12/README.md). **Reference-only — do NOT use for forward work.**
 
-### High-level historical docs (`docs/`)
-
-| Path | Role |
-|---|---|
-| [`docs/roadmap-2026-06-12.md`](docs/roadmap-2026-06-12.md) | 2_WC P0 → full game roadmap. Stale. |
-| [`docs/story-beats.md`](docs/story-beats.md) | 2_WC P0 observable beats narrative. Stale. |
-
-### Subsystem stubs (`docs/02_systems/`)
-
-| Path | Role |
-|---|---|
-| [`docs/02_systems/art_direction.md`](docs/02_systems/art_direction.md) | 2_WC art direction stub. |
-| [`docs/02_systems/pvp_arena.md`](docs/02_systems/pvp_arena.md) | 2_WC PvP arena stub (Month-9 roadmap target). |
-| [`docs/02_systems/onboarding.md`](docs/02_systems/onboarding.md) | 2_WC onboarding stub. References Mage/Rogue scripted unlocks now superseded by REVIEW-3 FTUE script. |
-| [`docs/02_systems/audio.md`](docs/02_systems/audio.md) | 2_WC P0 audio direction (Wittle/Cookie-Run register). Direction may inform Phase 5 sound but content references parts/recipes/craft moments that died. |
-| [`docs/02_systems/combat_math.md`](docs/02_systems/combat_math.md) | 2_WC combat math stub (Hero Level +5%/lvl). Hero-level direction informs Wittle-meta Phase 5 spec. |
-
-### Content scaffolds (`docs/03_content/`)
-
-| Path | Role |
-|---|---|
-| [`docs/03_content/characters.md`](docs/03_content/characters.md) | 2_WC 9-12 hero roster scaffold. Bran/Elara/Vex carry into REVIEW-3 (with new lane-locked identities). Roster size + Mastery system stale. |
-| [`docs/03_content/parts.md`](docs/03_content/parts.md) | 2_WC ~30 parts catalogue (Head/Hilt/Rune). **Entirely dead** — Functions replace parts. |
-| [`docs/03_content/recipes.md`](docs/03_content/recipes.md) | 2_WC ~200 discoverable recipes codex. **Entirely dead** — Function Matrix replaces recipes. |
-| [`docs/03_content/boss_affinities.md`](docs/03_content/boss_affinities.md) | Boss affinity taxonomy stub. Maps partially to REVIEW-3 wave telegraph weakness/resistance but model itself is stale. |
-
-### Economy stubs (`docs/04_economy/`)
-
-| Path | Role |
-|---|---|
-| [`docs/04_economy/currency.md`](docs/04_economy/currency.md) | 2_WC 4 launch currencies. Gold + Hero Shards + Hero XP carry into REVIEW-3 + Phase 5 Wittle-meta direction. |
-| [`docs/04_economy/stamina.md`](docs/04_economy/stamina.md) | 2_WC P1 stamina gate. Maps to Phase 5+ Wittle-meta. |
-| [`docs/04_economy/battle_pass.md`](docs/04_economy/battle_pass.md) | Live-ops battle pass stub. Phase 5+ Wittle-meta. |
-| [`docs/04_economy/cosmetics.md`](docs/04_economy/cosmetics.md) | Cosmetic taxonomy stub. Phase 5+ Wittle-meta. |
-
-### Historical specs (`docs/superpowers/specs/`)
-
-| Path | Role |
-|---|---|
-| [`docs/superpowers/specs/2026-06-11-hero-squad-meta-design.md`](docs/superpowers/specs/2026-06-11-hero-squad-meta-design.md) | 2_WC hero-squad meta direction (locked 2026-06-11, superseded 2026-06-12). |
-| [`docs/superpowers/specs/2026-06-12-retention-arc-d1-d20.md`](docs/superpowers/specs/2026-06-12-retention-arc-d1-d20.md) | 2_WC D1-D20 retention narrative. Stale. |
-| [`docs/superpowers/specs/2026-06-12-greenlight-pitch.md`](docs/superpowers/specs/2026-06-12-greenlight-pitch.md) | 2_WC CEO greenlight pitch. Stale. |
-
-### P0 implementation plans (`docs/superpowers/plans/`)
-
-These are historical implementation plans for the **shipped 2_WC P0 build** (at `fbe426d`). Do NOT re-execute — they describe how to build dying gameplay. Listed for archeology + because parts of the meta layer they shipped (account_state, hero_progress, home, modals, pull_overlay) survive into REVIEW-3 unchanged.
-
-| Path | Role |
-|---|---|
-| [`docs/superpowers/plans/2026-06-12-p0-hero-progression-foundation.md`](docs/superpowers/plans/2026-06-12-p0-hero-progression-foundation.md) | P0 progression engine (hero_progress + account_state autoloads). SHIPPED. Carries into REVIEW-3 meta layer unchanged. |
-| [`docs/superpowers/plans/2026-06-12-p0-wiring.md`](docs/superpowers/plans/2026-06-12-p0-wiring.md) | P0 wiring of hero levels into 2_WC live combat. SHIPPED. Combat layer rewrites in Phase 5; meta layer hooks survive. |
-| [`docs/superpowers/plans/2026-06-12-p0-home-squad.md`](docs/superpowers/plans/2026-06-12-p0-home-squad.md) | P0 Home + squad-select implementation. SHIPPED. Home.tscn + home.gd survive into REVIEW-3 unchanged. |
-| [`docs/superpowers/plans/2026-06-12-p0-slice-beats.md`](docs/superpowers/plans/2026-06-12-p0-slice-beats.md) | P0 Result modal + scripted Vex pull + scout intel + juice. SHIPPED. PullOverlay reused for REVIEW-3 FTUE Bran/Vex cinematics; scout_intel data path revived as REVIEW-3 wave telegraph. |
+Mirror structure preserved under the archive root: `roadmap-2026-06-12.md`, `story-beats.md`, `02_systems/`, `03_content/`, `04_economy/`, `superpowers/specs/` (3 superseded specs), `superpowers/plans/` (4 shipped-P0 plans). Each retains its HISTORICAL banner.
 
 ## `_archive/` — historical, reference-only
 

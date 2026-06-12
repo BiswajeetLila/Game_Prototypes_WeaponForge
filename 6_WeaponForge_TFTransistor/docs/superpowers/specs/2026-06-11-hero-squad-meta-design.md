@@ -1,3 +1,5 @@
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the Function Matrix + spatial grid pivot. See [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md).**
+
 # WeaponCraft — Hero-Squad Meta Design
 
 **Date:** 2026-06-11

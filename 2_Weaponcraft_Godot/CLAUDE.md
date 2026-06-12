@@ -1,3 +1,5 @@
+> **FROZEN 2026-06-12 — see [`../6_WeaponForge_TFTransistor/`](../6_WeaponForge_TFTransistor/).** Forward work happens there; this folder is reference-only.
+
 # 2_Weaponcraft_Godot — Folder Rules
 
 > Scope: these rules govern **only** `2_Weaponcraft_Godot/`. Sibling prototype folders are out of scope.

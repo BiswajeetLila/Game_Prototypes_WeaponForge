@@ -1,3 +1,5 @@
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the Function Matrix + spatial grid pivot. See [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md).**
+
 > **SSOT:** [01_GDD.md](../../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. Elaborates the [hero-squad meta design](2026-06-11-hero-squad-meta-design.md). Build wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
 
 # Retention Arc — Day-in-the-Life (D1 → D20)

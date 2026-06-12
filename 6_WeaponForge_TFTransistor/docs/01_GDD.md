@@ -1,3 +1,5 @@
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the Function Matrix + spatial grid pivot. See [`superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md).**
+
 # WeaponCraft — Game Design Doc
 
 **Working title:** WeaponCraft

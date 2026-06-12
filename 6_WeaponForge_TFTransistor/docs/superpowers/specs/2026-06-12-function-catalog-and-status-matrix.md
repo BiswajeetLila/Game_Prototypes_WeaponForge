@@ -1,6 +1,6 @@
 # Function Catalog + Status Reaction Matrix — Design Spec
 
-> **SSOT for forward implementation.** Parent design rationale: [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md). Slice scope: [`2026-06-13-phase4-vertical-slice-scope.md`](2026-06-13-phase4-vertical-slice-scope.md).
+> **Subordinate to** [`../../01_GDD.md`](../../01_GDD.md) — folder SSOT. This doc is the cell-by-cell implementation contract elaborating the GDD's Function Matrix + reaction system + lane combat + FTUE pillars. Parent rationale (verbatim): [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md). Slice scope: [`2026-06-13-phase4-vertical-slice-scope.md`](2026-06-13-phase4-vertical-slice-scope.md).
 
 **Date:** 2026-06-13 · **Status:** **REVIEW-3** — auto-runner pivot. 3-lane Capybara-Go-style replaces grid. Awaiting LOCK sign-off.
 

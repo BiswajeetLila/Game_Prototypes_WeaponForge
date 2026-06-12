@@ -1,4 +1,4 @@
-> **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the WeaponForge TFTransistor pivot (Function Matrix + 3-lane auto-runner + Magicka reactions). Current SSOT: [`01_GDD.md`](../01_GDD.md). Pivot rationale: [`../superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](../superpowers/specs/2026-06-12-fork-a-pivot-addendum.md).**
 
 # Cosmetic Taxonomy — Stub
 

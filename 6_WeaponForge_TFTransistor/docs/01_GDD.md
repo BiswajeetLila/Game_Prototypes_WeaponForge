@@ -1,245 +1,226 @@
-> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the Function Matrix + spatial grid pivot. See [`superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md).**
+# WeaponForge TFTransistor — Game Design Doc
 
-# WeaponCraft — Game Design Doc
-
-**Working title:** WeaponCraft
-**Working folder:** `Game_Prototypes/2_Weaponcraft_Godot/`
+**Working title:** WeaponForge TFTransistor (formerly WeaponCraft; pivoted 2026-06-12)
+**Working folder:** `Game_Prototypes/6_WeaponForge_TFTransistor/`
 **Target platform:** Vertical mobile (iOS + Android)
-**Target audience:** Casual-mobile RPG players (Wittle Defender, AFK Journey, AFK Arena, Hero Wars cohort)
+**Target audience:** Casual-mobile RPG + tactical-roguelike players (Wittle Defender, Capybara Go, Brotato, Slice & Dice, AFK Journey cohorts)
 
 ---
 
-## ⚠ SSOT & build reconciliation (read first)
+## ⚠ SSOT & doc tree (read first)
 
-**This document is the single source of truth (SSOT) for `2_Weaponcraft_Godot`.** The shipped Godot build in [`Prototype/godot/`](../Prototype/godot/) is **authoritative for all current-state facts** — where this doc's prose and the build disagree, **the build wins**. Design intent not yet in the build is tagged **[ROADMAP]**.
+**This document is the single source of truth (SSOT) for `6_WeaponForge_TFTransistor`.**
 
-Folder rules live in [`../CLAUDE.md`](../CLAUDE.md). Historical / superseded material — the abandoned "Wittle-inversion" weapon-gacha fork (now its own project, `5_WeaponForge_Honkai_Godot`), plus old handoffs, research, decks, and mockups — lives in [`../_archive/`](../_archive/) and **must not** be used for forward work. Archive is reference-only.
+- Every spec under `docs/` either **is** the SSOT (this doc) or is a spec that **points to** it and elaborates a subsystem.
+- The Godot build in [`Prototype/godot/`](../Prototype/godot/) is **authoritative for all current-state facts.** Where this doc's prose and the build disagree on what is implemented, the build wins. Design intent not yet in the build is tagged **[ROADMAP]**.
+- Folder rules live in [`../CLAUDE.md`](../CLAUDE.md).
+- **Historical / superseded material** — the abandoned `2_Weaponcraft_Godot` direction (anatomical Head/Hilt/Rune crafting + single-lane combat + recipe discovery) — lives in (a) the frozen sibling folder `2_Weaponcraft_Godot/` (do not touch) and (b) banner-marked HISTORICAL docs inside this folder's `docs/` tree (do not reference for forward work — they remain only for design archeology until Phase 3 spec lands and they are archived).
+- **`_archive/`** in this folder = older forks (Wittle-inversion weapon-gacha — that direction continued as the separate `5_WeaponForge_Honkai_Godot` project). Reference-only. Not for forward work.
 
-### Current direction (locked 2026-06-11)
-Forward design = **crafting-core run + persistent hero-squad gacha meta.** Crafting (TFT shop → 3-slot weapons → recipe discovery → 15-wave counter-build) stays the moment-to-moment hook (**≥60% of run power**); a persistent, collectible hero squad is the day-to-day progression hook (heroes bring ult + passive + class + squad synergy + exclusive recipes; Level + Star + Mastery/bond). This *returns to* this GDD's original hero-gacha vision, now layered on the shipped craft build. **Full spec + phasing (P0→full game): [`superpowers/specs/2026-06-11-hero-squad-meta-design.md`](superpowers/specs/2026-06-11-hero-squad-meta-design.md).** Note: the weapon-gacha alternative lives in the separate `5_WeaponForge` project — do NOT add a weapon gacha here.
+### Active design specs (elaborate this SSOT)
 
-### As-built deltas (build = truth)
-- **15 waves per run**, boss waves at **W5 / W10 / W15** (supersedes older "5–6 waves" prose below).
-- **3 heroes, scripted unlock**: Bran (start) · Elara (on clearing W3) · Vex (on clearing W6). No hero gacha in build.
-- **Weapon = 3 slots**: Head + Hilt + Rune. Built via a **TFT-style gold shop + paid reroll** — no premium pulls.
-- **Named effects** emerge from part tag-combos (Steamburst = Fire+Ice, Inferno = Fire+Fire, …) — 8 recipes live.
-- **Merge** L1→L5. **Heal potion = 15% max HP**. **Boss Reforge-&-Retry** on wipe.
-
-### [ROADMAP] — designed here, NOT in the build yet
-Hero gacha + 15-character roster · multi-stage chapter map · idle/AFK layer · stamina · Star-Up · Build Templates · recipe scrolls · 4th "Modifier" slot · bench-fusion · battle pass / monetization · PvP arena · party synergies. All remain valid design targets — treat as future, not current.
-
-**Superseded specifics:** older prose below citing a **15-hero / 12-gacha** roster, **80-pull** Legendary pity, **in-run hero unlocks** (Mage @ stage 3–5 / Rogue @ boss), and a **7–9-currency** economy is out of date. Current (per the hero-squad spec) = **3 free + 6–9 pullable** roster, pity **50 / 100**, **pre-run squad-select**, **4 currencies** (Gold / Gems / Hero Shards / Hero XP).
-
----
-
-## Context
-
-A casual-mobile game concept that fuses two influences:
-
-1. **Robotek** (Hexage, 2011) — turn-based tactical combat with slot-machine-flavored randomness, a "send my unit out to fight" feel, and a node-map campaign.
-2. **A weapon-crafting layer** — a randomized parts feed (hilts, runes, blades, upgrades) the player composes into weapons each round.
-
-Initial sketch shows a vertical mobile screen with combat on top, crafting bay below, weapon list on the left, parts strip on the bottom, and a "send the weapon up" arrow connecting the two halves.
-
-The concept settled into a **fantasy 3-character party auto-battler with deep weapon crafting**. Core hook: the "randomized dice roll" is moved out of combat and into crafting, where the player's strategic input lives. Combat auto-resolves on weapon stats with a single-tap ultimate as the drama beat.
+| Doc | Role |
+|---|---|
+| [`superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md`](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md) | **The cell-by-cell implementation contract.** 12 Functions × 3 slot behaviors = 36 cells; 15-reaction matrix; lane combat rules; FTUE script; world structure; tier system; Ults. **Status: REVIEW-3** (awaiting LOCK sign-off). |
+| [`superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md`](superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md) | **Phase 4 (prototype-1) scope doc.** Mission, in-scope systems, build sequence, success/failure criteria, playtest feedback plan. |
+| [`superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md) | **Parent design rationale.** The user's verbatim pivot addendum from 2026-06-12 — describes the Function Matrix + spatial-combat + Magicka reactions thesis. Read once for the "why"; the cell-by-cell contract above lives in the Function catalog doc. |
+| **[ROADMAP]** Wittle-meta-progression spec | TBD post-Phase-4 feel-gate. Hero levels, skill trees, equipment, talents, stars, dailies, season pass, idle income — Wittle Defender clone meta-layer (locked direction per REVIEW-3 §13 row 12). |
+| **[ROADMAP]** Monetization spec | TBD post-Phase-4 (locked deferred per REVIEW-3 §19.2 P1). |
 
 ---
 
 ## High-concept pitch
 
-> "Forge weapons, send heroes. WeaponCraft is a casual-mobile auto-battler where you craft randomized weapons in a TFT-style shop, equip your 3-hero fantasy party, and watch them fight. Discover hundreds of weapon recipes by combining elemental and structural parts. Counter every boss with a new build. Collect heroes, master classes, and forge legends."
+> **"Forge functions, run the lane, react in chains."**
+>
+> WeaponForge TFTransistor is a casual-mobile **tactical auto-runner** for a 3-hero squad. Heroes walk left-to-right through a 3-lane corridor; enemies spawn from the right. Each hero carries a **3-socket Function Matrix** (Active / Modifier / Passive — Transistor-style). Drag atomic Functions (`FIRE`, `WATER`, `LIGHTNING`, `AOE`, ...) into sockets to shape your attacks, and chain them into cross-hero **Magicka reactions** (`WATER` + `LIGHTNING` = Electrocute; `WATER` + `FIRE` = Steam). A 7-slot shop slow-populates between waves so you forge while you fight. Each session is one **world** — 5 stages, 15 waves, ~4 minutes. Collect heroes and level them across sessions for permanent power (Wittle-clone meta).
 
 ---
 
-## Core loop (moment-to-moment)
+## The five design pillars
 
-A single **stage** (~3–4 min, Wittle-style) plays as:
-
-1. **Pre-stage** — player picks 3 heroes from unlocked roster (Warrior / Mage / Rogue / etc.) using **Auto-pick + manual override** UX.
-2. **Wave 1**
-   - **Forge moment** opens. TFT-style shop displays 5 random parts. Player buys with round currency, drags onto 3 weapon slots (one per hero). Class-affinity parts auto-route to matching hero; universal parts queue for manual placement. Reroll button refreshes shop for currency cost.
-   - Player confirms loadout. **Combat** plays out auto, side-view single-lane, party-on-left vs. monsters-on-right (Robotek-style framing).
-   - During combat, each hero's **Ultimate gauge** fills from damage dealt. Player taps hero portrait when ready to fire single-use ultimate.
-   - Wave clears → reward (currency, occasional parts/shards) → next wave.
-3. **Waves 2–5** — same forge → fight beat. Weapons persist across waves and can be upgraded (add parts, swap parts, scrap-and-rebuild).
-4. **Wave 5/6 = Boss** — full-kit fight. If beaten, stage clears, banks XP/loot. If lost, **boss-retry** screen opens: rearrange lineup + reforge weapons (parts already collected stay in inventory) + try again. Boss has visible **affinity** (resists fire / weak to pierce / etc.) telegraphing counter-build needed.
-5. **Post-stage** — stage rewards drop. Player returns to chapter map. Stamina ticks down.
-
-**Idle / offline layer (AFK Journey pattern):**
-- Currency, gold, scrap-parts, hero XP accrue at a slow rate while offline (12hr cap).
-- On reopen, player claims "AFK rewards" → instant shop currency for next session.
+1. **The Function Matrix (Transistor)** — 3 universal sockets per hero (Active / Modifier / Passive). Every Function works in every slot, with different behavior in each. Zero RNG-lockout from rolling the wrong shop. Per-hero stack = the forge moment.
+2. **3-lane auto-runner combat (Capybara Go / Wittle Defender)** — no grid, no placement. Heroes lane-locked. Enemies advance from off-screen right. Combat is auto-fire driven by Active Function. Cross-lane abilities create spatial-feeling depth without manual positioning.
+3. **Magicka cross-hero reactions** — statuses (Burning / Wet / Chilled / Shocked / Cracked) attach to enemies. When an incoming damage tag hits a status, a reaction fires (Electrocute, Steam, Thaw, Magma Burst, Mudslide, ...). 15 reactions in the v1 matrix. Stacking 3 reactions in a 2-sec window = Ult charge + chain stinger juice.
+4. **Distributed cognitive load (slow-populate shop)** — 7-item shop populates **across each stage's 3 waves** (rhythm: 2 items at stage start, 3 across waves, 2 right before stage break). Player thinks about builds while watching auto-combat. Stage break = 8-10 sec paused chill to consolidate. No forge-break crunch panic.
+5. **Wittle-meta-progression (carry across runs)** — heroes persist across worlds with full Wittle-style meta (hero levels, skill trees, equipment, talents, stars, dailies, season pass, idle income). Function loadout resets per world to keep each session a fresh forge puzzle. Per-session = one world = ~4-5 minutes; meta builds over days.
 
 ---
 
-## Locked design decisions
+## Core loop
 
-### Combat pacing
-Turn-based, Robotek-cadence. Combat pauses between waves. No real-time pressure on crafting.
+```
+   ┌──────────────────────────────────────────────────────────────┐
+   │  WORLD (≈ 4-5 min, one session)                              │
+   │                                                              │
+   │  F0 deploy  ──> Stage 1 (3 waves) ──> F1 ──> Stage 2 (3 waves)│
+   │                                                              │
+   │   ──> F2 ──> Stage 3 (3 waves) ──> F3 ──> Stage 4 (3 waves)  │
+   │                                                              │
+   │   ──> F4 ──> Stage 5 BOSS (mini, mini, BOSS) ──> F5 / win    │
+   │                                                              │
+   │  Each STAGE:                                                 │
+   │    Wave 1 (~12s) → Wave 2 (~12s) → Wave 3 (~12s)             │
+   │    Shop slow-populates 2/3/2 across the 3 waves              │
+   │    Stage break (8-10s paused chill) → drag final items       │
+   │                                                              │
+   │  Each WAVE: enemies spawn from right → walk left → heroes    │
+   │    auto-fire Functions → reactions chain → wave ends when    │
+   │    all enemies dead.                                         │
+   │                                                              │
+   │  Run ends: win (cleared stage 5) or loss (all heroes dead)   │
+   │    → meta-XP awarded → return to Home                        │
+   └──────────────────────────────────────────────────────────────┘
+```
 
-### Combat agency
-Hybrid auto + single-tap ultimate. Combat auto-resolves on weapon stats. Player taps hero portrait to fire that hero's signature ultimate, once per fight. Ultimate is the main player-engagement beat during combat.
-
-### Weapon lifetime + meta progression
-Weapons are per-stage (called "per-run" in the casual-mobile sense). Persistent meta lives in:
-- Hero roster (unlocked characters, levels, Star-Up tier).
-- Recipe codex (discovered combos).
-- Part shard collection (legendary part shards).
-- Build Templates (saved successful weapon configs).
-- Character "weapon mastery" passives (unlocked at character levels).
-
-> Alternatives considered and rejected: disposable per-round, per-run weapon evolving, persistent weapon collection.
-
-### Combat scale
-3-character fantasy party vs monster waves, side-view single-lane (Robotek-style). Heroes on left, monsters waddle in from right, auto-attack, health bars. Tap hero portrait to fire ultimate.
-
-**Roster ramp:** Player starts with 1 hero (Warrior). 2nd hero (Mage) unlocks at stage 3–5. 3rd hero (Rogue) unlocks at chapter 1 boss. Subsequent heroes via gacha.
-
-### Parts → weapon assignment
-Auto-assign with override. Class-affinity parts auto-route to that class's weapon slot. Universal parts queue for manual drag. Combined with the TFT shop: shop displays 5 parts, player buys, bought parts flow into the auto-route system.
-
-### World / run structure
-Chapter map at launch. Live-ops roadmap adds an Endless Tower event mode in Season 2.
-
-Chapter map is the campaign spine. Each chapter has ~10–15 stages culminating in a chapter boss.
-
-> Alternatives considered and rejected: endless tower as main spine, roguelike runs (contradicts boss-retry mechanic).
-
-### Weapon anatomy
-3-slot weapons: **Head + Hilt + Rune**. All weapons have 3 part slots. **Late-game unlock**: a 4th "Modifier" slot opens for each hero at character mastery level 20+ (modifier slots host passive triggers: bleed-on-hit, ricochet, life-leech, etc.). Gives a clean late-game depth ramp.
-
-### Parts feed mechanic
-TFT-style shop with reroll. Each forge moment: shop displays 5 random parts. Player buys with round currency. Reroll button refreshes shop for currency cost. Unbought parts vanish at confirm. Same shop UX language as character gacha = consistent learning curve.
-
-### Ultimate charge mechanic
-Damage-dealt + Charge Rune accelerator + time-cap backstop. Base charge fills from damage dealt (better weapon → faster ult). Optionally accelerated by **Charge Rune** archetype parts (build choice matters). Time-cap backstop ensures ult is ready by fight end at minimum.
-
-### Recipe discovery flow
-Hybrid (codex hints + recipe scrolls + tutorial seed), enriched with three Potion-Craft-inspired enhancements:
-1. **Many-paths-to-one-effect.** Each named effect (Steamburst, Hemorrhage, Twilight) has 2–4 valid part-combos. Players love finding *their* combo.
-2. **Effect-name visible, recipe hidden silhouettes.** Codex shows "??? makes *Steamburst — AoE on hit*" with recipe blanks. Goal-known, path-unknown discovery flavor.
-3. **Saved Build Templates.** Player pins favorite weapon configs. Quick-rebuild any run if parts available.
-
-Plus original features:
-- Tutorial seeds the first 5–10 recipes.
-- Recipe scrolls drop from bosses / quests / premium currency (preemptive recipe reveals).
-- Hint silhouettes for undiscovered combos.
-- Every craft produces *something* (no wasted attempts).
-
-### Stage structure
-**Wittle Defender cadence + AFK Journey idle + Robotek node-map.**
-- **5–6 waves per stage**, ~3–4 min per stage. *([AS-BUILT] prototype runs a single **15-wave** run with boss waves at W5/W10/W15; the multi-stage chapter cadence below is [ROADMAP].)*
-- **Forge moment between every wave** — TFT shop opens, parts roll, player crafts, confirms, next wave fires.
-- **Weapons persist and upgrade across waves** within a stage.
-- **Currency banks across waves within stage**, resets between stages.
-- **Boss on every 5th stage** (stages 1–4 normal, stage 5 chapter sub-boss; chapter end has a bigger boss).
-- **Stamina-gated** — 3 plays free, 4th costs stamina, refills over time.
-- **Star Challenge** mode for completed stages (Wittle pattern).
-- **AFK idle layer** — currency / gold / scrap / hero XP accrue offline (12hr cap) → claim on reopen.
-- **Robotek node-map UI** for chapter view: stage nodes connected on a hand-drawn map, with boss / elite / normal node types visually distinct.
-
-### Monetization
-**Hybrid model with five layered hooks:**
-- **Gacha (primary pillar)** — character pulls + part shard packs + recipe scroll packs.
-- **Battle Pass** — seasonal (~$5–10/season), free + premium track.
-- **Rewarded ads** — free pulls / 2× rewards / extra stamina.
-- **Light energy** — stamina-gated stage plays, refill packs.
-- **Cosmetics** — hero skins, weapon visual effects, ultimate animation skins.
-- **IAP bundles** — starter packs, monthly card, holiday events.
-
-### Part schema (combat math foundation)
-Every part contributes three layers:
-1. **Flat stats** — Iron Edge: +5 ATK. Steel Hilt: +10% crit chance. Fire Rune: +3 fire damage.
-2. **Class affinity tag** — Warrior-only / Mage-only / Rogue-only / Universal. Drives auto-routing.
-3. **Element / keyword tag** — Fire / Ice / Bleed / Holy / Shadow / Lightning / Pierce / Poison / etc.
-
-**Named effects emerge from tag combinations within a weapon:**
-- Fire + Ice = **Steamburst** (AoE on hit)
-- Bleed + Crit = **Hemorrhage** (compounded DoT)
-- Holy + Shadow = **Twilight Edge** (alternating damage type each swing)
-- Poison + Bleed = **Necrosis** (DoT stacks compound)
-- Iron + Storm = **Thunderclap Grip** (chain lightning on crit)
-- ... ~30 base parts × 4 rarities → ~200+ discoverable combos (Potion Craft-scale codex).
-
-**Effects are also class-tinted.** Mage Steamburst (cone of steam) ≠ Warrior Steamburst (steam-coated strike) ≠ Rogue Steamburst (steam smokebomb). Same name, three flavor variants per class.
-
-### Roster launch shape
-- **15 characters at launch.**
-- **3 free starter heroes**: Warrior (free at tutorial), Mage (stage 3–5 unlock), Rogue (chapter 1 boss unlock).
-- **12 gacha-only heroes**: 4 Rare / 5 Epic / 3 Legendary.
-- **Pull rates**: Common 70% / Rare 22% / Epic 7% / Legendary 1%.
-- **Pity system**: Epic guaranteed every 30 pulls, Legendary guaranteed every 80 pulls.
-- **10-pull discount**: 10× cost 9× single price + 1 guaranteed Rare+.
-- **Shard duplicates** drive **Star-Up** (★1 → ★5). Each tier: minor passive perk + ult cosmetic upgrade. Damage scaling is gentle so F2P-at-★1 stays competitive.
-- **Banner cadence**: 1–2 new heroes/month post-launch via featured banner.
+**Numbers** (locked starting values, see [function catalog spec §9](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md#9-world-structure--stage--wave--forge-cadence)):
+- 1 tick = 0.5 sec (2× speed toggle available)
+- 1 world (FTUE) = 11 waves; 1 world (post-FTUE) = 15 waves
+- 6 forge moments per world (F0–F5)
+- Run length ≈ 4-5 minutes at 1× speed
 
 ---
 
-## Locked extras (side-thread decisions)
+## Heroes (3 in launch, lane-locked)
 
-### Hybrid TFT-pattern for characters
-Characters are **roles, not power**. Each class has unique signature ultimate + small kit identity. Stats don't bloat with levels. All numerical depth lives in the crafting layer. This preserves character collection / gacha hooks while keeping crafting as the depth axis.
+| Lane | Hero | Class | Base attack | Innate trait | HP | Base dmg |
+|---|---|---|---|---|---|---|
+| 0 (top) | **Elara** | Mage | ranged single, no range cap, any-lane | none | 70 | 0.8× |
+| 1 (mid) | **Bran** | Warrior | melee single, range 1.0×, own-lane | none | 100 | 1.0× |
+| 2 (bot) | **Vex** | Rogue | melee single, range 1.0×, own-lane | **+20% dmg vs `Burning` targets** | 80 | 0.9× (crit 15%) |
 
-### Merge mechanics
-- **Parts merge (passive, in stash)**: 3× Common → 1× Rare → Epic → Legendary. Auto-stacks silently. Stash sink + dupe solution. Sell merge accelerators for monetization.
-- **Character Star-Up via duplicates**: TFT-style. Pulling a dupe gives shards. X shards → next star tier. Standard casual-mobile gacha pattern.
+Heroes are **lane-locked** by deploy. Player does not place heroes on grid — there is no grid. Squad identity feels distinct via base attacks + innate traits + hero-locked Ultimates (Bran Leap & Slam / Elara Chain Storm / Vex Phantom Strike).
 
-### Boss-retry counter-build (core hook)
-Bosses have visible affinities (resists fire, weak to pierce, immune to bleed). First attempt usually fails. Game keeps all unlocks + parts. Player rearranges lineup + reforges weapons + retries. Strong dopamine loop. Pulls from AFK Arena elemental rock-paper-scissors + Slay the Spire boss adaptation.
-
-### Class-specific ultimates
-Each class has a unique signature ultimate scaling with crafted weapon stats:
-- **Warrior**: Whirlwind (AoE melee burst).
-- **Mage**: Meteor (delayed AoE).
-- **Rogue**: Shadowstep (teleport + crit strike).
-- **Paladin**: Divine Shield (party-heal + invuln).
-- **Ranger**: Volley (multi-target ranged barrage).
-- **Druid**: Wildform (transform-and-rage).
-- **Necromancer**: Soul Drain (life-leech AoE).
-- (... 15 total at launch.)
-
-Gacha sells *characters with their unique ultimates* — collection AND power in one pull.
-
-### Bench characters as resource
-Benched heroes (not in active 3) can be **"sacrificed" / fused** into an active hero's weapon for stat boost or rerouted Element tag. Solves roster bloat after weeks of pulling.
-
-### Recipe codex by class
-Each class has its own recipe tree. Warrior recipes ≠ Mage recipes. Long-term completion meta: "complete all class codexes." Massive content runway, low art cost (data-driven recipes).
-
-### Party synergies (demoted)
-Originally proposed as match-the-tags-across-party. Demoted to either:
-- **Passive pair bonuses**: a flat buff that just exists when X + Y are in lineup (e.g., Warrior + Paladin → +5% party HP).
-- **Late-game opt-in only**: synergies surface after the player unlocks all 3 chars + fills a chunk of the codex.
-
-No cognitive tax in the first 5 hours of play.
+Phase 5+ may introduce additional heroes via the Wittle-clone meta hero-roster expansion (deferred design).
 
 ---
 
-## Open questions (deferred — not blocking GDD sign-off)
+## The 12 Functions
 
-These should be answered during pre-prototype design refinement. Each has a stub spec file in the appropriate subfolder.
+Three categories:
 
-1. **Combat resolution math** — exact damage formula (additive vs multiplicative scaling, defense reduction curve). → `02_systems/combat_math.md`
-2. **Stamina economics** — how many free plays/day, how much each refill costs, refill rate. → `04_economy/stamina.md`
-3. **Battle Pass content scope** — exact reward tiers per season. → `04_economy/battle_pass.md`
-4. **Cosmetic taxonomy** — hero skins / weapon glow / ultimate VFX skins / banner frames / etc. → `04_economy/cosmetics.md`
-5. **PvP arena format** — async ghost vs sync vs blind-pick. → `02_systems/pvp_arena.md`
-6. **Onboarding arc** — first 30 minutes script (tutorial pacing, free pull sequence, BAM-new-character moments). → `02_systems/onboarding.md`
-7. **Boss affinity taxonomy** — list of resistances/weaknesses and how telegraphed. → `03_content/boss_affinities.md`
-8. **Currency layering** — gold / gems / shards / scrolls / dust — exact economy graph. → `04_economy/currency.md`
-9. **Sound + music direction** — needed pre-mockup phase. → `02_systems/audio.md`
-10. **Art direction** — cute Wittle-flavor vs grimdark vs stylized fantasy. → `02_systems/art_direction.md`
+- **Elements (status emitters):** `FIRE` `ICE` `LIGHTNING` `WATER` `EARTH`
+- **Patterns (attack shape):** `AOE` `BEAM` `BOUNCE` `BURST`
+- **Tactical (targeting + trait):** `SEEKER` `LEECH` `KNOCKBACK`
+
+Each Function has 3 distinct behaviors — one per slot (Active / Modifier / Passive). Full 36-cell matrix in the [function catalog spec](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md#3-the-36-cell-function--slot-matrix-lane-aware).
+
+**Tier system (T1-T5, 2-to-1 merge):** Common (1.0×) → Rare (1.4×) → Epic (2.0×) → Legendary (2.8×) → Mythic (4.0×). 16 commons → 1 mythic (full chain). Phase 4 slice = T1 only; tier system fully active starting Phase 5.
 
 ---
 
-## References used during design
+## Magicka reaction matrix (15 reactions)
 
-- **Wittle Defender** (Habby, 2024) — stage structure, hero gacha, AFK idle, casual-mobile combat cadence.
-- **AFK Journey** (Farlight, 2024) — AFK rewards model, stage scale, season phases.
-- **AFK Arena** (Lilith Games, 2019) — affinity-based boss counters, character collection meta.
-- **Hero Wars / Empires & Puzzles** (Nexters / Zynga) — battle pass + chapter map + gacha economy.
-- **Robotek** (Hexage, 2011) — combat framing, single-lane side-view, node-map campaign metaphor.
-- **Teamfight Tactics** (Riot, 2019) — shop mechanic, item-combine philosophy, character-as-role pattern.
-- **Potion Craft: Alchemist Simulator** (Niceplay Games, 2021) — discovery codex, many-paths-to-one-effect, recipe-book-as-saved-routes, fog-of-war progression.
-- **Brotato / Vampire Survivors** (analyzed as anti-pattern for our locked decisions).
-- **Slay the Spire / Hades** (analyzed as variable-node-type alternative, ultimately not picked).
-- **Little Alchemy / Doodle God / Infinite Craft** (analyzed for pure-discovery model, ultimately layered into our hybrid).
+Reactions fire when an **incoming damage tag** hits an **existing status** on an enemy.
+
+**Status outputs** (Elements in Active emit these):
+
+| Element (Active) | Status | Duration | Per-enemy effect |
+|---|---|---|---|
+| FIRE | Burning | 3 ticks | -2 HP/tick |
+| ICE | Chilled | 3 ticks | walk-left speed × 0.5 |
+| LIGHTNING | Shocked | 2 ticks | -1 HP/tick + 10% skip own attack |
+| WATER | Wet | 4 ticks | reaction enabler only |
+| EARTH | Cracked | 4 ticks (stacks to 3) | +15% incoming dmg/stack |
+
+**The 15 reactions** (sample — full table in [function spec §5](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md#5-the-reaction-matrix-15-reactions-v1)):
+
+- `LIGHTNING × Wet → Electrocute` (2.0×, cross-lane chain)
+- `FIRE × Wet → Steam` (1.0×, cross-lane splash + Blind)
+- `FIRE × Chilled → Thaw` (1.5×)
+- `EARTH × Wet → Mudslide` (1.4×, slow)
+- `LIGHTNING × Burning → Arc Storm` (1.5×, cross-lane Shocked spread)
+- ...10 more
+
+Chain ≥3 reactions in 2-sec window → chain stinger audio + chain HUD counter. 3 reactions = 1 Ult charge.
+
+---
+
+## Shop + Forge
+
+- **7 slots** per stage, slow-populating 2/3/2 across the 3 waves
+- Items reset between stages (forces commitment; no shop persistence)
+- Cost scales by stage; gold from kills
+- Pity counter: ≥1 Element per 2 consecutive stages
+- 2-to-1 auto-merge on duplicate drop
+- **Weapon-always-visible bottom rail:** 3 hero portraits + 3 sockets each + HP + Ult bars — visible during all combat + forge phases (player can plan permutations while waiting for shop to fill)
+- **Wave telegraph:** tap during forge break to preview upcoming stage's enemy mix + weaknesses
+
+---
+
+## FTUE (replays on `AccountState.reset()`)
+
+Staged hero unlock distributes cognitive load across world 1:
+
+| Stage | Waves | Heroes live | Key beat |
+|---|---|---|---|
+| 1 | 1 | Elara solo (lane 1, forced FIRE + WATER) | Drag FIRE to Active. See Burning. |
+| 2 | 1 | Elara solo (lane 1, full 7-slot shop) | Try a Modifier. |
+| 3 | 3 | + **Bran joins** (F2 cinematic) | First Magicka reaction: WATER (Elara) + FIRE-Mod (Bran) = Steam |
+| 4 | 3 | Elara + Bran | Stack reactions, charge Ult bar |
+| 5 (boss) | 3 (mini, mini, BOSS) | + **Vex joins** (F4 cinematic) | Full Magicka chain across 3 heroes |
+
+FTUE replays whenever `AccountState.reset()` clears `ftue_complete` flag (debug button on Home wires this). Useful for showcase / multi-tester demos.
+
+---
+
+## Run end, world transition, meta progression
+
+- **Win** (cleared stage 5 boss) or **loss** (all 3 heroes dead) → result modal → meta-XP awarded → return to Home.
+- **Across worlds:** heroes persist with Wittle-meta (hero levels, equipment, etc. — [ROADMAP], Phase 5+). **Functions reset** each world (Function loadout = per-session puzzle).
+- **Phase 4 slice scope:** only world 1 (FTUE) ships. Multi-world progression in Phase 5.
+
+---
+
+## Status — what's in the build, what's locked, what's pending
+
+### As-built (carried from 2_WC P0 frozen at `fbe426d` + seeded into this folder; meta layer survives unchanged)
+
+- AccountState v2 save schema + v1 migration (extends to v3 in Phase 4 for `ftue_complete` bool)
+- HeroProgress autoload + pure-static level math
+- Home.tscn + home.gd (with debug reset button)
+- ResultModal at run end
+- PullOverlay for cinematic hero unlock (will be reused for FTUE Bran/Vex)
+- Result modal, scout intel strip
+- 58-test TestProgression suite headless-green
+- AUTOSHOT (`screenshot_helper.gd`) non-interactive capture tool
+- TDD test-harness pattern (`Test*.tscn` + `_check` + headless quit)
+
+### Locked design decisions (26 of them — see [function spec §21](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md#21-locked-decisions-register))
+
+Includes: 12-Function set, 15-reaction matrix, status durations, 3-lane auto-runner format, FTUE pacing, world structure, tier system, hero Ults, shop pacing, weapon-vis rail, Mit-A salvageable death, accessibility, color-blind safe icons, Wittle-meta direction for Phase 5.
+
+### [ROADMAP] — designed here but NOT in the build yet
+
+- Lane corridor + auto-runner combat — Phase 4 (slice)
+- 7-slot slow-populate shop — Phase 4
+- 6 Functions + 2 reactions + Bran full Ult — Phase 4 slice
+- All 12 Functions + 15 reactions + tier system — Phase 5
+- Boss AI (full) — Phase 5
+- Wittle-meta-progression — Phase 5+ (separate spec doc)
+- Monetization — post-slice playtest decision
+- Multi-world progression — Phase 5
+
+### Out of scope (explicit non-goals — see [Phase 4 scope §3](superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md#3-scope-out--explicit-non-goals))
+
+- Weapon gacha (lives in separate `5_WeaponForge_Honkai_Godot` project — different commercial bet)
+- Anatomical Head/Hilt/Rune parts (= 2_WC frozen direction)
+- Recipe codex (= 2_WC frozen direction)
+- PvP arena
+- 3-card in-combat module (deferred contingency per function spec §20)
+
+---
+
+## Pivot history (one paragraph)
+
+This folder seeded from `2_Weaponcraft_Godot/` P0 frozen at `fbe426d` (shipped: anatomical Head/Hilt/Rune craft, single-lane combat, scripted Vex pull, 15-wave run, hero-squad meta). On 2026-06-12 the user pivoted (Fork A from the brainstorm) to the design above: **Function Matrix + spatial combat + Magicka reactions** — keeping ~36% of the meta layer (account / hero progression / home / modals / pull cinematic) and rewriting the gameplay core. 2_WC remains frozen on remote (`2_WC/p0-shipped-2026-06-12` tag) as the canonical retreat point. Rationale: the verbatim user addendum is at [`superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md).
+
+---
+
+## Companion docs
+
+- [Function catalog + Reaction matrix (REVIEW-3, the implementation contract)](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md)
+- [Phase 4 vertical slice scope](superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md)
+- [Pivot rationale addendum (verbatim)](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md)
+- [Folder rules + non-collision notes (`6_/CLAUDE.md`)](../CLAUDE.md)
+- Historical 2_WC-direction specs (all banner-marked HISTORICAL — listed in `../CLAUDE.md`)

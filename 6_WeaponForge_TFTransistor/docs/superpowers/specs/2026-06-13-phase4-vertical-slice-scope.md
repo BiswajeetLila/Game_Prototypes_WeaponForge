@@ -1,6 +1,6 @@
 # Phase 4 — Vertical Slice Scope (Prototype-1)
 
-> **Companion to** [`2026-06-12-function-catalog-and-status-matrix.md`](2026-06-12-function-catalog-and-status-matrix.md). Reads design spec as the contract; this doc defines WHAT we ship, the MISSION it serves, and the FEEDBACK we collect.
+> **Subordinate to** [`../../01_GDD.md`](../../01_GDD.md) — folder SSOT. **Companion to** [`2026-06-12-function-catalog-and-status-matrix.md`](2026-06-12-function-catalog-and-status-matrix.md) (the implementation contract). This doc defines WHAT we ship, the MISSION it serves, and the FEEDBACK we collect for Phase 4 (prototype-1).
 
 **Date:** 2026-06-13 · **Status:** DRAFT — awaiting design spec LOCK before Phase 4 branch cut.
 

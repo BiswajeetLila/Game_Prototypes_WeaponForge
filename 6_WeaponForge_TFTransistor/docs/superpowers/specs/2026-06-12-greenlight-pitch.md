@@ -1,4 +1,4 @@
-> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the Function Matrix + spatial grid pivot. See [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md).**
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the WeaponForge TFTransistor pivot (Function Matrix + 3-lane auto-runner + Magicka reactions). Current SSOT: [`../../01_GDD.md`](../../01_GDD.md). Pivot rationale: [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md).**
 
 > **SSOT:** [01_GDD.md](../../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. Pitch artifact built on the [hero-squad meta design](2026-06-11-hero-squad-meta-design.md) + [retention arc](2026-06-12-retention-arc-d1-d20.md).
 

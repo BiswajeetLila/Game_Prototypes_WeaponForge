@@ -1,4 +1,4 @@
-> **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the WeaponForge TFTransistor pivot (Function Matrix + 3-lane auto-runner + Magicka reactions). Current SSOT: [`01_GDD.md`](../01_GDD.md). Pivot rationale: [`../superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](../superpowers/specs/2026-06-12-fork-a-pivot-addendum.md).**
 >
 > **⟳ Reconciled 2026-06-12 (hero-squad direction):** Launch currencies cap at **4 — Gold · Gems · Hero Shards · Hero XP**. The 9-currency table below is **superseded**: "Mastery XP" → renamed **Hero XP**; Part Shards, Recipe Scrolls, Battle Pass XP, Tower Coins are NOT launch currencies (fold or defer to live-ops). A 5th (expedition) currency only at the roadmap stage. See [hero-squad spec §5](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 

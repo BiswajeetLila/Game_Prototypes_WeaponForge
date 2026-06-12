@@ -1,3 +1,5 @@
+> **HISTORICAL — implementation plan for the previous 2_WC P0 build (shipped at `fbe426d`). The hero-progression engine described here lives in the 2_WC P0 build and was carried into 6_ via bulk-copy (account_state, hero_progress — meta layer survives unchanged into REVIEW-3). The plan itself is historical: do not re-execute. Current SSOT: [`../../01_GDD.md`](../../01_GDD.md). Pivot rationale: [`../specs/2026-06-12-fork-a-pivot-addendum.md`](../specs/2026-06-12-fork-a-pivot-addendum.md).**
+
 # P0 Hero Progression Foundation — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

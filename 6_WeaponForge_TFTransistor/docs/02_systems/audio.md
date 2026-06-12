@@ -1,4 +1,4 @@
-> **SSOT:** [01_GDD.md](../01_GDD.md) — single source of truth for `2_Weaponcraft_Godot`. This spec elaborates the GDD; the Godot build in `Prototype/godot/` wins on current-state facts. `_archive/` is reference-only. Unbuilt intent here is **[ROADMAP]**.
+> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the WeaponForge TFTransistor pivot (Function Matrix + 3-lane auto-runner + Magicka reactions). Current SSOT: [`01_GDD.md`](../01_GDD.md). Pivot rationale: [`../superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](../superpowers/specs/2026-06-12-fork-a-pivot-addendum.md).**
 >
 > **⟳ Reconciled 2026-06-12 (hero-squad direction):** Status is now **P0** (no longer deferred) — audio ships in the first prototype's juice pass. SFX set: hit / crit / ult / craft / merge / recipe-discover / buy / reroll + a combat loop. Direction below (Wittle / Cookie-Run register) still applies. See [hero-squad spec §8](../superpowers/specs/2026-06-11-hero-squad-meta-design.md).
 

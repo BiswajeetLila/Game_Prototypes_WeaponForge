@@ -1,3 +1,5 @@
+> **HISTORICAL — implementation plan for the previous 2_WC P0 build (shipped at `fbe426d`). Home + squad-select scenes from this plan SURVIVE INTO REVIEW-3 unchanged (meta layer carryover). Plan itself is historical; do not re-execute. Current SSOT: [`../../01_GDD.md`](../../01_GDD.md). Pivot rationale: [`../specs/2026-06-12-fork-a-pivot-addendum.md`](../specs/2026-06-12-fork-a-pivot-addendum.md).**
+
 # P0 HOME + Squad-Select — Implementation Plan
 
 > **For agentic workers:** execute task-by-task, strict TDD where marked. Env + run command identical to `2026-06-12-p0-hero-progression-foundation.md`. Visual target: `_art-build/screens/home_01.png` (layout/palette truth; numbers come from code).

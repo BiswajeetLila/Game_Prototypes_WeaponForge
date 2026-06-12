@@ -1,3 +1,5 @@
+> **HISTORICAL — implementation plan for the previous 2_WC P0 build (shipped at `fbe426d`). PullOverlay + ResultModal from this plan SURVIVE into REVIEW-3 (reused for FTUE Bran/Vex cinematics per spec §13). Plan itself is historical; do not re-execute. Current SSOT: [`../../01_GDD.md`](../../01_GDD.md). Pivot rationale: [`../specs/2026-06-12-fork-a-pivot-addendum.md`](../specs/2026-06-12-fork-a-pivot-addendum.md).**
+
 # P0 Slice Beats — Results, Scripted Pull, Scout Intel, Juice
 
 > **For agentic workers:** execute task-by-task, strict TDD where marked. Env + headless run command identical to `2026-06-12-p0-hero-progression-foundation.md`. Visual targets: `_art-build/screens/result_01.png`, `pull_01.png`. Style constants mirror `scripts/ui/home.gd` (COL_* palette).

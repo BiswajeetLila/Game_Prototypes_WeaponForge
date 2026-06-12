@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/h_iron_edge.png" id="1_40sq5"]
+
+[resource]
+script = ExtResource("1")
+id = &"h_iron_edge"
+cls = &"warrior"
+name = "Iron Edge"
+desc = "Forged warrior head. Solid +ATK, no element."
+icon = ExtResource("1_40sq5")
+atk = 8

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="HeroData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/heroes/elara_mage.png" id="1_elara"]
+
+[resource]
+script = ExtResource("1")
+id = &"elara"
+name = "Elara"
+cls = &"mage"
+portrait = ExtResource("1_elara")
+hp_base = 90
+atk_base = 8
+ult_name = "Meteor"
+ult_desc = "AoE 1.5x atk + burn stack on primary"
+ult_atk_multiplier = 1.5
+ult_key = &"meteor"

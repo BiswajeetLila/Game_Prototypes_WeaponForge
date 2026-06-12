@@ -1,0 +1,94 @@
+[gd_scene load_steps=14 format=3 uid="uid://bweaponcraftmainscene"]
+
+[ext_resource type="Script" path="res://scripts/ui/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/ui/screen_flash.gd" id="9"]
+[ext_resource type="Theme" uid="uid://bweaponcrafttheme" path="res://theme.tres" id="11"]
+[ext_resource type="PackedScene" uid="uid://bweaponcrafthud" path="res://scenes/Hud.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftbattleview" path="res://scenes/BattleView.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftsquadbar" path="res://scenes/SquadBar.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftforgepanel" path="res://scenes/ForgePanel.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftcodexmodal" path="res://scenes/CodexModal.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftdiscoveryoverlay" path="res://scenes/DiscoveryOverlay.tscn" id="7"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftresultmodal" path="res://scenes/ResultModal.tscn" id="8"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftnotifications" path="res://scenes/Notifications.tscn" id="10"]
+[ext_resource type="PackedScene" uid="uid://bweaponcraftreforgeretry" path="res://scenes/ReforgeRetryModal.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/PullOverlay.tscn" id="13"]
+
+[node name="Main" type="Control"]
+theme = ExtResource("11")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="Hud" parent="VBox" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BattleView" parent="VBox" instance=ExtResource("3")]
+layout_mode = 2
+
+[node name="SquadBar" parent="VBox" instance=ExtResource("4")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ForgePanel" parent="VBox" instance=ExtResource("5")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DebugBar" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="VBox/DebugBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResetBtn" type="Button" parent="VBox/DebugBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "↺ Reset"
+
+[node name="ScreenFlash" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 0)
+mouse_filter = 2
+script = ExtResource("9")
+
+[node name="Notifications" parent="." instance=ExtResource("10")]
+unique_name_in_owner = true
+
+[node name="CodexModal" parent="." instance=ExtResource("6")]
+unique_name_in_owner = true
+visible = false
+
+[node name="DiscoveryOverlay" parent="." instance=ExtResource("7")]
+unique_name_in_owner = true
+visible = false
+
+[node name="ResultModal" parent="." instance=ExtResource("8")]
+unique_name_in_owner = true
+visible = false
+
+[node name="ReforgeRetryModal" parent="." instance=ExtResource("12")]
+unique_name_in_owner = true
+visible = false
+
+[node name="PullOverlay" parent="." instance=ExtResource("13")]

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/vfx/fire_puff.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"hellfire"
+name = "Hellfire"
+desc = "On a crit, 45% of damage splashes to one random other enemy."
+icon = ExtResource("2")
+patterns = [[&"fire", &"pierce"]]
+bonus = {
+"crit_splash": 0.45
+}

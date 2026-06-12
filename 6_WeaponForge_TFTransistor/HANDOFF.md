@@ -1,74 +1,97 @@
-# HANDOFF — WeaponForge TFTransistor pivot, Phase 2 + Phase 3
+# HANDOFF — WeaponForge TFTransistor pivot, Phase 3 → 4 transition
 
-**Created:** 2026-06-12 · **Previous session ended:** mid-Phase 2 (in_progress) · **Operator:** new chat picks up from here.
+**Last updated:** 2026-06-13 (sleep handoff) · **Previous session:** Phase 3 spec authored to REVIEW-3 + 3-review pass + doc tree consolidation + 2_WC archive · **Next chat:** picks up at LOCK gate → Phase 4 cut.
 
 ## TL;DR for the next chat
 
-We pivoted from `2_Weaponcraft_Godot/` (single-lane auto-battler with anatomical Head/Hilt/Rune weapons) to a new game in `6_WeaponForge_TFTransistor/` — spatial 3×3 grid combat + Transistor-style universal Active/Modifier/Passive Function Matrix + Magicka-style cross-hero status reactions. 64% of gameplay code dies in the rewrite; meta layer survives.
+We pivoted from `2_Weaponcraft_Godot/` (single-lane auto-battler with anatomical Head/Hilt/Rune weapons) to a new game in `6_WeaponForge_TFTransistor/` — **3-lane horizontal auto-runner (Capybara Go / Wittle Defender format) + Transistor-style Function Matrix + Magicka cross-hero status reactions + Wittle-clone meta-progression direction**. Statuses attach to enemies, not tiles. Heroes lane-locked, no spatial placement. 7-slot shop slow-populates across each 3-wave stage. 5 stages per world = 15 waves ≈ 4-5 min session.
 
-**`2_Weaponcraft_Godot/` is FROZEN.** Do not touch its files. Returning to it later is allowed but the current pivot work happens only in `6_WeaponForge_TFTransistor/`.
+**`2_Weaponcraft_Godot/` is FROZEN.** Do not touch its files. The full pivot plan lives at `C:\Users\Biswa\.claude\plans\weaponcraft-game-design-fuzzy-llama.md` (read first).
 
-The full pivot plan is `C:\Users\Biswa\.claude\plans\weaponcraft-game-design-fuzzy-llama.md`. Read it first.
+## Phase 3 — what landed this session
 
-## Decisions locked from previous chat (do NOT relitigate)
+Branch: **`weaponforge-tftransistor/design-spec`** @ `3c27be2`. 6 commits this session:
 
-| # | Decision |
+| Commit | What |
 |---|---|
-| 1 | Fork A (full pivot per the user's "Function Matrix" addendum) — not B (surgical) or C (polish only) |
-| 2 | Vertical slice first (Phase 4, 2-3 days) BEFORE full rewrite (Phase 5, 5-7 weeks) |
-| 3 | Lock full Function catalog + status matrix spec BEFORE any code (Phase 3) |
-| 4 | New game lives in `6_WeaponForge_TFTransistor/`; `2_WC` frozen on remote |
-| 5 | Old WeaponCraft pitch docs (`01_GDD.md`, `retention-arc-d1-d20.md`, `greenlight-pitch.md`, `hero-squad-meta-design.md`) — banner-mark as historical/superseded in Phase 2; archive only after Phase 3 spec lands |
-| 6 | New `6_/CLAUDE.md` = rules only; design content lives in spec docs |
-| 7 | Grid recommended 3×3 player + 3×3 enemy mirrored (smaller than addendum's 4×4 for mobile readability) — subject to user revision in Phase 3 |
-| 8 | Subagents = sonnet for code, haiku for scans, save tokens (~36% weekly used at last check) |
+| `1bf7986` | DRAFT — mirrored 3×3 grid + initial Function catalog |
+| `761bef0` | REVIEW-2 — central 4×4 grid w/ 4-edge spawn (Wittle-style); FTUE, Ults, wave/forge cadence |
+| `6e386a4` | **REVIEW-3** — auto-runner 3-lane pivot (Capybara Go format), 26 locked decisions, Phase 4 slice scope doc authored |
+| `d1d6ccc` | Doc tree consolidation — **01_GDD restored as SSOT** (user caught that Phase 2 wrongly demoted it); banners updated on 17 missed historical docs |
+| `ce16021` | Forward `roadmap-2026-06-13.md` + `story-beats-2026-06-13.md` for the new direction |
+| `3c27be2` | **Archived 22 2_WC-direction docs** → `_archive/docs-pre-pivot-2026-06-12/` (git-mv preserves history) |
 
-## What's DONE (pushed to remote)
+## 3-review pass executed this session (all findings folded into REVIEW-3)
 
-| Branch | HEAD | What it is |
-|---|---|---|
-| `2_WeaponCraft_Brainstorming` | `eba176c` (frozen) | Original docs-only branch, pristine reference |
-| `weaponcraft-godot/p0-hero-progression-foundation` | `fbe426d` | Shipped P0 build of 2_WC (lane combat + hero-squad meta + scripted pull + scout + debug reset). Frozen. |
-| `2_WC/frozen-shipped-p0` | `fbe426d` | Human-readable freeze alias of the above |
-| Tag `2_WC/p0-shipped-2026-06-12` | `fbe426d` | Annotated tag for permanent retreat point |
-| `weaponforge-tftransistor/seed-from-2wc` | `4894108` | **Current pivot branch.** 6_ folder seeded with bulk copy of 2_WC P0 (1550 files). Project renamed in `project.godot` so user:// + Mono assembly don't collide. 210/210 tests green from the new root. |
+1. **`/game-design`** — 5-component filter applied. Findings: clarity gaps on advance telegraph, response score 4/10 (auto-battler screensaver risk), audio missing, Ult state machine gaps, knockback exploit, Cracked priority ambiguity. **All folded into REVIEW-3 §1-§16.**
+2. **`/plan-ceo-review`** — SELECTIVE EXPANSION mode. C1-C10 critical patches + E1 (chain HUD) accepted, E2 (replay 3-sec) deferred Phase 5. Scope decisions written into spec §13 + §17 + new §14/§15/§16.
+3. **`/product-management:product-brainstorming`** — assumption testing + JTBD. P2 (shop pity counter) accepted, P4 (hero meta-XP) deferred to Phase 5 Wittle-meta spec, P6 (wave telegraph) accepted at medium granularity, monetization deferred post-slice.
 
-## What's IN PROGRESS / NEXT
+## User-locked design decisions accumulated this session
 
-**Phase 2 — Redirect + freeze markers (doc-only, ~15 min):** *unstarted, in_progress task #25*. Do this first in the next chat.
-1. In `6_WeaponForge_TFTransistor/`:
-   - **Rewrite `CLAUDE.md`** for the new direction. Rules only (no design content). State: folder = WeaponForge TFTransistor pivot game; SSOT is the pivot addendum (path below); non-collision note vs `2_WC` (frozen) and `5_WeaponForge_Honkai_Godot` (separate weapon-gacha project); meta layer files that survive (account_state, hero_progress, home, result_modal, pull_overlay, etc.) are still valid; gameplay-core files (combat, shop, recipes, weapon, part_data, etc.) are dying — do not extend them in this branch.
-   - **Save the user's pivot addendum verbatim** as `docs/superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`. The addendum text is in the previous chat's user message titled "WeaponCraft — Game Design Addendum" (status: PROPOSED PIVOT (Post 2026-06-11 Architecture Review)). Copy it word-for-word — it is the new SSOT until Phase 3 spec lands.
-   - **Banner-mark historical docs** with a top-of-file `> **HISTORICAL — describes the previous 2_WC craft+collect direction. Superseded 2026-06-12 by the Function Matrix + spatial grid pivot. See `superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`.**` block. Apply to:
-     - `docs/01_GDD.md`
-     - `docs/superpowers/specs/2026-06-11-hero-squad-meta-design.md`
-     - `docs/superpowers/specs/2026-06-12-retention-arc-d1-d20.md`
-     - `docs/superpowers/specs/2026-06-12-greenlight-pitch.md`
-     - `docs/roadmap-2026-06-12.md`
-     - `docs/story-beats.md`
-     Do NOT delete or move them — banner only. Archive comes after Phase 3.
-2. In `2_Weaponcraft_Godot/CLAUDE.md` (the FROZEN folder): prepend a single banner `> **FROZEN 2026-06-12 — see `../6_WeaponForge_TFTransistor/`.** Forward work happens there; this folder is reference-only.` No content edits below it. This is the ONLY edit allowed inside 2_WC from this point.
-3. Commit + push on `weaponforge-tftransistor/seed-from-2wc` (or cut a new branch if cleaner — user preference is OK on same branch since seed is one logical setup unit).
-   Message: `docs(6_WF_TFT): pivot SSOT redirect (addendum) + historical-doc banners + 2_WC freeze marker`.
+- **Q1-Q3:** 12 Functions, 15 reactions, status durations 3/3/2/4/4 — locked
+- **Q4 → REVIEW-3 reversion:** 4×4 central → **3-lane horizontal auto-runner** (Capybara Go); enemies right→left; no spatial placement
+- **Q5:** WATER → cross-lane spread (target + 2 adj lanes)
+- **Q6:** Vex innate +20% vs Burning — kept hard-coded
+- **Q7:** Boss skipped in slice (stage 5 W3 = stationary 5×HP stand-in)
+- **Q8:** Modifier-without-Active warps base weapon
+- **Q9:** FTUE replays on `AccountState.reset()` (debug button already wires)
+- **D11:** Shop pity ≥1 Element per 2 stages
+- **D12:** Hero-level Wittle-clone meta deferred to Phase 5 (separate spec)
+- **D13:** Wave telegraph medium granularity (portraits + weak/resist icons)
+- **D14:** Cohort positioning rewrite deferred post-slice playtest
+- **D15:** Monetization model deferred post-slice
+- **Mit-A:** Salvageable death — dead hero stays dead but shop+gold continue for survivors
+- **Mit-B revised:** FTUE stages 1+2 = 1 wave each; stages 3+4 = 3 waves; stage 5 = boss (2 mini + 1 boss)
+- **Mit-C → docs-only:** 3-card in-combat module = deferred contingency (spec §20); activate if Phase 4 playtest shows forge-only is lackluster
+- **Mit-D:** Shop slow-populate 2/3/2 across stage
+- **Bottom rail:** Weapon-always-visible, 3 heroes × 3 sockets, HP, Ult bars
+- **Tiers:** T1-T5, **2-to-1 merge** (16 commons → 1 mythic). T1 only in slice.
+- **Worlds:** Heroes persist across worlds (Wittle-meta layer); Functions reset per world. 1 world = 1 session.
+- **FTUE timing:** Bran joins F2 cinematic; Vex joins F4 cinematic (via reused `PullOverlay`)
+- **scout_intel revived** as per-stage wave telegraph (was killed initially, user pulled back)
 
-**Phase 3 — Lock the design spec (~1 day, doc-only):** *unstarted, task #26*. After Phase 2 commits.
-1. Cut design branch off Phase 2 HEAD: `weaponforge-tftransistor/design-spec`.
-2. Author `6_WeaponForge_TFTransistor/docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md`.
-3. Sections required (per plan):
-   - **Function catalog** — 12 atomic Functions × 3 slot behaviors = 36 cells. Per Function: id, theme, **Active**-slot behavior (attack pattern + tile shape + range + targeting), **Modifier**-slot behavior (how it warps the Active beneath it), **Passive**-slot behavior (continuous aura/trait). Starting cut to propose (user can revise): `FIRE`, `ICE`, `LIGHTNING`, `WATER`, `EARTH`, `AOE`, `BURST`, `BEAM`, `BOUNCE`, `SEEKER`, `LEECH`, `KNOCKBACK`.
-   - **Status outputs** — for each Function in Active slot: which status it leaves on hit tiles (Burning / Wet / Chilled / Shocked / Cracked / etc.), duration, stack rules, cleanse rules.
-   - **Reaction matrix** — every (incoming-damage-tag × existing-status) pair: reaction name, damage multiplier, splash radius, VFX hook, status mutation. Examples to seed: `LIGHTNING × Wet → Electrocute (2× dmg, splash 1 tile)`, `FIRE × Chilled → Steam (cleanse + blind 1 tick)`, `EARTH × Wet → Mudslide (slow 2 ticks)`. Aim ~12–15 reactions for v1.
-   - **Per-hero base weapons** — what Bran/Elara/Vex do with ZERO Functions socketed. Default attack pattern, default targeting, default status output if any.
-   - **Grid** — 3×3 player + 3×3 enemy mirrored. Tile coordinate scheme. Hero static (no movement) v1.
-   - **Targeting rules** — derived per Active Function (closest-by-line for melee, closest-by-Manhattan for ranged, line-by-row for BEAM, etc.). Enemy advance cadence (one row per N ticks). Boss = single multi-row tile.
-4. **User review gate** — author the spec, present to user, they sign off / revise / iterate in markdown only. Do NOT start Phase 4 code before signed off.
-5. Commit + push: `docs(6_WF_TFT): lock Function catalog + status reaction matrix design spec`.
+Full list of 26 locked decisions in [function spec §21](docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md#21-locked-decisions-register).
 
-**Phase 4 — Vertical slice (~2-3 days, throwaway):** task #27, after Phase 3 sign-off. Out of scope for the next chat unless time permits + Phase 3 is approved. See plan file for details.
+## Current doc tree (lean — only forward work in `docs/`)
 
-**Phase 5 — Full rewrite (5-7 weeks):** out of scope for the next chat. Drafted separately after Phase 4 feel-gate.
+```
+docs/
+├── 01_GDD.md                                       ⭐ SSOT
+├── roadmap-2026-06-13.md                           forward roadmap
+├── story-beats-2026-06-13.md                       forward narrative
+└── superpowers/specs/
+    ├── 2026-06-12-function-catalog-and-status-matrix.md   REVIEW-3 contract (904 lines)
+    ├── 2026-06-13-phase4-vertical-slice-scope.md          Phase 4 scope (338 lines)
+    ├── 2026-06-12-fork-a-pivot-addendum.md                pivot rationale verbatim
+    └── grid-4x4-wittle-style.png                          interim ref image
 
-## Environment / how to run things
+_archive/docs-pre-pivot-2026-06-12/                  22 archived 2_WC docs (R100 renames)
+```
+
+## What's IN PROGRESS / NEXT (for tomorrow's chat)
+
+### Resume-step 1: LOCK gate
+
+User reads (or has read) REVIEW-3 spec end-to-end + Phase 4 scope doc. Says `lock spec` →
+- Flip status DRAFT/REVIEW-3 → **LOCKED** in [function spec](docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md) header
+- Flip status DRAFT → **LOCKED** in [Phase 4 scope](docs/superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md) header
+- Cut new branch `weaponforge-tftransistor/vertical-slice` off `3c27be2`
+- Mark TaskList #2 completed; #3 in_progress
+- Commit + push: `chore(6_WF_TFT): LOCK design spec REVIEW-3 + Phase 4 scope; cut vertical-slice branch`
+
+### Resume-step 2: Phase 4 build sequence §4
+
+18 TDD steps per [Phase 4 scope §4](docs/superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md#4-build-sequence-tdd-driven). Step 1 = `account_state.gd` v2→v3 migration:
+- Write test in `Prototype/godot/scripts/dev/test_progression.gd` for v2→v3 migration (`ftue_complete` field defaults false on existing saves; v3 saves round-trip)
+- Watch test FAIL
+- Extend `account_state.gd` schema to v3 + add migration logic
+- Watch test PASS
+- Run full TestProgression suite headless — confirm 58 + new = green
+
+Target dev time: 2-3 days for slice freeze. Test sweep target: 90+ tests green.
+
+## Environment / how to run things (unchanged from previous handoff)
 
 | Thing | Value |
 |---|---|
@@ -76,54 +99,71 @@ The full pivot plan is `C:\Users\Biswa\.claude\plans\weaponcraft-game-design-fuz
 | 6_ Godot project path | `C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\6_WeaponForge_TFTransistor\Prototype\godot` |
 | Headless run | `<godot.exe> --headless --path <project_path> res://scenes/dev/<Scene>.tscn` — exit code = failure count |
 | Test sweep scenes | `TestProgression`, `TestWeaponData`, `TestCombat`, `TestMerge`, `TestRecipes`, `TestShop`, `TestUi` |
-| Last 6_ sweep | 210/210 green (TestProgression 58, TestWeaponData 10, TestCombat 55, TestMerge 22, TestRecipes 18, TestShop 26, TestUi 21) |
-| AUTOSHOT screenshot | `$env:WC_AUTOSHOT = "<abs path>.png"; & <godot.exe> --path <project_path> [scene.tscn]` — runs WITHOUT --headless, renders ~1.5s, saves PNG, quits |
+| Last 6_ sweep | 210/210 green (TestProgression 58 + TestWeaponData 10 + TestCombat 55 + TestMerge 22 + TestRecipes 18 + TestShop 26 + TestUi 21) — but slice will start adding new ones |
+| AUTOSHOT screenshot | `$env:WC_AUTOSHOT = "<abs path>.png"; & <godot.exe> --path <project_path> [scene.tscn]` |
 | Git root | `C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes` |
 | User name + email | Biswajeet · biswajeet@lilagames.com |
-| Token policy | Sonnet for code subagents, haiku for scans; weekly cap 80% (was ~36% used at last check, monitor) |
-| Image gen | `nano-banana` default ($0.04/img); `nano-banana-pro` only on explicit user OK ($0.24/img) |
+| Token policy | Sonnet for code subagents, haiku for scans; weekly cap monitor |
+| Image gen | `nano-banana` default ($0.04/img); `nano-banana-pro` only on explicit user OK |
 
-## Critical files / surfaces (next-chat orientation)
+## Task list state at handoff
 
-**Read first to orient:**
-- `C:\Users\Biswa\.claude\plans\weaponcraft-game-design-fuzzy-llama.md` — full pivot plan, all phases
-- `6_WeaponForge_TFTransistor/CLAUDE.md` — currently still says "2_Weaponcraft_Godot" (it's the unchanged 2_WC copy); rewrite this in Phase 2
-- `6_WeaponForge_TFTransistor/docs/01_GDD.md` — old direction, banner-mark in Phase 2
-- The user's pivot addendum is in the previous chat as a user message; copy verbatim into `6_/docs/superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`
-
-**Reference (good patterns to reuse):**
-- TDD test harness pattern: `6_/Prototype/godot/scripts/dev/test_progression.gd` (`_check`, headless quit)
-- Save layer: `6_/Prototype/godot/scripts/core/account_state.gd` — schema v2 (heroes + flags), v1 migration
-- Progression math: `6_/Prototype/godot/scripts/core/hero_progress.gd` — pure static
-- Home UI shape: `6_/Prototype/godot/scenes/Home.tscn` + `home.gd` — survives unchanged
-
-**Files that DIE in Phase 5 (do NOT extend in Phase 2 / 3):**
-- `combat.gd`, `shop.gd`, `recipes.gd`, `weapon.gd`, `part_data.gd`, `recipe_data.gd`
-- `battle_view.gd`, `forge_panel.gd`, `part_card.gd`, `codex_modal.gd`, `discovery_overlay.gd`
-- `data/parts/*.tres`, `data/recipes/*.tres`
-
-## Known nits + caveats
-
-1. **`.godot/` cache in 6_ is local-only** (in `.gitignore`). Was bootstrapped by copying from 2_WC for the sanity test. If 6_ gets opened on a fresh machine, Godot will rebuild it automatically on first editor open — slow first time, then fine.
-2. **Mid-conversation working-tree dirt** — there are pre-existing `.import` autosave churn + uncommitted root-research deletions in the worktree from earlier sessions. Not your problem; left for user decision. Verify staged diff before any commit (use `git diff --cached --name-only`).
-3. **Worktree state at handoff** — current branch `weaponforge-tftransistor/seed-from-2wc`, working tree has pre-existing `.import` noise + research deletion noise (out-of-scope, owner's call). Phase 2 should commit only files under `6_/docs/`, `6_/CLAUDE.md`, and `2_Weaponcraft_Godot/CLAUDE.md` (banner only).
-4. **Image-gen MCP** is reconnecting / disconnecting — fine for doc work, irrelevant unless we generate new art.
-
-## Task board (carry forward)
-
-Open tasks at handoff (numbers from previous chat's TaskCreate IDs):
-- #25 **Phase 2: Redirect + freeze markers (doc-only)** — in_progress (was marked in_progress before close; pick this up first)
-- #26 **Phase 3: Lock Function catalog + status matrix spec** — pending
-- #27 **Phase 4: Vertical slice** — pending (out of scope until Phase 3 signed off)
-
-Closed tasks list (for context): #1, #10-#24 — see previous chat's task history.
+```
+#1. [completed]   Phase 2: Redirect + freeze markers (doc-only)
+#2. [in_progress] Phase 3: Lock Function catalog + status matrix spec
+                  (REVIEW-3 + Phase 4 scope authored + 3 reviews folded + doc tree consolidated +
+                   01_GDD restored as SSOT + forward roadmap/story-beats + 2_WC archive done.
+                   Awaiting LOCK sign-off.)
+#3. [pending]     Phase 4: Vertical slice (throwaway)
+                  (Resume after LOCK. 18 TDD steps. Target 2-3 days. Branch:
+                   weaponforge-tftransistor/vertical-slice to cut off 3c27be2.)
+```
 
 ## First moves for the next chat
 
-1. `Read C:\Users\Biswa\.claude\plans\weaponcraft-game-design-fuzzy-llama.md` (the plan)
+1. `Read C:\Users\Biswa\.claude\plans\weaponcraft-game-design-fuzzy-llama.md`
 2. `Read C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\6_WeaponForge_TFTransistor\HANDOFF.md` (this file)
-3. Verify state: `git -C "C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes" branch --show-current` → should be `weaponforge-tftransistor/seed-from-2wc`
-4. Verify sweep still 210/210 from 6_ (one PowerShell loop, ~2 min)
-5. Start Phase 2 per the steps above.
+3. `Read C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\6_WeaponForge_TFTransistor\docs\01_GDD.md` (SSOT)
+4. Verify branch: `git branch --show-current` → should be `weaponforge-tftransistor/design-spec`
+5. Recreate TaskList from "Task list state at handoff" above (TaskCreate doesn't persist across sessions)
+6. Ask user: "Read REVIEW-3 spec + Phase 4 scope. Say `lock spec` → cut Phase 4 branch + begin TDD step 1 (AccountState v3 migration)."
 
-**Operator note for the next chat:** user prefers terse caveman-style output, batched subagent dispatches over many small calls, commit + push per phase boundary (not per task), explicit tag/branch freeze markers over implicit ones. User will redirect if the call is wrong — bias toward action.
+**Operator notes (carry forward):**
+- User prefers caveman-style output (terse, fragments OK; code/commits/security = normal prose).
+- Batched subagent dispatches over many small calls.
+- Commit + push per phase boundary (not per task).
+- Explicit tag/branch freeze markers over implicit ones.
+- User bias = action; redirect if call is wrong.
+
+## Critical files / surfaces for orientation (next chat)
+
+**Read first:**
+- [`docs/01_GDD.md`](docs/01_GDD.md) — folder SSOT
+- [`docs/roadmap-2026-06-13.md`](docs/roadmap-2026-06-13.md) — phases + decision gates
+- [`docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md`](docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md) — REVIEW-3 implementation contract
+- [`docs/superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md`](docs/superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md) — Phase 4 mission + build sequence + feedback plan
+
+**Reference (good patterns to reuse from 2_WC P0 meta layer):**
+- TDD harness: `6_/Prototype/godot/scripts/dev/test_progression.gd` (`_check`, headless quit)
+- Save layer: `6_/Prototype/godot/scripts/core/account_state.gd` — schema v2 (heroes + flags), v1 migration; extends to v3 in Phase 4
+- Progression math: `6_/Prototype/godot/scripts/core/hero_progress.gd` — pure static
+- Home UI shape: `6_/Prototype/godot/scenes/Home.tscn` + `home.gd` — survives unchanged
+- Pull cinematic: `6_/Prototype/godot/scripts/ui/pull_overlay.gd` — reused for FTUE Bran/Vex unlocks
+
+**Files that DIE in Phase 5 (do NOT extend in Phase 4):**
+- `combat.gd` (rewrite as `combat_v2.gd` for lane-runner)
+- `shop.gd` (rewrite as `shop_v2.gd` for 7-slot slow-populate)
+- `recipes.gd`, `weapon.gd`, `part_data.gd`, `recipe_data.gd` (delete)
+- `battle_view.gd` (rewrite as `battle_view_v2.gd` for 3-lane corridor)
+- `forge_panel.gd` (rewrite as `forge_panel_v2.gd` for 7-slot + bottom rail)
+- `data/parts/*.tres`, `data/recipes/*.tres`
+
+## Known nits + caveats (carry forward)
+
+1. **`.godot/` cache** in 6_ is local-only (in `.gitignore`). Was bootstrapped by copying from 2_WC. Fresh clone will rebuild on first editor open.
+2. **Mid-conversation working-tree dirt** — pre-existing `.import` autosave churn + uncommitted root-research deletions in the worktree from earlier sessions. Not blocking. Verify staged diff before any commit (use `git diff --cached --name-only`).
+3. **Image-gen MCP** intermittently reconnects/disconnects — doesn't matter for code work; matters only when generating new art.
+4. **Active branch at handoff:** `weaponforge-tftransistor/design-spec`. Phase 4 will cut `weaponforge-tftransistor/vertical-slice` off this branch's HEAD (`3c27be2`).
+5. **`HANDOFF.md` itself** is this file; older version was tracked in commit `7512f35` (kept in git history; overwritten by this commit).
+
+Goodnight. Resume tomorrow with `lock spec` (or redirect any item before lock).

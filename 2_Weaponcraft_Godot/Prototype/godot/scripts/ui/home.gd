@@ -26,6 +26,7 @@ var _roster_cards: Dictionary = {}  ## StringName -> Button
 @onready var _battle_btn: Button = %BattleBtn
 @onready var _total_lv: Label = %TotalLv
 @onready var _scout_label: Label = %ScoutLabel
+@onready var _debug_reset_btn: Button = %DebugResetBtn
 
 func _ready() -> void:
 	_style_static()
@@ -33,6 +34,20 @@ func _ready() -> void:
 	_scout_label.text = "🔭 " + GameState.scout_intel()
 	_refresh()
 	_battle_btn.pressed.connect(_on_battle)
+	_debug_reset_btn.pressed.connect(_on_debug_reset)
+
+## Dev/QA tool: wipe AccountState (XP, ownership, flags incl. pull_seen), restore
+## defaults (Bran+Elara owned), persist, and rebuild the screen. One-tap, no
+## confirm dialog — single-tap simplicity for dev use. Lives in 2_WC's shipped
+## P0 so QA can re-test the scripted pull beat without nuking user://account.json
+## by hand. Carries into 6_ via the seed copy.
+func _on_debug_reset() -> void:
+	AccountState.reset()
+	AccountState.ensure_defaults()
+	AccountState.save_account()
+	_selected = []
+	_build_roster()
+	_refresh()
 
 ## ---------- selection model (headless-tested) ----------
 

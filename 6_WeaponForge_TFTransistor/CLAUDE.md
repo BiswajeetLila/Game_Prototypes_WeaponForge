@@ -15,6 +15,8 @@
 | Path | Role |
 |---|---|
 | [`docs/01_GDD.md`](docs/01_GDD.md) | **THE SSOT.** Game pillars, core loop, hero roster, Function/reaction overview, pivot history, status of locked/ROADMAP/out-of-scope items. |
+| [`docs/roadmap-2026-06-13.md`](docs/roadmap-2026-06-13.md) | **Roadmap** for the new direction. Phase-by-phase planning, timeline estimates, decision gates, risk register. Replaces the 2_WC roadmap (now HISTORICAL). |
+| [`docs/story-beats-2026-06-13.md`](docs/story-beats-2026-06-13.md) | **Narrative beats** — wave-by-wave felt-experience script for FTUE world + subsequent worlds. Reference for art / audio / UX / playtest observation. Replaces the 2_WC story-beats (now HISTORICAL). |
 | [`docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md`](docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md) | **Implementation contract** (REVIEW-3, awaiting LOCK). 36-cell Function × slot matrix, 15-reaction matrix, hero base weapons, 3-lane corridor rules, FTUE script, tier system T1-T5, Ults, wave telegraph, 26 locked decisions register. |
 | [`docs/superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md`](docs/superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md) | **Phase 4 (prototype-1) scope.** Mission, in/out scope, build sequence, success/failure criteria, feedback plan. |
 | [`docs/superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](docs/superpowers/specs/2026-06-12-fork-a-pivot-addendum.md) | **Pivot rationale** (verbatim user addendum). Parent design doc — explains the "why" behind the Function Matrix + spatial-combat + Magicka pillars. Subordinate to 01_GDD now. |

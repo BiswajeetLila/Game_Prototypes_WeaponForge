@@ -219,6 +219,8 @@ This folder seeded from `2_Weaponcraft_Godot/` P0 frozen at `fbe426d` (shipped: 
 
 ## Companion docs
 
+- [Roadmap (phase-by-phase planning, decision gates)](roadmap-2026-06-13.md)
+- [Story beats (narrative wave-by-wave script for FTUE + subsequent worlds)](story-beats-2026-06-13.md)
 - [Function catalog + Reaction matrix (REVIEW-3, the implementation contract)](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md)
 - [Phase 4 vertical slice scope](superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md)
 - [Pivot rationale addendum (verbatim)](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md)

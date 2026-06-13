@@ -19,6 +19,11 @@ var _heroes: Dictionary = {}
 ## Account-level boolean flags (FTUE beats, etc.). Persisted with the save.
 var _flags: Dictionary = {}
 
+## v3 schema (Phase 4): sticky bit — set true the first time the FTUE world is
+## completed, gates the FTUE replay path. Persisted as a top-level field rather
+## than a flag so the slice's gating code can read it without a string key.
+var ftue_complete: bool = false
+
 func _ready() -> void:
 	load_account()
 	ensure_defaults()
@@ -41,6 +46,7 @@ func set_flag(flag: StringName) -> void:
 func reset() -> void:
 	_heroes = {}
 	_flags = {}
+	ftue_complete = false
 
 func _entry(hero_id) -> Dictionary:
 	var key: String = String(hero_id)
@@ -79,12 +85,18 @@ func save_account() -> void:
 	if f == null:
 		push_warning("AccountState: could not open %s for write" % save_path)
 		return
-	f.store_string(JSON.stringify({"heroes": _heroes, "flags": _flags}))
+	f.store_string(JSON.stringify({
+		"version": 3,
+		"heroes": _heroes,
+		"flags": _flags,
+		"ftue_complete": ftue_complete,
+	}))
 	f.close()
 
 func load_account() -> void:
 	_heroes = {}
 	_flags = {}
+	ftue_complete = false
 	if not FileAccess.file_exists(save_path):
 		return
 	var f := FileAccess.open(save_path, FileAccess.READ)
@@ -95,11 +107,14 @@ func load_account() -> void:
 	var parsed = JSON.parse_string(txt)
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
-	## v2 schema: {"heroes": {...}, "flags": {...}}; v1 legacy: flat heroes dict.
+	## v3 schema: {"version": 3, "heroes": {...}, "flags": {...}, "ftue_complete": bool}.
+	## v2 schema: {"heroes": {...}, "flags": {...}} — no version, no ftue_complete.
+	## v1 legacy: flat heroes dict — no "heroes" key wrapper.
 	var heroes_src: Dictionary = parsed.get("heroes", parsed) if parsed.has("heroes") else parsed
 	if typeof(parsed.get("flags", null)) == TYPE_DICTIONARY:
 		for k in parsed["flags"].keys():
 			_flags[String(k)] = bool(parsed["flags"][k])
+	ftue_complete = bool(parsed.get("ftue_complete", false))
 	for key in heroes_src.keys():
 		var row = heroes_src[key]
 		if typeof(row) == TYPE_DICTIONARY and (row.has("xp") or row.has("owned")):

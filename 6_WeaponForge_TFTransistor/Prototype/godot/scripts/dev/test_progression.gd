@@ -29,6 +29,7 @@ func _ready() -> void:
 	_test_run_xp_tracking()
 	_test_flags_roundtrip()
 	_test_first_pull_grant()
+	_test_account_v3_ftue_complete_migration()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -243,6 +244,55 @@ func _test_first_pull_grant() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://account_test.json"))
 	acc.reset()
 	gs.new_session()
+
+## ---------- v3 schema: ftue_complete migration ----------
+
+func _test_account_v3_ftue_complete_migration() -> void:
+	var acc = get_node("/root/AccountState")
+	var prev_path: String = acc.save_path
+	acc.save_path = "user://account_test_v3.json"
+	acc.reset()
+
+	_check("v3: ftue_complete defaults false on fresh state",
+		acc.ftue_complete == false, "got %s" % str(acc.ftue_complete))
+
+	## v3 round-trip: set, save, reset, load.
+	acc.ftue_complete = true
+	acc.save_account()
+	acc.reset()
+	_check("v3: reset clears ftue_complete to false",
+		acc.ftue_complete == false, "got %s" % str(acc.ftue_complete))
+	acc.load_account()
+	_check("v3: ftue_complete=true survives save+load",
+		acc.ftue_complete == true, "got %s" % str(acc.ftue_complete))
+
+	## Cleanup v3 save before authoring v2-shape save.
+	if FileAccess.file_exists(acc.save_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(acc.save_path))
+
+	## v2 migration: legacy save has no ftue_complete key, must default false
+	## and still round-trip heroes + flags untouched.
+	var f := FileAccess.open(acc.save_path, FileAccess.WRITE)
+	f.store_string(JSON.stringify({
+		"heroes": {"bran": {"xp": 500, "owned": true}},
+		"flags": {"pull_seen": true},
+	}))
+	f.close()
+	acc.reset()
+	acc.load_account()
+	_check("v2 migration: ftue_complete defaults false on legacy save",
+		acc.ftue_complete == false, "got %s" % str(acc.ftue_complete))
+	_check("v2 migration: heroes preserved (bran xp=500)",
+		acc.get_xp(&"bran") == 500, "got %d" % acc.get_xp(&"bran"))
+	_check("v2 migration: heroes preserved (bran owned)",
+		acc.is_owned(&"bran") == true, "owned=%s" % str(acc.is_owned(&"bran")))
+	_check("v2 migration: flags preserved (pull_seen=true)",
+		acc.get_flag(&"pull_seen") == true, "")
+
+	if FileAccess.file_exists(acc.save_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(acc.save_path))
+	acc.reset()
+	acc.save_path = prev_path
 
 ## ---------- helpers ----------
 

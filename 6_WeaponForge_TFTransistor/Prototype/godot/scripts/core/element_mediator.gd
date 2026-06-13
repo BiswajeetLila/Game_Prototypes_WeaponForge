@@ -6,6 +6,12 @@ const _ReactionDataScript: Script = preload("res://scripts/core/reaction_data.gd
 
 ## Emitted when a reaction fires. combat_v2 + UltController subscribe.
 signal reaction_triggered(reaction_id: StringName, origin_enemy: Dictionary)
+## Emitted with reaction.vfx_hook on reaction fire. BattleView_v2 subscribes for temp flash.
+## TODO Phase 5: replace stub flash with real VFX (Steam puff, Electrocute arc).
+signal vfx_triggered(hook: StringName, origin_enemy: Dictionary)
+## Emitted with reaction.audio_hook on reaction fire.
+## TODO Phase 5: wire to AudioStreamPlayer once SFX assets land.
+signal audio_triggered(hook: StringName, origin_enemy: Dictionary)
 
 ## reaction registry: StringName("{tag}x{status}") -> ReactionData
 var _registry: Dictionary = {}
@@ -54,6 +60,10 @@ func dispatch_reaction(damage_tag: StringName, enemy: Dictionary):
 			var rd = _registry[key]
 			_apply_reaction(rd, enemy, ls)
 			reaction_triggered.emit(rd.id, enemy)
+			if rd.vfx_hook != &"":
+				vfx_triggered.emit(rd.vfx_hook, enemy)
+			if rd.audio_hook != &"":
+				audio_triggered.emit(rd.audio_hook, enemy)
 			return rd
 	return null
 

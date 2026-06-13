@@ -9,6 +9,8 @@ var _lines: Array = []
 func _ready() -> void:
 	_log("=== UiV2 structural tests ===")
 	_test_battle_view_v2()
+	_test_battle_view_vfx_flash()
+	_test_battle_view_audio_logs()
 	_test_forge_panel_v2()
 	_test_wave_telegraph()
 	_test_chain_hud()
@@ -32,6 +34,40 @@ func _test_battle_view_v2() -> void:
 	_check("bv2: Lane1 exists", inst.get_node_or_null("Lane1") != null, "")
 	_check("bv2: Lane2 exists", inst.get_node_or_null("Lane2") != null, "")
 	_check("bv2: has _sync_enemies method", inst.has_method("_sync_enemies"), "")
+	inst.queue_free()
+
+## -- Step 16: VFX/audio temp stubs --
+
+func _test_battle_view_vfx_flash() -> void:
+	var scene_path := "res://scenes/ui/BattleView_v2.tscn"
+	var packed = load(scene_path)
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("bv2: has _on_vfx_triggered method", inst.has_method("_on_vfx_triggered"), "")
+	## Spawn a fake enemy node so flash has a position anchor.
+	var ls = get_node_or_null("/root/LaneState")
+	if ls != null:
+		ls.reset()
+		var e = ls.make_enemy(&"g", 1, 0.5)
+		inst._sync_enemies([e])
+		var before: int = inst.get_child_count()
+		inst._on_vfx_triggered(&"vfx_steam_puff", e)
+		_check("bv2: vfx flash adds child node", inst.get_child_count() > before, "before=%d after=%d" % [before, inst.get_child_count()])
+	inst.queue_free()
+
+func _test_battle_view_audio_logs() -> void:
+	var scene_path := "res://scenes/ui/BattleView_v2.tscn"
+	var packed = load(scene_path)
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("bv2: has _on_audio_triggered method", inst.has_method("_on_audio_triggered"), "")
+	## Just call it — stub should print, not crash.
+	inst._on_audio_triggered(&"sfx_steam_hiss", {})
+	_check("bv2: audio handler runs without error", true, "")
 	inst.queue_free()
 
 ## -- Step 12: ForgePanel_v2 --

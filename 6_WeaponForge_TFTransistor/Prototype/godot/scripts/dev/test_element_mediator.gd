@@ -5,6 +5,10 @@ var _passed: int = 0
 var _failed: int = 0
 var _lines: Array = []
 
+## Captured signal payloads for step 16 VFX/audio hook tests.
+var _vfx_emits: Array = []
+var _audio_emits: Array = []
+
 func _ready() -> void:
 	_log("=== ElementMediator tests ===")
 	_test_dispatch_steam()
@@ -12,10 +16,60 @@ func _ready() -> void:
 	_test_cracked_not_consumed()
 	_test_no_match()
 	_test_priority_wet_over_burning()
+	_test_vfx_signal_emits()
+	_test_audio_signal_emits()
+	_test_no_emit_when_no_reaction()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
 		get_tree().quit(_failed)
+
+func _capture_vfx(hook: StringName, _enemy: Dictionary) -> void:
+	_vfx_emits.append(hook)
+
+func _capture_audio(hook: StringName, _enemy: Dictionary) -> void:
+	_audio_emits.append(hook)
+
+func _test_vfx_signal_emits() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	_vfx_emits.clear()
+	em.connect("vfx_triggered", _capture_vfx)
+	var e = ls.make_enemy(&"g", 1, 0.5)
+	ls.apply_status(e, &"Wet", 4)
+	em.dispatch_reaction(&"FIRE", e)
+	em.disconnect("vfx_triggered", _capture_vfx)
+	_check("vfx_triggered emits steam hook on FIRE x Wet",
+		_vfx_emits.size() == 1 and _vfx_emits[0] == &"vfx_steam_puff",
+		"got %s" % str(_vfx_emits))
+
+func _test_audio_signal_emits() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	_audio_emits.clear()
+	em.connect("audio_triggered", _capture_audio)
+	var e = ls.make_enemy(&"g", 1, 0.5)
+	ls.apply_status(e, &"Wet", 4)
+	em.dispatch_reaction(&"LIGHTNING", e)
+	em.disconnect("audio_triggered", _capture_audio)
+	_check("audio_triggered emits electrocute hook on LIGHTNING x Wet",
+		_audio_emits.size() == 1 and _audio_emits[0] == &"sfx_electrocute_zap",
+		"got %s" % str(_audio_emits))
+
+func _test_no_emit_when_no_reaction() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	_vfx_emits.clear()
+	_audio_emits.clear()
+	em.connect("vfx_triggered", _capture_vfx)
+	em.connect("audio_triggered", _capture_audio)
+	var e = ls.make_enemy(&"g", 1, 0.5)
+	## No status -> no reaction -> no emits
+	em.dispatch_reaction(&"FIRE", e)
+	em.disconnect("vfx_triggered", _capture_vfx)
+	em.disconnect("audio_triggered", _capture_audio)
+	_check("no reaction: vfx_triggered not emitted", _vfx_emits.is_empty(), "got %s" % str(_vfx_emits))
+	_check("no reaction: audio_triggered not emitted", _audio_emits.is_empty(), "got %s" % str(_audio_emits))
 
 func _test_dispatch_steam() -> void:
 	var ls = get_node("/root/LaneState")

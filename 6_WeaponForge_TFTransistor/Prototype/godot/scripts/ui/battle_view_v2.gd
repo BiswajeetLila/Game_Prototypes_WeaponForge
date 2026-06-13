@@ -20,6 +20,38 @@ func _ready() -> void:
 	var hb := get_node_or_null("/root/Heartbeat")
 	if hb != null and hb.has_signal("ticked"):
 		hb.connect("ticked", _on_tick)
+	var em := get_node_or_null("/root/ElementMediator")
+	if em != null and em.has_signal("vfx_triggered"):
+		em.connect("vfx_triggered", _on_vfx_triggered)
+	if em != null and em.has_signal("audio_triggered"):
+		em.connect("audio_triggered", _on_audio_triggered)
+
+## TEMP step-16 VFX stub. Spawns a brief colored ColorRect over enemy position.
+## TODO Phase 5: replace with real VFX assets (steam puff sprite, electrocute arc).
+func _on_vfx_triggered(hook: StringName, enemy: Dictionary) -> void:
+	var rect := ColorRect.new()
+	rect.name = "VfxFlash_%d" % Time.get_ticks_msec()
+	rect.size = Vector2(40, 40)
+	rect.color = _vfx_color_for(hook)
+	var lane: int = int(enemy.get("lane", 1))
+	var sx: float = float(enemy.get("screen_x", 0.5))
+	var lane_h: float = size.y / float(LANE_COUNT)
+	rect.position = Vector2(sx * size.x - 20, float(lane) * lane_h + lane_h * 0.5 - 20)
+	add_child(rect)
+	var tw := create_tween()
+	tw.tween_property(rect, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(rect.queue_free)
+
+## TEMP step-16 audio stub. Prints hook name.
+## TODO Phase 5: load AudioStreamPlayer + actual SFX assets.
+func _on_audio_triggered(hook: StringName, _enemy: Dictionary) -> void:
+	print("[audio-stub] ", String(hook))
+
+func _vfx_color_for(hook: StringName) -> Color:
+	match String(hook):
+		"vfx_steam_puff": return Color(1.0, 1.0, 1.0, 0.85)
+		"vfx_arc_chain":  return Color(0.5, 0.8, 1.0, 0.85)
+		_:                return Color(1.0, 0.6, 0.2, 0.85)
 
 func _build_lanes() -> void:
 	for i in LANE_COUNT:

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"WATER"
+category = &"element"
+active_damage_tag = &"WATER"
+active_status_emit = &"Wet"
+active_dmg_mult = 0.5
+active_targeting = &"cross_lane_spread"
+active_atk_speed = 1.0
+active_heal_pct = 0.0
+mod_dmg_bonus = 0.0
+mod_adds_tag = &"WATER"
+mod_applies_status = &"Wet"
+passive_id = &"tidepool"

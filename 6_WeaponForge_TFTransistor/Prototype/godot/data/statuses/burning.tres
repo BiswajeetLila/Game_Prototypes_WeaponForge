@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StatusData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/status_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Burning"
+max_stacks = 1
+base_duration = 3
+hp_dmg_per_tick = 2
+speed_mult = 1.0
+dmg_amp_per_stack = 0.0
+skip_attack_chance = 0.0

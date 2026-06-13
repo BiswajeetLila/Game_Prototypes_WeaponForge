@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"LIGHTNING"
+category = &"element"
+active_damage_tag = &"LIGHTNING"
+active_status_emit = &"Shocked"
+active_dmg_mult = 1.0
+active_targeting = &"chain_arc"
+active_atk_speed = 1.0
+active_heal_pct = 0.0
+mod_dmg_bonus = 0.25
+mod_adds_tag = &"LIGHTNING"
+mod_applies_status = &""
+passive_id = &"static_charge"

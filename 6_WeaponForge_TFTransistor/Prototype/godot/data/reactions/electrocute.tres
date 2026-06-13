@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Electrocute"
+trigger_tag = &"LIGHTNING"
+trigger_status = &"Wet"
+dmg_mult = 2.0
+splash = &"cross_lane"
+splash_filter = &"wet_only"
+cleanse_origin = PackedStringArray("Wet")
+apply_splashed = PackedStringArray("Shocked")
+vfx_hook = &"vfx_arc_chain"
+audio_hook = &"sfx_electrocute_zap"

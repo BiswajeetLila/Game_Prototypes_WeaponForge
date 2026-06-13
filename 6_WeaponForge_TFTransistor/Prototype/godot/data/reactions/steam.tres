@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Steam"
+trigger_tag = &"FIRE"
+trigger_status = &"Wet"
+dmg_mult = 1.0
+splash = &"cross_lane"
+splash_filter = &"none"
+cleanse_origin = PackedStringArray("Wet", "Burning")
+apply_splashed = PackedStringArray("Blind")
+vfx_hook = &"vfx_steam_puff"
+audio_hook = &"sfx_steam_hiss"

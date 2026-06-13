@@ -19,6 +19,13 @@ config/icon="res://icon.svg"
 [autoload]
 
 AccountState="*res://scripts/core/account_state.gd"
+LaneState="*res://scripts/core/lane_state.gd"
+ElementMediator="*res://scripts/core/element_mediator.gd"
+UltController="*res://scripts/core/ult_controller.gd"
+WaveDirector="*res://scripts/core/wave_director.gd"
+CombatV2="*res://scripts/core/combat_v2.gd"
+ShopV2="*res://scripts/core/shop_v2.gd"
+DebugOverlay="*res://scripts/dev/debug_overlay.gd"
 GameState="*res://scripts/core/game_state.gd"
 ScreenshotHelper="*res://scripts/core/screenshot_helper.gd"
 RNG="*res://scripts/core/rng.gd"

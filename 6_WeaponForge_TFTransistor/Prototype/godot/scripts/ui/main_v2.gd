@@ -109,25 +109,30 @@ func _build_hud() -> Control:
 	stage.name = "StageLabel"
 	stage.text = "STAGE 1"
 	stage.add_theme_font_size_override(&"font_size", 13)
+	stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	stage.anchor_left = 1.0; stage.anchor_right = 1.0
-	stage.offset_left = -90; stage.offset_top = 6
+	stage.offset_left = -170; stage.offset_right = -96; stage.offset_top = 6
 	hud.add_child(stage)
-
-	var pause := Button.new()
-	pause.name = "PauseBtn"
-	pause.text = "II"
-	pause.anchor_left = 1.0; pause.anchor_right = 1.0
-	pause.offset_left = -150; pause.offset_top = 2
-	pause.pressed.connect(_on_pause)
-	hud.add_child(pause)
 
 	var speed := Button.new()
 	speed.name = "SpeedBtn"
 	speed.text = "2x"
+	speed.add_theme_font_size_override(&"font_size", 11)
 	speed.anchor_left = 1.0; speed.anchor_right = 1.0
-	speed.offset_left = -120; speed.offset_top = 2
+	speed.offset_left = -88; speed.offset_right = -48
+	speed.offset_top = 3; speed.offset_bottom = -3
 	speed.pressed.connect(_on_speed)
 	hud.add_child(speed)
+
+	var pause := Button.new()
+	pause.name = "PauseBtn"
+	pause.text = "II"
+	pause.add_theme_font_size_override(&"font_size", 11)
+	pause.anchor_left = 1.0; pause.anchor_right = 1.0
+	pause.offset_left = -42; pause.offset_right = -6
+	pause.offset_top = 3; pause.offset_bottom = -3
+	pause.pressed.connect(_on_pause)
+	hud.add_child(pause)
 	return hud
 
 func _region(c: Control, top_frac: float, bottom_frac: float) -> void:
@@ -298,6 +303,15 @@ func _on_speed() -> void:
 	var t := get_node_or_null("TickTimer") as Timer
 	if t != null:
 		t.wait_time = TICK_INTERVAL if t.wait_time < TICK_INTERVAL else TICK_INTERVAL * 0.5
+
+## Demo helper: jump straight to a clean FORGE_BREAK (no enemies) for AUTOSHOT.
+func demo_forge_break() -> void:
+	var ls = get_node_or_null("/root/LaneState")
+	if ls != null:
+		ls.enemies = []
+	if _battle != null and _battle.has_method("_sync_enemies"):
+		_battle._sync_enemies([])
+	_enter_forge_break()
 
 ## ---- test introspection ----
 

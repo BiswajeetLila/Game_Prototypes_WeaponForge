@@ -12,6 +12,7 @@ func _ready() -> void:
 	_test_depth_cell_for()
 	_test_render_snap_ordering()
 	_test_enemy_node_structure()
+	_test_real_sprites()
 	_test_battle_view_vfx_flash()
 	_test_battle_view_audio_logs()
 	_test_forge_panel_v2()
@@ -104,6 +105,29 @@ func _test_enemy_node_structure() -> void:
 		var en = enemies_node.get_child(0)
 		_check("bv2: enemy node has HPBar", en.find_child("HPBar", true, false) != null, "")
 		_check("bv2: enemy node has Status row", en.find_child("Status", true, false) != null, "")
+	inst.queue_free()
+
+## B1: real chibi sprites wired into hero anchors + enemy nodes.
+func _test_real_sprites() -> void:
+	var packed = load("res://scenes/ui/BattleView_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	var h0 = inst.get_node_or_null("Heroes/Hero0")
+	var hs = h0.find_child("Sprite", true, false) if h0 != null else null
+	_check("bv2: hero anchor has Sprite node", hs != null, "")
+	_check("bv2: hero Sprite has texture (elara art wired)", hs != null and hs.texture != null, "")
+	var ls = get_node_or_null("/root/LaneState")
+	if ls != null and inst.has_method("_sync_enemies"):
+		ls.reset()
+		var e = ls.make_enemy(&"goblin", 0, 0.8)
+		inst._sync_enemies([e])
+		var enemies_node = inst.get_node_or_null("Enemies")
+		if enemies_node != null and enemies_node.get_child_count() > 0:
+			var es = enemies_node.get_child(0).find_child("Sprite", true, false)
+			_check("bv2: enemy node has Sprite node", es != null, "")
+			_check("bv2: enemy Sprite has goblin texture", es != null and es.texture != null, "")
 	inst.queue_free()
 
 func _test_battle_view_vfx_flash() -> void:

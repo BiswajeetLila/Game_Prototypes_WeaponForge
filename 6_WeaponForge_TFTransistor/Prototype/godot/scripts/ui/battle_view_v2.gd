@@ -35,7 +35,42 @@ const STATUS_COLORS: Dictionary = {
 	"Cracked": Color(0.55, 0.55, 0.58),
 }
 
+## Real chibi art (reused from existing generated assets).
+const HERO_TEX: Dictionary = {
+	0: "res://assets/generated/heroes/elara_mage.png",
+	1: "res://assets/generated/heroes/bran_warrior.png",
+	2: "res://assets/generated/heroes/vex_rogue.png",
+}
+const ENEMY_TEX: Dictionary = {
+	"goblin": "res://assets/generated/enemies/goblin.png",
+	"skeleton": "res://assets/generated/enemies/skeleton.png",
+	"slime": "res://assets/generated/enemies/slime.png",
+}
+
 var _enemy_nodes: Dictionary = {}   ## eid -> Control
+
+func _load_tex(path: String) -> Texture2D:
+	if path != "" and ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
+
+func _hero_texture(lane: int) -> Texture2D:
+	return _load_tex(String(HERO_TEX.get(lane, "")))
+
+func _enemy_texture(id: StringName) -> Texture2D:
+	return _load_tex(String(ENEMY_TEX.get(String(id), "")))
+
+func _make_sprite(tex: Texture2D, w: float, h: float) -> TextureRect:
+	var spr := TextureRect.new()
+	spr.name = "Sprite"
+	spr.texture = tex
+	spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	spr.custom_minimum_size = Vector2(w, h)
+	spr.size = Vector2(w, h)
+	spr.position = Vector2(-w * 0.5, -h * 0.5)
+	spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return spr
 
 func _ready() -> void:
 	_build_view()
@@ -138,12 +173,16 @@ func _make_hero_anchor(lane: int) -> Control:
 	var anchor := Control.new()
 	anchor.name = "Hero%d" % lane
 	anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var box := ColorRect.new()
-	box.name = "Box"
-	box.color = HERO_COLORS[lane]
-	box.size = Vector2(48, 56)
-	box.position = Vector2(-24, -28)
-	anchor.add_child(box)
+	var tex := _hero_texture(lane)
+	var spr := _make_sprite(tex, 60, 68)
+	anchor.add_child(spr)
+	if tex == null:
+		var box := ColorRect.new()
+		box.name = "Box"
+		box.color = HERO_COLORS[lane]
+		box.size = Vector2(48, 56)
+		box.position = Vector2(-24, -28)
+		anchor.add_child(box)
 	var lbl := Label.new()
 	lbl.name = "Name"
 	lbl.add_theme_font_size_override(&"font_size", 11)
@@ -195,12 +234,16 @@ func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 	node.name = eid
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var box := ColorRect.new()
-	box.name = "Box"
-	box.color = Color(0.50, 0.28, 0.30)
-	box.size = Vector2(40, 44)
-	box.position = Vector2(-20, -22)
-	node.add_child(box)
+	var tex := _enemy_texture(enemy.id)
+	var spr := _make_sprite(tex, 44, 48)
+	node.add_child(spr)
+	if tex == null:
+		var box := ColorRect.new()
+		box.name = "Box"
+		box.color = Color(0.50, 0.28, 0.30)
+		box.size = Vector2(40, 44)
+		box.position = Vector2(-20, -22)
+		node.add_child(box)
 
 	var lbl := Label.new()
 	lbl.name = "Name"

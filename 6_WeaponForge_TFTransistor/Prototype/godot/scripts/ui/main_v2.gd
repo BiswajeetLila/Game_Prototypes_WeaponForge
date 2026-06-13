@@ -20,6 +20,7 @@ extends Control
 const BattleViewScene: PackedScene = preload("res://scenes/ui/BattleView_v2.tscn")
 const ForgePanelScene: PackedScene = preload("res://scenes/ui/ForgePanel_v2.tscn")
 const ChainHUDScene: PackedScene = preload("res://scenes/ui/ChainHUD.tscn")
+const Loadout = preload("res://scripts/core/loadout_v2.gd")
 
 const STATE_COMBAT: int = 0
 const STATE_FORGE: int = 1
@@ -38,6 +39,8 @@ var waves_played: int = 0
 var gold: int = 7
 var _ticks_this_wave: int = 0
 var _chain: int = 0
+var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
+var _selected_shop: int = -1   ## currently selected shop slot (tap-to-equip)
 
 var _battle: Control
 var _forge: Control
@@ -75,6 +78,10 @@ func _build_layout() -> void:
 	add_child(_forge)
 	if _forge.has_signal("reroll_tapped"):
 		_forge.reroll_tapped.connect(_on_reroll)
+	if _forge.has_signal("shop_item_tapped"):
+		_forge.shop_item_tapped.connect(_on_shop_tap)
+	if _forge.has_signal("socket_tapped"):
+		_forge.socket_tapped.connect(_on_socket_tap)
 
 	_chain_hud = ChainHUDScene.instantiate()
 	add_child(_chain_hud)
@@ -163,6 +170,8 @@ func start_run() -> void:
 	waves_played = 0
 	_chain = 0
 	gold = 7
+	_selected_shop = -1
+	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
 	_heroes = _make_heroes()
 	_spawn_current_wave()
 	state = STATE_COMBAT
@@ -292,6 +301,29 @@ func _update_forge() -> void:
 
 func _on_reroll() -> void:
 	_populate_shop()
+
+## ---- forge equip (tap shop item, then tap a hero socket; drag = Phase 5) ----
+
+func _on_shop_tap(slot_idx: int) -> void:
+	_selected_shop = slot_idx
+
+func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
+	if _selected_shop < 0 or _selected_shop >= SHOP_SAMPLE.size():
+		return
+	if hero_idx < 0 or hero_idx >= _loadouts.size():
+		return
+	var fn_id := StringName(SHOP_SAMPLE[_selected_shop])
+	_loadouts[hero_idx] = Loadout.apply_drop(_loadouts[hero_idx], socket_idx, fn_id, 1)
+	var entry = _loadouts[hero_idx][socket_idx]
+	if _forge != null and _forge.has_method("set_socket_fn") and entry != null:
+		_forge.set_socket_fn(hero_idx, socket_idx, entry.id)
+
+func get_socket(hero_idx: int, socket_idx: int):
+	if hero_idx < 0 or hero_idx >= _loadouts.size():
+		return null
+	if socket_idx < 0 or socket_idx >= _loadouts[hero_idx].size():
+		return null
+	return _loadouts[hero_idx][socket_idx]
 
 func _on_pause() -> void:
 	if state == STATE_COMBAT:

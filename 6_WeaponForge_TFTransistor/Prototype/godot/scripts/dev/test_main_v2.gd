@@ -11,6 +11,7 @@ func _ready() -> void:
 	_log("=== Main_v2 controller tests ===")
 	_test_composition()
 	_test_full_run_loop()
+	_test_equip_and_merge()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -51,6 +52,30 @@ func _test_full_run_loop() -> void:
 	_check("main_v2: run reaches DONE", inst.is_done(), "guard=%d state=%d" % [guard, inst.state])
 	_check("main_v2: played 15 waves (5 stages x 3)", inst.waves_played == 15, "got %d" % inst.waves_played)
 	_check("main_v2: did not hit guard ceiling", guard < 6000, "guard=%d" % guard)
+	inst.queue_free()
+
+func _test_equip_and_merge() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("main_v2: has _on_shop_tap", inst.has_method("_on_shop_tap"), "")
+	_check("main_v2: has _on_socket_tap", inst.has_method("_on_socket_tap"), "")
+	_check("main_v2: has get_socket", inst.has_method("get_socket"), "")
+	if not (inst.has_method("_on_shop_tap") and inst.has_method("_on_socket_tap") and inst.has_method("get_socket")):
+		inst.queue_free()
+		return
+	## tap shop slot 0 (FIRE), then hero 0 socket 0 -> equips FIRE t1
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 0)
+	var s = inst.get_socket(0, 0)
+	_check("main_v2: equip places FIRE in socket", s != null and s.id == &"FIRE", "got %s" % str(s))
+	## tap FIRE again onto same socket -> merge to t2
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 0)
+	s = inst.get_socket(0, 0)
+	_check("main_v2: re-equip same -> merge t2", s != null and s.tier == 2, "got %s" % str(s))
 	inst.queue_free()
 
 func _check(name: String, ok: bool, detail: String) -> void:

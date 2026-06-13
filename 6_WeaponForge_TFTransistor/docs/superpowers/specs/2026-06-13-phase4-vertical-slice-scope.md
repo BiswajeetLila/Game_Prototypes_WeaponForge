@@ -2,7 +2,7 @@
 
 > **Subordinate to** [`../../01_GDD.md`](../../01_GDD.md) — folder SSOT. **Companion to** [`2026-06-12-function-catalog-and-status-matrix.md`](2026-06-12-function-catalog-and-status-matrix.md) (the implementation contract). This doc defines WHAT we ship, the MISSION it serves, and the FEEDBACK we collect for Phase 4 (prototype-1).
 
-**Date:** 2026-06-13 · **Status:** DRAFT — awaiting design spec LOCK before Phase 4 branch cut.
+**Date:** 2026-06-13 · **Status:** **LOCKED** — signed off alongside function-catalog spec; Phase 4 branch `weaponforge-tftransistor/vertical-slice` cut off this commit.
 
 ---
 

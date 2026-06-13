@@ -2,12 +2,13 @@
 
 > **Subordinate to** [`../../01_GDD.md`](../../01_GDD.md) — folder SSOT. This doc is the cell-by-cell implementation contract elaborating the GDD's Function Matrix + reaction system + lane combat + FTUE pillars. Parent rationale (verbatim): [`2026-06-12-fork-a-pivot-addendum.md`](2026-06-12-fork-a-pivot-addendum.md). Slice scope: [`2026-06-13-phase4-vertical-slice-scope.md`](2026-06-13-phase4-vertical-slice-scope.md).
 
-**Date:** 2026-06-13 · **Status:** **REVIEW-3** — auto-runner pivot. 3-lane Capybara-Go-style replaces grid. Awaiting LOCK sign-off.
+**Date:** 2026-06-13 · **Status:** **LOCKED** — REVIEW-3 signed off. This is the Phase 4 implementation contract; deviations require explicit user re-LOCK.
 
 **Revision history**
 - `DRAFT` (`1bf7986`, 2026-06-12) — mirrored 3×3 grid
 - `REVIEW-2` (`761bef0`, 2026-06-12) — central 4×4 grid w/ 4-edge spawn, FTUE, Ults, wave/forge cadence
-- `REVIEW-3` (this rev, 2026-06-13) — switched to **3-lane horizontal auto-runner** (no grid, no placement); weapon-always-visible bottom rail; 7-item shop slow-populate across stage; 3-wave stages w/ 5-stage worlds; tiered Functions (T1-T5, 2-to-1 merge); FTUE re-paced (stages 1+2 = 1 wave each); 3-card module deferred to contingency; Wittle-meta direction locked for Phase 5; game-design/CEO/product-brainstorming patches folded in
+- `REVIEW-3` (`6e386a4`, 2026-06-13) — switched to **3-lane horizontal auto-runner** (no grid, no placement); weapon-always-visible bottom rail; 7-item shop slow-populate across stage; 3-wave stages w/ 5-stage worlds; tiered Functions (T1-T5, 2-to-1 merge); FTUE re-paced (stages 1+2 = 1 wave each); 3-card module deferred to contingency; Wittle-meta direction locked for Phase 5; game-design/CEO/product-brainstorming patches folded in
+- `LOCKED` (this rev, 2026-06-13) — user sign-off; Phase 4 cut off this commit on branch `weaponforge-tftransistor/vertical-slice`
 
 ---
 

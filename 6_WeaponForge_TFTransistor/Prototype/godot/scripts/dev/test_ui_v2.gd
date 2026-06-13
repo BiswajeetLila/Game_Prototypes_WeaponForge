@@ -147,6 +147,9 @@ func _test_battle_view_vfx_flash() -> void:
 		inst._on_vfx_triggered(&"vfx_steam_puff", e)
 		var after: int = (vfx.get_child_count() if vfx != null else inst.get_child_count())
 		_check("bv2: vfx flash adds a node", after > before, "before=%d after=%d" % [before, after])
+		if vfx != null and vfx.get_child_count() > 0:
+			var last = vfx.get_child(vfx.get_child_count() - 1)
+			_check("bv2: steam vfx uses textured sprite", last is TextureRect and last.texture != null, "")
 	inst.queue_free()
 
 func _test_battle_view_audio_logs() -> void:

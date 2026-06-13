@@ -1,5 +1,5 @@
 ## AUTOSHOT wrapper — Main_v2 frozen mid-COMBAT with a representative enemy set,
-## varied statuses, and a couple of reaction VFX, for a combat-state capture.
+## varied statuses, and a couple of reaction VFX fired near capture time.
 extends Control
 
 const MainV2Scene = preload("res://scenes/Main_v2.tscn")
@@ -10,7 +10,6 @@ func _ready() -> void:
 	m.anchor_right = 1.0; m.anchor_bottom = 1.0
 	add_child(m)
 	await get_tree().process_frame
-	## Freeze: stop the tick timer, force COMBAT state, hide NEXT WAVE
 	var t = m.get_node_or_null("TickTimer")
 	if t != null:
 		t.stop()
@@ -18,7 +17,6 @@ func _ready() -> void:
 	var nb = m.get_node_or_null("NextWaveBtn")
 	if nb != null:
 		nb.visible = false
-	## Seed a representative mid-combat board across all 3 lanes
 	var ls = get_node_or_null("/root/LaneState")
 	if ls == null:
 		return
@@ -36,8 +34,15 @@ func _ready() -> void:
 	var bv = m.find_child("BattleView_v2", true, false)
 	if bv != null and bv.has_method("_sync_enemies"):
 		bv._sync_enemies(ls.enemies)
-	## Fire a couple of reaction VFX for the combat-juice capture
+	## Fire VFX ~1.2s in so they are fresh at the 1.5s AUTOSHOT capture.
+	var timer := get_tree().create_timer(1.2)
+	timer.timeout.connect(_fire_vfx)
+
+func _fire_vfx() -> void:
+	var ls = get_node_or_null("/root/LaneState")
 	var em = get_node_or_null("/root/ElementMediator")
-	if em != null and em.has_signal("vfx_triggered"):
+	if ls == null or em == null or ls.enemies.size() < 4:
+		return
+	if em.has_signal("vfx_triggered"):
 		em.vfx_triggered.emit(&"vfx_steam_puff", ls.enemies[3])
 		em.vfx_triggered.emit(&"vfx_arc_chain", ls.enemies[0])

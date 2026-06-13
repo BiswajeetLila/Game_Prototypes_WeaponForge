@@ -46,6 +46,10 @@ const ENEMY_TEX: Dictionary = {
 	"skeleton": "res://assets/generated/enemies/skeleton.png",
 	"slime": "res://assets/generated/enemies/slime.png",
 }
+const VFX_TEX: Dictionary = {
+	"vfx_steam_puff": "res://assets/generated/vfx/steam_puff.png",
+	"vfx_arc_chain": "res://assets/generated/vfx/electric_arc.png",
+}
 
 var _enemy_nodes: Dictionary = {}   ## eid -> Control
 
@@ -302,18 +306,29 @@ func _on_vfx_triggered(hook: StringName, enemy: Dictionary) -> void:
 	var vfx := get_node_or_null("Vfx")
 	if vfx == null:
 		vfx = self
-	var rect := ColorRect.new()
-	rect.name = "VfxFlash_%d" % Time.get_ticks_msec()
-	rect.color = _vfx_color_for(hook)
-	rect.size = Vector2(44, 44)
 	var cell: int = _depth_cell_for(float(enemy.get("screen_x", 0.5)))
 	var pos: Vector2 = _cell_position(int(enemy.get("lane", 1)), cell, 0)
-	rect.position = pos - Vector2(22, 22)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vfx.add_child(rect)
+	var tex := _load_tex(String(VFX_TEX.get(String(hook), "")))
+	var node: Control
+	if tex != null:
+		var spr := TextureRect.new()
+		spr.texture = tex
+		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		spr.size = Vector2(56, 56)
+		node = spr
+	else:
+		var rect := ColorRect.new()
+		rect.color = _vfx_color_for(hook)
+		rect.size = Vector2(44, 44)
+		node = rect
+	node.name = "VfxFlash_%d" % Time.get_ticks_msec()
+	node.position = pos - node.size * 0.5
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vfx.add_child(node)
 	var tw := create_tween()
-	tw.tween_property(rect, "modulate:a", 0.0, 0.4)
-	tw.tween_callback(rect.queue_free)
+	tw.tween_property(node, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(node.queue_free)
 
 func _on_audio_triggered(hook: StringName, _enemy: Dictionary) -> void:
 	print("[audio-stub] ", String(hook))

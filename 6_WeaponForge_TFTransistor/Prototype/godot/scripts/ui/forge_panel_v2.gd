@@ -13,6 +13,29 @@ const HERO_TEX: Array = [
 	"res://assets/generated/heroes/bran_warrior.png",
 	"res://assets/generated/heroes/vex_rogue.png",
 ]
+const RUNE_TEX: Dictionary = {
+	"FIRE": "res://assets/generated/parts/r_fire.png",
+	"WATER": "res://assets/generated/parts/r_ice.png",
+	"LIGHTNING": "res://assets/generated/runes/r_lightning.png",
+	"AOE": "res://assets/generated/runes/r_aoe.png",
+	"LEECH": "res://assets/generated/runes/r_leech.png",
+	"BURST": "res://assets/generated/runes/r_burst.png",
+	"BOUNCE": "res://assets/generated/runes/r_bounce.png",
+}
+
+func _rune_tex(fn_id) -> Texture2D:
+	var p: String = String(RUNE_TEX.get(String(fn_id), ""))
+	if p != "" and ResourceLoader.exists(p):
+		return load(p) as Texture2D
+	return null
+
+func _make_icon() -> TextureRect:
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
 
 ## Emitted when player taps a socket to assign/swap a function.
 signal socket_tapped(hero_idx: int, socket_idx: int)
@@ -106,6 +129,7 @@ func _make_shop_slot(idx: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "ShopSlot%d" % idx
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_child(_make_icon())
 	var lbl := Label.new()
 	lbl.name = "SlotLabel"
 	lbl.text = "--"
@@ -164,6 +188,7 @@ func _make_socket(hero_idx: int, sock_idx: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "Socket%d_%d" % [hero_idx, sock_idx]
 	panel.custom_minimum_size = Vector2(36, 36)
+	panel.add_child(_make_icon())
 	var lbl := Label.new()
 	lbl.name = "FnLabel"
 	lbl.text = "·"
@@ -186,9 +211,16 @@ func populate_shop(items: Array) -> void:
 	_shop_items = items
 	for i in SHOP_SLOTS:
 		var lbl: Label = _shop_slots[i].get_node("SlotLabel")
+		var icon := _shop_slots[i].get_node_or_null("Icon") as TextureRect
 		if i < items.size():
-			lbl.text = str(items[i].get("id", "?"))
+			var fid = items[i].get("id", "?")
+			var tex := _rune_tex(fid)
+			if icon != null:
+				icon.texture = tex
+			lbl.text = "" if tex != null else str(fid)
 		else:
+			if icon != null:
+				icon.texture = null
 			lbl.text = "--"
 
 func set_gold(amount: int) -> void:
@@ -217,4 +249,8 @@ func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName) -> void:
 	var sock: PanelContainer = _hero_rows[hero_idx].get_node("Socket%d_%d" % [hero_idx, sock_idx])
 	if sock == null:
 		return
-	sock.get_node("FnLabel").text = str(fn_id) if fn_id != &"" else "·"
+	var tex := _rune_tex(fn_id)
+	var icon := sock.get_node_or_null("Icon") as TextureRect
+	if icon != null:
+		icon.texture = tex
+	sock.get_node("FnLabel").text = "" if tex != null else (str(fn_id) if fn_id != &"" else "·")

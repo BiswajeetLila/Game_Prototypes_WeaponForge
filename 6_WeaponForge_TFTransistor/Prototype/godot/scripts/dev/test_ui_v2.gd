@@ -196,6 +196,18 @@ func _test_forge_panel_v2() -> void:
 		var portrait = rows.get_child(0).get_node_or_null("Portrait")
 		_check("fp2: portrait is a TextureRect", portrait is TextureRect, "")
 		_check("fp2: portrait has hero texture (elara)", portrait is TextureRect and portrait.texture != null, "")
+	## B3: rune icons in shop slots + sockets
+	inst.populate_shop([{"id": "FIRE"}, {"id": "LIGHTNING"}])
+	if rail != null and rail.get_child_count() > 0:
+		var icon = rail.get_child(0).find_child("Icon", true, false)
+		_check("fp2: shop slot has Icon node", icon != null, "")
+		_check("fp2: shop slot Icon textured after populate", icon != null and icon.texture != null, "")
+	inst.set_socket_fn(0, 0, &"FIRE")
+	if rows != null and rows.get_child_count() > 0:
+		var sock = rows.get_child(0).find_child("Socket0_0", true, false)
+		var sicon = sock.find_child("Icon", true, false) if sock != null else null
+		_check("fp2: socket has Icon node", sicon != null, "")
+		_check("fp2: socket Icon textured after equip", sicon != null and sicon.texture != null, "")
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

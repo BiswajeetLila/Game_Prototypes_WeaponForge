@@ -191,6 +191,11 @@ func _test_forge_panel_v2() -> void:
 	_check("fp2: GoldLabel exists", inst.find_child("GoldLabel", true, false) != null, "")
 	_check("fp2: RerollBtn exists", inst.find_child("RerollBtn", true, false) != null, "")
 	_check("fp2: set_socket_fn method", inst.has_method("set_socket_fn"), "")
+	## B2: hero portraits use real chibi textures
+	if rows != null and rows.get_child_count() > 0:
+		var portrait = rows.get_child(0).get_node_or_null("Portrait")
+		_check("fp2: portrait is a TextureRect", portrait is TextureRect, "")
+		_check("fp2: portrait has hero texture (elara)", portrait is TextureRect and portrait.texture != null, "")
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

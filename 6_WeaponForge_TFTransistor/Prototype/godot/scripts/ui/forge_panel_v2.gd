@@ -8,6 +8,11 @@ const MAX_SOCKETS: int = 3
 const SHOP_SLOTS: int = 7
 const SOCKET_LABELS: Array = ["ACTIVE", "MODIFIER", "PASSIVE"]
 const HERO_NAMES: Array = ["Elara", "Bran", "Vex"]
+const HERO_TEX: Array = [
+	"res://assets/generated/heroes/elara_mage.png",
+	"res://assets/generated/heroes/bran_warrior.png",
+	"res://assets/generated/heroes/vex_rogue.png",
+]
 
 ## Emitted when player taps a socket to assign/swap a function.
 signal socket_tapped(hero_idx: int, socket_idx: int)
@@ -122,10 +127,14 @@ func _make_hero_row(hero_idx: int) -> HBoxContainer:
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.add_theme_constant_override(&"separation", 6)
 
-	var portrait := ColorRect.new()
+	var portrait := TextureRect.new()
 	portrait.name = "Portrait"
 	portrait.custom_minimum_size = Vector2(48, 48)
-	portrait.color = Color(0.2, 0.2, 0.4)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var ptex_path: String = HERO_TEX[hero_idx] if hero_idx < HERO_TEX.size() else ""
+	if ptex_path != "" and ResourceLoader.exists(ptex_path):
+		portrait.texture = load(ptex_path) as Texture2D
 	row.add_child(portrait)
 
 	for s in MAX_SOCKETS:

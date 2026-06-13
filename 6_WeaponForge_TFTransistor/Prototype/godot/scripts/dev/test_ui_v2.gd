@@ -159,6 +159,14 @@ func _test_forge_panel_v2() -> void:
 	_check("fp2: set_hero_ult_bars method", inst.has_method("set_hero_ult_bars"), "")
 	_check("fp2: socket_tapped signal", inst.has_signal("socket_tapped"), "")
 	_check("fp2: shop_item_tapped signal", inst.has_signal("shop_item_tapped"), "")
+	## A2: shop moved to BOTTOM, hero rows above (mockup layout)
+	_check("fp2: ShopRail anchored at BOTTOM", rail != null and rail.anchor_top >= 0.7,
+		"anchor_top=%.2f" % (rail.anchor_top if rail != null else -1.0))
+	_check("fp2: HeroRows above shop", rows != null and rail != null and rows.anchor_top < rail.anchor_top,
+		"rows.top=%.2f shop.top=%.2f" % [(rows.anchor_top if rows != null else -1.0), (rail.anchor_top if rail != null else -1.0)])
+	_check("fp2: GoldLabel exists", inst.find_child("GoldLabel", true, false) != null, "")
+	_check("fp2: RerollBtn exists", inst.find_child("RerollBtn", true, false) != null, "")
+	_check("fp2: set_socket_fn method", inst.has_method("set_socket_fn"), "")
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

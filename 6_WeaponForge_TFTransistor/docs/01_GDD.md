@@ -24,6 +24,7 @@
 | [`superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md`](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md) | **The cell-by-cell implementation contract.** 12 Functions × 3 slot behaviors = 36 cells; 15-reaction matrix; lane combat rules; FTUE script; world structure; tier system; Ults. **Status: REVIEW-3** (awaiting LOCK sign-off). |
 | [`superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md`](superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md) | **Phase 4 (prototype-1) scope doc.** Mission, in-scope systems, build sequence, success/failure criteria, playtest feedback plan. |
 | [`superpowers/specs/2026-06-12-fork-a-pivot-addendum.md`](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md) | **Parent design rationale.** The user's verbatim pivot addendum from 2026-06-12 — describes the Function Matrix + spatial-combat + Magicka reactions thesis. Read once for the "why"; the cell-by-cell contract above lives in the Function catalog doc. |
+| [`_art-build/screens/In_Battle.png`](../_art-build/screens/In_Battle.png) + [`Forge_State.jpeg`](../_art-build/screens/Forge_State.jpeg) | **Approved presentation mockups — art/UX SSOT for the Phase 5 rebuild.** Combat screen + forge-break screen, user-approved 2026-06-14, matched frame set. 2.5D ~30° top-down battlefield, faint **3×3 grid = hybrid** (mechanic keeps continuous `screen_x` advance per `lane_state.gd`; the view snaps each enemy to the nearest of 3 depth cells per lane, same-cell enemies stack-offset). Heroes anchored LEFT, enemies advance leftward. Shop rail is **bottommost**. Sockets labelled ACTIVE/MODIFIER/PASSIVE. Supersedes the pre-pivot `run_01`-era anatomical-anvil art. |
 | **[ROADMAP]** Wittle-meta-progression spec | TBD post-Phase-4 feel-gate. Hero levels, skill trees, equipment, talents, stars, dailies, season pass, idle income — Wittle Defender clone meta-layer (locked direction per REVIEW-3 §13 row 12). |
 | **[ROADMAP]** Monetization spec | TBD post-Phase-4 (locked deferred per REVIEW-3 §19.2 P1). |
 
@@ -224,5 +225,6 @@ This folder seeded from `2_Weaponcraft_Godot/` P0 frozen at `fbe426d` (shipped: 
 - [Function catalog + Reaction matrix (REVIEW-3, the implementation contract)](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md)
 - [Phase 4 vertical slice scope](superpowers/specs/2026-06-13-phase4-vertical-slice-scope.md)
 - [Pivot rationale addendum (verbatim)](superpowers/specs/2026-06-12-fork-a-pivot-addendum.md)
+- [Approved presentation mockups — combat (`In_Battle.png`)](../_art-build/screens/In_Battle.png) + [forge break (`Forge_State.jpeg`)](../_art-build/screens/Forge_State.jpeg)
 - [Folder rules + non-collision notes (`6_/CLAUDE.md`)](../CLAUDE.md)
 - Historical 2_WC-direction specs (all banner-marked HISTORICAL — listed in `../CLAUDE.md`)

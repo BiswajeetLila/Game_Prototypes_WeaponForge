@@ -108,6 +108,29 @@ This is the work that I (Claude) cannot do without a human at the keyboard:
    Heartbeat is a liveness pinger, no signal. Need a tick driver (Timer or `_process`)
    that calls CombatV2.tick() then BattleView._on_tick() each frame/step.
 
+## Approved presentation mockups (Phase 5 art/UX SSOT — locked 2026-06-14)
+
+Two user-approved screens are the build target. They are a matched frame set; build to them.
+- [`_art-build/screens/In_Battle.png`](_art-build/screens/In_Battle.png) — combat screen
+- [`_art-build/screens/Forge_State.jpeg`](_art-build/screens/Forge_State.jpeg) — forge-break screen
+
+**Rebuild deltas (current v0 code → mockup):**
+- **BattleView_v2**: replace the 3 flat full-width ColorRect lane bands with ONE shared
+  2.5D ~30° battlefield + faint 3×3 grid overlay. Render hero sprites anchored LEFT
+  (one per lane), enemy sprites advancing leftward. Add per-unit HP bar + floating
+  status-icon stack (Wet/Burning/Chilled/Shocked/Cracked) + VFX layer (Steam puff,
+  Electrocute arc, fire projectile). Heroes are currently NOT drawn in battle view at
+  all — add them.
+- **Hybrid grid render-snap**: mechanic keeps continuous `screen_x` (LaneState, 268
+  tests unchanged); BattleView snaps each enemy's *visual* x to nearest of 3 depth
+  cells per lane (`≥0.67`→far, `0.33–0.67`→mid, `<0.33`→near). Same-cell enemies need
+  stack-offset so they don't overlap.
+- **ForgePanel_v2**: move shop rail to the BOTTOM (below weapon rail). Sockets labelled
+  ACTIVE/MODIFIER/PASSIVE (full words). Forge break = shop fully populated + big
+  `START NEXT WAVE` button + merge-spark affordance on duplicate runes.
+- **Composition (Main_v2)**: HUD + battlefield + weapon rail + shop are ONE screen, not
+  4 detached scenes. Forge break = same screen, combat paused, no enemies, heroes idle.
+
 ## Environment
 
 | Thing | Value |

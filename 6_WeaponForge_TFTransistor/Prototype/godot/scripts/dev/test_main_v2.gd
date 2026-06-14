@@ -20,6 +20,8 @@ func _ready() -> void:
 	_test_layout_combat()
 	_test_layout_forge()
 	_test_pause_no_reanchor()
+	_test_shop_populates_per_stage()
+	_test_reroll_button_path()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -194,6 +196,41 @@ func _test_pause_no_reanchor() -> void:
 	_check("pause: is_paused true", inst.has_method("is_paused") and inst.is_paused() == true, "")
 	inst._on_pause()
 	_check("pause: toggles back off", inst.is_paused() == false, "")
+	inst.queue_free()
+
+func _test_shop_populates_per_stage() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)  ## start_run: stage 0, shop populated once
+	_check("shop populated once at stage start", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
+	var guard: int = 0
+	while inst.is_combat() and guard < 500:
+		inst._tick_once()
+		guard += 1
+	_check("forge break does NOT repopulate (per-stage, not per-wave)", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
+	inst.advance_wave()  ## wave 2 of stage 0
+	_check("next wave same stage: still 1 populate", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
+	guard = 0
+	while not inst.is_done() and inst.current_stage == 0 and guard < 3000:
+		if inst.is_combat(): inst._tick_once()
+		elif inst.is_forge_break(): inst.advance_wave()
+		guard += 1
+	_check("reached stage 1", inst.current_stage >= 1, "stage %d" % inst.current_stage)
+	_check("new stage repopulates shop (count 2)", inst._shop_populate_count == 2, "got %d" % inst._shop_populate_count)
+	inst.queue_free()
+
+func _test_reroll_button_path() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 5
+	var rb = inst._forge.find_child("RerollBtn", true, false)
+	_check("RerollBtn present", rb != null, "")
+	if rb != null:
+		rb.pressed.emit()  ## full chain: button -> reroll_tapped -> _on_reroll
+		_check("reroll via real button press decrements gold", inst.gold == 4, "got %d" % inst.gold)
 	inst.queue_free()
 
 func _check(name: String, ok: bool, detail: String) -> void:

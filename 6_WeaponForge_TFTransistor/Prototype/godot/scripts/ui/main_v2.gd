@@ -43,6 +43,7 @@ var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
 var _selected_shop: int = -1   ## currently selected shop slot (tap-to-equip)
 var _shop_items: Array = []    ## 7 slots, each {id,tier,cost} or null (bought/empty)
 var _stage_elements_seen: Array = []  ## element ids that appeared in shop this stage (pity)
+var _shop_populate_count: int = 0     ## test probe: shop rolls ONCE per stage, not per wave
 
 var _battle: Control
 var _forge: Control
@@ -190,7 +191,9 @@ func start_run() -> void:
 	_stage_elements_seen = []
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
 	_heroes = _make_heroes()
+	_shop_populate_count = 0
 	_spawn_current_wave()
+	_populate_shop()  ## shop opens at STAGE start (persists across the stage's waves)
 	state = STATE_COMBAT
 	_paused = false
 	_set_next_wave(false)
@@ -252,7 +255,8 @@ func _enter_forge_break() -> void:
 	state = STATE_FORGE
 	waves_played += 1
 	## gold is earned per-kill in _tick_once now (no flat grant)
-	_populate_shop()
+	## shop is NOT re-rolled here — it persists across the stage's waves (populated at stage start)
+	_refresh_shop_ui()
 	_set_next_wave(true)
 	if _forge != null and _forge.has_method("set_reroll_cost"):
 		_forge.set_reroll_cost(1)
@@ -267,9 +271,11 @@ func advance_wave() -> void:
 	if wd != null:
 		waves_in_stage = wd.waves_for_stage(current_stage)
 	current_wave += 1
+	var new_stage: bool = false
 	if current_wave >= waves_in_stage:
 		current_wave = 0
 		current_stage += 1
+		new_stage = true
 		## stage boundary -> feed pity counter with what appeared in shop this stage
 		var shop = get_node_or_null("/root/ShopV2")
 		if shop != null and shop.has_method("notify_stage_end"):
@@ -281,6 +287,8 @@ func advance_wave() -> void:
 		_update_hud()
 		return
 	_spawn_current_wave()
+	if new_stage:
+		_populate_shop()  ## fresh shop ONLY at a new stage
 	_set_next_wave(false)
 	state = STATE_COMBAT
 	_apply_layout(STATE_COMBAT)
@@ -299,6 +307,7 @@ func _populate_shop() -> void:
 		_shop_items = shop.roll_items(current_stage, 7, pity)
 	else:
 		_shop_items = []
+	_shop_populate_count += 1
 	_track_elements(_shop_items)
 	_refresh_shop_ui()
 

@@ -16,3 +16,7 @@ mod_dmg_bonus = 0.0
 mod_adds_tag = &""
 mod_applies_status = &""
 passive_id = &"rapid_fire"
+active_desc = "3-shot fan at nearby enemies"
+mod_desc = "Active fires a 3-target fan (3 reactions)"
+passive_desc = "Hero attack speed +40%"
+best_fit = &"MODIFIER"

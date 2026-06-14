@@ -16,3 +16,7 @@ mod_dmg_bonus = 0.25
 mod_adds_tag = &"LIGHTNING"
 mod_applies_status = &""
 passive_id = &"static_charge"
+active_desc = "Chains + arcs, Shocks both targets"
+mod_desc = "+25% damage, adds Lightning tag"
+passive_desc = "Zaps + Shocks closest periodically"
+best_fit = &"ACTIVE"

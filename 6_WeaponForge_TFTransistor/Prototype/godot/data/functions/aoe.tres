@@ -16,3 +16,7 @@ mod_dmg_bonus = 0.0
 mod_adds_tag = &""
 mod_applies_status = &""
 passive_id = &"concussion_aura"
+active_desc = "Radial blast, hits up to 5 enemies"
+mod_desc = "Active becomes radial, spreads status"
+passive_desc = "Periodic blast that staggers enemies"
+best_fit = &"MODIFIER"

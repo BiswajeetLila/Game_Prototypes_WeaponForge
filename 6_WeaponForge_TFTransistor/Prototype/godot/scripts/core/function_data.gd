@@ -23,3 +23,17 @@ extends Resource
 
 ## Passive slot (runtime behaviour is resolved by element_mediator + combat_v2)
 @export var passive_id: StringName = &""           ## key for passive lookup table
+
+## Display / preview (decision-1: SHOW per-slot behavior + best-fit, never restrict).
+@export_multiline var active_desc: String = ""
+@export_multiline var mod_desc: String = ""
+@export_multiline var passive_desc: String = ""
+@export var best_fit: StringName = &""             ## PASSIVE | MODIFIER | ACTIVE (hint, not a gate)
+
+## Per-slot behavior text by canonical socket index (0=PASSIVE,1=MODIFIER,2=ACTIVE).
+func describe(slot_idx: int) -> String:
+	match slot_idx:
+		0: return passive_desc
+		1: return mod_desc
+		2: return active_desc
+		_: return ""

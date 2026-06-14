@@ -16,3 +16,7 @@ mod_dmg_bonus = 0.0
 mod_adds_tag = &""
 mod_applies_status = &""
 passive_id = &"lifelink"
+active_desc = "Melee hit, heals self 50% of damage"
+mod_desc = "Active hits heal the hero 25%"
+passive_desc = "+HP/tick but disables this hero's attacks"
+best_fit = &"PASSIVE"

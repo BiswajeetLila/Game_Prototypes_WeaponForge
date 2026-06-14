@@ -16,3 +16,7 @@ mod_dmg_bonus = 0.0
 mod_adds_tag = &"WATER"
 mod_applies_status = &"Wet"
 passive_id = &"tidepool"
+active_desc = "Splashes across lanes, applies Wet"
+mod_desc = "Adds Water tag + applies Wet on Active"
+passive_desc = "Wets a front enemy every few ticks"
+best_fit = &"MODIFIER"

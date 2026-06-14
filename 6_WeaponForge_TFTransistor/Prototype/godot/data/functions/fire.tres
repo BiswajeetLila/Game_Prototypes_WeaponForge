@@ -16,3 +16,7 @@ mod_dmg_bonus = 0.2
 mod_adds_tag = &"FIRE"
 mod_applies_status = &""
 passive_id = &"forge_aura"
+active_desc = "Hits closest in lane, applies Burning"
+mod_desc = "+20% damage, adds Fire tag to Active"
+passive_desc = "Allies +10% dmg vs Burning/Chilled"
+best_fit = &"ACTIVE"

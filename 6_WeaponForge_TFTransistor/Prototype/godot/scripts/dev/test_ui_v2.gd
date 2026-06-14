@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_battle_view_vfx_flash()
 	_test_battle_view_audio_logs()
 	_test_forge_panel_v2()
+	_test_forge_cards()
 	_test_wave_telegraph()
 	_test_chain_hud()
 	_summary()
@@ -211,6 +212,52 @@ func _test_forge_panel_v2() -> void:
 		var sicon = sock.find_child("Icon", true, false) if sock != null else null
 		_check("fp2: socket has Icon node", sicon != null, "")
 		_check("fp2: socket Icon textured after equip", sicon != null and sicon.texture != null, "")
+	inst.queue_free()
+
+## -- C6/C7: forge socket cards + shop cards (info) --
+
+func _test_forge_cards() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	## empty-socket watermark = slot name (C1 order: 0=PASSIVE, 2=ACTIVE)
+	var s00 = inst.find_child("Socket0_0", true, false)
+	var nm00 = s00.find_child("NameLabel", true, false) if s00 != null else null
+	_check("fc: empty socket0_0 watermark PASSIVE", nm00 != null and nm00.text == "PASSIVE", "got %s" % (nm00.text if nm00 != null else "null"))
+	var s02 = inst.find_child("Socket0_2", true, false)
+	var nm02 = s02.find_child("NameLabel", true, false) if s02 != null else null
+	_check("fc: empty socket0_2 watermark ACTIVE", nm02 != null and nm02.text == "ACTIVE", "got %s" % (nm02.text if nm02 != null else "null"))
+	_check("fc: socket card >= 56px", s02 != null and s02.custom_minimum_size.x >= 56, "got %s" % (str(s02.custom_minimum_size) if s02 != null else "null"))
+	## equip with tier 2 -> name + 2 stars
+	inst.set_socket_fn(0, 2, &"FIRE", 2, "FIRE", "")
+	_check("fc: equipped socket name FIRE", nm02 != null and nm02.text == "FIRE", "got %s" % (nm02.text if nm02 != null else "null"))
+	var stars = s02.find_child("TierStars", true, false)
+	_check("fc: tier 2 -> 2 stars", stars != null and stars.text.length() == 2, "got %s" % (stars.text if stars != null else "null"))
+	## merge pending "2/2"
+	inst.set_socket_fn(1, 1, &"WATER", 1, "WATER", "2/2")
+	var s11 = inst.find_child("Socket1_1", true, false)
+	var mg = s11.find_child("MergeLabel", true, false) if s11 != null else null
+	_check("fc: merge label 2/2", mg != null and mg.text == "2/2", "got %s" % (mg.text if mg != null else "null"))
+	## shop card name + cost
+	inst.populate_shop([{"id": "FIRE", "tier": 1, "cost": 1}])
+	var slot0 = inst.get_node("ShopRail").get_child(0)
+	var snm = slot0.find_child("NameLabel", true, false)
+	_check("fc: shop card name FIRE", snm != null and snm.text == "FIRE", "got %s" % (snm.text if snm != null else "null"))
+	var scost = slot0.find_child("CostLabel", true, false)
+	_check("fc: shop card cost shows 1", scost != null and "1" in scost.text, "got %s" % (scost.text if scost != null else "null"))
+	## reroll cost + enabled
+	_check("fc: has set_reroll_cost", inst.has_method("set_reroll_cost"), "")
+	if inst.has_method("set_reroll_cost"):
+		inst.set_reroll_cost(1)
+		var rb = inst.find_child("RerollBtn", true, false)
+		_check("fc: reroll btn shows cost 1", rb != null and "1" in rb.text, "got %s" % (rb.text if rb != null else "null"))
+	_check("fc: has set_reroll_enabled", inst.has_method("set_reroll_enabled"), "")
+	if inst.has_method("set_reroll_enabled"):
+		inst.set_reroll_enabled(false)
+		var rb2 = inst.find_child("RerollBtn", true, false)
+		_check("fc: reroll disabled toggles", rb2 != null and rb2.disabled == true, "")
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

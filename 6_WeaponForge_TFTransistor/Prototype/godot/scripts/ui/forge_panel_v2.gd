@@ -131,12 +131,29 @@ func _make_shop_slot(idx: int) -> PanelContainer:
 	panel.name = "ShopSlot%d" % idx
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_make_icon())
-	var lbl := Label.new()
-	lbl.name = "SlotLabel"
-	lbl.text = "--"
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override(&"font_size", 10)
-	panel.add_child(lbl)
+	var nm := Label.new()
+	nm.name = "NameLabel"
+	nm.text = ""
+	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nm.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	nm.add_theme_font_size_override(&"font_size", 8)
+	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(nm)
+	var stars := Label.new()
+	stars.name = "TierStars"
+	stars.text = ""
+	stars.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	stars.add_theme_font_size_override(&"font_size", 8)
+	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(stars)
+	var cost := Label.new()
+	cost.name = "CostLabel"
+	cost.text = ""
+	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cost.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	cost.add_theme_font_size_override(&"font_size", 8)
+	cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(cost)
 	var btn := Button.new()
 	btn.name = "TapArea"
 	btn.flat = true
@@ -188,14 +205,34 @@ func _make_hero_row(hero_idx: int) -> HBoxContainer:
 func _make_socket(hero_idx: int, sock_idx: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "Socket%d_%d" % [hero_idx, sock_idx]
-	panel.custom_minimum_size = Vector2(36, 36)
+	panel.custom_minimum_size = Vector2(64, 64)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_make_icon())
-	var lbl := Label.new()
-	lbl.name = "FnLabel"
-	lbl.text = "·"
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override(&"font_size", 9)
-	panel.add_child(lbl)
+	var nm := Label.new()
+	nm.name = "NameLabel"
+	nm.text = SOCKET_LABELS[sock_idx]   ## empty watermark = slot name
+	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nm.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	nm.add_theme_font_size_override(&"font_size", 8)
+	nm.modulate = Color(1, 1, 1, 0.4)
+	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(nm)
+	var stars := Label.new()
+	stars.name = "TierStars"
+	stars.text = ""
+	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	stars.add_theme_font_size_override(&"font_size", 9)
+	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(stars)
+	var mg := Label.new()
+	mg.name = "MergeLabel"
+	mg.text = ""
+	mg.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	mg.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	mg.add_theme_font_size_override(&"font_size", 8)
+	mg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(mg)
 	var btn := Button.new()
 	btn.name = "TapArea"
 	btn.flat = true
@@ -211,18 +248,23 @@ func _make_socket(hero_idx: int, sock_idx: int) -> PanelContainer:
 func populate_shop(items: Array) -> void:
 	_shop_items = items
 	for i in SHOP_SLOTS:
-		var lbl: Label = _shop_slots[i].get_node("SlotLabel")
-		var icon := _shop_slots[i].get_node_or_null("Icon") as TextureRect
+		var slot: PanelContainer = _shop_slots[i]
+		var icon := slot.get_node_or_null("Icon") as TextureRect
+		var nm := slot.get_node_or_null("NameLabel") as Label
+		var cost := slot.get_node_or_null("CostLabel") as Label
+		var stars := slot.get_node_or_null("TierStars") as Label
 		if i < items.size() and items[i] != null:
-			var fid = items[i].get("id", "?")
-			var tex := _rune_tex(fid)
-			if icon != null:
-				icon.texture = tex
-			lbl.text = "" if tex != null else str(fid)
+			var it = items[i]
+			var fid := String(it.get("id", "?"))
+			if icon != null: icon.texture = _rune_tex(fid)
+			if nm != null: nm.text = fid
+			if cost != null: cost.text = "%dG" % int(it.get("cost", 0))
+			if stars != null: stars.text = _stars(int(it.get("tier", 1)))
 		else:
-			if icon != null:
-				icon.texture = null
-			lbl.text = "--"
+			if icon != null: icon.texture = null
+			if nm != null: nm.text = ""
+			if cost != null: cost.text = ""
+			if stars != null: stars.text = ""
 
 func set_gold(amount: int) -> void:
 	var g := find_child("GoldLabel", true, false) as Label
@@ -244,15 +286,41 @@ func set_hero_ult_bars(hero_idx: int, filled: int) -> void:
 		var pip: ColorRect = ult_bar.get_node("Pip%d" % p)
 		pip.color = Color(0.9, 0.7, 0.1) if p < filled else Color(0.3, 0.3, 0.3)
 
-## tier/display_name/merge_pending consumed by the richer socket card in C6.
-func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, _tier: int = 1, _display_name: String = "", _merge_pending: String = "") -> void:
+## Socket card: empty fn_id -> slot-name watermark; else icon + name + tier stars + merge.
+func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, tier: int = 1, display_name: String = "", merge_pending: String = "") -> void:
 	if hero_idx >= _hero_rows.size():
 		return
 	var sock: PanelContainer = _hero_rows[hero_idx].get_node("Socket%d_%d" % [hero_idx, sock_idx])
 	if sock == null:
 		return
-	var tex := _rune_tex(fn_id)
 	var icon := sock.get_node_or_null("Icon") as TextureRect
-	if icon != null:
-		icon.texture = tex
-	sock.get_node("FnLabel").text = "" if tex != null else (str(fn_id) if fn_id != &"" else "·")
+	var nm := sock.get_node_or_null("NameLabel") as Label
+	var stars := sock.get_node_or_null("TierStars") as Label
+	var mg := sock.get_node_or_null("MergeLabel") as Label
+	if fn_id == &"":
+		if icon != null: icon.texture = null
+		if nm != null:
+			nm.text = SOCKET_LABELS[sock_idx]
+			nm.modulate = Color(1, 1, 1, 0.4)
+		if stars != null: stars.text = ""
+		if mg != null: mg.text = ""
+	else:
+		if icon != null: icon.texture = _rune_tex(fn_id)
+		if nm != null:
+			nm.text = display_name if display_name != "" else String(fn_id)
+			nm.modulate = Color(1, 1, 1, 1)
+		if stars != null: stars.text = _stars(tier)
+		if mg != null: mg.text = merge_pending
+
+func _stars(tier: int) -> String:
+	return "★".repeat(clampi(tier, 0, 5))
+
+func set_reroll_cost(n: int) -> void:
+	var rb := find_child("RerollBtn", true, false) as Button
+	if rb != null:
+		rb.text = "Re-roll %dG" % n
+
+func set_reroll_enabled(enabled: bool) -> void:
+	var rb := find_child("RerollBtn", true, false) as Button
+	if rb != null:
+		rb.disabled = not enabled

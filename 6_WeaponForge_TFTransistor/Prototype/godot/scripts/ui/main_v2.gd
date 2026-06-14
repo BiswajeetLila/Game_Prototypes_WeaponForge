@@ -43,7 +43,8 @@ var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
 var _selected_shop: int = -1   ## currently selected shop slot (tap-to-equip)
 var _shop_items: Array = []    ## 7 slots, each {id,tier,cost} or null (bought/empty)
 var _stage_elements_seen: Array = []  ## element ids that appeared in shop this stage (pity)
-var _shop_populate_count: int = 0     ## test probe: shop rolls ONCE per stage, not per wave
+var _shop_populate_count: int = 0     ## test probe: number of per-stage shop resets
+var _shop_stage: int = 0              ## which stage the current _shop_items belong to (reset boundary)
 
 var _battle: Control
 var _forge: Control
@@ -204,10 +205,10 @@ func start_run() -> void:
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
 	_heroes = _make_heroes()
 	_shop_populate_count = 0
-	_populate_shop()  ## shop opens at STAGE start (persists across the stage's waves)
+	_reset_stage_shop()  ## F0: slow-populate start batch (2 items) for stage 1
 	_paused = false
 	_update_pause_indicator()
-	_park_forge()  ## OPEN in the forge: equip first, then press START to begin wave 1
+	_park_forge()  ## OPEN in the forge: equip the start items, then START stage 1
 
 func _make_heroes() -> Array:
 	return [
@@ -259,36 +260,41 @@ func _tick_once() -> void:
 		_battle._on_tick()
 	_update_forge()
 	if ls.enemies.size() == 0 or _ticks_this_wave >= SAFETY_TICKS:
-		_enter_forge_break()
+		_on_wave_cleared()
 
-## Wave cleared -> advance to the NEXT wave (a forge break precedes EVERY wave),
-## spawn its enemies, then park in FORGE so the player can re-equip before START.
-func _enter_forge_break() -> void:
+## Wave cleared. If more waves remain in the stage, auto-battle straight into the next
+## wave (NO forge break between waves). If it was the LAST wave, end the stage: advance
+## the stage counter, then open the forge break (or finish the run). Forge = per STAGE.
+func _on_wave_cleared() -> void:
 	waves_played += 1
 	var wd = get_node_or_null("/root/WaveDirector")
 	var waves_in_stage: int = 3
 	if wd != null:
 		waves_in_stage = wd.waves_for_stage(current_stage)
-	current_wave += 1
-	var new_stage: bool = false
-	if current_wave >= waves_in_stage:
-		current_wave = 0
-		current_stage += 1
-		new_stage = true
-		## stage boundary -> feed pity counter with what appeared in shop this stage
-		var shop = get_node_or_null("/root/ShopV2")
-		if shop != null and shop.has_method("notify_stage_end"):
-			shop.notify_stage_end(_stage_elements_seen, not _stage_elements_seen.is_empty())
-		_stage_elements_seen = []
+	if current_wave + 1 < waves_in_stage:
+		## more waves this stage -> auto-advance, keep auto-battling, shop keeps dripping
+		current_wave += 1
+		_spawn_current_wave()
+		_drip_shop_for_wave(current_wave)
+		_update_hud()
+		return
+	## stage complete -> stage break (forge)
+	current_wave = 0
+	current_stage += 1
+	## stage boundary -> feed pity counter with what appeared in shop this stage
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop != null and shop.has_method("notify_stage_end"):
+		shop.notify_stage_end(_stage_elements_seen, not _stage_elements_seen.is_empty())
+	_stage_elements_seen = []
 	if current_stage >= STAGES:
 		state = STATE_DONE
 		_set_next_wave(false)
 		_apply_layout(STATE_FORGE)
 		_update_hud()
 		return
-	if new_stage:
-		_populate_shop()  ## fresh shop ONLY at a new stage
-	_park_forge()  ## enemies for this wave spawn on START (advance_wave), not in forge
+	## park in FORGE — the shop still shows the just-finished stage's full board;
+	## it resets to the new stage's start batch on the next START (advance_wave).
+	_park_forge()
 
 ## Show the FORGE break for the currently-spawned wave: forge layout, fresh shop UI,
 ## START NEXT WAVE revealed. Does NOT advance the wave or spawn enemies.
@@ -312,9 +318,12 @@ func _park_forge() -> void:
 func advance_wave() -> void:
 	if state != STATE_FORGE:
 		return
-	_spawn_current_wave()  ## materialize this wave's enemies as combat begins
+	if _shop_stage != current_stage:
+		_reset_stage_shop()  ## entering a new stage -> fresh slow-populate (discards old board)
+	_spawn_current_wave()  ## materialize the first wave's enemies as combat begins
+	_drip_shop_for_wave(current_wave)  ## stage's wave-0 shop drip
 	state = STATE_COMBAT
-	_paused = false  ## each wave starts playing (never resume into a paused freeze)
+	_paused = false  ## each stage starts playing (never resume into a paused freeze)
 	_update_pause_indicator()
 	_set_next_wave(false)
 	_apply_layout(STATE_COMBAT)
@@ -326,15 +335,47 @@ func _on_reaction(rid: StringName, enemy: Dictionary) -> void:
 	if _battle != null and _battle.has_method("show_reaction_label"):
 		_battle.show_reaction_label(rid, enemy)
 
-func _populate_shop() -> void:
+## ---- shop slow-populate (GDD §4: 2/3/2 across the stage's 3 waves) ----
+
+func _schedule() -> Array:
 	var shop = get_node_or_null("/root/ShopV2")
-	if shop != null and shop.has_method("roll_items"):
-		var pity: bool = bool(shop.pity_triggered)
-		_shop_items = shop.roll_items(current_stage, 7, pity)
-	else:
-		_shop_items = []
+	if shop != null and shop.has_method("populate_schedule_3wave"):
+		return shop.populate_schedule_3wave()
+	return [{"wave": -1, "count": 2}, {"wave": 0, "count": 1}, {"wave": 1, "count": 1}, {"wave": 2, "count": 1}, {"wave": 2, "count": 2}]
+
+## Roll `n` fresh items into the first `n` EMPTY shop slots (the slow-populate drip).
+func _add_shop_items(n: int, pity: bool) -> void:
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop == null or not shop.has_method("roll_items") or n <= 0:
+		return
+	var fresh: Array = shop.roll_items(current_stage, n, pity)
+	var fi: int = 0
+	for i in _shop_items.size():
+		if fi >= fresh.size():
+			break
+		if _shop_items[i] == null:
+			_shop_items[i] = fresh[fi]
+			fi += 1
+	_track_elements(fresh)
+
+## New stage: clear the board, drop the stage-start batch (the "2" of 2/3/2).
+func _reset_stage_shop() -> void:
+	_shop_items = [null, null, null, null, null, null, null]
+	_shop_stage = current_stage
 	_shop_populate_count += 1
-	_track_elements(_shop_items)
+	var shop = get_node_or_null("/root/ShopV2")
+	var pity: bool = bool(shop.pity_triggered) if shop != null else false
+	for e in _schedule():
+		if int(e.get("wave", -99)) == -1:
+			_add_shop_items(int(e.get("count", 0)), pity)
+			pity = false  ## pity element guarantee applies only to the stage's first item
+	_refresh_shop_ui()
+
+## During combat: drop this wave's scheduled batch(es) into the always-visible rail.
+func _drip_shop_for_wave(wave_idx: int) -> void:
+	for e in _schedule():
+		if int(e.get("wave", -99)) == wave_idx:
+			_add_shop_items(int(e.get("count", 0)), false)
 	_refresh_shop_ui()
 
 ## Track element ids that appear in the shop this stage (feeds pity at stage end).
@@ -390,9 +431,9 @@ func _update_forge() -> void:
 		_forge.set_gold(gold)
 	_refresh_weapon_tips()
 
-## Reroll wipes the WHOLE board clean and loads a fresh full set of items across all
-## 7 slots (even slots already bought/emptied). Price scales with the stage (see
-## ShopV2.reroll_cost_for) since you get a whole new board, not just leftover slots.
+## Reroll wipes every currently-shown item and loads fresh ones in their place (a full
+## wipe of the visible board). Bought/empty slots are left for the slow-populate drip.
+## Price scales with the stage (see ShopV2.reroll_cost_for).
 func _on_reroll() -> void:
 	var shop = get_node_or_null("/root/ShopV2")
 	if shop == null:
@@ -404,9 +445,14 @@ func _on_reroll() -> void:
 	if not res.get("ok", false):
 		return
 	gold -= int(res.get("cost", 0))
-	var pity: bool = bool(shop.pity_triggered)
-	_shop_items = shop.roll_items(current_stage, 7, pity)  ## full-board refresh
-	_track_elements(_shop_items)
+	## re-roll every CURRENTLY-POPULATED slot in place (full wipe of the visible board);
+	## bought/empty slots stay empty — the slow-populate drip fills those across the stage.
+	for i in _shop_items.size():
+		if _shop_items[i] != null:
+			var fresh: Array = shop.roll_items(current_stage, 1, false)
+			if fresh.size() > 0:
+				_shop_items[i] = fresh[0]
+				_track_elements([fresh[0]])
 	_refresh_shop_ui()
 
 ## ---- forge equip (tap shop item, then tap a hero socket; drag = Phase 5) ----
@@ -517,7 +563,14 @@ func demo_forge_break() -> void:
 		ls.enemies = []
 	if _battle != null and _battle.has_method("_sync_enemies"):
 		_battle._sync_enemies([])
-	_enter_forge_break()
+	## simulate a stage-end break with a FULL board (7) for forge/buy/sell/layout QC
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop != null and shop.has_method("roll_items"):
+		_shop_items = shop.roll_items(current_stage, 7, false)
+	else:
+		_shop_items = []
+	_shop_stage = current_stage
+	_park_forge()
 
 ## ---- test introspection ----
 

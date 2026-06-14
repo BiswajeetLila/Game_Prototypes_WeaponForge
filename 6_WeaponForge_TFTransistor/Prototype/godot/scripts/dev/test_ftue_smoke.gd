@@ -54,11 +54,13 @@ func _on_reaction_seen(_rid: StringName, _enemy: Dictionary) -> void:
 	_reactions_seen += 1
 
 func _heroes_for_stage(stage: int) -> Array:
+	## deep-duplicate: combat_v2 contact-damage writes hero["hp"]; const arrays are
+	## read-only in Godot 4, so hand combat a mutable copy (production heroes are mutable).
 	if stage < 2:
-		return HERO_LANES_FTUE_S0_S1
+		return HERO_LANES_FTUE_S0_S1.duplicate(true)
 	if stage < 4:
-		return HERO_LANES_FTUE_S2_S3
-	return HERO_LANES_FTUE_S4
+		return HERO_LANES_FTUE_S2_S3.duplicate(true)
+	return HERO_LANES_FTUE_S4.duplicate(true)
 
 func _seed_status_for_reactions(stage: int, enemies: Array) -> void:
 	## To prove reactions can fire, pre-apply Wet to a subset of enemies in

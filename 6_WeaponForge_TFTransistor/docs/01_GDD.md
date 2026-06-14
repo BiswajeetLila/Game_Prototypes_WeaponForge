@@ -139,15 +139,18 @@ Chain ≥3 reactions in 2-sec window → chain stinger audio + chain HUD counter
 
 ## Shop + Forge
 
-- **7 slots** per stage, slow-populating 2/3/2 across the 3 waves — **IMPLEMENTED** in the slice (`main_v2._reset_stage_shop` + `_drip_shop_for_wave`, driven by `ShopV2.populate_schedule_3wave`). 2 at stage start, +1 as each of the 3 waves begins, +2 by the stage's end; full board = the stage-end forge break.
+- **7 slots.** The shop opens **FULL (7) at world start / F0** (build a starting kit). Within a run it **slow-populates 2/3/2** across each stage's 3 waves (2 at stage start, +1 per wave, +2 by stage end), so it is full again at every stage-end forge break. **IMPLEMENTED** (`main_v2._reset_stage_shop(full)` + `_drip_shop_for_wave`, `ShopV2.populate_schedule_3wave`).
 - **Forge break = per STAGE, not per wave** — waves auto-battle continuously inside a stage (no inter-wave stop); the forge/equip moment is the stage break. F0 (run open) shows the 2 starting items. **IMPLEMENTED** (`_on_wave_cleared` auto-advances within a stage, opens forge at the boundary).
 - Items reset between stages (forces commitment; no shop persistence)
 - Cost scales by stage; gold from kills
 - Pity counter: ≥1 Element per 2 consecutive stages
 - 2-to-1 auto-merge on duplicate drop (slice stub: marks `2/2`, no tier bump until the full tier system lands)
-- **Reserve (bench): 2 slots per hero.** Equipping onto an occupied socket displaces the old Function to a free Reserve slot (same id+tier → merge instead); both reserve slots full → equip is **blocked** (red row flash, no charge). Reserve is a usable bench: tap a benched item then a socket to re-equip (the socket item swaps back). **Sell** any socket/reserve item back to the shop for a reduced refund (floor 50% of cost) via **long-press (~0.5s)** — frees slots when the bench is full. **IMPLEMENTED** (`reserve_v2.gd`). Layout = [`_art-build/screens/Forge_State_edits.jpg`](../_art-build/screens/Forge_State_edits.jpg).
-- **Re-roll** wipes every currently-shown item and reloads fresh ones in place (bought/empty slots stay empty for the drip to fill); price scales with stage (`2× T1 base`).
-- **Weapon-always-visible bottom rail:** 3 hero portraits + 3 sockets each + Ult bars + a one-line weapon description under each row — visible during all combat + forge phases (player can plan permutations while waiting for shop to fill). **HP floats above the hero sprites in the battle scene only** (not the forge rail).
+- **Reserve (bench): 2 slots per hero.** Buying from the shop onto an occupied socket displaces the old Function to a free Reserve slot (same id+tier → merge; both reserve slots full → **blocked**, red row flash, no charge). **IMPLEMENTED** (`reserve_v2.gd`). Layout = [`_art-build/screens/Forge_State_edits.jpg`](../_art-build/screens/Forge_State_edits.jpg).
+- **Free tile movement (hero-agnostic):** pick up any owned item (any socket or reserve, any hero) with a tap and drop on any other tile — empty = move, same id+tier = merge, occupied = swap. Costs no gold (only buying from the shop costs gold). **IMPLEMENTED** (`forge_grid.gd`, unified `_held` pick/drop).
+- **Sell = double-click** an owned socket/reserve item → reduced refund (floor 50% of cost). Single tap = pick up / drop.
+- **Re-roll** rolls a fresh **full board of 7** (the whole list, including bought/empty slots); price scales with stage (`2× T1 base`).
+- **Ult:** a per-hero **Ult button** beside the portrait that fills with charge (3 reactions/bar); enabled + "ULT!" at full, tap to fire (consumes the meter; Ult VFX/effect = [ROADMAP] Phase 5).
+- **Weapon-always-visible bottom rail:** 3 hero portraits + Ult button + 3 sockets each + a one-line weapon description under each row — visible during all combat + forge phases. **HP floats above the hero sprites in the battle scene only** (not the forge rail).
 - **Wave telegraph:** tap during forge break to preview upcoming stage's enemy mix + weaknesses [ROADMAP]
 
 ---

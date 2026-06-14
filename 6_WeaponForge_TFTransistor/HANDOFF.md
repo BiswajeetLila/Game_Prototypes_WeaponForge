@@ -65,15 +65,20 @@ Godot procs go zombie under contention — `Get-Process -Name Godot_v4.6.2-stabl
 1. **Universal Transistor slots** — any Function any slot, behaves differently per 36-cell matrix. Distinction via shown behavior, NOT restriction.
 2. **Socket order PASSIVE | MODIFIER | ACTIVE** (data idx 0/1/2).
 3. **Forge = per STAGE (not per wave).** Waves auto-battle continuously inside a stage; the forge/equip break is the stage boundary (F0 open + after each stage). `_on_wave_cleared` auto-advances within a stage. *(G1 — superseded the earlier per-wave forge + F1's full-shop-at-open.)*
-4. **Shop slow-populates 2/3/2** across the stage's waves (always-visible rail): 2 at stage start, +1 per wave, +2 by stage end = 7. Resets per stage. F0 opens with 2. `_reset_stage_shop`/`_drip_shop_for_wave` + `ShopV2.populate_schedule_3wave`. *(G1 — user reverted the "full fresh 7 each stage" idea back to this GDD pillar.)*
+4. **Shop: FULL (7) at world start / F0; slow-populates 2/3/2 within each stage** (full again at every stage break). `_reset_stage_shop(full)` + `_drip_shop_for_wave`. *(G1 + G6 — F0-full per user; slow-populate is the within-stage rhythm.)*
 5. **Gold = per-kill** (1g/kill in `_tick_once`), not flat-per-forge.
-6. **Reserve bench = 2 slots/hero** (`reserve_v2.gd`). Equip onto occupied → displace old to reserve; same id+tier → merge; reserve full → blocked + red flash, no charge. Bench is reusable (tap benched item → socket = swap). **Sell** socket/reserve via **long-press ~0.5s** for floor-50% refund. *(G2/G3.)*
-7. **Re-roll** wipes every currently-shown item in place (bought/empty slots left for the drip); price = `2× T1 base` scaled by stage. *(F1 + G1.)*
-8. **Weapon description** = one line UNDER each hero's sockets (combined ATK/+MOD/PASS), real-time on equip; right-side tooltip column removed. HP floats above sprites in the battle scene only. *(D2/G3.)*
-9. Layout SSOT: combat = [`In_Battle.png`]; forge = [`Forge_State_edits.jpg`] (the edited one with the Reserve column).
+6. **Reserve bench = 2 slots/hero** (`reserve_v2.gd`). Buying onto an occupied socket → displace old to reserve; same id+tier → merge; reserve full → blocked + red flash, no charge. *(G2/G3.)*
+7. **Free tile movement, hero-agnostic** (`forge_grid.gd`): tap any owned tile (socket/reserve, any hero) to pick up, tap any other to drop — empty=move, same=merge, occupied=swap; no gold. Unified `_held` pick/drop in main_v2. *(G5.)*
+8. **Sell = double-click** an owned socket/reserve (floor-50% refund). Single tap = pick up/drop. *(G5 — was long-press.)*
+9. **Re-roll = fresh full board of 7** (the whole list); price = `2× T1 base` scaled by stage. *(G6.)*
+10. **Ult button** per hero (fills with charge, 3 reactions/bar; "ULT!" + enabled at full; press consumes; Ult effect = Phase 5). `ult_pressed` signal. *(G7.)*
+11. **Weapon description** = one line UNDER each hero's sockets (combined ATK/+MOD/PASS), real-time; right-side tooltip removed. HP floats above sprites in the battle scene only. *(D2/G3.)*
+12. Layout SSOT: combat = `In_Battle.png`; forge = `Forge_State_edits.jpg` (the edited one with the Reserve column).
 
 ## Commit history (real-asset-pass, newest first)
-`G3` forge layout = Forge_State_edits.jpg (Reserve column + under-row desc + long-press sell + error flash) ·
+`G5` any-tile moves (forge_grid) + double-click sell + F0-full shop + reroll-whole-list + Ult button (G5-G7 bundled) ·
+`G4` docs (GDD/HANDOFF) + forge re-sync hardening ·
+`G3` forge layout = Forge_State_edits.jpg (Reserve column + under-row desc + sell + error flash) ·
 `G2` Reserve bench logic (`reserve_v2.gd`): equip-displacement / merge / blocked-full / sell / bench-reequip + main_v2 wiring ·
 `G1` forge per STAGE + auto-battle waves + slow-populate 2/3/2 ·
 `F1` open run in FORGE (equip first) + reroll cost scaling ·

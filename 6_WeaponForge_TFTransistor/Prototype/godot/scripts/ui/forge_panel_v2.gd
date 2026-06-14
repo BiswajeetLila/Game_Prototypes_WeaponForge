@@ -18,14 +18,36 @@ const HERO_TEX: Array = [
 	"res://assets/generated/heroes/vex_rogue.png",
 ]
 const RUNE_TEX: Dictionary = {
-	"FIRE": "res://assets/generated/parts/r_fire.png",
-	"WATER": "res://assets/generated/parts/r_ice.png",
-	"LIGHTNING": "res://assets/generated/runes/r_lightning.png",
-	"AOE": "res://assets/generated/runes/r_aoe.png",
-	"LEECH": "res://assets/generated/runes/r_leech.png",
-	"BURST": "res://assets/generated/runes/r_burst.png",
+	"FIRE": "res://assets/generated/runes/fire.png",
+	"WATER": "res://assets/generated/runes/water.png",
+	"LIGHTNING": "res://assets/generated/runes/lightning.png",
+	"AOE": "res://assets/generated/runes/aoe.png",
+	"LEECH": "res://assets/generated/runes/leech.png",
+	"BURST": "res://assets/generated/runes/burst.png",
 	"BOUNCE": "res://assets/generated/runes/r_bounce.png",
 }
+## Tier rarity border colors (T1 neutral, T2 blue, T3 purple, T4 gold). One icon per
+## Function; the slot frame recolors by tier (no per-tier art).
+const TIER_BORDER: Array = [
+	Color(0.45, 0.45, 0.5),    ## T1 — neutral
+	Color(0.30, 0.62, 0.95),   ## T2 — blue
+	Color(0.66, 0.40, 0.92),   ## T3 — purple
+	Color(0.95, 0.78, 0.25),   ## T4 — gold
+]
+
+func _tier_color(tier: int) -> Color:
+	return TIER_BORDER[clampi(tier - 1, 0, TIER_BORDER.size() - 1)]
+
+## Apply a tier-colored rounded border to a slot PanelContainer (rarity frame).
+func _apply_tier_border(panel: Control, tier: int) -> void:
+	if panel == null:
+		return
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.13, 0.14, 0.18, 0.92)
+	sb.set_border_width_all(3)
+	sb.border_color = _tier_color(tier)
+	sb.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override(&"panel", sb)
 
 func _rune_tex(fn_id) -> Texture2D:
 	var p: String = String(RUNE_TEX.get(String(fn_id), ""))
@@ -162,28 +184,34 @@ func _make_shop_slot(idx: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "ShopSlot%d" % idx
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(_make_icon())
+	panel.clip_contents = true
+	_apply_tier_border(panel, 1)
+	## icon on TOP, name BELOW (no overlap)
+	var col := VBoxContainer.new()
+	col.name = "Col"
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override(&"separation", 1)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(col)
+	var icon := _make_icon()
+	icon.custom_minimum_size = Vector2(34, 34)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(icon)
 	var nm := Label.new()
 	nm.name = "NameLabel"
 	nm.text = ""
 	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nm.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	nm.add_theme_font_size_override(&"font_size", 8)
 	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(nm)
-	var stars := Label.new()
-	stars.name = "TierStars"
-	stars.text = ""
-	stars.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	stars.add_theme_font_size_override(&"font_size", 8)
-	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(stars)
+	col.add_child(nm)
+	## cost badge, bottom-right corner
 	var cost := Label.new()
 	cost.name = "CostLabel"
 	cost.text = ""
 	cost.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	cost.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	cost.add_theme_font_size_override(&"font_size", 8)
+	cost.modulate = Color(1.0, 0.85, 0.35)
 	cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(cost)
 	var btn := Button.new()
@@ -365,22 +393,21 @@ func populate_shop(items: Array) -> void:
 	_shop_items = items
 	for i in SHOP_SLOTS:
 		var slot: PanelContainer = _shop_slots[i]
-		var icon := slot.get_node_or_null("Icon") as TextureRect
-		var nm := slot.get_node_or_null("NameLabel") as Label
-		var cost := slot.get_node_or_null("CostLabel") as Label
-		var stars := slot.get_node_or_null("TierStars") as Label
+		var icon := slot.find_child("Icon", true, false) as TextureRect
+		var nm := slot.find_child("NameLabel", true, false) as Label
+		var cost := slot.find_child("CostLabel", true, false) as Label
 		if i < items.size() and items[i] != null:
 			var it = items[i]
 			var fid := String(it.get("id", "?"))
 			if icon != null: icon.texture = _rune_tex(fid)
 			if nm != null: nm.text = fid
 			if cost != null: cost.text = "%dG" % int(it.get("cost", 0))
-			if stars != null: stars.text = _stars(int(it.get("tier", 1)))
+			_apply_tier_border(slot, int(it.get("tier", 1)))  ## rarity frame by tier
 		else:
 			if icon != null: icon.texture = null
 			if nm != null: nm.text = ""
 			if cost != null: cost.text = ""
-			if stars != null: stars.text = ""
+			_apply_tier_border(slot, 1)
 
 func set_gold(amount: int) -> void:
 	var g := find_child("GoldLabel", true, false) as Label
@@ -445,6 +472,7 @@ func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, tier: int = 
 			nm.modulate = Color(1, 1, 1, 0.4)
 		if stars != null: stars.text = ""
 		if mg != null: mg.text = ""
+		_apply_tier_border(sock, 1)  ## empty -> neutral frame
 	else:
 		if icon != null: icon.texture = _rune_tex(fn_id)
 		if nm != null:
@@ -452,6 +480,7 @@ func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, tier: int = 
 			nm.modulate = Color(1, 1, 1, 1)
 		if stars != null: stars.text = _stars(tier)
 		if mg != null: mg.text = merge_pending
+		_apply_tier_border(sock, tier)  ## rarity frame by tier (none/blue/purple/gold)
 
 ## Reserve (bench) slot: empty fn_id -> blank; else icon + short name.
 func set_reserve_item(hero_idx: int, reserve_idx: int, fn_id: StringName, tier: int = 1) -> void:

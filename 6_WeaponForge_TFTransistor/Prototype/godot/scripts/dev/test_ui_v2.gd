@@ -24,6 +24,7 @@ func _ready() -> void:
 	_test_battle_hit_vfx()
 	_test_merge_vfx()
 	_test_home_v2()
+	_test_tier_border()
 	_test_compact_mode()
 	_test_battle_hero_hp()
 	_test_wave_telegraph()
@@ -427,6 +428,28 @@ func _test_home_v2() -> void:
 	_check("home: PLAY button present", inst.find_child("PlayBtn", true, false) != null, "")
 	_check("home: title present", inst.find_child("Title", true, false) != null, "")
 	inst.queue_free()
+
+## -- G12: real item icons + tier-color rarity borders --
+
+func _test_tier_border() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	## socket gets a tier-colored rarity frame
+	inst.set_socket_fn(0, 2, &"FIRE", 2, "FIRE", "")  ## tier 2 -> blue
+	var sock = inst.find_child("Socket0_2", true, false)
+	var sb = sock.get_theme_stylebox("panel") if sock != null else null
+	_check("tier: socket frame is StyleBoxFlat", sb is StyleBoxFlat, "")
+	_check("tier 2 -> blue border", sb is StyleBoxFlat and sb.border_color.is_equal_approx(inst.TIER_BORDER[1]), "got %s" % (str(sb.border_color) if sb is StyleBoxFlat else "n/a"))
+	## shop slot tier-3 -> purple + new icon art loads
+	inst.populate_shop([{"id": "FIRE", "tier": 3, "cost": 1}])
+	var slot0 = inst.get_node("ShopRail").get_child(0)
+	var sb2 = slot0.get_theme_stylebox("panel")
+	_check("shop tier 3 -> purple border", sb2 is StyleBoxFlat and sb2.border_color.is_equal_approx(inst.TIER_BORDER[2]), "")
+	var icon = slot0.find_child("Icon", true, false)
+	_check("shop icon uses new rune art (textured)", icon != null and icon.texture != null, "")
 
 ## -- C9: forge compact mode + HP-bar sizing --
 

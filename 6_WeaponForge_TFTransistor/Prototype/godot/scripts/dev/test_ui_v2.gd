@@ -18,6 +18,7 @@ func _ready() -> void:
 	_test_forge_panel_v2()
 	_test_forge_cards()
 	_test_function_preview()
+	_test_compact_mode()
 	_test_wave_telegraph()
 	_test_chain_hud()
 	_summary()
@@ -290,6 +291,29 @@ func _test_function_preview() -> void:
 	## BOUNCE has no .tres -> graceful (hidden, no crash)
 	inst.show_function_preview(&"BOUNCE")
 	_check("fp: BOUNCE (no data) hides preview, no crash", pp != null and pp.visible == false, "")
+	inst.queue_free()
+
+## -- C9: forge compact mode + HP-bar sizing --
+
+func _test_compact_mode() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("cm: has set_compact", inst.has_method("set_compact"), "")
+	_check("cm: has is_compact", inst.has_method("is_compact"), "")
+	if inst.has_method("set_compact") and inst.has_method("is_compact"):
+		var s00 = inst.find_child("Socket0_0", true, false)
+		inst.set_compact(true)
+		_check("cm: compact true", inst.is_compact() == true, "")
+		_check("cm: compact shrinks socket", s00 != null and s00.custom_minimum_size.x <= 48, "got %s" % (str(s00.custom_minimum_size) if s00 != null else "null"))
+		inst.set_compact(false)
+		_check("cm: expanded false", inst.is_compact() == false, "")
+		_check("cm: expanded socket >= 56", s00 != null and s00.custom_minimum_size.x >= 56, "got %s" % (str(s00.custom_minimum_size) if s00 != null else "null"))
+	## HP bar must NOT be expand-fill (the "huge HP bar" bug)
+	var hp = inst.find_child("HPBar", true, false)
+	_check("cm: HP bar not expand-fill", hp != null and hp.size_flags_horizontal != Control.SIZE_EXPAND_FILL, "got %d" % (hp.size_flags_horizontal if hp != null else -1))
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

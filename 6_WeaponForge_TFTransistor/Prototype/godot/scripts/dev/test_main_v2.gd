@@ -17,6 +17,9 @@ func _ready() -> void:
 	_test_reroll_costs_gold()
 	_test_equip_forge_gated()
 	_test_per_kill_gold()
+	_test_layout_combat()
+	_test_layout_forge()
+	_test_pause_no_reanchor()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -150,6 +153,46 @@ func _test_per_kill_gold() -> void:
 		guard += 1
 	_check("per-kill: cleared to forge", inst.is_forge_break(), "guard=%d" % guard)
 	_check("per-kill: gold += enemies killed", inst.gold == start_gold + n, "start=%d n=%d gold=%d" % [start_gold, n, inst.gold])
+	inst.queue_free()
+
+func _test_layout_combat() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)  ## start_run -> COMBAT
+	_check("layout combat: battle big (bottom ~0.66)", is_equal_approx(inst._battle.anchor_bottom, 0.66), "got %.2f" % inst._battle.anchor_bottom)
+	_check("layout combat: forge compact (top ~0.66)", is_equal_approx(inst._forge.anchor_top, 0.66), "got %.2f" % inst._forge.anchor_top)
+	_check("layout combat: ChainHUD visible", inst._chain_hud.visible == true, "")
+	_check("layout combat: forge is_compact", inst._forge.has_method("is_compact") and inst._forge.is_compact() == true, "")
+	_check("layout combat: battle not compact", inst._battle.has_method("is_compact") and inst._battle.is_compact() == false, "")
+	inst.queue_free()
+
+func _test_layout_forge() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	_check("layout forge: battle small preview (bottom ~0.32)", is_equal_approx(inst._battle.anchor_bottom, 0.32), "got %.2f" % inst._battle.anchor_bottom)
+	_check("layout forge: forge expanded (top ~0.32)", is_equal_approx(inst._forge.anchor_top, 0.32), "got %.2f" % inst._forge.anchor_top)
+	_check("layout forge: ChainHUD hidden", inst._chain_hud.visible == false, "")
+	_check("layout forge: forge not compact", inst._forge.is_compact() == false, "")
+	_check("layout forge: battle compact", inst._battle.is_compact() == true, "")
+	inst.queue_free()
+
+func _test_pause_no_reanchor() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)  ## COMBAT
+	var ab: float = inst._battle.anchor_bottom
+	_check("main_v2: has is_paused", inst.has_method("is_paused"), "")
+	inst._on_pause()
+	_check("pause: state stays COMBAT (no swap to FORGE)", inst.is_combat() == true, "")
+	_check("pause: battle anchors unchanged", is_equal_approx(inst._battle.anchor_bottom, ab), "")
+	_check("pause: is_paused true", inst.has_method("is_paused") and inst.is_paused() == true, "")
+	inst._on_pause()
+	_check("pause: toggles back off", inst.is_paused() == false, "")
 	inst.queue_free()
 
 func _check(name: String, ok: bool, detail: String) -> void:

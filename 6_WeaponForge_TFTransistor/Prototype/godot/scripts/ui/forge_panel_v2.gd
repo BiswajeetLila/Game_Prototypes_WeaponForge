@@ -48,6 +48,7 @@ signal reroll_tapped()
 var _hero_rows: Array = []   ## 3 HeroRow containers (HBoxContainer)
 var _shop_slots: Array = []  ## 7 PanelContainer nodes for shop items
 var _shop_items: Array = []  ## Array[Dictionary] — current shop inventory
+var _compact: bool = false   ## combat = compact rail; forge break = expanded
 
 func _ready() -> void:
 	_build_socket_header()
@@ -231,16 +232,27 @@ func _make_hero_row(hero_idx: int) -> HBoxContainer:
 	var hp_bar := ProgressBar.new()
 	hp_bar.name = "HPBar"
 	hp_bar.min_value = 0; hp_bar.max_value = 100; hp_bar.value = 100
-	hp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hp_bar.custom_minimum_size = Vector2(0, 8)
+	hp_bar.show_percentage = false
+	hp_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  ## not expand-fill (kills the "huge bar")
+	hp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hp_bar.custom_minimum_size = Vector2(84, 14)
 	row.add_child(hp_bar)
+	var hp_val := Label.new()
+	hp_val.name = "HPValue"
+	hp_val.add_theme_font_size_override(&"font_size", 9)
+	hp_val.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(hp_val)
 
 	var ult_hbox := HBoxContainer.new()
 	ult_hbox.name = "UltBar"
+	ult_hbox.size_flags_horizontal = Control.SIZE_SHRINK_END
+	ult_hbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ult_hbox.add_theme_constant_override(&"separation", 2)
 	for p in 3:
 		var pip := ColorRect.new()
 		pip.name = "Pip%d" % p
-		pip.custom_minimum_size = Vector2(10, 10)
+		pip.custom_minimum_size = Vector2(12, 12)
+		pip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		pip.color = Color(0.3, 0.3, 0.3)
 		ult_hbox.add_child(pip)
 	row.add_child(ult_hbox)
@@ -322,6 +334,25 @@ func set_hero_hp(hero_idx: int, hp: int, max_hp: int) -> void:
 	var bar: ProgressBar = _hero_rows[hero_idx].get_node("HPBar")
 	bar.max_value = max(max_hp, 1)
 	bar.value = hp
+	var val := _hero_rows[hero_idx].get_node_or_null("HPValue") as Label
+	if val != null:
+		val.text = "%d/%d" % [hp, max_hp]
+
+func set_compact(c: bool) -> void:
+	_compact = c
+	var sz := Vector2(40, 40) if c else Vector2(64, 64)
+	for h in _hero_rows.size():
+		for s in MAX_SOCKETS:
+			var sock = _hero_rows[h].get_node_or_null("Socket%d_%d" % [h, s])
+			if sock != null:
+				sock.custom_minimum_size = sz
+	if c:
+		var pp = get_node_or_null("PreviewPanel")
+		if pp != null:
+			pp.visible = false
+
+func is_compact() -> bool:
+	return _compact
 
 func set_hero_ult_bars(hero_idx: int, filled: int) -> void:
 	if hero_idx >= _hero_rows.size():

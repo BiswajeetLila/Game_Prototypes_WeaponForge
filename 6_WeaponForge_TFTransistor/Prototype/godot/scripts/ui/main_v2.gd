@@ -50,6 +50,7 @@ var _chain_hud: Control
 var _hud: Control
 var _next_btn: Button
 var _heroes: Array = []
+var _paused: bool = false   ## pause gates the tick; does NOT change state/layout
 
 func _ready() -> void:
 	_build_layout()
@@ -92,10 +93,26 @@ func _build_layout() -> void:
 	_next_btn.name = "NextWaveBtn"
 	_next_btn.text = "START NEXT WAVE"
 	_next_btn.anchor_left = 0.18; _next_btn.anchor_right = 0.82
-	_next_btn.anchor_top = 0.515; _next_btn.anchor_bottom = 0.565
+	_next_btn.anchor_top = 0.335; _next_btn.anchor_bottom = 0.385  ## top of expanded forge panel
 	_next_btn.pressed.connect(advance_wave)
 	add_child(_next_btn)
 	_next_btn.visible = false
+
+## ---- phase-adaptive layout (combat = big battle / compact rail; forge = small preview / big forge) ----
+
+func _apply_layout(s: int) -> void:
+	if s == STATE_COMBAT:
+		_region(_battle, 0.06, 0.66)
+		_region(_forge, 0.66, 1.0)
+		if _battle.has_method("set_compact"): _battle.set_compact(false)
+		if _forge.has_method("set_compact"): _forge.set_compact(true)
+		if _chain_hud != null: _chain_hud.visible = true
+	else:  ## FORGE_BREAK / DONE
+		_region(_battle, 0.06, 0.32)
+		_region(_forge, 0.32, 1.0)
+		if _battle.has_method("set_compact"): _battle.set_compact(true)
+		if _forge.has_method("set_compact"): _forge.set_compact(false)
+		if _chain_hud != null: _chain_hud.visible = false
 
 func _build_hud() -> Control:
 	var hud := Control.new()
@@ -179,8 +196,10 @@ func start_run() -> void:
 	_heroes = _make_heroes()
 	_spawn_current_wave()
 	state = STATE_COMBAT
+	_paused = false
 	if _next_btn != null:
 		_next_btn.visible = false
+	_apply_layout(STATE_COMBAT)
 
 func _make_heroes() -> Array:
 	return [
@@ -210,7 +229,7 @@ func _spawn_current_wave() -> void:
 ## ---- tick ----
 
 func _on_timer() -> void:
-	if state == STATE_COMBAT:
+	if state == STATE_COMBAT and not _paused:
 		_tick_once()
 
 func _tick_once() -> void:
@@ -241,6 +260,7 @@ func _enter_forge_break() -> void:
 	_populate_shop()
 	if _next_btn != null:
 		_next_btn.visible = true
+	_apply_layout(STATE_FORGE)
 	_update_hud()
 
 func advance_wave() -> void:
@@ -269,6 +289,7 @@ func advance_wave() -> void:
 	if _next_btn != null:
 		_next_btn.visible = false
 	state = STATE_COMBAT
+	_apply_layout(STATE_COMBAT)
 
 ## ---- HUD / forge updates ----
 
@@ -398,10 +419,11 @@ func get_socket(hero_idx: int, socket_idx: int):
 	return _loadouts[hero_idx][socket_idx]
 
 func _on_pause() -> void:
-	if state == STATE_COMBAT:
-		state = STATE_FORGE
-	elif state == STATE_FORGE:
-		state = STATE_COMBAT
+	## pause only gates the tick — never swaps state or re-anchors (was a layout bug)
+	_paused = not _paused
+
+func is_paused() -> bool:
+	return _paused
 
 func _on_speed() -> void:
 	var t := get_node_or_null("TickTimer") as Timer

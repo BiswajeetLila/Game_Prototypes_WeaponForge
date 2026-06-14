@@ -52,6 +52,13 @@ const VFX_TEX: Dictionary = {
 }
 
 var _enemy_nodes: Dictionary = {}   ## eid -> Control
+var _compact: bool = false          ## forge break = small battle preview
+
+func set_compact(c: bool) -> void:
+	_compact = c
+
+func is_compact() -> bool:
+	return _compact
 
 func _load_tex(path: String) -> Texture2D:
 	if path != "" and ResourceLoader.exists(path):

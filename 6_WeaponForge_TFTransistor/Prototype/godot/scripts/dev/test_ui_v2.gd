@@ -20,6 +20,7 @@ func _ready() -> void:
 	_test_forge_cards()
 	_test_weapon_tooltip()
 	_test_reserve_ui()
+	_test_ult_button()
 	_test_compact_mode()
 	_test_battle_hero_hp()
 	_test_wave_telegraph()
@@ -343,6 +344,31 @@ func _test_reserve_ui() -> void:
 	_check("rsv: reserve icon textured after set", icon != null and icon.texture != null, "")
 	inst.set_reserve_item(0, 0, &"")
 	_check("rsv: reserve icon cleared on empty", icon != null and icon.texture == null, "")
+	inst.queue_free()
+
+## -- G7: Ult button that fills (replaces cryptic yellow pips) --
+
+func _test_ult_button() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("ult: ult_pressed signal", inst.has_signal("ult_pressed"), "")
+	var ult = inst.find_child("UltBar", true, false)
+	_check("ult: UltBar is a Button", ult is Button, "got %s" % (ult.get_class() if ult != null else "null"))
+	var fill = ult.get_node_or_null("Fill") if ult != null else null
+	_check("ult: has Fill overlay", fill != null, "")
+	## empty -> disabled, fill collapsed to the bottom (anchor_top ~1.0)
+	inst.set_hero_ult_bars(0, 0)
+	_check("ult: empty -> disabled", ult is Button and ult.disabled == true, "")
+	_check("ult: empty -> fill collapsed", fill != null and is_equal_approx(fill.anchor_top, 1.0), "got %.2f" % (fill.anchor_top if fill != null else -1.0))
+	## full -> enabled, fill spans full height (anchor_top ~0.0), label ULT!
+	inst.set_hero_ult_bars(0, 3)
+	_check("ult: full -> enabled", ult is Button and ult.disabled == false, "")
+	_check("ult: full -> fill spans up", fill != null and is_equal_approx(fill.anchor_top, 0.0), "got %.2f" % (fill.anchor_top if fill != null else -1.0))
+	var lbl = ult.get_node_or_null("UltLabel") if ult != null else null
+	_check("ult: full -> label ULT!", lbl != null and lbl.text == "ULT!", "got %s" % (lbl.text if lbl != null else "null"))
 	inst.queue_free()
 
 ## -- C9: forge compact mode + HP-bar sizing --

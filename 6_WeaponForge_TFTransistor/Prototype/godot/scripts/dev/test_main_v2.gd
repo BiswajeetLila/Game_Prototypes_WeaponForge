@@ -21,6 +21,9 @@ func _ready() -> void:
 	_test_reserve_full_blocks_equip()
 	_test_sell_socket_refunds()
 	_test_bench_reequip_swaps()
+	_test_move_socket_to_socket()
+	_test_move_cross_hero_no_gold()
+	_test_move_merge_same_element()
 	_test_reroll_costs_gold()
 	_test_equip_forge_gated()
 	_test_per_kill_gold()
@@ -63,7 +66,7 @@ func _test_starts_in_forge() -> void:
 	add_child(inst)
 	_check("open: FORGE not COMBAT", inst.is_forge_break() and not inst.is_combat(), "state=%d" % inst.state)
 	_check("open: parked before wave 1 (stage 0, wave 0)", inst.current_stage == 0 and inst.current_wave == 0, "stage=%d wave=%d" % [inst.current_stage, inst.current_wave])
-	_check("open: shop slow-populate start batch = 2 items", _shop_count(inst) == 2, "got %d" % _shop_count(inst))
+	_check("open: shop FULL (7) at world start", _shop_count(inst) == 7, "got %d" % _shop_count(inst))
 	var start_btn = inst.find_child("StartNextWaveBtn", true, false)
 	_check("open: START button visible", start_btn != null and start_btn.visible == true, "")
 	inst.advance_wave()  ## press START
@@ -211,17 +214,54 @@ func _test_bench_reequip_swaps() -> void:
 	_check("bench: WATER swapped into reserve", r0 != null and r0.id == &"WATER", "got %s" % str(r0))
 	inst.queue_free()
 
+func _test_move_socket_to_socket() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst._loadouts[0][0] = {"id": &"FIRE", "tier": 1, "cost": 1}
+	inst._loadouts[0][2] = {"id": &"WATER", "tier": 1, "cost": 1}
+	inst._on_socket_tap(0, 0)  ## pick up PASSIVE (FIRE)
+	inst._on_socket_tap(0, 2)  ## drop on ACTIVE (WATER) -> swap
+	_check("move: socket0 now WATER (swapped)", inst.get_socket(0, 0) != null and inst.get_socket(0, 0).id == &"WATER", "got %s" % str(inst.get_socket(0, 0)))
+	_check("move: socket2 now FIRE (swapped)", inst.get_socket(0, 2) != null and inst.get_socket(0, 2).id == &"FIRE", "got %s" % str(inst.get_socket(0, 2)))
+	inst.queue_free()
+
+func _test_move_cross_hero_no_gold() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 42
+	inst._loadouts[0][2] = {"id": &"LIGHTNING", "tier": 1, "cost": 1}
+	inst._on_socket_tap(0, 2)  ## pick up hero 0 ACTIVE
+	inst._on_socket_tap(1, 2)  ## drop on hero 1 ACTIVE (empty) -> move across heroes
+	_check("xhero move: hero1 ACTIVE = LIGHTNING", inst.get_socket(1, 2) != null and inst.get_socket(1, 2).id == &"LIGHTNING", "got %s" % str(inst.get_socket(1, 2)))
+	_check("xhero move: hero0 ACTIVE empty", inst.get_socket(0, 2) == null, "got %s" % str(inst.get_socket(0, 2)))
+	_check("xhero move: moving owned items is FREE (gold unchanged)", inst.gold == 42, "got %d" % inst.gold)
+	inst.queue_free()
+
+func _test_move_merge_same_element() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst._reserves[0][0] = {"id": &"FIRE", "tier": 1, "cost": 1}
+	inst._loadouts[0][2] = {"id": &"FIRE", "tier": 1, "cost": 1}
+	inst._on_reserve_tap(0, 0)  ## pick up benched FIRE
+	inst._on_socket_tap(0, 2)   ## drop on ACTIVE (FIRE) -> merge
+	var s = inst.get_socket(0, 2)
+	_check("move-merge: socket shows 2/2", s != null and String(s.get("merge", "")) == "2/2", "got %s" % str(s))
+	_check("move-merge: reserve source consumed", inst.get_reserve(0, 0) == null, "got %s" % str(inst.get_reserve(0, 0)))
+	inst.queue_free()
+
 func _test_reroll_costs_gold() -> void:
 	var inst = _fresh_forge()
 	if inst == null:
 		return
 	inst.gold = 7
 	inst._shop_items[2] = null  ## simulate an already-bought (empty) slot
-	var before: int = _shop_count(inst)
-	inst._on_reroll()  ## stage 0 -> reroll costs 2g
+	inst._on_reroll()  ## stage 0 -> reroll the WHOLE list, costs 2g
 	_check("reroll: costs full-board price (stage0 = 2g)", inst.gold == 5, "got %d" % inst.gold)
-	_check("reroll: re-rolls populated slots, count unchanged", _shop_count(inst) == before, "before=%d after=%d" % [before, _shop_count(inst)])
-	_check("reroll: bought slot stays empty (no refill under slow-populate)", inst._shop_items[2] == null, "got %s" % str(inst._shop_items[2]))
+	_check("reroll: re-rolls the WHOLE list to 7 (refills bought/empty)", _shop_count(inst) == 7, "got %d" % _shop_count(inst))
+	_check("reroll: previously-empty slot refilled", inst._shop_items[2] != null, "got %s" % str(inst._shop_items[2]))
 	inst.queue_free()
 
 func _test_equip_forge_gated() -> void:
@@ -339,18 +379,14 @@ func _test_slow_populate_and_reset() -> void:
 		return
 	var inst = packed.instantiate()
 	add_child(inst)  ## F0 forge
-	_check("slow-populate: F0 shop = 2 (start batch)", _shop_count(inst) == 2, "got %d" % _shop_count(inst))
-	_check("slow-populate: 1 stage reset at boot", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
-	inst.advance_wave()  ## START stage 0 -> drips wave 0
-	_check("slow-populate: shop grows during stage (>2)", _shop_count(inst) > 2, "got %d" % _shop_count(inst))
+	_check("slow-populate: F0 shop FULL (7) at world start", _shop_count(inst) == 7, "got %d" % _shop_count(inst))
+	inst.advance_wave()  ## START stage 0 -> shop resets to the slow-populate drip start
+	_check("slow-populate: START resets to drip start (<=4)", _shop_count(inst) <= 4, "got %d" % _shop_count(inst))
+	_check("slow-populate: a fresh drip began (>=2)", _shop_count(inst) >= 2, "got %d" % _shop_count(inst))
 	var guard: int = 0
 	while inst.is_combat() and guard < 1500:
 		inst._tick_once(); guard += 1
 	_check("slow-populate: shop full (7) by stage-end break", _shop_count(inst) == 7, "got %d" % _shop_count(inst))
-	_check("slow-populate: no extra reset within stage 0", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
-	inst.advance_wave()  ## START stage 1 -> RESET + start batch + wave-0 drip
-	_check("slow-populate: shop resets at new stage (<=3)", _shop_count(inst) <= 3, "got %d" % _shop_count(inst))
-	_check("slow-populate: reset count increments to 2", inst._shop_populate_count == 2, "got %d" % inst._shop_populate_count)
 	inst.queue_free()
 
 func _test_reroll_button_path() -> void:

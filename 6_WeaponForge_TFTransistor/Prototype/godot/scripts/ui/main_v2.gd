@@ -22,6 +22,7 @@ const ForgePanelScene: PackedScene = preload("res://scenes/ui/ForgePanel_v2.tscn
 const ChainHUDScene: PackedScene = preload("res://scenes/ui/ChainHUD.tscn")
 const Loadout = preload("res://scripts/core/loadout_v2.gd")
 const Reserve = preload("res://scripts/core/reserve_v2.gd")
+const ForgeGrid = preload("res://scripts/core/forge_grid.gd")
 
 const STATE_COMBAT: int = 0
 const STATE_FORGE: int = 1
@@ -42,9 +43,9 @@ var _ticks_this_wave: int = 0
 var _chain: int = 0
 var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
 var _reserves: Array = []      ## 3 heroes, each a reserve_v2 Array[2] (bench)
-var _selected_shop: int = -1   ## currently selected shop slot (tap-to-equip)
-var _selected_reserve_hero: int = -1  ## a benched item picked up for re-equip (hero)
-var _selected_reserve_idx: int = -1   ## ...and which reserve slot
+## the item currently "picked up" (one tap), to drop on the next tile tap.
+## null, or { kind:"shop"|"socket"|"reserve", hero:int, idx:int }. shop hero=-1.
+var _held = null
 var _shop_items: Array = []    ## 7 slots, each {id,tier,cost} or null (bought/empty)
 var _stage_elements_seen: Array = []  ## element ids that appeared in shop this stage (pity)
 var _shop_populate_count: int = 0     ## test probe: number of per-stage shop resets
@@ -97,6 +98,8 @@ func _build_layout() -> void:
 		_forge.socket_sell.connect(_on_socket_sell)
 	if _forge.has_signal("reserve_sell"):
 		_forge.reserve_sell.connect(_on_reserve_sell)
+	if _forge.has_signal("ult_pressed"):
+		_forge.ult_pressed.connect(_on_ult)
 	if _forge.has_signal("start_next_wave"):
 		_forge.start_next_wave.connect(advance_wave)
 
@@ -209,19 +212,17 @@ func start_run() -> void:
 	waves_played = 0
 	_chain = 0
 	gold = 7
-	_selected_shop = -1
-	_selected_reserve_hero = -1
-	_selected_reserve_idx = -1
+	_held = null
 	_shop_items = []
 	_stage_elements_seen = []
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
 	_reserves = [Reserve.make_reserve(), Reserve.make_reserve(), Reserve.make_reserve()]
 	_heroes = _make_heroes()
 	_shop_populate_count = 0
-	_reset_stage_shop()  ## F0: slow-populate start batch (2 items) for stage 1
+	_reset_stage_shop(true)  ## F0 / world start: shop opens FULL (7) so you can build a kit
 	_paused = false
 	_update_pause_indicator()
-	_park_forge()  ## OPEN in the forge: equip the start items, then START stage 1
+	_park_forge()  ## OPEN in the forge: equip, then START stage 1
 
 func _make_heroes() -> Array:
 	return [
@@ -335,11 +336,10 @@ func advance_wave() -> void:
 	if state != STATE_FORGE:
 		return
 	## clear transient forge selections so they never leak into the next forge break
-	_selected_shop = -1
-	_selected_reserve_hero = -1
-	_selected_reserve_idx = -1
-	if _shop_stage != current_stage:
-		_reset_stage_shop()  ## entering a new stage -> fresh slow-populate (discards old board)
+	_held = null
+	## starting a stage's combat -> the shop resets to the slow-populate drip for THIS stage
+	## (the full board you saw at the forge break is committed; unbought items are discarded).
+	_reset_stage_shop(false)
 	_spawn_current_wave()  ## materialize the first wave's enemies as combat begins
 	_drip_shop_for_wave(current_wave)  ## stage's wave-0 shop drip
 	state = STATE_COMBAT
@@ -378,17 +378,21 @@ func _add_shop_items(n: int, pity: bool) -> void:
 			fi += 1
 	_track_elements(fresh)
 
-## New stage: clear the board, drop the stage-start batch (the "2" of 2/3/2).
-func _reset_stage_shop() -> void:
+## Reset the board for a stage. full=true -> fill all 7 immediately (world start / F0).
+## full=false -> drop only the stage-start batch (the "2" of the 2/3/2 slow-populate).
+func _reset_stage_shop(full: bool = false) -> void:
 	_shop_items = [null, null, null, null, null, null, null]
 	_shop_stage = current_stage
 	_shop_populate_count += 1
 	var shop = get_node_or_null("/root/ShopV2")
 	var pity: bool = bool(shop.pity_triggered) if shop != null else false
-	for e in _schedule():
-		if int(e.get("wave", -99)) == -1:
-			_add_shop_items(int(e.get("count", 0)), pity)
-			pity = false  ## pity element guarantee applies only to the stage's first item
+	if full:
+		_add_shop_items(7, pity)
+	else:
+		for e in _schedule():
+			if int(e.get("wave", -99)) == -1:
+				_add_shop_items(int(e.get("count", 0)), pity)
+				pity = false  ## pity element guarantee applies only to the stage's first item
 	_refresh_shop_ui()
 
 ## During combat: drop this wave's scheduled batch(es) into the always-visible rail.
@@ -451,9 +455,8 @@ func _update_forge() -> void:
 		_forge.set_gold(gold)
 	_refresh_weapon_tips()
 
-## Reroll wipes every currently-shown item and loads fresh ones in their place (a full
-## wipe of the visible board). Bought/empty slots are left for the slow-populate drip.
-## Price scales with the stage (see ShopV2.reroll_cost_for).
+## Reroll wipes the WHOLE shop list and loads a fresh full board of 7 (including any
+## slots already bought/emptied). Price scales with the stage (see ShopV2.reroll_cost_for).
 func _on_reroll() -> void:
 	var shop = get_node_or_null("/root/ShopV2")
 	if shop == null:
@@ -465,22 +468,19 @@ func _on_reroll() -> void:
 	if not res.get("ok", false):
 		return
 	gold -= int(res.get("cost", 0))
-	## re-roll every CURRENTLY-POPULATED slot in place (full wipe of the visible board);
-	## bought/empty slots stay empty — the slow-populate drip fills those across the stage.
-	for i in _shop_items.size():
-		if _shop_items[i] != null:
-			var fresh: Array = shop.roll_items(current_stage, 1, false)
-			if fresh.size() > 0:
-				_shop_items[i] = fresh[0]
-				_track_elements([fresh[0]])
+	var pity: bool = bool(shop.pity_triggered)
+	_shop_items = shop.roll_items(current_stage, 7, pity)  ## fresh full board (the whole list)
+	_track_elements(_shop_items)
 	_refresh_shop_ui()
 
 ## ---- forge equip (tap shop item, then tap a hero socket; drag = Phase 5) ----
 
 func _on_shop_tap(slot_idx: int) -> void:
-	_selected_shop = slot_idx
-	_selected_reserve_hero = -1  ## picking a shop item clears any benched-item pickup
-	_selected_reserve_idx = -1
+	if state != STATE_FORGE:
+		return
+	if slot_idx < 0 or slot_idx >= _shop_items.size() or _shop_items[slot_idx] == null:
+		return
+	_held = {"kind": "shop", "hero": -1, "idx": slot_idx}  ## pick up a shop item to buy
 
 ## ---- real-time weapon tooltip (combined P/M/A effect per hero) ----
 
@@ -520,60 +520,85 @@ func _refresh_weapon_tips() -> void:
 		_forge.set_weapon_desc(i, _weapon_desc(i))
 
 func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
+	_tile_tap("socket", hero_idx, socket_idx)
+
+func _on_reserve_tap(hero_idx: int, reserve_idx: int) -> void:
+	_tile_tap("reserve", hero_idx, reserve_idx)
+
+## Unified pick-up / drop. Tap an occupied tile to pick it up; tap any other tile to
+## drop. Shop -> tile = BUY. Owned tile -> owned tile = move/swap/merge (no gold,
+## hero-agnostic). Shop pick-up happens in _on_shop_tap.
+func _tile_tap(kind: String, hero_idx: int, idx: int) -> void:
 	if state != STATE_FORGE:
-		return  ## equip is forge-break only (spec §15)
-	if hero_idx < 0 or hero_idx >= _loadouts.size():
+		return  ## equip/move is forge-break only (spec §15)
+	var dst := {"kind": kind, "hero": hero_idx, "idx": idx}
+	if _held == null:
+		if ForgeGrid.get_tile(_loadouts, _reserves, dst) != null:
+			_held = dst  ## pick up this owned item
 		return
-	## (a) re-equip a benched reserve item -> swap it into the socket (no gold cost)
-	if _selected_reserve_hero == hero_idx and _selected_reserve_idx >= 0:
-		var rr: Dictionary = Reserve.equip_from_reserve(_loadouts[hero_idx], _reserves[hero_idx], socket_idx, _selected_reserve_idx)
-		_selected_reserve_hero = -1
-		_selected_reserve_idx = -1
-		if rr.get("ok", false):
-			_sync_hero_forge(hero_idx)
-			_refresh_weapon_tips()
+	var src = _held
+	_held = null
+	if String(src.get("kind", "")) == "shop":
+		_buy_into(int(src.get("idx", -1)), dst)
+	else:
+		_move_owned(src, dst)
+
+## Buy the held shop item and place it into dst (socket or reserve). Charges only on
+## success; reserve/socket-full blocks flash an error and do not charge.
+func _buy_into(shop_slot: int, dst: Dictionary) -> void:
+	if shop_slot < 0 or shop_slot >= _shop_items.size():
 		return
-	## (b) buy the selected shop item and equip it (merge / displace-to-reserve / blocked)
-	if _selected_shop < 0 or _selected_shop >= _shop_items.size():
-		return
-	var item = _shop_items[_selected_shop]
+	var item = _shop_items[shop_slot]
 	if item == null:
-		return  ## slot already bought / empty
+		return
 	var shop = get_node_or_null("/root/ShopV2")
 	if shop == null:
 		return
 	var buy: Dictionary = shop.buy(item, gold)
 	if not buy.get("ok", false):
 		return  ## can't afford
-	var res: Dictionary = Reserve.equip(_loadouts[hero_idx], _reserves[hero_idx], socket_idx, item)
-	if not res.get("ok", false):
-		## socket occupied + both reserve slots full -> blocked. Don't charge; flash error.
-		if _forge != null and _forge.has_method("flash_error"):
-			_forge.flash_error(hero_idx)
+	var hero_idx: int = int(dst.get("hero", -1))
+	if hero_idx < 0 or hero_idx >= _loadouts.size():
 		return
+	if String(dst.get("kind", "")) == "socket":
+		var res: Dictionary = Reserve.equip(_loadouts[hero_idx], _reserves[hero_idx], int(dst.get("idx", -1)), item)
+		if not res.get("ok", false):
+			if _forge != null and _forge.has_method("flash_error"):
+				_forge.flash_error(hero_idx)
+			return
+	else:  ## reserve dst: place if empty, merge if same id+tier, else blocked
+		var ri: int = int(dst.get("idx", -1))
+		if ri < 0 or ri >= _reserves[hero_idx].size():
+			return
+		var cur = _reserves[hero_idx][ri]
+		if cur == null:
+			_reserves[hero_idx][ri] = {"id": StringName(item.get("id", &"")), "tier": int(item.get("tier", 1)), "cost": int(item.get("cost", 0))}
+		elif StringName(cur.get("id", &"")) == StringName(item.get("id", &"")) and int(cur.get("tier", 1)) == int(item.get("tier", 1)):
+			_reserves[hero_idx][ri] = {"id": StringName(item.get("id", &"")), "tier": int(item.get("tier", 1)), "cost": int(item.get("cost", 0)), "merge": "2/2"}
+		else:
+			if _forge != null and _forge.has_method("flash_error"):
+				_forge.flash_error(hero_idx)
+			return
 	gold -= int(buy.get("cost", 0))
-	_shop_items[_selected_shop] = null  ## remove bought item from shop
-	_selected_shop = -1
+	_shop_items[shop_slot] = null  ## remove bought item from shop
 	_sync_hero_forge(hero_idx)
 	_refresh_shop_ui()
-	_refresh_weapon_tips()  ## real-time: weapon tooltip updates as you equip
+	_refresh_weapon_tips()
 
-## Pick up a benched (reserve) item so the next socket tap re-equips it.
-func _on_reserve_tap(hero_idx: int, reserve_idx: int) -> void:
-	if state != STATE_FORGE:
+## Move an OWNED item between any two tiles (any hero). No gold. move/swap/merge.
+func _move_owned(src: Dictionary, dst: Dictionary) -> void:
+	var res: Dictionary = ForgeGrid.move(_loadouts, _reserves, src, dst)
+	if not res.get("ok", false):
 		return
-	if hero_idx < 0 or hero_idx >= _reserves.size():
-		return
-	if reserve_idx < 0 or reserve_idx >= _reserves[hero_idx].size() or _reserves[hero_idx][reserve_idx] == null:
-		return
-	_selected_reserve_hero = hero_idx
-	_selected_reserve_idx = reserve_idx
-	_selected_shop = -1
+	_sync_hero_forge(int(src.get("hero", -1)))
+	_sync_hero_forge(int(dst.get("hero", -1)))
+	_refresh_weapon_tips()
 
 ## Long-press a socket -> sell that Function back to the shop for a reduced refund.
 func _on_socket_sell(hero_idx: int, socket_idx: int) -> void:
 	if state != STATE_FORGE or hero_idx < 0 or hero_idx >= _loadouts.size():
 		return
+	_held = null  ## a sell cancels any in-progress pick-up
 	var res: Dictionary = Reserve.sell_socket(_loadouts[hero_idx], socket_idx)
 	if res.get("ok", false):
 		gold += int(res.get("gold_refund", 0))
@@ -585,6 +610,7 @@ func _on_socket_sell(hero_idx: int, socket_idx: int) -> void:
 func _on_reserve_sell(hero_idx: int, reserve_idx: int) -> void:
 	if state != STATE_FORGE or hero_idx < 0 or hero_idx >= _reserves.size():
 		return
+	_held = null  ## a sell cancels any in-progress pick-up
 	var res: Dictionary = Reserve.sell_reserve(_reserves[hero_idx], reserve_idx)
 	if res.get("ok", false):
 		gold += int(res.get("gold_refund", 0))
@@ -623,6 +649,17 @@ func get_socket(hero_idx: int, socket_idx: int):
 	if socket_idx < 0 or socket_idx >= _loadouts[hero_idx].size():
 		return null
 	return _loadouts[hero_idx][socket_idx]
+
+## Fire a hero's Ult when its meter is full. Ult VFX/effect = Phase 5; for now firing
+## just consumes the (shared) charge so the button + feedback loop is demonstrable.
+func _on_ult(_hero_idx: int) -> void:
+	var uc = get_node_or_null("/root/UltController")
+	if uc == null:
+		return
+	if int(uc.bars) < 3:
+		return  ## not charged
+	uc.bars = 0  ## consume
+	_update_forge()
 
 func _on_pause() -> void:
 	## pause only gates the tick — never swaps state or re-anchors (was a layout bug)

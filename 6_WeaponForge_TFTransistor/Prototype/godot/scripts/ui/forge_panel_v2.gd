@@ -9,7 +9,6 @@ const MAX_HEROES: int = 3
 const MAX_SOCKETS: int = 3
 const MAX_RESERVE: int = 2
 const SHOP_SLOTS: int = 7
-const LONG_PRESS_MS: int = 500  ## hold this long on an occupied slot to SELL (else = tap)
 ## Canonical socket index: 0=PASSIVE, 1=MODIFIER, 2=ACTIVE (visual L->R == ascending index).
 const SOCKET_LABELS: Array = ["PASSIVE", "MODIFIER", "ACTIVE"]
 const HERO_NAMES: Array = ["Elara", "Bran", "Vex"]
@@ -56,12 +55,13 @@ signal reserve_sell(hero_idx: int, reserve_idx: int)
 signal reroll_tapped()
 ## Emitted when player taps START NEXT WAVE (in the footer).
 signal start_next_wave()
+## Emitted when player taps a hero's (charged) Ult button.
+signal ult_pressed(hero_idx: int)
 
 var _hero_rows: Array = []   ## 3 HeroRow containers (HBoxContainer)
 var _shop_slots: Array = []  ## 7 PanelContainer nodes for shop items
 var _shop_items: Array = []  ## Array[Dictionary] — current shop inventory
 var _compact: bool = false   ## combat = compact rail; forge break = expanded
-var _press_ms: Dictionary = {}  ## gesture: slot key -> press-start ms (tap vs long-press)
 
 func _ready() -> void:
 	_build_socket_header()
@@ -213,20 +213,35 @@ func _make_hero_row(hero_idx: int) -> HBoxContainer:
 		portrait.texture = load(ptex_path) as Texture2D
 	row.add_child(portrait)
 
-	## ult pips (mini, de-emphasised — beside the portrait)
-	var ult_hbox := HBoxContainer.new()
-	ult_hbox.name = "UltBar"
-	ult_hbox.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	ult_hbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	ult_hbox.add_theme_constant_override(&"separation", 2)
-	for p in 3:
-		var pip := ColorRect.new()
-		pip.name = "Pip%d" % p
-		pip.custom_minimum_size = Vector2(6, 18)
-		pip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		pip.color = Color(0.3, 0.3, 0.3)
-		ult_hbox.add_child(pip)
-	row.add_child(ult_hbox)
+	## Ult button beside the portrait — a vertical bar that FILLS as the meter charges
+	## (3 reactions per bar). Enabled + bright only when full; tap to fire.
+	var ult_btn := Button.new()
+	ult_btn.name = "UltBar"  ## node name kept for set_hero_ult_bars()
+	ult_btn.custom_minimum_size = Vector2(22, 46)
+	ult_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ult_btn.clip_contents = true
+	ult_btn.disabled = true
+	ult_btn.tooltip_text = "Ult — charges from reactions"
+	var fill := ColorRect.new()
+	fill.name = "Fill"
+	fill.color = Color(0.95, 0.75, 0.15, 0.9)
+	fill.anchor_left = 0.0; fill.anchor_right = 1.0
+	fill.anchor_top = 1.0; fill.anchor_bottom = 1.0   ## empty (zero height) until charged
+	fill.offset_left = 0; fill.offset_right = 0; fill.offset_top = 0; fill.offset_bottom = 0
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ult_btn.add_child(fill)
+	var ult_lbl := Label.new()
+	ult_lbl.name = "UltLabel"
+	ult_lbl.text = "ULT"
+	ult_lbl.add_theme_font_size_override(&"font_size", 8)
+	ult_lbl.anchor_left = 0.0; ult_lbl.anchor_right = 1.0
+	ult_lbl.anchor_top = 0.0; ult_lbl.anchor_bottom = 1.0
+	ult_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ult_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ult_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ult_btn.add_child(ult_lbl)
+	ult_btn.pressed.connect(func(): ult_pressed.emit(hero_idx))
+	row.add_child(ult_btn)
 
 	## centre column: 3 socket cards + a one-line weapon description UNDER them
 	var mid := VBoxContainer.new()
@@ -302,9 +317,9 @@ func _make_socket(hero_idx: int, sock_idx: int) -> PanelContainer:
 	btn.flat = true
 	btn.anchor_left = 0.0; btn.anchor_right = 1.0
 	btn.anchor_top = 0.0; btn.anchor_bottom = 1.0
-	## tap = equip/select, hold = sell (gesture decided on release)
-	btn.button_down.connect(_on_slot_down.bind("s%d_%d" % [hero_idx, sock_idx]))
-	btn.button_up.connect(_on_socket_up.bind(hero_idx, sock_idx))
+	## single tap = pick up / drop; double-click = sell
+	btn.pressed.connect(func(): socket_tapped.emit(hero_idx, sock_idx))
+	btn.gui_input.connect(_on_tile_gui.bind("socket", hero_idx, sock_idx))
 	panel.add_child(btn)
 	return panel
 
@@ -328,30 +343,20 @@ func _make_reserve_slot(hero_idx: int, reserve_idx: int) -> PanelContainer:
 	btn.flat = true
 	btn.anchor_left = 0.0; btn.anchor_right = 1.0
 	btn.anchor_top = 0.0; btn.anchor_bottom = 1.0
-	btn.button_down.connect(_on_slot_down.bind("r%d_%d" % [hero_idx, reserve_idx]))
-	btn.button_up.connect(_on_reserve_up.bind(hero_idx, reserve_idx))
+	## single tap = pick up / drop; double-click = sell
+	btn.pressed.connect(func(): reserve_tapped.emit(hero_idx, reserve_idx))
+	btn.gui_input.connect(_on_tile_gui.bind("reserve", hero_idx, reserve_idx))
 	panel.add_child(btn)
 	return panel
 
-## ---- tap-vs-long-press gesture (release-timed) ----
+## ---- double-click = sell (single click already fired tapped via `pressed`) ----
 
-func _on_slot_down(key: String) -> void:
-	_press_ms[key] = Time.get_ticks_msec()
-
-func _held_ms(key: String) -> int:
-	return Time.get_ticks_msec() - int(_press_ms.get(key, Time.get_ticks_msec()))
-
-func _on_socket_up(hero_idx: int, sock_idx: int) -> void:
-	if _held_ms("s%d_%d" % [hero_idx, sock_idx]) >= LONG_PRESS_MS:
-		socket_sell.emit(hero_idx, sock_idx)
-	else:
-		socket_tapped.emit(hero_idx, sock_idx)
-
-func _on_reserve_up(hero_idx: int, reserve_idx: int) -> void:
-	if _held_ms("r%d_%d" % [hero_idx, reserve_idx]) >= LONG_PRESS_MS:
-		reserve_sell.emit(hero_idx, reserve_idx)
-	else:
-		reserve_tapped.emit(hero_idx, reserve_idx)
+func _on_tile_gui(event: InputEvent, kind: String, hero_idx: int, idx: int) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and event.double_click:
+		if kind == "socket":
+			socket_sell.emit(hero_idx, idx)
+		else:
+			reserve_sell.emit(hero_idx, idx)
 
 ## ---- public API ----
 
@@ -402,16 +407,25 @@ func set_compact(c: bool) -> void:
 func is_compact() -> bool:
 	return _compact
 
+## Ult charge 0..3 -> fill fraction; full (3) -> button enabled + bright + "ULT!".
 func set_hero_ult_bars(hero_idx: int, filled: int) -> void:
 	if hero_idx >= _hero_rows.size():
 		return
 	var ult_bar = _hero_rows[hero_idx].find_child("UltBar", true, false)
 	if ult_bar == null:
 		return
-	for p in 3:
-		var pip: ColorRect = ult_bar.get_node_or_null("Pip%d" % p)
-		if pip != null:
-			pip.color = Color(0.9, 0.7, 0.1) if p < filled else Color(0.3, 0.3, 0.3)
+	var frac: float = clampf(float(filled) / 3.0, 0.0, 1.0)
+	var fill := ult_bar.get_node_or_null("Fill") as Control
+	if fill != null:
+		fill.anchor_top = 1.0 - frac  ## grows up from the bottom
+		fill.offset_top = 0
+	var ready: bool = filled >= 3
+	if ult_bar is Button:
+		ult_bar.disabled = not ready
+	ult_bar.modulate = Color(1, 1, 1, 1) if ready else Color(0.75, 0.75, 0.75, 1)
+	var lbl := ult_bar.get_node_or_null("UltLabel") as Label
+	if lbl != null:
+		lbl.text = "ULT!" if ready else "ULT"
 
 ## Socket card: empty fn_id -> slot-name watermark; else icon + name + tier stars + merge.
 func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, tier: int = 1, display_name: String = "", merge_pending: String = "") -> void:

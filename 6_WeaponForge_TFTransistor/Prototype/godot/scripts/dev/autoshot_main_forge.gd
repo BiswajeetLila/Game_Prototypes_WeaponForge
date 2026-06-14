@@ -25,6 +25,13 @@ func _ready() -> void:
 	if m.has_method("_refresh_shop_ui"):
 		m._refresh_shop_ui()
 	m._on_shop_tap(0)
+	## show a couple of benched (Reserve) items for the QC capture
+	if m._forge.has_method("set_reserve_item"):
+		m._forge.set_reserve_item(0, 0, &"WATER")
+		m._forge.set_reserve_item(1, 0, &"AOE")
+		m._forge.set_reserve_item(2, 1, &"LEECH")
+	if m.has_method("_refresh_weapon_tips"):
+		m._refresh_weapon_tips()
 	if m._forge.has_method("set_reroll_cost"):
-		m._forge.set_reroll_cost(1)
+		m._forge.set_reroll_cost(5)
 	m._forge.set_gold(1250)

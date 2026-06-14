@@ -19,6 +19,7 @@ func _ready() -> void:
 	_test_forge_panel_v2()
 	_test_forge_cards()
 	_test_weapon_tooltip()
+	_test_reserve_ui()
 	_test_compact_mode()
 	_test_battle_hero_hp()
 	_test_wave_telegraph()
@@ -311,6 +312,37 @@ func _test_weapon_tooltip() -> void:
 	if inst.has_method("set_weapon_desc"):
 		inst.set_weapon_desc(0, "ATK: Hits closest, applies Burning")
 		_check("wt: set_weapon_desc updates tooltip", tip0 != null and "Burning" in tip0.text, "got %s" % (tip0.text if tip0 != null else "null"))
+	inst.queue_free()
+
+## -- G3: Reserve bench column + sell signals (Forge_State_edits.jpg) --
+
+func _test_reserve_ui() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("rsv: reserve_tapped signal", inst.has_signal("reserve_tapped"), "")
+	_check("rsv: socket_sell signal", inst.has_signal("socket_sell"), "")
+	_check("rsv: reserve_sell signal", inst.has_signal("reserve_sell"), "")
+	_check("rsv: has set_reserve_item", inst.has_method("set_reserve_item"), "")
+	_check("rsv: has flash_error", inst.has_method("flash_error"), "")
+	_check("rsv: Reserve header label", inst.find_child("ReserveHeader", true, false) != null, "")
+	var r00 = inst.find_child("Reserve0_0", true, false)
+	var r01 = inst.find_child("Reserve0_1", true, false)
+	var r21 = inst.find_child("Reserve2_1", true, false)
+	_check("rsv: hero 0 has 2 reserve slots", r00 != null and r01 != null, "")
+	_check("rsv: hero 2 reserve slot exists", r21 != null, "")
+	## weapon desc now lives UNDER the sockets (inside MidCol), not a right-side column
+	var mid0 = inst.find_child("MidCol", true, false)
+	var wt = mid0.find_child("WeaponTooltip", true, false) if mid0 != null else null
+	_check("rsv: weapon desc under sockets (in MidCol)", wt != null, "")
+	## set_reserve_item populates / clears the bench slot icon
+	inst.set_reserve_item(0, 0, &"FIRE")
+	var icon = r00.find_child("Icon", true, false) if r00 != null else null
+	_check("rsv: reserve icon textured after set", icon != null and icon.texture != null, "")
+	inst.set_reserve_item(0, 0, &"")
+	_check("rsv: reserve icon cleared on empty", icon != null and icon.texture == null, "")
 	inst.queue_free()
 
 ## -- C9: forge compact mode + HP-bar sizing --

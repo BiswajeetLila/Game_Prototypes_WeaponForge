@@ -52,7 +52,9 @@ func _test_routing_leftmost_is_zero() -> void:
 	var tap = sock.find_child("TapArea", true, false) if sock != null else null
 	_check("Socket0_0 + TapArea exist", tap != null, "")
 	if tap != null:
-		tap.pressed.emit()
+		## socket uses a tap/long-press gesture now: quick down+up == a tap
+		tap.button_down.emit()
+		tap.button_up.emit()
 		_check("leftmost socket emits socket_idx 0 (=PASSIVE)", _tap_capture.size() == 1 and _tap_capture[0] == 0,
 			"got %s" % str(_tap_capture))
 	inst.socket_tapped.disconnect(_on_socket_tapped)

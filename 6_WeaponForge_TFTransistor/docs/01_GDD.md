@@ -106,13 +106,15 @@ Three categories:
 
 Each Function has 3 distinct behaviors — one per slot (Active / Modifier / Passive). Full 36-cell matrix in the [function catalog spec](superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md#3-the-36-cell-function--slot-matrix-lane-aware).
 
-**Tier system (T1-T5, 2-to-1 merge):** Common (1.0×) → Rare (1.4×) → Epic (2.0×) → Legendary (2.8×) → Mythic (4.0×). 16 commons → 1 mythic (full chain). Phase 4 slice = T1 only; tier system fully active starting Phase 5.
+All **12 Function `.tres` exist** (`data/functions/`) with their §3 Active/Modifier/Passive fields, and the equipped Active drives real combat: targeting via `combat_targeting.gd` (own-lane-closest, any-lane-closest, own-lane-line pierce, ricochet, lowest-HP), damage tag, status emission, and knockback all resolve in `combat_v2`. **IMPLEMENTED** (Q2). *Note: the 6 newer Functions (ICE/EARTH/BEAM/BOUNCE/SEEKER/KNOCKBACK) have no rune-icon PNG yet — they render name-only in the shop until an art pass adds icons. Some Modifier/Passive flavor (e.g. Echo proc, Long Sight bonus) is data-described but not yet applied in combat — Active behavior is the wired path.*
+
+**Tier system (T1-T5, 2-to-1 merge):** Common (1.0×) → Rare (1.4×) → Epic (2.0×) → Legendary (2.8×) → Mythic (4.0×). 16 commons → 1 mythic (full chain). The tier multiplier now **scales combat damage** (`tier_scale.gd`; a merge-bumped Function hits harder, not just a recoloured border). **IMPLEMENTED** (Q3). Slice merge still caps at T4 (`reserve_v2`/`forge_grid` MAX_TIER=4); T5 unlock = Phase 5.
 
 ---
 
 ## Magicka reaction matrix (15 reactions)
 
-Reactions fire when an **incoming damage tag** hits an **existing status** on an enemy.
+Reactions fire when an **incoming damage tag** hits an **existing status** on an enemy. All **15 reactions are in the build** (`data/reactions/`, dispatched by `element_mediator.gd`) with priority resolution, the Cracked-passenger rule, and the 3 aux statuses (Blind/Frozen/Bleed). **IMPLEMENTED** (Q1). *Reaction `dmg_mult` and splash targeting are encoded in the reaction data + status mutations apply on the origin; the per-reaction bonus-damage multiplier and cross-lane splash application in live combat are a Phase-5 combat-integration follow-up.*
 
 **Status outputs** (Elements in Active emit these):
 
@@ -153,9 +155,9 @@ Chain ≥3 reactions in 2-sec window → chain stinger audio + chain HUD counter
 - **Free tile movement (hero-agnostic):** pick up any owned item (any socket or reserve, any hero) with a tap and drop on any other tile — empty = move, same id+tier = merge, occupied = swap. Costs no gold (only buying from the shop costs gold). **IMPLEMENTED** (`forge_grid.gd`, unified `_held` pick/drop).
 - **Sell = double-click** an owned socket/reserve item → reduced refund (floor 50% of cost). Single tap = pick up / drop.
 - **Re-roll** rolls a fresh **full board of 7** (the whole list, including bought/empty slots); price scales with stage (`2× T1 base`).
-- **Ult:** a per-hero **Ult button** beside the portrait that fills with charge (3 reactions/bar); enabled + "ULT!" at full, tap to fire (consumes the meter; Ult VFX/effect = [ROADMAP] Phase 5).
+- **Ult:** a per-hero **Ult button** beside the portrait that fills with charge (3 reactions/bar, cap 3). It now **fires a real effect** (`ult_controller.fire_ult`, spec §12): Bran Leap & Slam (5× back-most own-lane + 2 nearest cross-lane, +2 Cracked), Elara Chain Storm (8 arcs over Wet @2× + Shocked, failsafe 1× all), Vex Phantom Strike (3×200% lowest-HP + Burning + Bleed). Consumes **1 bar** and is usable at **≥1 bar** (was: enabled only at a full meter); Bran/Vex refund the bar on an empty grid. **IMPLEMENTED** (Q4). *Ult VFX = Phase 5.*
 - **Weapon-always-visible bottom rail:** 3 hero portraits + Ult button + 3 sockets each + a one-line weapon description under each row — visible during all combat + forge phases. **HP floats above the hero sprites in the battle scene only** (not the forge rail).
-- **Wave telegraph:** tap during forge break to preview upcoming stage's enemy mix + weaknesses [ROADMAP]
+- **Wave telegraph:** an **INTEL** button in the HUD opens a preview of the upcoming stage's per-wave enemy lineup + each wave's weakness/resistance (`wave_director.telegraph_for_stage` + `wave_telegraph.show_stage`). **IMPLEMENTED** (Q5). Enemy weak/resist tags live on `EnemyData` (goblin/skeleton/slime populated).
 
 ---
 
@@ -205,9 +207,9 @@ Includes: 12-Function set, 15-reaction matrix, status durations, 3-lane auto-run
 
 - Lane corridor + auto-runner combat — Phase 4 (slice)
 - 7-slot slow-populate shop — Phase 4
-- 6 Functions + 2 reactions + Bran full Ult — Phase 4 slice
-- All 12 Functions + 15 reactions + tier system — Phase 5
-- Boss AI (full) — Phase 5
+- 6 Functions + 2 reactions — Phase 4 slice (baseline)
+- **All 12 Functions + 15 reactions + tier-scaled combat + all 3 hero Ults + wave telegraph — Phase 5 batch (Q1–Q5), now in the build**
+- Boss AI (full) — Phase 5 (telegraph shows BOSS but boss is still a stationary hp30 enemy)
 - Wittle-meta-progression — Phase 5+ (separate spec doc)
 - Monetization — post-slice playtest decision
 - Multi-world progression — Phase 5

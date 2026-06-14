@@ -50,25 +50,33 @@ Godot procs go zombie under contention — `Get-Process -Name Godot_v4.6.2-stabl
 - `element_mediator.gd` — reaction dispatch; emits `reaction_triggered`/`vfx_triggered`/`audio_triggered`.
 - `ult_controller.gd` — 3 reactions → +1 Ult bar (cap 3).
 - `wave_director.gd` — `waves_for_stage`, `enemies_for_stage_wave(stage,wave)` (post-FTUE 3 waves/stage, 5 stages; stage4 wave2 = BOSS hp30).
-- `shop_v2.gd` — `cost_for(stage,tier)` (T1_BASE=[1,1,2,2,3], TIER_MULT=[1,1.4,2,2.8,4], REROLL_COST=1), `roll_items(stage,count,pity)`, `buy(item,gold)`, `reroll(gold,rollable)`, pity (`notify_stage_end`).
-- `loadout_v2.gd` — 3 sockets/hero (idx 0=PASSIVE,1=MODIFIER,2=ACTIVE — flipped in C1); `apply_drop(lo,idx,id,tier,allow_merge=true)`; slice passes `allow_merge=false` → duplicate shows `{merge:"2/2"}`, no T2 bump.
+- `shop_v2.gd` — `cost_for(stage,tier)` (T1_BASE=[1,1,2,2,3], TIER_MULT=[1,1.4,2,2.8,4]), `reroll_cost_for(stage)`=2×base, `roll_items(stage,count,pity)`, `buy(item,gold)`, `reroll(gold,cost)` (gold-gated), `populate_schedule_3wave` (the 2/3/2 drip), pity (`notify_stage_end`).
+- `loadout_v2.gd` — 3 sockets/hero (idx 0=PASSIVE,1=MODIFIER,2=ACTIVE — flipped in C1); `apply_drop(...)` (legacy path; equip now goes through `reserve_v2`).
+- `reserve_v2.gd` *(not an autoload — pure static, preloaded)* — 2 reserve slots/hero; `equip` (place/merge/displace/blocked-full), `equip_from_reserve` (bench↔socket swap), `sell_value`/`sell_socket`/`sell_reserve` (floor-50%). Socket+reserve entries carry `cost`.
 - `function_data.gd` — +`active_desc/mod_desc/passive_desc/best_fit` + `describe(slot)`; 6 `.tres` populated (fire/water/lightning/aoe/leech/burst; BOUNCE has no .tres).
 
 **UI (the rebuilt screens):**
-- `scenes/Main_v2.tscn` + `main_v2.gd` — controller. State machine COMBAT/FORGE_BREAK/DONE. Composes HudBar + BattleView_v2 + ForgePanel_v2 + ChainHUD. Timer drives combat windowed (0.3s); headless tests drive `_tick_once()`/`advance_wave()` directly. Slice runs post-FTUE (3 heroes elara/bran/vex, hp 30, lanes 0/1/2; base_dmg 2; tags WATER/FIRE/LIGHTNING).
+- `scenes/Main_v2.tscn` + `main_v2.gd` — controller. State machine COMBAT/FORGE/DONE. **Forge per stage, auto-battle waves** (`_on_wave_cleared` auto-advances within a stage; opens forge at the boundary). Shop slow-populates via `_reset_stage_shop`/`_drip_shop_for_wave`. Equip via `reserve_v2` (`_on_socket_tap` buy+equip-with-displacement; `_on_reserve_tap` bench pickup; `_on_socket_sell`/`_on_reserve_sell`; `_sync_hero_forge` pushes sockets+reserve to the panel). Timer drives combat windowed (0.3s); headless tests drive `_tick_once()`/`advance_wave()` directly. Slice = post-FTUE (3 heroes elara/bran/vex, hp 30, lanes 0/1/2; base_dmg 2; tags WATER/FIRE/LIGHTNING).
 - `battle_view_v2.gd` — single field + faint 3×3 grid + hero anchors (HP bar floats ABOVE sprite, battle-only) + enemies render-snapped to 3 depth cells (`_depth_cell_for`) + status chips (dot+name) + numeric HP + reaction labels (`show_reaction_label`) + VFX layer. `set_compact(true)` → heroes lay out HORIZONTALLY (forge preview); `false` → vertical lanes. mouse_filter IGNORE.
-- `forge_panel_v2.gd` — weapon rail (3 rows: portrait + PASSIVE|MODIFIER|ACTIVE socket cards (icon+name+tier stars+merge label, empty=slot-name watermark) + always-on **WeaponTooltip** on right + Ult pips) ; shop rail (7 rune cards: icon+name+cost+tier) ; footer (Gold + Re-roll + START NEXT WAVE). `set_compact` resizes sockets 64↔40. NO HP bar in rail (moved to battle). `set_weapon_desc(hero,text)`, `set_reroll_cost/enabled`, `set_next_wave_visible`.
+- `forge_panel_v2.gd` — weapon rail (3 rows: portrait + ult pips + 3 PASSIVE|MODIFIER|ACTIVE socket cards + one-line **weapon desc UNDER the sockets** (MidCol) + **Reserve bench (2 slots)** on the right, "Reserve" header) ; shop rail (7 rune cards) ; footer (Gold + Re-roll + START). Sockets+reserve use a **tap/long-press gesture** (`button_down`/`button_up`, hold≥500ms = sell). Signals: socket_tapped, shop_item_tapped, reserve_tapped, socket_sell, reserve_sell, reroll_tapped, start_next_wave. Methods: set_socket_fn, set_reserve_item, set_weapon_desc, flash_error, set_compact (sockets 64↔40), set_hero_ult_bars, set_reroll_cost/enabled, set_next_wave_visible. Matches `Forge_State_edits.jpg`. NO HP bar (battle only).
 - `chain_hud.gd` — ×N reaction badge (top strip). mouse_filter IGNORE.
 
-## Locked design decisions (this session)
+## Locked design decisions
 1. **Universal Transistor slots** — any Function any slot, behaves differently per 36-cell matrix. Distinction via shown behavior, NOT restriction.
 2. **Socket order PASSIVE | MODIFIER | ACTIVE** (data idx 0/1/2).
-3. **Shop = per STAGE** — rolls once at stage start, persists across the stage's 3 waves' forge breaks (bought slots stay empty); re-rolls only at next stage. (`_shop_populate_count` probe.)
-4. **Gold = per-kill** (1g/kill in `_tick_once`), not flat-per-forge.
-5. **Weapon tooltip** = always-on per-hero, shows combined ATK(active)/+MOD(modifier)/PASS(passive), real-time on equip. HP lives in battle scene only.
-6. Deviations from spec (intentional, user-approved): forge-break reroll re-rolls visible unbought slots for 1g (spec §11.2 says pending-only); per-kill gold.
+3. **Forge = per STAGE (not per wave).** Waves auto-battle continuously inside a stage; the forge/equip break is the stage boundary (F0 open + after each stage). `_on_wave_cleared` auto-advances within a stage. *(G1 — superseded the earlier per-wave forge + F1's full-shop-at-open.)*
+4. **Shop slow-populates 2/3/2** across the stage's waves (always-visible rail): 2 at stage start, +1 per wave, +2 by stage end = 7. Resets per stage. F0 opens with 2. `_reset_stage_shop`/`_drip_shop_for_wave` + `ShopV2.populate_schedule_3wave`. *(G1 — user reverted the "full fresh 7 each stage" idea back to this GDD pillar.)*
+5. **Gold = per-kill** (1g/kill in `_tick_once`), not flat-per-forge.
+6. **Reserve bench = 2 slots/hero** (`reserve_v2.gd`). Equip onto occupied → displace old to reserve; same id+tier → merge; reserve full → blocked + red flash, no charge. Bench is reusable (tap benched item → socket = swap). **Sell** socket/reserve via **long-press ~0.5s** for floor-50% refund. *(G2/G3.)*
+7. **Re-roll** wipes every currently-shown item in place (bought/empty slots left for the drip); price = `2× T1 base` scaled by stage. *(F1 + G1.)*
+8. **Weapon description** = one line UNDER each hero's sockets (combined ATK/+MOD/PASS), real-time on equip; right-side tooltip column removed. HP floats above sprites in the battle scene only. *(D2/G3.)*
+9. Layout SSOT: combat = [`In_Battle.png`]; forge = [`Forge_State_edits.jpg`] (the edited one with the Reserve column).
 
 ## Commit history (real-asset-pass, newest first)
+`G3` forge layout = Forge_State_edits.jpg (Reserve column + under-row desc + long-press sell + error flash) ·
+`G2` Reserve bench logic (`reserve_v2.gd`): equip-displacement / merge / blocked-full / sell / bench-reequip + main_v2 wiring ·
+`G1` forge per STAGE + auto-battle waves + slow-populate 2/3/2 ·
+`F1` open run in FORGE (equip first) + reroll cost scaling ·
 `E1` freeze fix (ChainHUD click-eating + pause trap) + reroll visible-change ·
 `D2` weapon tooltip + HP→battle + horizontal heroes + removed overlap panel ·
 `D1` shop per-stage + reroll-button-path test ·
@@ -77,14 +85,19 @@ Godot procs go zombie under contention — `Get-Process -Name Godot_v4.6.2-stabl
 `C6+C7` socket+shop cards · `C5` FunctionData descriptions · `C3+C4` shop economy wiring+pity ·
 `C2` ShopV2 economy core · `C1` socket index flip · earlier: B1–B4 real assets, A1–A7 layout slice.
 
-## OPEN — what the user is testing right now (last turn)
-User reported live (F5) bugs: "reroll didn't get new items, 2nd wave no new items, 3rd wave enemies didn't die, nothing responsive." Diagnosed as **ChainHUD (top-strip, mouse_filter STOP, topmost) ate pause/2× clicks → pause-in-forge carried into combat → frozen → couldn't unpause (click eaten) → permanent freeze.** Fixed in E1 (overlays mouse-transparent + advance_wave unpauses + PAUSED indicator + reroll avoid-same-id). **Could NOT reproduce the exact freeze via code** (logic + auto-play run all 15 waves clean) — fix targets the strongest root cause. **Awaiting user retest.**
+## OPEN — awaiting user F5 retest of G1–G3
+The E1 freeze is resolved (user confirmed "reroll works"). Current build to retest:
+- **Loop:** opens in FORGE (F0, 2 shop items), START → stage auto-battles all 3 waves continuously (no inter-wave stop), shop drips 2/3/2, stage-end forge break shows the full board → equip → START next stage. 6 forge breaks F0–F5.
+- **Reserve/sell:** equip onto an occupied socket benches the old item; bench full → red flash + no charge; tap a benched item then a socket to re-equip; **long-press ~0.5s** a socket/reserve item to sell (50% refund).
+- The reserve/sell GESTURES are UI-only (not exercised by headless tests — the handlers + pure logic ARE tested). **Long-press is release-timed** (decided on button release), not held-fire — confirm it feels right.
 
-### If freeze persists after retest
-- Get the EXACT button sequence before freeze (I can't drive live mouse).
-- Suspect remaining mouse-occlusion: check any full-rect/overlapping Control with `mouse_filter != IGNORE` on top of forge footer/HUD. Use AutoShot_MainPlay to confirm logic still cycles.
-- Nuclear option offered to user: remove the pause button entirely for the slice (footgun).
-- Per-stage shop "no new items on wave 2" is INTENDED (user asked per-stage); user may still want per-wave refill — confirm before changing.
+## Session gotchas / trials (engineering — for future me)
+- **Shell auto-backgrounding + stdout encoding:** PowerShell `*>` writes UTF-16 (Select-String saw garble); the harness also auto-backgrounded long Godot runs. **Fix that worked:** Bash tool, redirect Godot `> file 2>&1`, then Read the file (plain UTF-8). Use a known absolute Windows path for the out-file.
+- **Parse error masks the whole suite:** a renamed test fn left a stale `_ready` call → `SCRIPT ERROR: Parse Error ... not found` → exit 255, ZERO test output (looked like "no RED"). Always check for `SCRIPT ERROR/Parse Error` in the grep, and if a suite emits nothing, suspect a parse error before assuming pass.
+- **Clean RED for a new module:** write the test + a COMPILING stub (functions return defaults) → run for clean per-assertion RED → fill in. (Preloading a missing script = parse error, not clean RED.) For an in-place behavior change, retroactive RED via `git stash push -- <file>` (path-scoped) then run then `git stash pop` — note pop prints the full `.import` churn `git status`, that's noise.
+- **`pressed` → gesture migration breaks tap tests:** sockets moved from Button `pressed` to `button_down`/`button_up` (for long-press). Tests that did `tap.pressed.emit()` must do `button_down.emit(); button_up.emit()`.
+- **const Arrays/Dicts are READ-ONLY in Godot 4** (still true): combat writes `hero["hp"]`; any test feeding heroes from a `const` array must `.duplicate(true)`.
+- **`Time.get_ticks_msec()`** is fine in Godot runtime (used for the long-press timing) — unrelated to the Workflow-script `Date.now` ban.
 
 ## Known cosmetic / deferred (not blocking)
 - Status icons generated but white-bg (`assets/generated/status/*.png`) — NOT wired; battle uses colored dots. Needs bg cutout.
@@ -94,6 +107,7 @@ User reported live (F5) bugs: "reroll didn't get new items, 2nd wave no new item
 - Home→Main_v2 nav not wired (main_scene jumps straight to slice).
 
 ## Next moves (suggested)
-1. User retests F5 → confirm freeze gone + reroll visibly changes.
-2. If good: fold decisions 1–6 into 01_GDD as a [ROADMAP] note; decide merge real-asset-pass→vertical-slice or open PR.
-3. Then: feel-test pass / Phase 5 art (sprites for status, real VFX, 2.5D).
+1. User retests F5 → confirm the per-stage loop + slow-populate drip + reserve/sell (long-press) feel right.
+2. Decide merge real-asset-pass→vertical-slice or open PR (still not merged; their call).
+3. Feel-test pass / Phase 5 art (status sprites, real VFX, 2.5D). Wave-telegraph still [ROADMAP].
+4. Possible polish: true held-fire long-press (currently release-timed); reserve slot art (circles); sell confirmation toast.

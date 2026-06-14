@@ -139,13 +139,16 @@ Chain ≥3 reactions in 2-sec window → chain stinger audio + chain HUD counter
 
 ## Shop + Forge
 
-- **7 slots** per stage, slow-populating 2/3/2 across the 3 waves
+- **7 slots** per stage, slow-populating 2/3/2 across the 3 waves — **IMPLEMENTED** in the slice (`main_v2._reset_stage_shop` + `_drip_shop_for_wave`, driven by `ShopV2.populate_schedule_3wave`). 2 at stage start, +1 as each of the 3 waves begins, +2 by the stage's end; full board = the stage-end forge break.
+- **Forge break = per STAGE, not per wave** — waves auto-battle continuously inside a stage (no inter-wave stop); the forge/equip moment is the stage break. F0 (run open) shows the 2 starting items. **IMPLEMENTED** (`_on_wave_cleared` auto-advances within a stage, opens forge at the boundary).
 - Items reset between stages (forces commitment; no shop persistence)
 - Cost scales by stage; gold from kills
 - Pity counter: ≥1 Element per 2 consecutive stages
-- 2-to-1 auto-merge on duplicate drop
-- **Weapon-always-visible bottom rail:** 3 hero portraits + 3 sockets each + HP + Ult bars — visible during all combat + forge phases (player can plan permutations while waiting for shop to fill)
-- **Wave telegraph:** tap during forge break to preview upcoming stage's enemy mix + weaknesses
+- 2-to-1 auto-merge on duplicate drop (slice stub: marks `2/2`, no tier bump until the full tier system lands)
+- **Reserve (bench): 2 slots per hero.** Equipping onto an occupied socket displaces the old Function to a free Reserve slot (same id+tier → merge instead); both reserve slots full → equip is **blocked** (red row flash, no charge). Reserve is a usable bench: tap a benched item then a socket to re-equip (the socket item swaps back). **Sell** any socket/reserve item back to the shop for a reduced refund (floor 50% of cost) via **long-press (~0.5s)** — frees slots when the bench is full. **IMPLEMENTED** (`reserve_v2.gd`). Layout = [`_art-build/screens/Forge_State_edits.jpg`](../_art-build/screens/Forge_State_edits.jpg).
+- **Re-roll** wipes every currently-shown item and reloads fresh ones in place (bought/empty slots stay empty for the drip to fill); price scales with stage (`2× T1 base`).
+- **Weapon-always-visible bottom rail:** 3 hero portraits + 3 sockets each + Ult bars + a one-line weapon description under each row — visible during all combat + forge phases (player can plan permutations while waiting for shop to fill). **HP floats above the hero sprites in the battle scene only** (not the forge rail).
+- **Wave telegraph:** tap during forge break to preview upcoming stage's enemy mix + weaknesses [ROADMAP]
 
 ---
 

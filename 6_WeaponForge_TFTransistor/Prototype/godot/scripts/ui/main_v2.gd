@@ -323,6 +323,9 @@ func _park_forge() -> void:
 		if shop != null and shop.has_method("reroll_cost_for"):
 			rc = int(shop.reroll_cost_for(current_stage))
 		_forge.set_reroll_cost(rc)
+	for i in _loadouts.size():
+		_sync_hero_forge(i)  ## ensure the panel's sockets + reserve match state on every forge open
+	_refresh_weapon_tips()
 	_apply_layout(STATE_FORGE)
 	_update_hud()
 
@@ -331,6 +334,10 @@ func _park_forge() -> void:
 func advance_wave() -> void:
 	if state != STATE_FORGE:
 		return
+	## clear transient forge selections so they never leak into the next forge break
+	_selected_shop = -1
+	_selected_reserve_hero = -1
+	_selected_reserve_idx = -1
 	if _shop_stage != current_stage:
 		_reset_stage_shop()  ## entering a new stage -> fresh slow-populate (discards old board)
 	_spawn_current_wave()  ## materialize the first wave's enemies as combat begins

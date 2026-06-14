@@ -13,10 +13,9 @@ func _ready() -> void:
 	var t = m.get_node_or_null("TickTimer")
 	if t != null:
 		t.stop()
-	m.state = 0  ## COMBAT
-	var nb = m.get_node_or_null("NextWaveBtn")
-	if nb != null:
-		nb.visible = false
+	## run opens in FORGE now — press START to get the COMBAT layout, then freeze the tick
+	if m.has_method("advance_wave"):
+		m.advance_wave()
 	var ls = get_node_or_null("/root/LaneState")
 	if ls == null:
 		return

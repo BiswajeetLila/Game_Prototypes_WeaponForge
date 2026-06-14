@@ -63,7 +63,9 @@ func _test_cost_table() -> void:
 	_check("cost stage3 T1 = 2g", sv2.cost_for(2, 1) == 2, "got %d" % sv2.cost_for(2, 1))
 	_check("cost stage5 T1 = 3g", sv2.cost_for(4, 1) == 3, "got %d" % sv2.cost_for(4, 1))
 	_check("cost stage1 T2 = 2g (ceil 1.4)", sv2.cost_for(0, 2) == 2, "got %d" % sv2.cost_for(0, 2))
-	_check("REROLL_COST == 1", sv2.REROLL_COST == 1, "got %d" % sv2.REROLL_COST)
+	## reroll now wipes the WHOLE 7-slot board -> price scales with stage (2x item base)
+	_check("reroll cost stage1 = 2g (full-board)", sv2.reroll_cost_for(0) == 2, "got %d" % sv2.reroll_cost_for(0))
+	_check("reroll cost stage5 = 6g (scales)", sv2.reroll_cost_for(4) == 6, "got %d" % sv2.reroll_cost_for(4))
 
 func _test_roll_items() -> void:
 	var sv2 = get_node("/root/ShopV2")
@@ -92,9 +94,10 @@ func _test_buy() -> void:
 
 func _test_reroll() -> void:
 	var sv2 = get_node("/root/ShopV2")
-	_check("reroll ok: gold + pending>0", sv2.reroll(7, 2).get("ok", false) == true, "")
-	_check("reroll fail: no gold", sv2.reroll(0, 2).get("ok", true) == false, "")
-	_check("reroll fail: nothing to roll", sv2.reroll(7, 0).get("ok", true) == false, "")
+	## reroll(gold, cost) — full board always rollable, gated only by gold
+	_check("reroll ok: gold >= cost", sv2.reroll(7, 2).get("ok", false) == true, "")
+	_check("reroll fail: gold < cost", sv2.reroll(1, 2).get("ok", true) == false, "")
+	_check("reroll cost echoed back", int(sv2.reroll(7, 2).get("cost", -1)) == 2, "")
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

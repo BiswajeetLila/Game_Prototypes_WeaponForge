@@ -12,7 +12,6 @@ extends Node
 ## ---- economy (spec §9.3 / §10) ----
 const T1_BASE_BY_STAGE: Array = [1, 1, 2, 2, 3]      ## spec §9.3, index = current_stage
 const TIER_MULT: Array = [1.0, 1.4, 2.0, 2.8, 4.0]    ## spec §10.1, index = tier-1 (T2-T5 dormant in slice)
-const REROLL_COST: int = 1                            ## spec §9.3, flat
 const SLICE_FN_IDS: Array = ["FIRE", "WATER", "LIGHTNING", "AOE", "LEECH", "BURST"]  ## T1 slice pool (no BOUNCE)
 const ELEMENT_IDS: Array = ["FIRE", "WATER", "LIGHTNING"]
 
@@ -24,6 +23,11 @@ var pity_triggered: bool = false  ## test probe: true when pity guarantee fired
 static func cost_for(stage: int, tier: int) -> int:
 	var base: int = T1_BASE_BY_STAGE[clampi(stage, 0, 4)]
 	return int(ceil(base * TIER_MULT[clampi(tier - 1, 0, 4)]))
+
+## Reroll price. Reroll wipes the WHOLE 7-slot board and loads a fresh set, so it
+## costs more than a single item — 2x the stage's T1 base. Scales with the economy.
+static func reroll_cost_for(stage: int) -> int:
+	return T1_BASE_BY_STAGE[clampi(stage, 0, 4)] * 2
 
 ## Roll `count` shop items for a stage (T1-only slice). pity forces slot 0 to an element.
 ## Each item = {id:String, tier:int, cost:int}.
@@ -43,11 +47,12 @@ func buy(item: Dictionary, gold: int) -> Dictionary:
 		return {"ok": false, "cost": cost}
 	return {"ok": true, "cost": cost, "fn": {"id": StringName(item.get("id", "")), "tier": int(item.get("tier", 1))}}
 
-## Reroll decision: needs gold >= REROLL_COST and something to reroll (rollable_count > 0).
-func reroll(gold: int, rollable_count: int) -> Dictionary:
-	if gold < REROLL_COST or rollable_count <= 0:
-		return {"ok": false, "cost": REROLL_COST}
-	return {"ok": true, "cost": REROLL_COST}
+## Reroll decision. Reroll always refreshes the full board, so it is gated only by
+## gold; caller passes the full-board cost (see reroll_cost_for).
+func reroll(gold: int, cost: int) -> Dictionary:
+	if gold < cost:
+		return {"ok": false, "cost": cost}
+	return {"ok": true, "cost": cost}
 
 func _ready() -> void:
 	pass

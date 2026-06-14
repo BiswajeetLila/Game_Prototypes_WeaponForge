@@ -10,6 +10,7 @@ var _lines: Array = []
 func _ready() -> void:
 	_log("=== Main_v2 controller tests ===")
 	_test_composition()
+	_test_starts_in_forge()
 	_test_full_run_loop()
 	_test_buy_deducts_and_clears()
 	_test_insufficient_gold_blocks()
@@ -41,10 +42,28 @@ func _test_composition() -> void:
 	_check("main_v2: forge composed (ShopRail present)", inst.find_child("ShopRail", true, false) != null, "")
 	var start_btn = inst.find_child("StartNextWaveBtn", true, false)
 	_check("main_v2: StartNextWaveBtn in forge footer", start_btn != null, "")
-	_check("main_v2: starts in COMBAT", inst.has_method("is_combat") and inst.is_combat(), "")
-	_check("main_v2: START hidden during combat", start_btn != null and start_btn.visible == false, "")
+	_check("main_v2: opens in FORGE (equip before wave 1)", inst.has_method("is_forge_break") and inst.is_forge_break(), "")
+	_check("main_v2: START visible at run open", start_btn != null and start_btn.visible == true, "")
 	var ls = get_node_or_null("/root/LaneState")
-	_check("main_v2: first wave spawned enemies", ls != null and ls.enemies.size() > 0, "got %d" % (ls.enemies.size() if ls != null else -1))
+	_check("main_v2: no live enemies during forge", ls != null and ls.enemies.size() == 0, "got %d" % (ls.enemies.size() if ls != null else -1))
+	inst.advance_wave()  ## press START
+	_check("main_v2: START spawns the wave's enemies", ls != null and ls.enemies.size() > 0, "got %d" % (ls.enemies.size() if ls != null else -1))
+	inst.queue_free()
+
+func _test_starts_in_forge() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("open: FORGE not COMBAT", inst.is_forge_break() and not inst.is_combat(), "state=%d" % inst.state)
+	_check("open: parked before wave 1 (stage 0, wave 0)", inst.current_stage == 0 and inst.current_wave == 0, "stage=%d wave=%d" % [inst.current_stage, inst.current_wave])
+	var start_btn = inst.find_child("StartNextWaveBtn", true, false)
+	_check("open: START button visible", start_btn != null and start_btn.visible == true, "")
+	inst.advance_wave()  ## press START
+	_check("after START: COMBAT", inst.is_combat(), "state=%d" % inst.state)
+	_check("after START: still wave 1 (no skip)", inst.current_wave == 0, "wave=%d" % inst.current_wave)
+	_check("after START: START hidden", start_btn != null and start_btn.visible == false, "")
 	inst.queue_free()
 
 func _test_full_run_loop() -> void:
@@ -54,7 +73,7 @@ func _test_full_run_loop() -> void:
 		return
 	var inst = packed.instantiate()
 	add_child(inst)
-	_check("main_v2: run begins in COMBAT", inst.is_combat(), "")
+	_check("main_v2: run begins in FORGE (equip first)", inst.is_forge_break(), "")
 	var guard: int = 0
 	while not inst.is_done() and guard < 6000:
 		if inst.is_combat():
@@ -125,8 +144,14 @@ func _test_reroll_costs_gold() -> void:
 	if inst == null:
 		return
 	inst.gold = 7
-	inst._on_reroll()
-	_check("reroll: costs 1g", inst.gold == 6, "got %d" % inst.gold)
+	inst._shop_items[2] = null  ## simulate an already-bought (empty) slot
+	inst._on_reroll()  ## stage 0 -> full-board reroll costs 2g
+	_check("reroll: costs full-board price (stage0 = 2g)", inst.gold == 5, "got %d" % inst.gold)
+	var nulls: int = 0
+	for it in inst._shop_items:
+		if it == null:
+			nulls += 1
+	_check("reroll: wipes whole board -> 7 fresh slots, refills bought/empty", inst._shop_items.size() == 7 and nulls == 0, "size=%d nulls=%d" % [inst._shop_items.size(), nulls])
 	inst.queue_free()
 
 func _test_equip_forge_gated() -> void:
@@ -134,7 +159,8 @@ func _test_equip_forge_gated() -> void:
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)  ## start_run -> COMBAT, NOT forge
+	add_child(inst)  ## opens in FORGE
+	inst.advance_wave()  ## press START -> COMBAT (equip must now be blocked)
 	inst.gold = 7
 	inst._shop_items = [{"id": "FIRE", "tier": 1, "cost": 1}]
 	inst._on_shop_tap(0)
@@ -148,7 +174,8 @@ func _test_per_kill_gold() -> void:
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)  ## COMBAT, wave 0 spawned
+	add_child(inst)  ## FORGE, wave 0 pre-spawned
+	inst.advance_wave()  ## press START -> COMBAT
 	var ls = get_node_or_null("/root/LaneState")
 	var n: int = ls.enemies.size() if ls != null else 0
 	var start_gold: int = inst.gold
@@ -165,7 +192,8 @@ func _test_layout_combat() -> void:
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)  ## start_run -> COMBAT
+	add_child(inst)  ## opens FORGE
+	inst.advance_wave()  ## press START -> COMBAT layout
 	_check("layout combat: battle big (bottom ~0.66)", is_equal_approx(inst._battle.anchor_bottom, 0.66), "got %.2f" % inst._battle.anchor_bottom)
 	_check("layout combat: forge compact (top ~0.66)", is_equal_approx(inst._forge.anchor_top, 0.66), "got %.2f" % inst._forge.anchor_top)
 	_check("layout combat: ChainHUD visible", inst._chain_hud.visible == true, "")
@@ -189,7 +217,8 @@ func _test_pause_no_reanchor() -> void:
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)  ## COMBAT
+	add_child(inst)  ## opens FORGE
+	inst.advance_wave()  ## press START -> COMBAT (pause must not re-anchor mid-combat)
 	var ab: float = inst._battle.anchor_bottom
 	_check("main_v2: has is_paused", inst.has_method("is_paused"), "")
 	inst._on_pause()
@@ -205,14 +234,15 @@ func _test_shop_populates_per_stage() -> void:
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)  ## start_run: stage 0, shop populated once
+	add_child(inst)  ## start_run: stage 0, shop populated once, parked in FORGE
 	_check("shop populated once at stage start", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
+	inst.advance_wave()  ## press START -> wave 0 combat
 	var guard: int = 0
 	while inst.is_combat() and guard < 500:
 		inst._tick_once()
 		guard += 1
 	_check("forge break does NOT repopulate (per-stage, not per-wave)", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
-	inst.advance_wave()  ## wave 2 of stage 0
+	inst.advance_wave()  ## START wave 2 of stage 0
 	_check("next wave same stage: still 1 populate", inst._shop_populate_count == 1, "got %d" % inst._shop_populate_count)
 	guard = 0
 	while not inst.is_done() and inst.current_stage == 0 and guard < 3000:
@@ -232,7 +262,7 @@ func _test_reroll_button_path() -> void:
 	_check("RerollBtn present", rb != null, "")
 	if rb != null:
 		rb.pressed.emit()  ## full chain: button -> reroll_tapped -> _on_reroll
-		_check("reroll via real button press decrements gold", inst.gold == 4, "got %d" % inst.gold)
+		_check("reroll via real button press decrements gold (stage0 = 2g)", inst.gold == 3, "got %d" % inst.gold)
 	inst.queue_free()
 
 func _test_overlays_dont_block_input() -> void:
@@ -251,11 +281,12 @@ func _test_advance_unpauses() -> void:
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)
-	## pause, then START NEXT WAVE must resume (each new wave starts unpaused)
+	add_child(inst)        ## opens FORGE
+	inst.advance_wave()    ## START -> COMBAT wave 0
+	## pause mid-combat, then START NEXT WAVE must resume (each new wave starts unpaused)
 	inst._on_pause()
 	_check("paused after pause", inst.is_paused() == true, "")
-	## get to a forge break then advance
+	## clear the wave -> forge break (pause persists), then START next wave
 	var guard: int = 0
 	while inst.is_combat() and guard < 500:
 		inst._tick_once()

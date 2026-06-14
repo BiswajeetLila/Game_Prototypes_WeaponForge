@@ -204,13 +204,10 @@ func start_run() -> void:
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
 	_heroes = _make_heroes()
 	_shop_populate_count = 0
-	_spawn_current_wave()
 	_populate_shop()  ## shop opens at STAGE start (persists across the stage's waves)
-	state = STATE_COMBAT
 	_paused = false
 	_update_pause_indicator()
-	_set_next_wave(false)
-	_apply_layout(STATE_COMBAT)
+	_park_forge()  ## OPEN in the forge: equip first, then press START to begin wave 1
 
 func _make_heroes() -> Array:
 	return [
@@ -264,21 +261,10 @@ func _tick_once() -> void:
 	if ls.enemies.size() == 0 or _ticks_this_wave >= SAFETY_TICKS:
 		_enter_forge_break()
 
+## Wave cleared -> advance to the NEXT wave (a forge break precedes EVERY wave),
+## spawn its enemies, then park in FORGE so the player can re-equip before START.
 func _enter_forge_break() -> void:
-	state = STATE_FORGE
 	waves_played += 1
-	## gold is earned per-kill in _tick_once now (no flat grant)
-	## shop is NOT re-rolled here — it persists across the stage's waves (populated at stage start)
-	_refresh_shop_ui()
-	_set_next_wave(true)
-	if _forge != null and _forge.has_method("set_reroll_cost"):
-		_forge.set_reroll_cost(1)
-	_apply_layout(STATE_FORGE)
-	_update_hud()
-
-func advance_wave() -> void:
-	if state == STATE_DONE:
-		return
 	var wd = get_node_or_null("/root/WaveDirector")
 	var waves_in_stage: int = 3
 	if wd != null:
@@ -297,15 +283,40 @@ func advance_wave() -> void:
 	if current_stage >= STAGES:
 		state = STATE_DONE
 		_set_next_wave(false)
+		_apply_layout(STATE_FORGE)
 		_update_hud()
 		return
-	_spawn_current_wave()
 	if new_stage:
 		_populate_shop()  ## fresh shop ONLY at a new stage
-	_set_next_wave(false)
+	_park_forge()  ## enemies for this wave spawn on START (advance_wave), not in forge
+
+## Show the FORGE break for the currently-spawned wave: forge layout, fresh shop UI,
+## START NEXT WAVE revealed. Does NOT advance the wave or spawn enemies.
+func _park_forge() -> void:
+	state = STATE_FORGE
+	## gold is earned per-kill in _tick_once (no flat grant); shop persists across the
+	## stage's waves (rolled at stage start / on reroll), so it is NOT re-rolled here.
+	_refresh_shop_ui()
+	_set_next_wave(true)
+	if _forge != null and _forge.has_method("set_reroll_cost"):
+		var rc: int = 1
+		var shop = get_node_or_null("/root/ShopV2")
+		if shop != null and shop.has_method("reroll_cost_for"):
+			rc = int(shop.reroll_cost_for(current_stage))
+		_forge.set_reroll_cost(rc)
+	_apply_layout(STATE_FORGE)
+	_update_hud()
+
+## START NEXT WAVE: begin combat for the wave we are parked in front of. Its enemies
+## are already spawned (start_run / _enter_forge_break) — no increment, no respawn.
+func advance_wave() -> void:
+	if state != STATE_FORGE:
+		return
+	_spawn_current_wave()  ## materialize this wave's enemies as combat begins
 	state = STATE_COMBAT
 	_paused = false  ## each wave starts playing (never resume into a paused freeze)
 	_update_pause_indicator()
+	_set_next_wave(false)
 	_apply_layout(STATE_COMBAT)
 
 ## ---- HUD / forge updates ----
@@ -379,32 +390,23 @@ func _update_forge() -> void:
 		_forge.set_gold(gold)
 	_refresh_weapon_tips()
 
-## Reroll the unbought (non-null) visible shop slots for 1g (slice deviation from
-## spec §11.2 pending-only, so the forge-break reroll button actually works).
+## Reroll wipes the WHOLE board clean and loads a fresh full set of items across all
+## 7 slots (even slots already bought/emptied). Price scales with the stage (see
+## ShopV2.reroll_cost_for) since you get a whole new board, not just leftover slots.
 func _on_reroll() -> void:
 	var shop = get_node_or_null("/root/ShopV2")
 	if shop == null:
 		return
-	var rollable: int = 0
-	for it in _shop_items:
-		if it != null:
-			rollable += 1
-	var res: Dictionary = shop.reroll(gold, rollable)
+	var cost: int = 1
+	if shop.has_method("reroll_cost_for"):
+		cost = int(shop.reroll_cost_for(current_stage))
+	var res: Dictionary = shop.reroll(gold, cost)
 	if not res.get("ok", false):
 		return
 	gold -= int(res.get("cost", 0))
-	for i in _shop_items.size():
-		if _shop_items[i] != null:
-			var cur_id := String(_shop_items[i].get("id", ""))
-			var fresh: Array = shop.roll_items(current_stage, 1, false)
-			## avoid re-rolling the same id (tiny T1 pool) so reroll visibly changes
-			var tries: int = 0
-			while fresh.size() > 0 and String(fresh[0].get("id", "")) == cur_id and tries < 6:
-				fresh = shop.roll_items(current_stage, 1, false)
-				tries += 1
-			if fresh.size() > 0:
-				_shop_items[i] = fresh[0]
-				_track_elements([fresh[0]])
+	var pity: bool = bool(shop.pity_triggered)
+	_shop_items = shop.roll_items(current_stage, 7, pity)  ## full-board refresh
+	_track_elements(_shop_items)
 	_refresh_shop_ui()
 
 ## ---- forge equip (tap shop item, then tap a hero socket; drag = Phase 5) ----

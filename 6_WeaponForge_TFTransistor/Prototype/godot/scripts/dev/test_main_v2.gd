@@ -11,7 +11,12 @@ func _ready() -> void:
 	_log("=== Main_v2 controller tests ===")
 	_test_composition()
 	_test_full_run_loop()
-	_test_equip_and_merge()
+	_test_buy_deducts_and_clears()
+	_test_insufficient_gold_blocks()
+	_test_merge_stub()
+	_test_reroll_costs_gold()
+	_test_equip_forge_gated()
+	_test_per_kill_gold()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -54,28 +59,97 @@ func _test_full_run_loop() -> void:
 	_check("main_v2: did not hit guard ceiling", guard < 6000, "guard=%d" % guard)
 	inst.queue_free()
 
-func _test_equip_and_merge() -> void:
+func _fresh_forge():
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return null
+	var inst = packed.instantiate()
+	add_child(inst)
+	inst.demo_forge_break()  ## FORGE state + shop populated via ShopV2.roll_items
+	return inst
+
+func _test_buy_deducts_and_clears() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 7
+	var item = inst._shop_items[0]
+	var cost: int = int(item.cost)
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 0)
+	_check("buy: gold deducted by cost", inst.gold == 7 - cost, "gold=%d cost=%d" % [inst.gold, cost])
+	_check("buy: shop slot cleared", inst._shop_items[0] == null, "got %s" % str(inst._shop_items[0]))
+	var s = inst.get_socket(0, 0)
+	_check("buy: function equipped in socket", s != null and s.id == StringName(item.id), "got %s" % str(s))
+	inst.queue_free()
+
+func _test_insufficient_gold_blocks() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 0
+	var item = inst._shop_items[1]
+	inst._on_shop_tap(1)
+	inst._on_socket_tap(0, 0)
+	_check("no gold: gold unchanged", inst.gold == 0, "got %d" % inst.gold)
+	_check("no gold: slot still populated", inst._shop_items[1] != null and inst._shop_items[1].id == item.id, "")
+	_check("no gold: nothing equipped", inst.get_socket(0, 0) == null, "got %s" % str(inst.get_socket(0, 0)))
+	inst.queue_free()
+
+func _test_merge_stub() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 99
+	inst._shop_items[0] = {"id": "FIRE", "tier": 1, "cost": 1}
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 2)  ## ACTIVE slot
+	inst._shop_items[0] = {"id": "FIRE", "tier": 1, "cost": 1}  ## restock same
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 2)  ## drop FIRE again same socket
+	var s = inst.get_socket(0, 2)
+	_check("merge stub: tier stays 1 (no T2 in slice)", s != null and s.tier == 1, "got %s" % str(s))
+	_check("merge stub: shows 2/2", s != null and String(s.get("merge", "")) == "2/2", "got %s" % str(s))
+	inst.queue_free()
+
+func _test_reroll_costs_gold() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 7
+	inst._on_reroll()
+	_check("reroll: costs 1g", inst.gold == 6, "got %d" % inst.gold)
+	inst.queue_free()
+
+func _test_equip_forge_gated() -> void:
 	var packed = load("res://scenes/Main_v2.tscn")
 	if packed == null:
 		return
 	var inst = packed.instantiate()
-	add_child(inst)
-	_check("main_v2: has _on_shop_tap", inst.has_method("_on_shop_tap"), "")
-	_check("main_v2: has _on_socket_tap", inst.has_method("_on_socket_tap"), "")
-	_check("main_v2: has get_socket", inst.has_method("get_socket"), "")
-	if not (inst.has_method("_on_shop_tap") and inst.has_method("_on_socket_tap") and inst.has_method("get_socket")):
-		inst.queue_free()
+	add_child(inst)  ## start_run -> COMBAT, NOT forge
+	inst.gold = 7
+	inst._shop_items = [{"id": "FIRE", "tier": 1, "cost": 1}]
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 0)
+	_check("combat: equip blocked (gold unchanged)", inst.gold == 7, "got %d" % inst.gold)
+	_check("combat: nothing equipped", inst.get_socket(0, 0) == null, "got %s" % str(inst.get_socket(0, 0)))
+	inst.queue_free()
+
+func _test_per_kill_gold() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
 		return
-	## tap shop slot 0 (FIRE), then hero 0 socket 0 -> equips FIRE t1
-	inst._on_shop_tap(0)
-	inst._on_socket_tap(0, 0)
-	var s = inst.get_socket(0, 0)
-	_check("main_v2: equip places FIRE in socket", s != null and s.id == &"FIRE", "got %s" % str(s))
-	## tap FIRE again onto same socket -> merge to t2
-	inst._on_shop_tap(0)
-	inst._on_socket_tap(0, 0)
-	s = inst.get_socket(0, 0)
-	_check("main_v2: re-equip same -> merge t2", s != null and s.tier == 2, "got %s" % str(s))
+	var inst = packed.instantiate()
+	add_child(inst)  ## COMBAT, wave 0 spawned
+	var ls = get_node_or_null("/root/LaneState")
+	var n: int = ls.enemies.size() if ls != null else 0
+	var start_gold: int = inst.gold
+	var guard: int = 0
+	while inst.is_combat() and guard < 500:
+		inst._tick_once()
+		guard += 1
+	_check("per-kill: cleared to forge", inst.is_forge_break(), "guard=%d" % guard)
+	_check("per-kill: gold += enemies killed", inst.gold == start_gold + n, "start=%d n=%d gold=%d" % [start_gold, n, inst.gold])
 	inst.queue_free()
 
 func _check(name: String, ok: bool, detail: String) -> void:

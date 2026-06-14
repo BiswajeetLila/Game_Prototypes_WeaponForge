@@ -52,6 +52,13 @@ func _ready() -> void:
 	lo3 = L.apply_drop(lo3, 0, &"FIRE", 1)
 	_check("no merge across tiers: FIRE t2 + FIRE t1 does not become t3", lo3[0].tier != 3, "got %d" % lo3[0].tier)
 
+	## C3: allow_merge=false (slice merge-stub) -> no tier bump, marks "2/2"
+	var lo4 = L.make_loadout()
+	lo4 = L.apply_drop(lo4, 0, &"FIRE", 1)
+	lo4 = L.apply_drop(lo4, 0, &"FIRE", 1, false)
+	_check("allow_merge=false: tier stays 1", lo4[0].tier == 1, "got %d" % lo4[0].tier)
+	_check("allow_merge=false: marks merge 2/2", String(lo4[0].get("merge", "")) == "2/2", "got %s" % str(lo4[0]))
+
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":

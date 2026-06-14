@@ -213,7 +213,7 @@ func populate_shop(items: Array) -> void:
 	for i in SHOP_SLOTS:
 		var lbl: Label = _shop_slots[i].get_node("SlotLabel")
 		var icon := _shop_slots[i].get_node_or_null("Icon") as TextureRect
-		if i < items.size():
+		if i < items.size() and items[i] != null:
 			var fid = items[i].get("id", "?")
 			var tex := _rune_tex(fid)
 			if icon != null:
@@ -244,7 +244,8 @@ func set_hero_ult_bars(hero_idx: int, filled: int) -> void:
 		var pip: ColorRect = ult_bar.get_node("Pip%d" % p)
 		pip.color = Color(0.9, 0.7, 0.1) if p < filled else Color(0.3, 0.3, 0.3)
 
-func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName) -> void:
+## tier/display_name/merge_pending consumed by the richer socket card in C6.
+func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, _tier: int = 1, _display_name: String = "", _merge_pending: String = "") -> void:
 	if hero_idx >= _hero_rows.size():
 		return
 	var sock: PanelContainer = _hero_rows[hero_idx].get_node("Socket%d_%d" % [hero_idx, sock_idx])

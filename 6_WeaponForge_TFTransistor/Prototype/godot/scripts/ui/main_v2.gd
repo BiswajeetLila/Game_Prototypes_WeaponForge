@@ -41,6 +41,8 @@ var _ticks_this_wave: int = 0
 var _chain: int = 0
 var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
 var _selected_shop: int = -1   ## currently selected shop slot (tap-to-equip)
+var _shop_items: Array = []    ## 7 slots, each {id,tier,cost} or null (bought/empty)
+var _stage_elements_seen: Array = []  ## element ids that appeared in shop this stage (pity)
 
 var _battle: Control
 var _forge: Control
@@ -171,6 +173,8 @@ func start_run() -> void:
 	_chain = 0
 	gold = 7
 	_selected_shop = -1
+	_shop_items = []
+	_stage_elements_seen = []
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
 	_heroes = _make_heroes()
 	_spawn_current_wave()
@@ -216,9 +220,13 @@ func _tick_once() -> void:
 	var combat = get_node_or_null("/root/CombatV2")
 	if ls == null or combat == null:
 		return
+	var before: int = ls.enemies.size()
 	var gs: Dictionary = {"enemies": ls.enemies, "heroes": _heroes, "lane_state": ls}
 	combat.tick(gs)
 	ls.enemies = gs.get("enemies", [])
+	var kills: int = maxi(0, before - ls.enemies.size())
+	if kills > 0:
+		gold += kills  ## per-kill income (spec §9.3: 1g/kill standard)
 	_ticks_this_wave += 1
 	if _battle != null and _battle.has_method("_on_tick"):
 		_battle._on_tick()
@@ -229,7 +237,7 @@ func _tick_once() -> void:
 func _enter_forge_break() -> void:
 	state = STATE_FORGE
 	waves_played += 1
-	gold += 3
+	## gold is earned per-kill in _tick_once now (no flat grant)
 	_populate_shop()
 	if _next_btn != null:
 		_next_btn.visible = true
@@ -246,6 +254,11 @@ func advance_wave() -> void:
 	if current_wave >= waves_in_stage:
 		current_wave = 0
 		current_stage += 1
+		## stage boundary -> feed pity counter with what appeared in shop this stage
+		var shop = get_node_or_null("/root/ShopV2")
+		if shop != null and shop.has_method("notify_stage_end"):
+			shop.notify_stage_end(_stage_elements_seen, not _stage_elements_seen.is_empty())
+		_stage_elements_seen = []
 	if current_stage >= STAGES:
 		state = STATE_DONE
 		if _next_btn != null:
@@ -263,12 +276,29 @@ func _on_reaction(_rid: StringName, _enemy: Dictionary) -> void:
 	_chain += 1
 
 func _populate_shop() -> void:
-	if _forge == null or not _forge.has_method("populate_shop"):
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop != null and shop.has_method("roll_items"):
+		var pity: bool = bool(shop.pity_triggered)
+		_shop_items = shop.roll_items(current_stage, 7, pity)
+	else:
+		_shop_items = []
+	_track_elements(_shop_items)
+	_refresh_shop_ui()
+
+## Track element ids that appear in the shop this stage (feeds pity at stage end).
+func _track_elements(items: Array) -> void:
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop == null:
 		return
-	var items: Array = []
-	for n in SHOP_SAMPLE:
-		items.append({"id": n})
-	_forge.populate_shop(items)
+	for it in items:
+		if it != null and shop.ELEMENT_IDS.has(String(it.get("id", ""))) and not _stage_elements_seen.has(String(it.get("id", ""))):
+			_stage_elements_seen.append(String(it.get("id", "")))
+
+func _refresh_shop_ui() -> void:
+	if _forge == null:
+		return
+	if _forge.has_method("populate_shop"):
+		_forge.populate_shop(_shop_items)
 	if _forge.has_method("set_gold"):
 		_forge.set_gold(gold)
 
@@ -298,9 +328,30 @@ func _update_forge() -> void:
 			_forge.set_hero_hp(i, 100, 100)
 		if _forge.has_method("set_hero_ult_bars"):
 			_forge.set_hero_ult_bars(i, bars)
+	if _forge.has_method("set_gold"):
+		_forge.set_gold(gold)
 
+## Reroll the unbought (non-null) visible shop slots for 1g (slice deviation from
+## spec §11.2 pending-only, so the forge-break reroll button actually works).
 func _on_reroll() -> void:
-	_populate_shop()
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop == null:
+		return
+	var rollable: int = 0
+	for it in _shop_items:
+		if it != null:
+			rollable += 1
+	var res: Dictionary = shop.reroll(gold, rollable)
+	if not res.get("ok", false):
+		return
+	gold -= int(res.get("cost", 0))
+	for i in _shop_items.size():
+		if _shop_items[i] != null:
+			var fresh: Array = shop.roll_items(current_stage, 1, false)
+			if fresh.size() > 0:
+				_shop_items[i] = fresh[0]
+				_track_elements([fresh[0]])
+	_refresh_shop_ui()
 
 ## ---- forge equip (tap shop item, then tap a hero socket; drag = Phase 5) ----
 
@@ -308,15 +359,32 @@ func _on_shop_tap(slot_idx: int) -> void:
 	_selected_shop = slot_idx
 
 func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
-	if _selected_shop < 0 or _selected_shop >= SHOP_SAMPLE.size():
+	if state != STATE_FORGE:
+		return  ## equip is forge-break only (spec §15)
+	if _selected_shop < 0 or _selected_shop >= _shop_items.size():
 		return
 	if hero_idx < 0 or hero_idx >= _loadouts.size():
 		return
-	var fn_id := StringName(SHOP_SAMPLE[_selected_shop])
-	_loadouts[hero_idx] = Loadout.apply_drop(_loadouts[hero_idx], socket_idx, fn_id, 1)
+	var item = _shop_items[_selected_shop]
+	if item == null:
+		return  ## slot already bought / empty
+	var shop = get_node_or_null("/root/ShopV2")
+	if shop == null:
+		return
+	var res: Dictionary = shop.buy(item, gold)
+	if not res.get("ok", false):
+		return  ## can't afford
+	gold -= int(res.get("cost", 0))
+	var fn_id := StringName(item.get("id", ""))
+	var tier: int = int(item.get("tier", 1))
+	## slice merge-stub: no tier bump (allow_merge=false) -> shows "2/2"
+	_loadouts[hero_idx] = Loadout.apply_drop(_loadouts[hero_idx], socket_idx, fn_id, tier, false)
+	_shop_items[_selected_shop] = null  ## remove bought item from shop
+	_selected_shop = -1
 	var entry = _loadouts[hero_idx][socket_idx]
 	if _forge != null and _forge.has_method("set_socket_fn") and entry != null:
-		_forge.set_socket_fn(hero_idx, socket_idx, entry.id)
+		_forge.set_socket_fn(hero_idx, socket_idx, entry.id, int(entry.tier), String(entry.id), String(entry.get("merge", "")))
+	_refresh_shop_ui()
 
 func get_socket(hero_idx: int, socket_idx: int):
 	if hero_idx < 0 or hero_idx >= _loadouts.size():

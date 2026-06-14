@@ -13,6 +13,7 @@ func _ready() -> void:
 	_test_enemies_for_stage_wave_ftue()
 	_test_enemies_boss_wave()
 	_test_post_ftue()
+	_test_telegraph_for_stage()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -117,6 +118,26 @@ func _test_post_ftue() -> void:
 	acc.reset()
 	if FileAccess.file_exists("user://account_test_wd.json"):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://account_test_wd.json"))
+
+## Q5 — wave telegraph data (spec §17)
+func _test_telegraph_for_stage() -> void:
+	var wd = get_node("/root/WaveDirector")
+	var acc = get_node("/root/AccountState")
+	acc.ftue_complete = true  ## post-FTUE: 3 waves/stage
+	wd.reset()
+	_check("has telegraph_for_stage method", wd.has_method("telegraph_for_stage"), "")
+	if not wd.has_method("telegraph_for_stage"):
+		return
+	var tg = wd.telegraph_for_stage(0)
+	_check("telegraph: 3 wave entries for a normal stage", tg.size() == 3, "got %d" % tg.size())
+	if tg.size() >= 1:
+		_check("telegraph: wave 0 lists goblin", &"goblin" in tg[0].get("enemies", []), "got %s" % str(tg[0].get("enemies", [])))
+		_check("telegraph: wave 0 carries goblin weakness LIGHTNING", tg[0].get("weak_tag", &"") == &"LIGHTNING", "got %s" % str(tg[0].get("weak_tag", &"")))
+		_check("telegraph: wave 0 carries a resist tag", tg[0].get("resist_tag", &"") != &"", "got %s" % str(tg[0].get("resist_tag", &"")))
+	## Boss stage telegraph: stage 4 wave 2 = BOSS
+	var tg4 = wd.telegraph_for_stage(4)
+	_check("telegraph: boss stage wave 2 lists BOSS", tg4.size() == 3 and (&"BOSS" in tg4[2].get("enemies", [])), "got %s" % (str(tg4[2].get("enemies", [])) if tg4.size() == 3 else "size %d" % tg4.size()))
+	acc.reset()
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

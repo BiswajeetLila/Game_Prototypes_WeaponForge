@@ -73,3 +73,33 @@ func enemies_for_stage_wave(stage: int, wave: int) -> Array:
 		var sx: float = 0.6 + (float(i) / float(maxi(count - 1, 1))) * 0.35
 		enemies.append({"id": &"goblin", "lane": lane, "screen_x": sx, "hp": 5 + stage * 2})
 	return enemies
+
+## ---- wave telegraph (spec §17) ----
+## Per-wave preview of the upcoming stage: distinct enemy ids + the wave's primary
+## weakness/resistance tag (from EnemyData). Drives forge decisions during the break.
+## Returns Array of { wave:int, enemies:Array[StringName], weak_tag:StringName, resist_tag:StringName }.
+func telegraph_for_stage(stage: int) -> Array:
+	var out: Array = []
+	var nwaves: int = waves_for_stage(stage)
+	for w in nwaves:
+		var roster: Array = enemies_for_stage_wave(stage, w)
+		var ids: Array = []
+		var seen: Dictionary = {}
+		for e in roster:
+			var eid = e.get("id", &"")
+			if not seen.has(eid):
+				seen[eid] = true
+				ids.append(eid)
+		var weak: StringName = &""
+		var resist: StringName = &""
+		if not roster.is_empty():
+			var ed = _enemy_data(roster[0].get("id", &""))
+			if ed != null:
+				weak = ed.weak_tag
+				resist = ed.resist_tag
+		out.append({"wave": w, "enemies": ids, "weak_tag": weak, "resist_tag": resist})
+	return out
+
+func _enemy_data(id: StringName):
+	var p := "res://data/enemies/%s.tres" % String(id).to_lower()
+	return load(p) if ResourceLoader.exists(p) else null

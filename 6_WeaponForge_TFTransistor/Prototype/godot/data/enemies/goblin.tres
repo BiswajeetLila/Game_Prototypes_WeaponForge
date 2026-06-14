@@ -8,3 +8,5 @@ script = ExtResource("1")
 id = &"goblin"
 name = "Goblin"
 sprite = ExtResource("2_dk6at")
+weak_tag = &"LIGHTNING"
+resist_tag = &"FIRE"

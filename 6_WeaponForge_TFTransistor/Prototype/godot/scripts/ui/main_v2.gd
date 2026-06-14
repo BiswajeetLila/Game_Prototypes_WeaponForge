@@ -24,6 +24,7 @@ const Loadout = preload("res://scripts/core/loadout_v2.gd")
 const Reserve = preload("res://scripts/core/reserve_v2.gd")
 const ForgeGrid = preload("res://scripts/core/forge_grid.gd")
 const TierScale = preload("res://scripts/core/tier_scale.gd")
+const WaveTelegraphScene = preload("res://scenes/ui/WaveTelegraph.tscn")
 
 const STATE_COMBAT: int = 0
 const STATE_FORGE: int = 1
@@ -57,6 +58,7 @@ var _battle: Control
 var _forge: Control
 var _chain_hud: Control
 var _hud: Control
+var _telegraph: Control  ## WaveTelegraph overlay (intel preview of the upcoming stage)
 var _heroes: Array = []
 var _paused: bool = false   ## pause gates the tick; does NOT change state/layout
 var _run_won: bool = false  ## result of the finished run (win = cleared all stages)
@@ -110,6 +112,15 @@ func _build_layout() -> void:
 	_chain_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## top-strip overlay must not block HUD buttons
 	add_child(_chain_hud)
 
+	## Wave-telegraph overlay (spec §17) — centered, hidden until the INTEL button opens it.
+	_telegraph = WaveTelegraphScene.instantiate()
+	_telegraph.name = "WaveTelegraphOverlay"
+	_telegraph.anchor_left = 0.5; _telegraph.anchor_right = 0.5
+	_telegraph.anchor_top = 0.5; _telegraph.anchor_bottom = 0.5
+	_telegraph.offset_left = -150; _telegraph.offset_right = 150
+	_telegraph.offset_top = -130; _telegraph.offset_bottom = 130
+	add_child(_telegraph)
+
 func _set_next_wave(v: bool) -> void:
 	if _forge != null and _forge.has_method("set_next_wave_visible"):
 		_forge.set_next_wave_visible(v)
@@ -146,6 +157,15 @@ func _build_hud() -> Control:
 	wave.add_theme_font_size_override(&"font_size", 13)
 	wave.position = Vector2(10, 6)
 	hud.add_child(wave)
+
+	var intel := Button.new()
+	intel.name = "TelegraphBtn"
+	intel.text = "INTEL"
+	intel.tooltip_text = "Preview the upcoming stage's enemies + weaknesses"
+	intel.add_theme_font_size_override(&"font_size", 10)
+	intel.position = Vector2(96, 4)
+	intel.pressed.connect(_on_telegraph)
+	hud.add_child(intel)
 
 	var stage := Label.new()
 	stage.name = "StageLabel"
@@ -781,6 +801,18 @@ func _on_ult(hero_idx: int) -> void:
 	if _battle != null and _battle.has_method("_on_tick"):
 		_battle._on_tick()
 	_update_forge()
+
+## Open the wave-telegraph overlay (spec §17): preview the upcoming stage's per-wave
+## enemy lineup + weakness/resistance. Driven by WaveDirector data.
+func _on_telegraph() -> void:
+	if _telegraph == null:
+		return
+	var wd = get_node_or_null("/root/WaveDirector")
+	if wd == null or not wd.has_method("telegraph_for_stage"):
+		return
+	var entries: Array = wd.telegraph_for_stage(current_stage)
+	if _telegraph.has_method("show_stage"):
+		_telegraph.show_stage(current_stage, entries)
 
 func _on_pause() -> void:
 	## pause only gates the tick — never swaps state or re-anchors (was a layout bug)

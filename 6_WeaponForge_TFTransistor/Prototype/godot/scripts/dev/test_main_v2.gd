@@ -35,6 +35,7 @@ func _ready() -> void:
 	_test_advance_unpauses()
 	_test_loss_on_all_dead()
 	_test_win_result()
+	_test_telegraph_wiring()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -58,6 +59,23 @@ func _test_composition() -> void:
 	_check("main_v2: no live enemies during forge", ls != null and ls.enemies.size() == 0, "got %d" % (ls.enemies.size() if ls != null else -1))
 	inst.advance_wave()  ## press START
 	_check("main_v2: START spawns the wave's enemies", ls != null and ls.enemies.size() > 0, "got %d" % (ls.enemies.size() if ls != null else -1))
+	inst.queue_free()
+
+## Q5 — wave telegraph wired into the forge HUD.
+func _test_telegraph_wiring() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	var btn = inst.find_child("TelegraphBtn", true, false)
+	_check("main_v2: HUD has TelegraphBtn (intel)", btn != null, "")
+	_check("main_v2: has _on_telegraph", inst.has_method("_on_telegraph"), "")
+	if inst.has_method("_on_telegraph"):
+		inst._on_telegraph()  ## opens in forge -> preview the upcoming stage
+		var wt = inst.find_child("WaveTelegraphOverlay", true, false)
+		_check("main_v2: telegraph overlay present", wt != null, "")
+		_check("main_v2: telegraph visible after intel tap in forge", wt != null and wt.visible == true, "")
 	inst.queue_free()
 
 func _test_starts_in_forge() -> void:

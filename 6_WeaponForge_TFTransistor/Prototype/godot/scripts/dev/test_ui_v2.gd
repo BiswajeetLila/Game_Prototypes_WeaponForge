@@ -526,6 +526,16 @@ func _test_wave_telegraph() -> void:
 	_check("wt: dismissed signal", inst.has_signal("dismissed"), "")
 	inst.show_wave(1, 3, [{"lane": 0, "id": "goblin", "weakness_tag": "WATER"}])
 	_check("wt: visible after show_wave", inst.visible == true, "")
+	## Q5 — stage telegraph (all waves of the upcoming stage, with weak/resist)
+	_check("wt: show_stage method", inst.has_method("show_stage"), "")
+	if inst.has_method("show_stage"):
+		inst.show_stage(0, [
+			{"wave": 0, "enemies": [&"goblin"], "weak_tag": &"LIGHTNING", "resist_tag": &"FIRE"},
+			{"wave": 1, "enemies": [&"goblin"], "weak_tag": &"LIGHTNING", "resist_tag": &"FIRE"},
+		])
+		_check("wt: visible after show_stage", inst.visible == true, "")
+		var el = inst.find_child("EnemyList", true, false)
+		_check("wt: show_stage renders one row per wave", el != null and el.get_child_count() == 2, "got %d" % (el.get_child_count() if el != null else -1))
 	inst.queue_free()
 
 ## -- Step 14: ChainHUD --

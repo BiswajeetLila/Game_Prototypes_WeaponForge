@@ -56,6 +56,30 @@ func show_wave(wave_number: int, total_waves: int, enemies: Array) -> void:
 		_enemy_list.add_child(row)
 	visible = true
 
+## Show the full upcoming-stage preview (spec §17): one row per wave with its enemy
+## lineup + primary weakness / resistance. entries = Array of
+## { wave:int, enemies:Array[StringName], weak_tag:StringName, resist_tag:StringName }.
+func show_stage(stage_num: int, entries: Array) -> void:
+	_wave_count_label.text = "Stage %d — %d waves" % [stage_num + 1, entries.size()]
+	for child in _enemy_list.get_children():
+		_enemy_list.remove_child(child)  ## immediate (queue_free alone defers a frame)
+		child.queue_free()
+	for e in entries:
+		var names := ""
+		for x in e.get("enemies", []):
+			names += (", " if names != "" else "") + String(x)
+		if names == "":
+			names = "—"
+		var weak := String(e.get("weak_tag", &""))
+		var resist := String(e.get("resist_tag", &""))
+		var row := Label.new()
+		row.text = "W%d: %s   weak %s / resist %s" % [
+			int(e.get("wave", 0)) + 1, names,
+			(weak if weak != "" else "—"), (resist if resist != "" else "—")]
+		row.add_theme_font_size_override(&"font_size", 12)
+		_enemy_list.add_child(row)
+	visible = true
+
 func _on_dismiss() -> void:
 	visible = false
 	dismissed.emit()

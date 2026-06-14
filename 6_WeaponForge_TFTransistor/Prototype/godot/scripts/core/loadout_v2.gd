@@ -1,6 +1,6 @@
 ## loadout_v2 — per-hero Function socket model + equip/merge logic (A6).
 ##
-## A loadout is an Array of 3 sockets (ACTIVE / MODIFIER / PASSIVE).
+## A loadout is an Array of 3 sockets — canonical index 0=PASSIVE, 1=MODIFIER, 2=ACTIVE.
 ## Each socket is either null (empty) or { id: StringName, tier: int }.
 ##
 ## Merge rule (spec §10): dropping the SAME function at the SAME tier onto a socket

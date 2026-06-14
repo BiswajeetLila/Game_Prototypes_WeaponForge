@@ -6,7 +6,8 @@ extends Control
 const MAX_HEROES: int = 3
 const MAX_SOCKETS: int = 3
 const SHOP_SLOTS: int = 7
-const SOCKET_LABELS: Array = ["ACTIVE", "MODIFIER", "PASSIVE"]
+## Canonical socket index: 0=PASSIVE, 1=MODIFIER, 2=ACTIVE (visual L->R == ascending index).
+const SOCKET_LABELS: Array = ["PASSIVE", "MODIFIER", "ACTIVE"]
 const HERO_NAMES: Array = ["Elara", "Bran", "Vex"]
 const HERO_TEX: Array = [
 	"res://assets/generated/heroes/elara_mage.png",

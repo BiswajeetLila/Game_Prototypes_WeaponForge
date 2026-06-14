@@ -33,6 +33,8 @@ func _ready() -> void:
 	_test_reroll_button_path()
 	_test_overlays_dont_block_input()
 	_test_advance_unpauses()
+	_test_loss_on_all_dead()
+	_test_win_result()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -82,6 +84,7 @@ func _test_full_run_loop() -> void:
 		return
 	var inst = packed.instantiate()
 	add_child(inst)
+	_buff_heroes(inst)  ## survive the full run so we exercise the WIN path (not permadeath)
 	_check("main_v2: run begins in FORGE (equip first)", inst.is_forge_break(), "")
 	var guard: int = 0
 	while not inst.is_done() and guard < 6000:
@@ -340,6 +343,45 @@ func _test_pause_no_reanchor() -> void:
 	_check("pause: is_paused true", inst.has_method("is_paused") and inst.is_paused() == true, "")
 	inst._on_pause()
 	_check("pause: toggles back off", inst.is_paused() == false, "")
+	inst.queue_free()
+
+func _buff_heroes(inst) -> void:
+	for h in inst._heroes:
+		h["hp"] = 9999
+		h["max_hp"] = 9999
+
+func _test_loss_on_all_dead() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	inst.advance_wave()  ## START -> combat
+	for h in inst._heroes:
+		h["hp"] = 0
+	inst._tick_once()
+	_check("loss: run is done", inst.is_done(), "state=%d" % inst.state)
+	_check("loss: did_win() == false", inst.did_win() == false, "")
+	var t = inst.find_child("ResultTitle", true, false)
+	_check("loss: DEFEAT result overlay", t != null and t.text == "DEFEAT", "got %s" % (t.text if t != null else "null"))
+	inst.queue_free()
+
+func _test_win_result() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_buff_heroes(inst)
+	var guard: int = 0
+	while not inst.is_done() and guard < 6000:
+		if inst.is_combat(): inst._tick_once()
+		elif inst.is_forge_break(): inst.advance_wave()
+		guard += 1
+	_check("win: run is done", inst.is_done(), "guard=%d" % guard)
+	_check("win: did_win() == true", inst.did_win() == true, "")
+	var t = inst.find_child("ResultTitle", true, false)
+	_check("win: VICTORY result overlay", t != null and t.text == "VICTORY!", "got %s" % (t.text if t != null else "null"))
 	inst.queue_free()
 
 func _shop_count(inst) -> int:

@@ -23,6 +23,7 @@ func _ready() -> void:
 	_test_ult_button()
 	_test_battle_hit_vfx()
 	_test_merge_vfx()
+	_test_home_v2()
 	_test_compact_mode()
 	_test_battle_hero_hp()
 	_test_wave_telegraph()
@@ -412,6 +413,19 @@ func _test_merge_vfx() -> void:
 	inst.play_merge_vfx(0, 2)
 	var sock = inst.find_child("Socket0_2", true, false)
 	_check("mv: merge sparkle overlay added to socket", sock != null and sock.find_child("MergeVfx", true, false) != null, "")
+	inst.queue_free()
+
+## -- G10: minimal slice Home (boot -> PLAY -> Main_v2) --
+
+func _test_home_v2() -> void:
+	var packed = load("res://scenes/HomeV2.tscn")
+	_check("home: HomeV2.tscn loads", packed != null, "")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("home: PLAY button present", inst.find_child("PlayBtn", true, false) != null, "")
+	_check("home: title present", inst.find_child("Title", true, false) != null, "")
 	inst.queue_free()
 
 ## -- C9: forge compact mode + HP-bar sizing --

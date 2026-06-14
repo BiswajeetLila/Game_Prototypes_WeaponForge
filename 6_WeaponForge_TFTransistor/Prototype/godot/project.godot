@@ -12,7 +12,7 @@ config_version=5
 
 config/name="WeaponForge TFTransistor Prototype"
 config/description="WeaponForge TFTransistor (Godot 4.6 Mono). Spatial-grid auto-battler with Transistor-style Function Matrix (Active/Modifier/Passive) and Magicka-style cross-hero status reactions. Seeded from 2_Weaponcraft_Godot/ P0 @ fbe426d on 2026-06-12. SSOT: docs/superpowers/specs/2026-06-12-fork-a-pivot-addendum.md (pending full Function catalog + status matrix spec)."
-run/main_scene="res://scenes/Main_v2.tscn"
+run/main_scene="res://scenes/HomeV2.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 

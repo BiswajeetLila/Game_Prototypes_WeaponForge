@@ -57,6 +57,7 @@ var _chain_hud: Control
 var _hud: Control
 var _heroes: Array = []
 var _paused: bool = false   ## pause gates the tick; does NOT change state/layout
+var _run_won: bool = false  ## result of the finished run (win = cleared all stages)
 
 func _ready() -> void:
 	_build_layout()
@@ -213,6 +214,10 @@ func start_run() -> void:
 	_chain = 0
 	gold = 7
 	_held = null
+	_run_won = false
+	var _ro := get_node_or_null("ResultOverlay")
+	if _ro != null:
+		_ro.queue_free()
 	_shop_items = []
 	_stage_elements_seen = []
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
@@ -273,6 +278,9 @@ func _tick_once() -> void:
 	if _battle != null and _battle.has_method("_on_tick"):
 		_battle._on_tick()
 	_update_forge()
+	if _all_heroes_dead():
+		_end_run(false)  ## all heroes down -> defeat
+		return
 	if ls.enemies.size() == 0 or _ticks_this_wave >= SAFETY_TICKS:
 		_on_wave_cleared()
 
@@ -301,10 +309,7 @@ func _on_wave_cleared() -> void:
 		shop.notify_stage_end(_stage_elements_seen, not _stage_elements_seen.is_empty())
 	_stage_elements_seen = []
 	if current_stage >= STAGES:
-		state = STATE_DONE
-		_set_next_wave(false)
-		_apply_layout(STATE_FORGE)
-		_update_hud()
+		_end_run(true)  ## cleared all stages -> victory
 		return
 	## park in FORGE — the shop still shows the just-finished stage's full board;
 	## it resets to the new stage's start batch on the next START (advance_wave).
@@ -655,6 +660,74 @@ func get_socket(hero_idx: int, socket_idx: int):
 	if socket_idx < 0 or socket_idx >= _loadouts[hero_idx].size():
 		return null
 	return _loadouts[hero_idx][socket_idx]
+
+## ---- run end (win / loss) + result overlay ----
+
+func _all_heroes_dead() -> bool:
+	if _heroes.is_empty():
+		return false
+	for h in _heroes:
+		if int(h.get("hp", 0)) > 0:
+			return false
+	return true
+
+func did_win() -> bool:
+	return _run_won
+
+func _end_run(won: bool) -> void:
+	_run_won = won
+	state = STATE_DONE
+	_set_next_wave(false)
+	_apply_layout(STATE_FORGE)
+	_update_hud()
+	_show_result()
+
+## Simple end-of-run overlay: VICTORY / DEFEAT + Play Again + Home.
+func _show_result() -> void:
+	if get_node_or_null("ResultOverlay") != null:
+		return
+	var overlay := Control.new()
+	overlay.name = "ResultOverlay"
+	_fill(overlay)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.62)
+	_fill(dim)
+	overlay.add_child(dim)
+	var panel := VBoxContainer.new()
+	panel.anchor_left = 0.5; panel.anchor_right = 0.5
+	panel.anchor_top = 0.5; panel.anchor_bottom = 0.5
+	panel.offset_left = -100; panel.offset_right = 100
+	panel.offset_top = -80; panel.offset_bottom = 80
+	panel.add_theme_constant_override(&"separation", 12)
+	overlay.add_child(panel)
+	var title := Label.new()
+	title.name = "ResultTitle"
+	title.text = "VICTORY!" if _run_won else "DEFEAT"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override(&"font_size", 30)
+	title.modulate = Color(1.0, 0.85, 0.2) if _run_won else Color(0.95, 0.4, 0.4)
+	panel.add_child(title)
+	var again := Button.new()
+	again.name = "PlayAgainBtn"
+	again.text = "PLAY AGAIN"
+	again.pressed.connect(_on_play_again)
+	panel.add_child(again)
+	var home := Button.new()
+	home.name = "HomeBtn"
+	home.text = "HOME"
+	home.pressed.connect(_on_home)
+	panel.add_child(home)
+	add_child(overlay)
+
+func _on_play_again() -> void:
+	var o := get_node_or_null("ResultOverlay")
+	if o != null:
+		o.queue_free()
+	start_run()
+
+func _on_home() -> void:
+	get_tree().change_scene_to_file("res://scenes/HomeV2.tscn")
 
 ## Fire a hero's Ult when its meter is full. Ult VFX/effect = Phase 5; for now firing
 ## just consumes the (shared) charge so the button + feedback loop is demonstrable.

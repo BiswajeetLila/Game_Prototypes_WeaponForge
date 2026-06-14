@@ -145,10 +145,9 @@ func _test_merge_stub() -> void:
 	inst._on_socket_tap(0, 2)  ## ACTIVE slot
 	inst._shop_items[0] = {"id": "FIRE", "tier": 1, "cost": 1}  ## restock same
 	inst._on_shop_tap(0)
-	inst._on_socket_tap(0, 2)  ## drop FIRE again same socket
+	inst._on_socket_tap(0, 2)  ## drop FIRE again same socket -> merge
 	var s = inst.get_socket(0, 2)
-	_check("merge stub: tier stays 1 (no T2 in slice)", s != null and s.tier == 1, "got %s" % str(s))
-	_check("merge stub: shows 2/2", s != null and String(s.get("merge", "")) == "2/2", "got %s" % str(s))
+	_check("merge: tier bumps 1 -> 2", s != null and s.tier == 2, "got %s" % str(s))
 	inst.queue_free()
 
 func _test_equip_displaces_to_reserve() -> void:
@@ -251,7 +250,7 @@ func _test_move_merge_same_element() -> void:
 	inst._on_reserve_tap(0, 0)  ## pick up benched FIRE
 	inst._on_socket_tap(0, 2)   ## drop on ACTIVE (FIRE) -> merge
 	var s = inst.get_socket(0, 2)
-	_check("move-merge: socket shows 2/2", s != null and String(s.get("merge", "")) == "2/2", "got %s" % str(s))
+	_check("move-merge: socket tier bumps to 2", s != null and int(s.tier) == 2, "got %s" % str(s))
 	_check("move-merge: reserve source consumed", inst.get_reserve(0, 0) == null, "got %s" % str(inst.get_reserve(0, 0)))
 	inst.queue_free()
 

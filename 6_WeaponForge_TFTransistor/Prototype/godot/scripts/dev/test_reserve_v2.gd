@@ -63,8 +63,7 @@ func _test_equip_merge() -> void:
 	var r: Array = Reserve.make_reserve()
 	var res: Dictionary = Reserve.equip(lo, r, 2, {"id": "FIRE", "tier": 1, "cost": 3})
 	_check("merge: result=merged", res.get("result") == "merged", "got %s" % str(res))
-	_check("merge: tier stays 1 (slice stub)", lo[2] != null and int(lo[2].tier) == 1, "got %s" % str(lo[2]))
-	_check("merge: shows 2/2", lo[2] != null and String(lo[2].get("merge", "")) == "2/2", "got %s" % str(lo[2]))
+	_check("merge: tier bumps 1 -> 2", lo[2] != null and int(lo[2].tier) == 2, "got %s" % str(lo[2]))
 	_check("merge: no displacement to reserve", Reserve.count(r) == 0, "got %d" % Reserve.count(r))
 
 func _test_equip_blocked_when_full() -> void:

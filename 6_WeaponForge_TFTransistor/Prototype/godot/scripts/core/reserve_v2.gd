@@ -15,6 +15,7 @@ extends RefCounted
 
 const SLOTS: int = 2          ## reserve slots per hero
 const SELL_RATIO: float = 0.5 ## refund fraction when selling (reduced amount)
+const MAX_TIER: int = 4       ## tier cap (T1-T4 rarity: none/blue/purple/gold)
 
 static func make_reserve() -> Array:
 	return [null, null]
@@ -52,9 +53,8 @@ static func equip(loadout: Array, reserve: Array, socket_idx: int, item: Diction
 		loadout[socket_idx] = _entry(item)
 		return {"ok": true, "result": "equipped", "loadout": loadout, "reserve": reserve}
 	if _same_fn(cur, item):
-		var e := _entry(item)
-		e["merge"] = "2/2"  ## slice merge stub: no tier bump
-		loadout[socket_idx] = e
+		var bumped: int = mini(int(cur.get("tier", 1)) + 1, MAX_TIER)
+		loadout[socket_idx] = {"id": StringName(item.get("id", &"")), "tier": bumped, "cost": int(item.get("cost", 0))}
 		return {"ok": true, "result": "merged", "loadout": loadout, "reserve": reserve}
 	var slot: int = first_empty(reserve)
 	if slot < 0:
@@ -73,8 +73,8 @@ static func equip_from_reserve(loadout: Array, reserve: Array, socket_idx: int, 
 	var bench = reserve[reserve_idx]
 	var cur = loadout[socket_idx]
 	if _same_fn(cur, bench):
-		var e: Dictionary = {"id": StringName(bench.get("id", &"")), "tier": int(bench.get("tier", 1)), "cost": int(bench.get("cost", 0)), "merge": "2/2"}
-		loadout[socket_idx] = e
+		var bumped: int = mini(int(cur.get("tier", 1)) + 1, MAX_TIER)
+		loadout[socket_idx] = {"id": StringName(bench.get("id", &"")), "tier": bumped, "cost": int(bench.get("cost", 0))}
 		reserve[reserve_idx] = null
 		return {"ok": true, "result": "merged", "loadout": loadout, "reserve": reserve}
 	loadout[socket_idx] = bench

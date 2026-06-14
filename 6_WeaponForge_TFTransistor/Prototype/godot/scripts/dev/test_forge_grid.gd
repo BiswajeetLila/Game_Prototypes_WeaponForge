@@ -60,7 +60,7 @@ func _test_merge_same() -> void:
 	lo[0][2] = {"id": &"FIRE", "tier": 1, "cost": 1}
 	var res: Dictionary = Grid.move(lo, rs, _socket(0, 1), _socket(0, 2))
 	_check("merge: result merged", res.get("result") == "merged", "got %s" % str(res))
-	_check("merge: dst shows 2/2", lo[0][2] != null and String(lo[0][2].get("merge", "")) == "2/2", "got %s" % str(lo[0][2]))
+	_check("merge: dst tier bumps 1 -> 2", lo[0][2] != null and int(lo[0][2].tier) == 2, "got %s" % str(lo[0][2]))
 	_check("merge: src consumed (empty)", lo[0][1] == null, "got %s" % str(lo[0][1]))
 
 func _test_swap_different() -> void:

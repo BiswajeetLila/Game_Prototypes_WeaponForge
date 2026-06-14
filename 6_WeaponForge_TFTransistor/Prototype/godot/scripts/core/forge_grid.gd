@@ -9,6 +9,8 @@
 ## (Array[3] of Array[2]) arrays.
 extends RefCounted
 
+const MAX_TIER: int = 4  ## tier cap (T1-T4 rarity)
+
 static func get_tile(loadouts: Array, reserves: Array, ref: Dictionary):
 	var hero: int = int(ref.get("hero", -1))
 	var idx: int = int(ref.get("idx", -1))
@@ -49,7 +51,8 @@ static func move(loadouts: Array, reserves: Array, src: Dictionary, dst: Diction
 		_set_tile(loadouts, reserves, src, null)
 		return {"ok": true, "result": "moved"}
 	if _same_fn(s, d):
-		var merged: Dictionary = {"id": StringName(d.get("id", &"")), "tier": int(d.get("tier", 1)), "cost": int(d.get("cost", 0)), "merge": "2/2"}
+		var bumped: int = mini(int(d.get("tier", 1)) + 1, MAX_TIER)
+		var merged: Dictionary = {"id": StringName(d.get("id", &"")), "tier": bumped, "cost": int(d.get("cost", 0))}
 		_set_tile(loadouts, reserves, dst, merged)
 		_set_tile(loadouts, reserves, src, null)
 		return {"ok": true, "result": "merged"}

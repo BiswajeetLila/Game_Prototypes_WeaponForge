@@ -479,6 +479,32 @@ func flash_error(hero_idx: int) -> void:
 	var t := create_tween()
 	t.tween_property(row, "modulate", Color(1, 1, 1, 1), 0.35)
 
+## Juicy merge: a sparkle burst + scale-pop on the merged socket card.
+func play_merge_vfx(hero_idx: int, sock_idx: int) -> void:
+	if hero_idx < 0 or hero_idx >= _hero_rows.size():
+		return
+	var sock := _hero_rows[hero_idx].find_child("Socket%d_%d" % [hero_idx, sock_idx], true, false) as Control
+	if sock == null:
+		return
+	sock.pivot_offset = sock.size * 0.5
+	var pop := create_tween()
+	pop.tween_property(sock, "scale", Vector2(1.25, 1.25), 0.10)
+	pop.tween_property(sock, "scale", Vector2(1.0, 1.0), 0.14)
+	var path := "res://assets/generated/vfx/merge_sparkle.png"
+	if not ResourceLoader.exists(path):
+		return
+	var spr := TextureRect.new()
+	spr.name = "MergeVfx"
+	spr.texture = load(path)
+	spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	spr.anchor_left = 0.0; spr.anchor_right = 1.0; spr.anchor_top = 0.0; spr.anchor_bottom = 1.0
+	spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sock.add_child(spr)
+	var tw := create_tween()
+	tw.tween_property(spr, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(spr.queue_free)
+
 func _stars(tier: int) -> String:
 	return "★".repeat(clampi(tier, 0, 5))
 

@@ -560,12 +560,14 @@ func _buy_into(shop_slot: int, dst: Dictionary) -> void:
 	var hero_idx: int = int(dst.get("hero", -1))
 	if hero_idx < 0 or hero_idx >= _loadouts.size():
 		return
+	var did_merge: bool = false
 	if String(dst.get("kind", "")) == "socket":
 		var res: Dictionary = Reserve.equip(_loadouts[hero_idx], _reserves[hero_idx], int(dst.get("idx", -1)), item)
 		if not res.get("ok", false):
 			if _forge != null and _forge.has_method("flash_error"):
 				_forge.flash_error(hero_idx)
 			return
+		did_merge = String(res.get("result", "")) == "merged"
 	else:  ## reserve dst: place if empty, merge if same id+tier, else blocked
 		var ri: int = int(dst.get("idx", -1))
 		if ri < 0 or ri >= _reserves[hero_idx].size():
@@ -582,6 +584,8 @@ func _buy_into(shop_slot: int, dst: Dictionary) -> void:
 	gold -= int(buy.get("cost", 0))
 	_shop_items[shop_slot] = null  ## remove bought item from shop
 	_sync_hero_forge(hero_idx)
+	if did_merge and _forge != null and _forge.has_method("play_merge_vfx"):
+		_forge.play_merge_vfx(hero_idx, int(dst.get("idx", -1)))
 	_refresh_shop_ui()
 	_refresh_weapon_tips()
 
@@ -592,6 +596,8 @@ func _move_owned(src: Dictionary, dst: Dictionary) -> void:
 		return
 	_sync_hero_forge(int(src.get("hero", -1)))
 	_sync_hero_forge(int(dst.get("hero", -1)))
+	if String(res.get("result", "")) == "merged" and String(dst.get("kind", "")) == "socket" and _forge != null and _forge.has_method("play_merge_vfx"):
+		_forge.play_merge_vfx(int(dst.get("hero", -1)), int(dst.get("idx", -1)))
 	_refresh_weapon_tips()
 
 ## Long-press a socket -> sell that Function back to the shop for a reduced refund.

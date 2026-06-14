@@ -21,6 +21,8 @@ func _ready() -> void:
 	_test_weapon_tooltip()
 	_test_reserve_ui()
 	_test_ult_button()
+	_test_battle_hit_vfx()
+	_test_merge_vfx()
 	_test_compact_mode()
 	_test_battle_hero_hp()
 	_test_wave_telegraph()
@@ -371,6 +373,45 @@ func _test_ult_button() -> void:
 	_check("ult: full -> fill spans up", fill != null and is_equal_approx(fill.anchor_top, 0.0), "got %.2f" % (fill.anchor_top if fill != null else -1.0))
 	var lbl = ult.get_node_or_null("UltLabel") if ult != null else null
 	_check("ult: full -> label ULT!", lbl != null and lbl.text == "ULT!", "got %s" % (lbl.text if lbl != null else "null"))
+	inst.queue_free()
+
+## -- G9: combat hit VFX (enemy + hero damage) + merge VFX --
+
+func _test_battle_hit_vfx() -> void:
+	var packed = load("res://scenes/ui/BattleView_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	var ls = get_node_or_null("/root/LaneState")
+	if ls == null:
+		inst.queue_free()
+		return
+	ls.reset()
+	var e = ls.make_enemy(&"goblin", 0, 0.8, 5)
+	inst._sync_enemies([e])           ## first sync -> no flash (no prior hp)
+	var vfx = inst.get_node_or_null("Vfx")
+	var before: int = vfx.get_child_count() if vfx != null else 0
+	e.hp = 3
+	inst._sync_enemies([e])           ## hp dropped -> impact vfx spawns
+	_check("hit: enemy damage spawns impact vfx", vfx != null and vfx.get_child_count() > before, "before=%d after=%d" % [before, (vfx.get_child_count() if vfx != null else -1)])
+	var before2: int = vfx.get_child_count() if vfx != null else 0
+	inst.set_hero_hp(0, 30, 30)       ## first -> no flash
+	inst.set_hero_hp(0, 20, 30)       ## hero took damage -> impact vfx spawns
+	_check("hit: hero damage spawns impact vfx", vfx != null and vfx.get_child_count() > before2, "before=%d after=%d" % [before2, (vfx.get_child_count() if vfx != null else -1)])
+	inst.queue_free()
+
+func _test_merge_vfx() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("mv: has play_merge_vfx", inst.has_method("play_merge_vfx"), "")
+	inst.set_socket_fn(0, 2, &"FIRE", 1, "FIRE", "2/2")
+	inst.play_merge_vfx(0, 2)
+	var sock = inst.find_child("Socket0_2", true, false)
+	_check("mv: merge sparkle overlay added to socket", sock != null and sock.find_child("MergeVfx", true, false) != null, "")
 	inst.queue_free()
 
 ## -- C9: forge compact mode + HP-bar sizing --

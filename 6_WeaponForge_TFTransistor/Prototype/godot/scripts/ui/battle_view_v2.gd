@@ -49,9 +49,15 @@ const ENEMY_TEX: Dictionary = {
 const VFX_TEX: Dictionary = {
 	"vfx_steam_puff": "res://assets/generated/vfx/steam_puff.png",
 	"vfx_arc_chain": "res://assets/generated/vfx/electric_arc.png",
+	"vfx_fire_puff": "res://assets/generated/vfx/fire_puff.png",
+	"vfx_hit": "res://assets/generated/vfx/fire_puff.png",   ## generic impact burst
+	"vfx_merge": "res://assets/generated/vfx/merge_sparkle.png",
 }
 
 var _enemy_nodes: Dictionary = {}   ## eid -> Control
+var _enemy_hp: Dictionary = {}      ## eid -> last hp (hit-flash on drop)
+var _hero_hp: Dictionary = {}       ## lane -> last hp (hit-flash on drop)
+var _vfx_seq: int = 0               ## unique vfx node names
 var _compact: bool = false          ## forge break = small battle preview
 
 func set_compact(c: bool) -> void:
@@ -73,6 +79,12 @@ func set_hero_hp(lane: int, hp: int, max_hp: int) -> void:
 	var frac: float = clampf(float(hp) / maxf(float(max_hp), 1.0), 0.0, 1.0)
 	if bar != null:
 		bar.size = Vector2(48.0 * frac, 5)  ## bar only — no numeric text (compact battle)
+	## hit feedback: enemy is attacking this hero -> flash red + impact spark
+	var prev: int = int(_hero_hp.get(lane, -1))
+	if prev >= 0 and hp < prev:
+		_flash(anchor.get_node_or_null("Sprite"))
+		_spawn_vfx(anchor.position, &"vfx_hit", 36.0)
+	_hero_hp[lane] = hp
 
 func _load_tex(path: String) -> Texture2D:
 	if path != "" and ResourceLoader.exists(path):
@@ -292,6 +304,7 @@ func _sync_enemies(enemies: Array) -> void:
 		if not seen_ids.has(old_id):
 			_enemy_nodes[old_id].queue_free()
 			_enemy_nodes.erase(old_id)
+			_enemy_hp.erase(old_id)
 
 func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 	var node := Control.new()
@@ -354,6 +367,14 @@ func _update_enemy_node(node: Control, enemy: Dictionary, cell: int, stack: int)
 			dot.tooltip_text = String(s)
 			dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			status.add_child(dot)
+	## hit feedback: this enemy just took damage -> flash + impact + attacking-hero pulse
+	var prev: int = int(_enemy_hp.get(node.name, -1))
+	var cur_hp: int = int(enemy.hp)
+	if prev >= 0 and cur_hp < prev:
+		_flash(node.get_node_or_null("Sprite"))
+		_spawn_vfx(node.position, &"vfx_hit", 44.0)
+		_pulse_hero(int(enemy.lane))
+	_enemy_hp[node.name] = cur_hp
 
 ## Floating reaction shout ("STEAM!", "ELECTROCUTE!") near the enemy, fades up.
 func show_reaction_label(rid: StringName, enemy: Dictionary) -> void:
@@ -377,11 +398,16 @@ func show_reaction_label(rid: StringName, enemy: Dictionary) -> void:
 ## ---- VFX (placeholder flash; real sprites in art pass) ----
 
 func _on_vfx_triggered(hook: StringName, enemy: Dictionary) -> void:
+	var cell: int = _depth_cell_for(float(enemy.get("screen_x", 0.5)))
+	var pos: Vector2 = _cell_position(int(enemy.get("lane", 1)), cell, 0)
+	_spawn_vfx(pos, hook, 56.0)
+
+## One-shot VFX burst at a battlefield position (scale-pop + fade). Shared by reactions
+## and hit impacts.
+func _spawn_vfx(pos: Vector2, hook: StringName, sz: float = 48.0) -> void:
 	var vfx := get_node_or_null("Vfx")
 	if vfx == null:
 		vfx = self
-	var cell: int = _depth_cell_for(float(enemy.get("screen_x", 0.5)))
-	var pos: Vector2 = _cell_position(int(enemy.get("lane", 1)), cell, 0)
 	var tex := _load_tex(String(VFX_TEX.get(String(hook), "")))
 	var node: Control
 	if tex != null:
@@ -389,20 +415,48 @@ func _on_vfx_triggered(hook: StringName, enemy: Dictionary) -> void:
 		spr.texture = tex
 		spr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		spr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		spr.size = Vector2(56, 56)
+		spr.size = Vector2(sz, sz)
 		node = spr
 	else:
 		var rect := ColorRect.new()
 		rect.color = _vfx_color_for(hook)
-		rect.size = Vector2(44, 44)
+		rect.size = Vector2(sz * 0.8, sz * 0.8)
 		node = rect
-	node.name = "VfxFlash_%d" % Time.get_ticks_msec()
+	_vfx_seq += 1
+	node.name = "Vfx_%d" % _vfx_seq
 	node.position = pos - node.size * 0.5
+	node.pivot_offset = node.size * 0.5
+	node.scale = Vector2(0.6, 0.6)
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vfx.add_child(node)
 	var tw := create_tween()
-	tw.tween_property(node, "modulate:a", 0.0, 0.5)
+	tw.tween_property(node, "scale", Vector2(1.15, 1.15), 0.12)
+	tw.parallel().tween_property(node, "modulate:a", 0.0, 0.45)
 	tw.tween_callback(node.queue_free)
+
+## Brief red hit-flash on a sprite / control.
+func _flash(ci) -> void:
+	if ci == null:
+		return
+	ci.modulate = Color(1.0, 0.5, 0.5, 1.0)
+	var tw := create_tween()
+	tw.tween_property(ci, "modulate", Color(1, 1, 1, 1), 0.22)
+
+## Quick scale-pulse on the hero in `lane` to read as "attacking".
+func _pulse_hero(lane: int) -> void:
+	var heroes := get_node_or_null("Heroes")
+	if heroes == null:
+		return
+	var anchor := heroes.get_node_or_null("Hero%d" % lane)
+	if anchor == null:
+		return
+	var spr := anchor.get_node_or_null("Sprite") as Control
+	if spr == null:
+		return
+	spr.pivot_offset = spr.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(spr, "scale", Vector2(1.15, 1.15), 0.08)
+	tw.tween_property(spr, "scale", Vector2(1.0, 1.0), 0.12)
 
 func _on_audio_triggered(hook: StringName, _enemy: Dictionary) -> void:
 	print("[audio-stub] ", String(hook))

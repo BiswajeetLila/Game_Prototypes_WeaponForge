@@ -54,6 +54,51 @@ func _ready() -> void:
 	_build_hero_rows()
 	_build_shop_rail()
 	_build_shop_footer()
+	_build_preview_panel()
+
+## ---- C8: per-slot behavior preview (decision 1: show, don't restrict) ----
+
+func _build_preview_panel() -> void:
+	var pp := VBoxContainer.new()
+	pp.name = "PreviewPanel"
+	pp.anchor_left = 0.04; pp.anchor_right = 0.96
+	pp.anchor_top = 0.30; pp.anchor_bottom = 0.62
+	pp.add_theme_constant_override(&"separation", 2)
+	pp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg := ColorRect.new()
+	bg.name = "Bg"
+	bg.color = Color(0.06, 0.05, 0.04, 0.92)
+	bg.anchor_right = 1.0; bg.anchor_bottom = 1.0
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pp.add_child(bg)
+	for n in ["PreviewTitle", "PassiveRow", "ModifierRow", "ActiveRow", "BestFitLabel"]:
+		var lbl := Label.new()
+		lbl.name = n
+		lbl.add_theme_font_size_override(&"font_size", 10 if n == "PreviewTitle" else 9)
+		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		pp.add_child(lbl)
+	add_child(pp)
+	pp.visible = false
+
+## Show the 3 per-slot behaviors (order PASSIVE/MODIFIER/ACTIVE) + best-fit badge.
+func show_function_preview(fn_id: StringName) -> void:
+	var pp := get_node_or_null("PreviewPanel")
+	if pp == null:
+		return
+	var path := "res://data/functions/%s.tres" % String(fn_id).to_lower()
+	if not ResourceLoader.exists(path):
+		pp.visible = false
+		return
+	var f = load(path)
+	if f == null:
+		pp.visible = false
+		return
+	(pp.get_node("PreviewTitle") as Label).text = String(fn_id)
+	(pp.get_node("PassiveRow") as Label).text = "PASSIVE — " + f.describe(0)
+	(pp.get_node("ModifierRow") as Label).text = "MODIFIER — " + f.describe(1)
+	(pp.get_node("ActiveRow") as Label).text = "ACTIVE — " + f.describe(2)
+	(pp.get_node("BestFitLabel") as Label).text = "BEST: " + String(f.best_fit)
+	pp.visible = true
 
 ## ---- top: socket-column header (cosmetic, matches mockup A/M/P labels) ----
 

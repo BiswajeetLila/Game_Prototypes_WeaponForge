@@ -357,6 +357,10 @@ func _on_reroll() -> void:
 
 func _on_shop_tap(slot_idx: int) -> void:
 	_selected_shop = slot_idx
+	## show the tapped function's per-slot behavior + best-fit (decision 1)
+	if slot_idx >= 0 and slot_idx < _shop_items.size() and _shop_items[slot_idx] != null:
+		if _forge != null and _forge.has_method("show_function_preview"):
+			_forge.show_function_preview(StringName(_shop_items[slot_idx].get("id", "")))
 
 func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
 	if state != STATE_FORGE:

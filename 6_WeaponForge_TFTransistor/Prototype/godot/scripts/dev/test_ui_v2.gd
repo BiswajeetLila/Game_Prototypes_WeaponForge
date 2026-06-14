@@ -17,6 +17,7 @@ func _ready() -> void:
 	_test_battle_view_audio_logs()
 	_test_forge_panel_v2()
 	_test_forge_cards()
+	_test_function_preview()
 	_test_wave_telegraph()
 	_test_chain_hud()
 	_summary()
@@ -258,6 +259,37 @@ func _test_forge_cards() -> void:
 		inst.set_reroll_enabled(false)
 		var rb2 = inst.find_child("RerollBtn", true, false)
 		_check("fc: reroll disabled toggles", rb2 != null and rb2.disabled == true, "")
+	inst.queue_free()
+
+## -- C8: function behavior preview + best-fit --
+
+func _test_function_preview() -> void:
+	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	_check("fp: has show_function_preview", inst.has_method("show_function_preview"), "")
+	if not inst.has_method("show_function_preview"):
+		inst.queue_free()
+		return
+	inst.show_function_preview(&"FIRE")
+	var pp = inst.get_node_or_null("PreviewPanel")
+	_check("fp: preview visible after show", pp != null and pp.visible == true, "")
+	var active_row = pp.get_node_or_null("ActiveRow") if pp != null else null
+	_check("fp: ACTIVE row mentions Burning", active_row != null and "Burning" in active_row.text, "got %s" % (active_row.text if active_row != null else "null"))
+	var passive_row = pp.get_node_or_null("PassiveRow")
+	## C1 order: PASSIVE row above ACTIVE row
+	_check("fp: PASSIVE row above ACTIVE row", passive_row != null and active_row != null and passive_row.get_index() < active_row.get_index(), "")
+	var bf = pp.get_node_or_null("BestFitLabel")
+	_check("fp: FIRE best-fit ACTIVE", bf != null and "ACTIVE" in bf.text, "got %s" % (bf.text if bf != null else "null"))
+	inst.show_function_preview(&"WATER")
+	_check("fp: WATER best-fit MODIFIER", bf != null and "MODIFIER" in bf.text, "got %s" % (bf.text if bf != null else "null"))
+	inst.show_function_preview(&"LEECH")
+	_check("fp: LEECH best-fit PASSIVE", bf != null and "PASSIVE" in bf.text, "got %s" % (bf.text if bf != null else "null"))
+	## BOUNCE has no .tres -> graceful (hidden, no crash)
+	inst.show_function_preview(&"BOUNCE")
+	_check("fp: BOUNCE (no data) hides preview, no crash", pp != null and pp.visible == false, "")
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

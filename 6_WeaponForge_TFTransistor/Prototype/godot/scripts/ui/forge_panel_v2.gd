@@ -94,21 +94,9 @@ func _ready() -> void:
 ## ---- top: column header (A/M/P over the sockets + "Reserve" over the bench) ----
 
 func _build_socket_header() -> void:
-	var header := HBoxContainer.new()
-	header.name = "SocketHeader"
-	header.anchor_left = 0.0; header.anchor_right = 1.0
-	header.anchor_top = 0.0; header.anchor_bottom = 0.06
-	header.offset_left = 60; header.offset_right = -96
-	header.add_theme_constant_override(&"separation", 6)
-	add_child(header)
-	for s in MAX_SOCKETS:
-		var lbl := Label.new()
-		lbl.text = SOCKET_LABELS[s]
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lbl.add_theme_font_size_override(&"font_size", 9)
-		header.add_child(lbl)
-
+	## slot-type labels (PASSIVE/MODIFIER/ACTIVE) now live UNDER each socket card so
+	## they always align with their icon — the old top header was misaligned. Only the
+	## Reserve column header remains up top.
 	var reserve_lbl := Label.new()
 	reserve_lbl.name = "ReserveHeader"
 	reserve_lbl.text = "Reserve"
@@ -314,30 +302,43 @@ func _make_socket(hero_idx: int, sock_idx: int) -> PanelContainer:
 	panel.name = "Socket%d_%d" % [hero_idx, sock_idx]
 	panel.custom_minimum_size = Vector2(64, 64)
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	panel.add_child(_make_icon())
+	panel.clip_contents = true
+	_apply_tier_border(panel, 1)
+	## icon on TOP, label BELOW (no text overlaid on the icon)
+	var col := VBoxContainer.new()
+	col.name = "Col"
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override(&"separation", 1)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(col)
+	var icon := _make_icon()
+	icon.custom_minimum_size = Vector2(34, 34)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(icon)
 	var nm := Label.new()
 	nm.name = "NameLabel"
-	nm.text = SOCKET_LABELS[sock_idx]   ## empty watermark = slot name
+	nm.text = SOCKET_LABELS[sock_idx]   ## empty -> slot name; filled -> function name
 	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nm.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	nm.add_theme_font_size_override(&"font_size", 8)
 	nm.modulate = Color(1, 1, 1, 0.4)
 	nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(nm)
+	col.add_child(nm)
+	## tier stars + merge marker as small CORNER overlays (not over the icon center)
 	var stars := Label.new()
 	stars.name = "TierStars"
 	stars.text = ""
-	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stars.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	stars.add_theme_font_size_override(&"font_size", 9)
+	stars.add_theme_font_size_override(&"font_size", 8)
+	stars.anchor_top = 0.0; stars.offset_left = 3; stars.offset_top = 1
+	stars.modulate = Color(1.0, 0.85, 0.3)
 	stars.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(stars)
 	var mg := Label.new()
 	mg.name = "MergeLabel"
 	mg.text = ""
-	mg.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	mg.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	mg.add_theme_font_size_override(&"font_size", 8)
+	mg.anchor_left = 1.0; mg.anchor_right = 1.0
+	mg.offset_left = -22; mg.offset_right = -2; mg.offset_top = 1
+	mg.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	mg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(mg)
 	var btn := Button.new()
@@ -430,6 +431,18 @@ func set_compact(c: bool) -> void:
 			var sock = _hero_rows[h].find_child("Socket%d_%d" % [h, s], true, false)
 			if sock != null:
 				sock.custom_minimum_size = sz
+				## socket name-below shows in forge only (icon-only in compact combat rail)
+				var snm = sock.find_child("NameLabel", true, false)
+				if snm != null:
+					snm.visible = not c
+		## weapon description text shows only in the forge (declutter combat)
+		var tip = _hero_rows[h].find_child("WeaponTooltip", true, false)
+		if tip != null:
+			tip.visible = not c
+	## re-roll is useless mid-combat -> forge only
+	var rb := find_child("RerollBtn", true, false) as Button
+	if rb != null:
+		rb.visible = not c
 
 func is_compact() -> bool:
 	return _compact
@@ -461,10 +474,10 @@ func set_socket_fn(hero_idx: int, sock_idx: int, fn_id: StringName, tier: int = 
 	var sock = _hero_rows[hero_idx].find_child("Socket%d_%d" % [hero_idx, sock_idx], true, false)
 	if sock == null:
 		return
-	var icon := sock.get_node_or_null("Icon") as TextureRect
-	var nm := sock.get_node_or_null("NameLabel") as Label
-	var stars := sock.get_node_or_null("TierStars") as Label
-	var mg := sock.get_node_or_null("MergeLabel") as Label
+	var icon := sock.find_child("Icon", true, false) as TextureRect
+	var nm := sock.find_child("NameLabel", true, false) as Label
+	var stars := sock.find_child("TierStars", true, false) as Label
+	var mg := sock.find_child("MergeLabel", true, false) as Label
 	if fn_id == &"":
 		if icon != null: icon.texture = null
 		if nm != null:

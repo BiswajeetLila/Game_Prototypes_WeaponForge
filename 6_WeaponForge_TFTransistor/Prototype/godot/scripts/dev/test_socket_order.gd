@@ -33,11 +33,10 @@ func _test_header_order() -> void:
 		return
 	var inst = packed.instantiate()
 	add_child(inst)
-	var header = inst.get_node_or_null("SocketHeader")
-	_check("SocketHeader exists", header != null, "")
-	if header != null and header.get_child_count() >= 3:
-		var first = header.get_child(0) as Label
-		_check("leftmost header label == PASSIVE", first != null and first.text == "PASSIVE", "got %s" % (first.text if first != null else "null"))
+	## slot-type label now lives UNDER each socket (auto-aligned); leftmost = PASSIVE
+	var s00 = inst.find_child("Socket0_0", true, false)
+	var nm00 = s00.find_child("NameLabel", true, false) if s00 != null else null
+	_check("leftmost socket watermark == PASSIVE", nm00 != null and nm00.text == "PASSIVE", "got %s" % (nm00.text if nm00 != null else "null"))
 	inst.queue_free()
 
 func _test_routing_leftmost_is_zero() -> void:

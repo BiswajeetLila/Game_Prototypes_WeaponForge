@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://b6mainv2test01"]
+[gd_scene format=3 uid="uid://drqk70dsdktvs"]
 
 [ext_resource type="Script" path="res://scripts/dev/test_main_v2.gd" id="1"]
 

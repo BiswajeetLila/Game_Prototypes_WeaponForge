@@ -277,10 +277,16 @@ func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 	hp.position = Vector2(-20, 24)
 	node.add_child(hp)
 
+	var hpv := Label.new()
+	hpv.name = "HPValue"
+	hpv.add_theme_font_size_override(&"font_size", 8)
+	hpv.position = Vector2(-20, 30)
+	node.add_child(hpv)
+
 	var status := HBoxContainer.new()
 	status.name = "Status"
-	status.position = Vector2(-20, -50)
-	status.add_theme_constant_override(&"separation", 2)
+	status.position = Vector2(-22, -52)
+	status.add_theme_constant_override(&"separation", 3)
 	node.add_child(status)
 
 	return node
@@ -290,22 +296,53 @@ func _update_enemy_node(node: Control, enemy: Dictionary, cell: int, stack: int)
 	var lbl := node.get_node_or_null("Name") as Label
 	if lbl != null:
 		lbl.text = str(enemy.id)
-	## HP fill
+	## HP fill + numeric value
+	var max_hp: float = maxf(float(enemy.get("max_hp", enemy.hp)), 1.0)
 	var hp := node.get_node_or_null("HPBar") as ColorRect
 	if hp != null:
-		var max_hp: float = maxf(float(enemy.get("max_hp", enemy.hp)), 1.0)
 		var frac: float = clampf(float(enemy.hp) / max_hp, 0.0, 1.0)
 		hp.size = Vector2(40.0 * frac, 5)
-	## status dots
+	var hpv := node.get_node_or_null("HPValue") as Label
+	if hpv != null:
+		hpv.text = str(int(enemy.hp))
+	## status chips (colored dot + name label)
 	var status := node.get_node_or_null("Status")
 	if status != null:
 		for c in status.get_children():
 			c.queue_free()
 		for s in enemy.statuses.keys():
+			var chip := HBoxContainer.new()
+			chip.add_theme_constant_override(&"separation", 1)
+			chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var dot := ColorRect.new()
 			dot.color = STATUS_COLORS.get(String(s), Color(1, 1, 1))
 			dot.custom_minimum_size = Vector2(8, 8)
-			status.add_child(dot)
+			chip.add_child(dot)
+			var nlbl := Label.new()
+			nlbl.name = "ChipLabel"
+			nlbl.text = String(s)
+			nlbl.add_theme_font_size_override(&"font_size", 8)
+			chip.add_child(nlbl)
+			status.add_child(chip)
+
+## Floating reaction shout ("STEAM!", "ELECTROCUTE!") near the enemy, fades up.
+func show_reaction_label(rid: StringName, enemy: Dictionary) -> void:
+	var vfx := get_node_or_null("Vfx")
+	if vfx == null:
+		vfx = self
+	var cell: int = _depth_cell_for(float(enemy.get("screen_x", 0.5)))
+	var pos: Vector2 = _cell_position(int(enemy.get("lane", 1)), cell, 0)
+	var lbl := Label.new()
+	lbl.name = "Reaction_%d" % Time.get_ticks_msec()
+	lbl.text = String(rid).to_upper() + "!"
+	lbl.add_theme_font_size_override(&"font_size", 14)
+	lbl.position = pos - Vector2(24, 44)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vfx.add_child(lbl)
+	var tw := create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y - 20.0, 0.6)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(lbl.queue_free)
 
 ## ---- VFX (placeholder flash; real sprites in art pass) ----
 

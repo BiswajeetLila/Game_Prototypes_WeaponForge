@@ -30,10 +30,14 @@ func tick(gs: Dictionary) -> void:
 	for enemy in gs.get("enemies", []):
 		ls.decay_statuses(enemy)
 
-	## 2. Enemy advance
+	## 2. Enemy advance (+ contact damage: an engaged enemy hits the hero in its lane, spec §7)
 	_tick_order_log.append("advance")
 	for enemy in gs.get("enemies", []):
 		ls.advance_enemy(enemy)
+		if enemy.get("engaged", false):
+			var h = _hero_in_lane(gs, int(enemy.get("lane", -99)))
+			if h != null:
+				h["hp"] = maxi(0, int(h.get("hp", 0)) - 1)
 
 	## 3. Hero attack pass
 	_tick_order_log.append("attack")
@@ -46,6 +50,12 @@ func tick(gs: Dictionary) -> void:
 	## 5. Death + cleanup
 	_tick_order_log.append("cleanup")
 	gs["enemies"] = gs.get("enemies", []).filter(func(e): return e.hp > 0)
+
+func _hero_in_lane(gs: Dictionary, lane: int):
+	for h in gs.get("heroes", []):
+		if int(h.get("lane", -99)) == lane:
+			return h
+	return null
 
 func _resolve_hero_attack(hero: Dictionary, gs: Dictionary, ls: Node) -> void:
 	var enemies: Array = gs.get("enemies", [])

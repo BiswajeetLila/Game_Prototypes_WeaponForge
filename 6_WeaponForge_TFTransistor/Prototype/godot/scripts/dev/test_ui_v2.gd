@@ -13,6 +13,7 @@ func _ready() -> void:
 	_test_render_snap_ordering()
 	_test_enemy_node_structure()
 	_test_real_sprites()
+	_test_battle_chips()
 	_test_battle_view_vfx_flash()
 	_test_battle_view_audio_logs()
 	_test_forge_panel_v2()
@@ -131,6 +132,36 @@ func _test_real_sprites() -> void:
 			var es = enemies_node.get_child(0).find_child("Sprite", true, false)
 			_check("bv2: enemy node has Sprite node", es != null, "")
 			_check("bv2: enemy Sprite has goblin texture", es != null and es.texture != null, "")
+	inst.queue_free()
+
+## -- C10: enemy status chips + numeric HP + reaction labels --
+
+func _test_battle_chips() -> void:
+	var packed = load("res://scenes/ui/BattleView_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	var ls = get_node_or_null("/root/LaneState")
+	if ls == null:
+		inst.queue_free()
+		return
+	ls.reset()
+	var e = ls.make_enemy(&"goblin", 0, 0.8, 5)
+	ls.apply_status(e, &"Burning", 4)
+	inst._sync_enemies([e])
+	var en = inst.get_node("Enemies").get_child(0)
+	var hpv = en.find_child("HPValue", true, false)
+	_check("bc: enemy numeric HP shown", hpv != null and hpv.text == "5", "got %s" % (hpv.text if hpv != null else "null"))
+	var chip = en.find_child("ChipLabel", true, false)
+	_check("bc: status chip labelled Burning", chip != null and chip.text == "Burning", "got %s" % (chip.text if chip != null else "null"))
+	_check("bc: has show_reaction_label", inst.has_method("show_reaction_label"), "")
+	if inst.has_method("show_reaction_label"):
+		var vfx = inst.get_node_or_null("Vfx")
+		var before: int = vfx.get_child_count() if vfx != null else 0
+		inst.show_reaction_label(&"steam", e)
+		var after: int = vfx.get_child_count() if vfx != null else 0
+		_check("bc: reaction label spawned", after > before, "before=%d after=%d" % [before, after])
 	inst.queue_free()
 
 func _test_battle_view_vfx_flash() -> void:

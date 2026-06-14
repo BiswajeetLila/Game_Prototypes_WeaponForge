@@ -203,9 +203,9 @@ func start_run() -> void:
 
 func _make_heroes() -> Array:
 	return [
-		{"id": &"elara", "lane": 0, "base_dmg": 2, "damage_tag": &"WATER"},
-		{"id": &"bran", "lane": 1, "base_dmg": 2, "damage_tag": &"FIRE"},
-		{"id": &"vex", "lane": 2, "base_dmg": 2, "damage_tag": &"LIGHTNING"},
+		{"id": &"elara", "lane": 0, "base_dmg": 2, "damage_tag": &"WATER", "hp": 30, "max_hp": 30},
+		{"id": &"bran", "lane": 1, "base_dmg": 2, "damage_tag": &"FIRE", "hp": 30, "max_hp": 30},
+		{"id": &"vex", "lane": 2, "base_dmg": 2, "damage_tag": &"LIGHTNING", "hp": 30, "max_hp": 30},
 	]
 
 func _spawn_current_wave() -> void:
@@ -293,8 +293,10 @@ func advance_wave() -> void:
 
 ## ---- HUD / forge updates ----
 
-func _on_reaction(_rid: StringName, _enemy: Dictionary) -> void:
+func _on_reaction(rid: StringName, enemy: Dictionary) -> void:
 	_chain += 1
+	if _battle != null and _battle.has_method("show_reaction_label"):
+		_battle.show_reaction_label(rid, enemy)
 
 func _populate_shop() -> void:
 	var shop = get_node_or_null("/root/ShopV2")
@@ -345,8 +347,13 @@ func _update_forge() -> void:
 	if uc != null:
 		bars = int(uc.bars)
 	for i in 3:
+		var hp: int = 100
+		var mhp: int = 100
+		if i < _heroes.size():
+			hp = int(_heroes[i].get("hp", 100))
+			mhp = int(_heroes[i].get("max_hp", 100))
 		if _forge.has_method("set_hero_hp"):
-			_forge.set_hero_hp(i, 100, 100)
+			_forge.set_hero_hp(i, hp, mhp)
 		if _forge.has_method("set_hero_ult_bars"):
 			_forge.set_hero_ult_bars(i, bars)
 	if _forge.has_method("set_gold"):

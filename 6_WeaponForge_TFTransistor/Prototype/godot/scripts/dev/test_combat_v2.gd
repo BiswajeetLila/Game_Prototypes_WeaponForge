@@ -10,6 +10,7 @@ func _ready() -> void:
 	_test_tick_order()
 	_test_enemy_dies_in_cleanup()
 	_test_status_decays_before_advance()
+	_test_contact_damage()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -52,6 +53,18 @@ func _test_status_decays_before_advance() -> void:
 	## After decay: Frozen gone; after advance: screen_x = 0.5 - 0.05 = 0.45
 	_check("decay-before-advance: Frozen expires + enemy moves this tick",
 		is_equal_approx(e.screen_x, 0.45), "got %f" % e.screen_x)
+
+func _test_contact_damage() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var e = ls.make_enemy(&"g", 1, 0.0)  ## at hero anchor
+	e.engaged = true
+	var hero = {"id": &"bran", "lane": 1, "base_dmg": 0, "damage_tag": &"", "hp": 30, "max_hp": 30}
+	var gs = {"enemies": [e], "heroes": [hero], "lane_state": ls}
+	cv2.tick(gs)
+	_check("contact: engaged enemy damages lane hero", int(hero.hp) < 30, "got %d" % int(hero.hp))
+	## tick order still 4 phases (contact folded into advance, not a new logged step)
+	_check("contact: tick order unchanged (no extra step)", cv2._tick_order_log.size() == 5, "got %s" % str(cv2._tick_order_log))
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

@@ -273,6 +273,11 @@ func _apply_loadouts_to_heroes() -> void:
 		else:
 			_heroes[i].erase("active_fn")
 			_heroes[i]["tier_mult"] = 1.0
+		var modf = _loadouts[i][1]  ## MODIFIER socket warps the Active (spec §3 rule 2)
+		if modf != null:
+			_heroes[i]["mod_fn"] = _fn_data(modf.id)
+		else:
+			_heroes[i].erase("mod_fn")
 
 func _fn_data(fn_id: StringName):
 	if fn_id == &"":

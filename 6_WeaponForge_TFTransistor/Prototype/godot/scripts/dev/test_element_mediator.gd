@@ -24,6 +24,8 @@ func _ready() -> void:
 	_test_consume_cracked_magma()
 	_test_refresh_capacitor()
 	_test_knockback_avalanche()
+	_test_splash_applies_to_neighbor()
+	_test_splash_wet_only_filter()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -199,6 +201,31 @@ func _test_knockback_avalanche() -> void:
 	_check("Avalanche fires (EARTH x Chilled)", rd != null and rd.id == &"Avalanche", "got %s" % (str(rd.id) if rd else "null"))
 	_check("Avalanche cleanses Chilled", not ls.has_status(e, &"Chilled"), "")
 	_check("Avalanche knocks origin back", e.screen_x > x0, "x0=%f now=%f" % [x0, e.screen_x])
+
+## ---- Q6 fix F4: reaction splash applies apply_splashed statuses to neighbours ----
+
+func _test_splash_applies_to_neighbor() -> void:
+	## Steam (FIRE x Wet): cross_lane splash, apply Blind to splashed (no filter)
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var origin = ls.make_enemy(&"o", 1, 0.5)
+	ls.apply_status(origin, &"Wet", 4)
+	var neighbor = ls.make_enemy(&"n", 0, 0.5)  ## adjacent lane
+	em.dispatch_reaction(&"FIRE", origin, [origin, neighbor])
+	_check("Steam splashes Blind to a cross-lane neighbor", ls.has_status(neighbor, &"Blind"), "")
+
+func _test_splash_wet_only_filter() -> void:
+	## Electrocute (LIGHTNING x Wet): cross_lane, wet_only, apply Shocked to arced Wet enemies
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var origin = ls.make_enemy(&"o", 1, 0.5)
+	ls.apply_status(origin, &"Wet", 4)
+	var wet_nb = ls.make_enemy(&"w", 0, 0.5)
+	ls.apply_status(wet_nb, &"Wet", 4)
+	var dry_nb = ls.make_enemy(&"d", 2, 0.5)  ## adjacent lane, NOT Wet
+	em.dispatch_reaction(&"LIGHTNING", origin, [origin, wet_nb, dry_nb])
+	_check("Electrocute arcs Shocked to the Wet neighbor", ls.has_status(wet_nb, &"Shocked"), "")
+	_check("Electrocute skips the non-Wet neighbor (wet_only)", not ls.has_status(dry_nb, &"Shocked"), "")
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

@@ -81,18 +81,30 @@ func _resolve_function_attack(hero: Dictionary, enemies: Array, ls: Node) -> voi
 	var targets: Array = _Targeting.resolve(fn.active_targeting, lane, hero_x, enemies, int(fn.active_max_hits))
 	if targets.is_empty():
 		return
+	## Modifier socket warps the Active beneath it (spec §3 rule 2): +mod_dmg_bonus damage,
+	## a secondary mod_adds_tag (extra reaction opportunity), and an extra mod_applies_status.
+	var mod = hero.get("mod_fn")
+	var dmg_mult: float = float(fn.active_dmg_mult)
+	if mod != null:
+		dmg_mult *= (1.0 + float(mod.mod_dmg_bonus))
 	var tier_mult: float = float(hero.get("tier_mult", 1.0))
-	var dmg: int = maxi(1, int(round(float(hero.get("base_dmg", 1)) * float(fn.active_dmg_mult) * tier_mult)))
+	var dmg: int = maxi(1, int(round(float(hero.get("base_dmg", 1)) * dmg_mult * tier_mult)))
 	var tag: StringName = fn.active_damage_tag
 	var status_emit: StringName = fn.active_status_emit
+	var mod_tag: StringName = (mod.mod_adds_tag if mod != null else &"")
+	var mod_status: StringName = (mod.mod_applies_status if mod != null else &"")
 	for t in targets:
 		t["hp"] = int(t["hp"]) - dmg
 		if status_emit != &"":
 			_emit_status(ls, t, status_emit)
+		if mod_status != &"":
+			_emit_status(ls, t, mod_status)
 		if fn.active_knockback:
 			ls.knockback_enemy(t)
 		hit_landed.emit(hero.get("id", &""), t, tag)
 		_dispatch_and_amplify(tag, t, dmg, ls, enemies)
+		if mod_tag != &"":
+			_dispatch_and_amplify(mod_tag, t, dmg, ls, enemies)
 
 ## Base-weapon stub: attack first enemy in hero's lane (or any if none in lane).
 func _resolve_base_attack(hero: Dictionary, enemies: Array, ls: Node) -> void:

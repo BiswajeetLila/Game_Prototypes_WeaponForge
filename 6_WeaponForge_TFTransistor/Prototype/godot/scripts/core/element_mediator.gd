@@ -15,6 +15,8 @@ signal audio_triggered(hook: StringName, origin_enemy: Dictionary)
 
 ## reaction registry: StringName("{tag}x{status}") -> ReactionData
 var _registry: Dictionary = {}
+## StringName status -> base_duration (StatusData), for splash status application
+var _status_dur_cache: Dictionary = {}
 
 func _ready() -> void:
 	_build_registry()
@@ -61,7 +63,7 @@ func dispatch_reaction(damage_tag: StringName, enemy: Dictionary, enemies: Array
 		var key := _key(damage_tag, status)
 		if _registry.has(key):
 			var rd = _registry[key]
-			_apply_reaction(rd, enemy, ls)
+			_apply_reaction(rd, enemy, ls, enemies)
 			reaction_triggered.emit(rd.id, enemy)
 			if rd.vfx_hook != &"":
 				vfx_triggered.emit(rd.vfx_hook, enemy)
@@ -70,7 +72,7 @@ func dispatch_reaction(damage_tag: StringName, enemy: Dictionary, enemies: Array
 			return rd
 	return null
 
-func _apply_reaction(rd, enemy: Dictionary, ls: Node) -> void:
+func _apply_reaction(rd, enemy: Dictionary, ls: Node, enemies: Array = []) -> void:
 	for s in rd.cleanse_origin:
 		ls.cleanse_status(enemy, StringName(s))
 	if rd.consume_cracked:
@@ -81,3 +83,44 @@ func _apply_reaction(rd, enemy: Dictionary, ls: Node) -> void:
 		ls.apply_status(enemy, StringName(s), rd.apply_origin_duration)
 	if rd.knockback:
 		ls.knockback_enemy(enemy)
+	## Splash: apply each apply_splashed status to neighbouring enemies per the splash pattern
+	## (cross_lane = nearest in each adjacent lane; own_lane_radius = nearest other in lane),
+	## filtered by splash_filter (wet_only). spec §5.
+	if rd.splash != &"none" and not rd.apply_splashed.is_empty() and not enemies.is_empty():
+		for nb in _splash_targets(rd, enemy, enemies):
+			for s in rd.apply_splashed:
+				ls.apply_status(nb, StringName(s), _status_dur(StringName(s)))
+
+func _splash_targets(rd, origin: Dictionary, enemies: Array) -> Array:
+	var out: Array = []
+	var ol: int = int(origin.lane)
+	var ox: float = float(origin.screen_x)
+	var lanes: Array = []
+	if rd.splash == &"cross_lane":
+		lanes = [ol - 1, ol + 1]
+	elif rd.splash == &"own_lane_radius":
+		lanes = [ol]
+	else:
+		return out
+	for lane in lanes:
+		var best = null
+		var best_d := INF
+		for e in enemies:
+			if e == origin or int(e.lane) != lane:
+				continue
+			if rd.splash_filter == &"wet_only" and not e.get("statuses", {}).has(&"Wet"):
+				continue
+			var d := absf(float(e.screen_x) - ox)
+			if d < best_d:
+				best_d = d
+				best = e
+		if best != null:
+			out.append(best)
+	return out
+
+func _status_dur(status: StringName) -> int:
+	if not _status_dur_cache.has(status):
+		var p := "res://data/statuses/%s.tres" % String(status).to_lower()
+		var def = load(p) if ResourceLoader.exists(p) else null
+		_status_dur_cache[status] = int(def.base_duration) if def != null else 2
+	return _status_dur_cache[status]

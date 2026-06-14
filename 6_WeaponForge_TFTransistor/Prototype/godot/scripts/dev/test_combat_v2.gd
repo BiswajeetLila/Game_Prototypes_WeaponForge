@@ -34,6 +34,8 @@ func _ready() -> void:
 	_test_per_tick_burning_damage()
 	_test_per_tick_bleed_pct_damage()
 	_test_freeze_solid_halts_advance()
+	_test_modifier_damage_bonus()
+	_test_modifier_adds_tag_triggers_reaction()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -254,6 +256,34 @@ func _test_per_tick_bleed_pct_damage() -> void:
 	ls.apply_status(e, &"Bleed", 4)
 	cv2.tick({"enemies": [e], "heroes": [{"id": &"x", "lane": 2, "base_dmg": 0}], "lane_state": ls})
 	_check("Bleed deals 5% maxHP/tick (-5 of 100)", int(e.hp) == 95, "got %d" % int(e.hp))
+
+## ---- Q6 fix F5: Modifier socket warps the Active (dmg bonus + secondary tag + status) ----
+
+func _test_modifier_damage_bonus() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var leech = load("res://data/functions/leech.tres")  ## active_dmg_mult 0.6, no tag
+	var fire = load("res://data/functions/fire.tres")     ## mod_dmg_bonus 0.2
+	cv2.reset()
+	var e1 = ls.make_enemy(&"a", 1, 0.5, 500)
+	cv2.tick({"enemies": [e1], "heroes": [{"id": &"x", "lane": 1, "base_dmg": 100, "active_fn": leech}], "lane_state": ls})
+	var no_mod: int = 500 - int(e1.hp)
+	cv2.reset()
+	var e2 = ls.make_enemy(&"b", 1, 0.5, 500)
+	cv2.tick({"enemies": [e2], "heroes": [{"id": &"x", "lane": 1, "base_dmg": 100, "active_fn": leech, "mod_fn": fire}], "lane_state": ls})
+	var with_mod: int = 500 - int(e2.hp)
+	_check("Modifier mod_dmg_bonus increases damage", with_mod > no_mod, "no_mod=%d with_mod=%d" % [no_mod, with_mod])
+
+func _test_modifier_adds_tag_triggers_reaction() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var leech = load("res://data/functions/leech.tres")  ## no tag -> no reaction on its own
+	var fire = load("res://data/functions/fire.tres")     ## mod_adds_tag FIRE
+	cv2.reset()
+	var e = ls.make_enemy(&"w", 1, 0.5, 500)
+	ls.apply_status(e, &"Wet", 4)
+	cv2.tick({"enemies": [e], "heroes": [{"id": &"x", "lane": 1, "base_dmg": 50, "active_fn": leech, "mod_fn": fire}], "lane_state": ls})
+	_check("Modifier mod_adds_tag fires a reaction (FIRE x Wet = Steam cleanses Wet)", not ls.has_status(e, &"Wet"), "")
 
 ## ---- Q6 fix F3: Freeze Solid's Frozen must halt the enemy's advance ----
 

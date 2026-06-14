@@ -1,6 +1,33 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-15 · **Slice CANON:** `weaponforge-tftransistor/real-asset-pass` @ `718ab2d` (pushed) — **vertical slice COMPLETE.** · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5` (forked from `718ab2d`, pushed — do next-steps work here). · post-compaction resume doc.
+**Updated:** 2026-06-15 · **Slice CANON:** `weaponforge-tftransistor/real-asset-pass` @ `718ab2d` (pushed) — vertical slice complete. · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5` — **Phase-5 content batch Q1–Q5 landed** (see below). · post-compaction resume doc.
+
+## ⭐ Phase-5 content batch (Q1–Q5) — autonomous overnight build, 2026-06-15
+
+Built unattended on `post-slice-phase5`, each TDD'd (RED→GREEN), committed per-issue, then an **adversarial-review workflow** (6 read-only reviewers + per-finding verifiers, 27 agents) surfaced 5 real spec-fidelity gaps which were also fixed (Q6, TDD'd). Final headless sweep = **799 passed / 0 failed across 17 suites** (was 587). GitHub issues [#3](https://github.com/BiswajeetLila/Game_Prototypes_WeaponForge/issues/3)–[#7](https://github.com/BiswajeetLila/Game_Prototypes_WeaponForge/issues/7) track Q1–Q5.
+
+| Q | Issue | What landed | Commit |
+|---|---|---|---|
+| Q1 | #3 | Full **15-reaction** Magicka matrix + 3 aux statuses (Blind/Frozen/Bleed); `element_mediator` priority + Cracked-passenger rule; `apply_origin`/`consume_cracked`/`knockback` on ReactionData | `7785806` |
+| Q2 | #4 | Full **12-Function** catalog (added ICE/EARTH/BEAM/BOUNCE/SEEKER/KNOCKBACK); `combat_targeting.gd` resolver; `combat_v2` Function-driven attack (stub fallback = no regression); `main_v2` pushes equipped Active into combat | `f69bc09` |
+| Q3 | #5 | **Tier stat scaling** T1–T5 (1.0/1.4/2.0/2.8/4.0) into combat damage; `tier_scale.gd`; merge bump now changes damage | `1ed5881` |
+| Q4 | #6 | **Hero Ults fire** real §12 effects (Bran Leap / Elara Storm / Vex Strike); consume 1 bar / refund-on-empty; button now usable at **≥1 bar** (was full=3) | `9f0dd84` |
+| Q5 | #7 | **Wave telegraph** wired — `wave_director.telegraph_for_stage` + INTEL HUD button + `wave_telegraph.show_stage`; enemy weak/resist tags | `94785a6` |
+| — | — | GDD synced to Q1–Q5 | `6a77ec5` |
+| Q6a | review | **F1** reaction `dmg_mult` now dealt as damage (× Cracked amp); **F2** per-tick status DoT (Burning −2 / Shocked −1 / Bleed 5%); **F3** Freeze Solid's Frozen now halts advance | `2a42311` |
+| Q6b | review | **F4** reaction splash (`apply_splashed`) applied to cross-lane/own-lane neighbours (Steam Blind, Electrocute Wet-only arc, …); **F5** Modifier socket warps the Active (`mod_dmg_bonus` + `mod_adds_tag` secondary reaction + `mod_applies_status`) | `d44969a` |
+
+**Adversarial review:** the 27-agent review workflow flagged that the green Q1–Q5 sweep masked 5 spec gaps (tests asserted *data shape*, never the combat *effect*). All 5 confirmed-real and fixed in Q6 with effect-level tests. The review output is archived in the run transcript; net result = reactions/statuses/modifiers now actually *do something* in combat, which matters for the playtest.
+
+**New core modules:** `combat_targeting.gd` (targeting resolver), `tier_scale.gd` (tier mult). **Extended:** `reaction_data.gd`, `status_data.gd` (`hp_dmg_pct_per_tick` for Bleed), `lane_state.gd` (`consume_status_stack`), `function_data.gd` (`active_max_hits`, `active_knockback`), `element_mediator.gd`, `combat_v2.gd`, `ult_controller.gd`, `wave_director.gd`, `wave_telegraph.gd`, `main_v2.gd`, `forge_panel_v2.gd`.
+
+**Known follow-ups (faithful — flagged, NOT silently skipped). After Q6, the combat math is live; these remain:**
+- **6 new Functions have no rune-icon PNG** → render name-only in the shop (icon-top card falls back). Needs an art pass (nano-banana, ~$0.04 each — user must OK the spend per the image-cost policy).
+- **Passive auras still data-only:** wired combat = each Function's **Active** + **Modifier** (Q6 F5) + tier scaling. Passive-slot traits (Echo proc, Long Sight, Frost Field, Tectonic Plate HP, Executioner, etc.) are described in the `.tres` but not applied. Also **Modifier-warps-base-weapon when the Active socket is empty** is not wired (base attack path doesn't read `mod_fn`).
+- **Reaction splash DAMAGE + cleanse-on-splashed:** Q6 F4 applies splash *statuses* to neighbours (Blind/Shocked/etc.) but not the reaction's bonus *damage* to splashed enemies, nor "cleanse Wet on arced" — status splash is in, damage splash is the remaining bit.
+- **Enemy attack-skip (Blind/Frozen `skip_attack_chance`, Shocked 10%) not applied** to the engaged-enemy contact damage in `combat_v2` (advance step deals a flat 1/tick regardless). Per-tick status *damage* IS now applied (Q6 F2).
+- **UX shift to verify at playtest:** the Ult button now fires at ≥1 bar (consume 1), not at a full 3-bar meter (Q4).
+- Boss (stage 4 wave 2) is still a stationary hp30 enemy (telegraph lists it; real boss AI = Phase 5).
 
 ## Read-first
 

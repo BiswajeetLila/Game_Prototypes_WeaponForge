@@ -73,6 +73,7 @@ func _build_layout() -> void:
 	add_child(_hud)
 
 	_battle = BattleViewScene.instantiate()
+	_battle.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## display only — never eat button clicks
 	_region(_battle, 0.06, 0.58)
 	add_child(_battle)
 
@@ -89,6 +90,7 @@ func _build_layout() -> void:
 		_forge.start_next_wave.connect(advance_wave)
 
 	_chain_hud = ChainHUDScene.instantiate()
+	_chain_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## top-strip overlay must not block HUD buttons
 	add_child(_chain_hud)
 
 func _set_next_wave(v: bool) -> void:
@@ -156,6 +158,16 @@ func _build_hud() -> Control:
 	pause.offset_top = 3; pause.offset_bottom = -3
 	pause.pressed.connect(_on_pause)
 	hud.add_child(pause)
+
+	var paused_lbl := Label.new()
+	paused_lbl.name = "PausedLabel"
+	paused_lbl.text = "⏸ PAUSED"
+	paused_lbl.add_theme_font_size_override(&"font_size", 12)
+	paused_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	paused_lbl.anchor_left = 0.5; paused_lbl.anchor_right = 0.5
+	paused_lbl.offset_left = -40; paused_lbl.offset_right = 40; paused_lbl.offset_top = 6
+	paused_lbl.visible = false
+	hud.add_child(paused_lbl)
 	return hud
 
 func _region(c: Control, top_frac: float, bottom_frac: float) -> void:
@@ -196,6 +208,7 @@ func start_run() -> void:
 	_populate_shop()  ## shop opens at STAGE start (persists across the stage's waves)
 	state = STATE_COMBAT
 	_paused = false
+	_update_pause_indicator()
 	_set_next_wave(false)
 	_apply_layout(STATE_COMBAT)
 
@@ -291,6 +304,8 @@ func advance_wave() -> void:
 		_populate_shop()  ## fresh shop ONLY at a new stage
 	_set_next_wave(false)
 	state = STATE_COMBAT
+	_paused = false  ## each wave starts playing (never resume into a paused freeze)
+	_update_pause_indicator()
 	_apply_layout(STATE_COMBAT)
 
 ## ---- HUD / forge updates ----
@@ -380,7 +395,13 @@ func _on_reroll() -> void:
 	gold -= int(res.get("cost", 0))
 	for i in _shop_items.size():
 		if _shop_items[i] != null:
+			var cur_id := String(_shop_items[i].get("id", ""))
 			var fresh: Array = shop.roll_items(current_stage, 1, false)
+			## avoid re-rolling the same id (tiny T1 pool) so reroll visibly changes
+			var tries: int = 0
+			while fresh.size() > 0 and String(fresh[0].get("id", "")) == cur_id and tries < 6:
+				fresh = shop.roll_items(current_stage, 1, false)
+				tries += 1
 			if fresh.size() > 0:
 				_shop_items[i] = fresh[0]
 				_track_elements([fresh[0]])
@@ -467,6 +488,17 @@ func get_socket(hero_idx: int, socket_idx: int):
 func _on_pause() -> void:
 	## pause only gates the tick — never swaps state or re-anchors (was a layout bug)
 	_paused = not _paused
+	_update_pause_indicator()
+
+func _update_pause_indicator() -> void:
+	if _hud == null:
+		return
+	var pl := _hud.get_node_or_null("PausedLabel") as Label
+	if pl != null:
+		pl.visible = _paused
+	var pb := _hud.get_node_or_null("PauseBtn") as Button
+	if pb != null:
+		pb.text = "▶" if _paused else "II"
 
 func is_paused() -> bool:
 	return _paused

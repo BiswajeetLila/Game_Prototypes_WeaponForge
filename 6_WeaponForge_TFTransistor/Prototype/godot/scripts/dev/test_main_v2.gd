@@ -22,6 +22,8 @@ func _ready() -> void:
 	_test_pause_no_reanchor()
 	_test_shop_populates_per_stage()
 	_test_reroll_button_path()
+	_test_overlays_dont_block_input()
+	_test_advance_unpauses()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -231,6 +233,35 @@ func _test_reroll_button_path() -> void:
 	if rb != null:
 		rb.pressed.emit()  ## full chain: button -> reroll_tapped -> _on_reroll
 		_check("reroll via real button press decrements gold", inst.gold == 4, "got %d" % inst.gold)
+	inst.queue_free()
+
+func _test_overlays_dont_block_input() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	## ChainHUD (top-strip overlay, added topmost) + BattleView must NOT eat button clicks
+	_check("overlay: ChainHUD mouse-transparent", inst._chain_hud.mouse_filter == Control.MOUSE_FILTER_IGNORE, "got %d" % inst._chain_hud.mouse_filter)
+	_check("overlay: BattleView mouse-transparent", inst._battle.mouse_filter == Control.MOUSE_FILTER_IGNORE, "got %d" % inst._battle.mouse_filter)
+	inst.queue_free()
+
+func _test_advance_unpauses() -> void:
+	var packed = load("res://scenes/Main_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	## pause, then START NEXT WAVE must resume (each new wave starts unpaused)
+	inst._on_pause()
+	_check("paused after pause", inst.is_paused() == true, "")
+	## get to a forge break then advance
+	var guard: int = 0
+	while inst.is_combat() and guard < 500:
+		inst._tick_once()
+		guard += 1
+	inst.advance_wave()
+	_check("advance_wave clears pause (no permanent freeze)", inst.is_paused() == false, "")
 	inst.queue_free()
 
 func _check(name: String, ok: bool, detail: String) -> void:

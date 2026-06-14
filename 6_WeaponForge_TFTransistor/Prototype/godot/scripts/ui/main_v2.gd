@@ -21,6 +21,7 @@ const BattleViewScene: PackedScene = preload("res://scenes/ui/BattleView_v2.tscn
 const ForgePanelScene: PackedScene = preload("res://scenes/ui/ForgePanel_v2.tscn")
 const ChainHUDScene: PackedScene = preload("res://scenes/ui/ChainHUD.tscn")
 const Loadout = preload("res://scripts/core/loadout_v2.gd")
+const Reserve = preload("res://scripts/core/reserve_v2.gd")
 
 const STATE_COMBAT: int = 0
 const STATE_FORGE: int = 1
@@ -40,7 +41,10 @@ var gold: int = 7
 var _ticks_this_wave: int = 0
 var _chain: int = 0
 var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
+var _reserves: Array = []      ## 3 heroes, each a reserve_v2 Array[2] (bench)
 var _selected_shop: int = -1   ## currently selected shop slot (tap-to-equip)
+var _selected_reserve_hero: int = -1  ## a benched item picked up for re-equip (hero)
+var _selected_reserve_idx: int = -1   ## ...and which reserve slot
 var _shop_items: Array = []    ## 7 slots, each {id,tier,cost} or null (bought/empty)
 var _stage_elements_seen: Array = []  ## element ids that appeared in shop this stage (pity)
 var _shop_populate_count: int = 0     ## test probe: number of per-stage shop resets
@@ -87,6 +91,12 @@ func _build_layout() -> void:
 		_forge.shop_item_tapped.connect(_on_shop_tap)
 	if _forge.has_signal("socket_tapped"):
 		_forge.socket_tapped.connect(_on_socket_tap)
+	if _forge.has_signal("reserve_tapped"):
+		_forge.reserve_tapped.connect(_on_reserve_tap)
+	if _forge.has_signal("socket_sell"):
+		_forge.socket_sell.connect(_on_socket_sell)
+	if _forge.has_signal("reserve_sell"):
+		_forge.reserve_sell.connect(_on_reserve_sell)
 	if _forge.has_signal("start_next_wave"):
 		_forge.start_next_wave.connect(advance_wave)
 
@@ -200,9 +210,12 @@ func start_run() -> void:
 	_chain = 0
 	gold = 7
 	_selected_shop = -1
+	_selected_reserve_hero = -1
+	_selected_reserve_idx = -1
 	_shop_items = []
 	_stage_elements_seen = []
 	_loadouts = [Loadout.make_loadout(), Loadout.make_loadout(), Loadout.make_loadout()]
+	_reserves = [Reserve.make_reserve(), Reserve.make_reserve(), Reserve.make_reserve()]
 	_heroes = _make_heroes()
 	_shop_populate_count = 0
 	_reset_stage_shop()  ## F0: slow-populate start batch (2 items) for stage 1
@@ -459,6 +472,8 @@ func _on_reroll() -> void:
 
 func _on_shop_tap(slot_idx: int) -> void:
 	_selected_shop = slot_idx
+	_selected_reserve_hero = -1  ## picking a shop item clears any benched-item pickup
+	_selected_reserve_idx = -1
 
 ## ---- real-time weapon tooltip (combined P/M/A effect per hero) ----
 
@@ -500,9 +515,19 @@ func _refresh_weapon_tips() -> void:
 func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
 	if state != STATE_FORGE:
 		return  ## equip is forge-break only (spec §15)
-	if _selected_shop < 0 or _selected_shop >= _shop_items.size():
-		return
 	if hero_idx < 0 or hero_idx >= _loadouts.size():
+		return
+	## (a) re-equip a benched reserve item -> swap it into the socket (no gold cost)
+	if _selected_reserve_hero == hero_idx and _selected_reserve_idx >= 0:
+		var rr: Dictionary = Reserve.equip_from_reserve(_loadouts[hero_idx], _reserves[hero_idx], socket_idx, _selected_reserve_idx)
+		_selected_reserve_hero = -1
+		_selected_reserve_idx = -1
+		if rr.get("ok", false):
+			_sync_hero_forge(hero_idx)
+			_refresh_weapon_tips()
+		return
+	## (b) buy the selected shop item and equip it (merge / displace-to-reserve / blocked)
+	if _selected_shop < 0 or _selected_shop >= _shop_items.size():
 		return
 	var item = _shop_items[_selected_shop]
 	if item == null:
@@ -510,21 +535,80 @@ func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
 	var shop = get_node_or_null("/root/ShopV2")
 	if shop == null:
 		return
-	var res: Dictionary = shop.buy(item, gold)
-	if not res.get("ok", false):
+	var buy: Dictionary = shop.buy(item, gold)
+	if not buy.get("ok", false):
 		return  ## can't afford
-	gold -= int(res.get("cost", 0))
-	var fn_id := StringName(item.get("id", ""))
-	var tier: int = int(item.get("tier", 1))
-	## slice merge-stub: no tier bump (allow_merge=false) -> shows "2/2"
-	_loadouts[hero_idx] = Loadout.apply_drop(_loadouts[hero_idx], socket_idx, fn_id, tier, false)
+	var res: Dictionary = Reserve.equip(_loadouts[hero_idx], _reserves[hero_idx], socket_idx, item)
+	if not res.get("ok", false):
+		## socket occupied + both reserve slots full -> blocked. Don't charge; flash error.
+		if _forge != null and _forge.has_method("flash_error"):
+			_forge.flash_error(hero_idx)
+		return
+	gold -= int(buy.get("cost", 0))
 	_shop_items[_selected_shop] = null  ## remove bought item from shop
 	_selected_shop = -1
-	var entry = _loadouts[hero_idx][socket_idx]
-	if _forge != null and _forge.has_method("set_socket_fn") and entry != null:
-		_forge.set_socket_fn(hero_idx, socket_idx, entry.id, int(entry.tier), String(entry.id), String(entry.get("merge", "")))
+	_sync_hero_forge(hero_idx)
 	_refresh_shop_ui()
 	_refresh_weapon_tips()  ## real-time: weapon tooltip updates as you equip
+
+## Pick up a benched (reserve) item so the next socket tap re-equips it.
+func _on_reserve_tap(hero_idx: int, reserve_idx: int) -> void:
+	if state != STATE_FORGE:
+		return
+	if hero_idx < 0 or hero_idx >= _reserves.size():
+		return
+	if reserve_idx < 0 or reserve_idx >= _reserves[hero_idx].size() or _reserves[hero_idx][reserve_idx] == null:
+		return
+	_selected_reserve_hero = hero_idx
+	_selected_reserve_idx = reserve_idx
+	_selected_shop = -1
+
+## Long-press a socket -> sell that Function back to the shop for a reduced refund.
+func _on_socket_sell(hero_idx: int, socket_idx: int) -> void:
+	if state != STATE_FORGE or hero_idx < 0 or hero_idx >= _loadouts.size():
+		return
+	var res: Dictionary = Reserve.sell_socket(_loadouts[hero_idx], socket_idx)
+	if res.get("ok", false):
+		gold += int(res.get("gold_refund", 0))
+		_sync_hero_forge(hero_idx)
+		_refresh_shop_ui()
+		_refresh_weapon_tips()
+
+## Long-press a reserve slot -> sell that benched Function for a reduced refund.
+func _on_reserve_sell(hero_idx: int, reserve_idx: int) -> void:
+	if state != STATE_FORGE or hero_idx < 0 or hero_idx >= _reserves.size():
+		return
+	var res: Dictionary = Reserve.sell_reserve(_reserves[hero_idx], reserve_idx)
+	if res.get("ok", false):
+		gold += int(res.get("gold_refund", 0))
+		_sync_hero_forge(hero_idx)
+		_refresh_shop_ui()
+
+## Push a hero's full forge state (3 sockets + 2 reserve slots) to the panel.
+func _sync_hero_forge(hero_idx: int) -> void:
+	if _forge == null:
+		return
+	for s in 3:
+		var e = _loadouts[hero_idx][s]
+		if _forge.has_method("set_socket_fn"):
+			if e == null:
+				_forge.set_socket_fn(hero_idx, s, &"")
+			else:
+				_forge.set_socket_fn(hero_idx, s, e.id, int(e.tier), String(e.id), String(e.get("merge", "")))
+	if _forge.has_method("set_reserve_item"):
+		for r in 2:
+			var ri = _reserves[hero_idx][r]
+			if ri == null:
+				_forge.set_reserve_item(hero_idx, r, &"")
+			else:
+				_forge.set_reserve_item(hero_idx, r, ri.id, int(ri.tier))
+
+func get_reserve(hero_idx: int, reserve_idx: int):
+	if hero_idx < 0 or hero_idx >= _reserves.size():
+		return null
+	if reserve_idx < 0 or reserve_idx >= _reserves[hero_idx].size():
+		return null
+	return _reserves[hero_idx][reserve_idx]
 
 func get_socket(hero_idx: int, socket_idx: int):
 	if hero_idx < 0 or hero_idx >= _loadouts.size():

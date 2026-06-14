@@ -17,6 +17,10 @@ func _ready() -> void:
 	_test_buy_deducts_and_clears()
 	_test_insufficient_gold_blocks()
 	_test_merge_stub()
+	_test_equip_displaces_to_reserve()
+	_test_reserve_full_blocks_equip()
+	_test_sell_socket_refunds()
+	_test_bench_reequip_swaps()
 	_test_reroll_costs_gold()
 	_test_equip_forge_gated()
 	_test_per_kill_gold()
@@ -139,6 +143,72 @@ func _test_merge_stub() -> void:
 	var s = inst.get_socket(0, 2)
 	_check("merge stub: tier stays 1 (no T2 in slice)", s != null and s.tier == 1, "got %s" % str(s))
 	_check("merge stub: shows 2/2", s != null and String(s.get("merge", "")) == "2/2", "got %s" % str(s))
+	inst.queue_free()
+
+func _test_equip_displaces_to_reserve() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 99
+	inst._shop_items[0] = {"id": "FIRE", "tier": 1, "cost": 1}
+	inst._on_shop_tap(0)
+	inst._on_socket_tap(0, 2)  ## equip FIRE -> ACTIVE
+	inst._shop_items[1] = {"id": "WATER", "tier": 1, "cost": 1}
+	inst._on_shop_tap(1)
+	inst._on_socket_tap(0, 2)  ## equip WATER -> ACTIVE (displaces FIRE)
+	var s = inst.get_socket(0, 2)
+	_check("displace: socket now WATER", s != null and s.id == &"WATER", "got %s" % str(s))
+	var r0 = inst.get_reserve(0, 0)
+	_check("displace: old FIRE pushed to reserve", r0 != null and r0.id == &"FIRE", "got %s" % str(r0))
+	inst.queue_free()
+
+func _test_reserve_full_blocks_equip() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 99
+	var ids = ["FIRE", "WATER", "AOE", "LEECH"]
+	for i in 4:
+		inst._shop_items[i] = {"id": ids[i], "tier": 1, "cost": 1}
+	inst._on_shop_tap(0); inst._on_socket_tap(0, 2)  ## FIRE
+	inst._on_shop_tap(1); inst._on_socket_tap(0, 2)  ## WATER (FIRE -> reserve 0)
+	inst._on_shop_tap(2); inst._on_socket_tap(0, 2)  ## AOE (WATER -> reserve 1) -> reserve full
+	var gold_before: int = inst.gold
+	inst._on_shop_tap(3); inst._on_socket_tap(0, 2)  ## LEECH -> blocked (reserve full)
+	var s = inst.get_socket(0, 2)
+	_check("full: socket unchanged (still AOE)", s != null and s.id == &"AOE", "got %s" % str(s))
+	_check("full: blocked equip does NOT charge gold", inst.gold == gold_before, "before=%d now=%d" % [gold_before, inst.gold])
+	_check("full: blocked shop item stays in shop", inst._shop_items[3] != null, "got %s" % str(inst._shop_items[3]))
+	inst.queue_free()
+
+func _test_sell_socket_refunds() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 99
+	inst._shop_items[0] = {"id": "FIRE", "tier": 1, "cost": 2}
+	inst._on_shop_tap(0); inst._on_socket_tap(0, 2)  ## equip FIRE (cost 2)
+	var g: int = inst.gold
+	inst._on_socket_sell(0, 2)  ## sell -> floor(2*0.5) = 1
+	_check("sell: gold refunded (reduced)", inst.gold == g + 1, "g=%d now=%d" % [g, inst.gold])
+	_check("sell: socket emptied", inst.get_socket(0, 2) == null, "got %s" % str(inst.get_socket(0, 2)))
+	inst.queue_free()
+
+func _test_bench_reequip_swaps() -> void:
+	var inst = _fresh_forge()
+	if inst == null:
+		return
+	inst.gold = 99
+	inst._shop_items[0] = {"id": "FIRE", "tier": 1, "cost": 1}
+	inst._on_shop_tap(0); inst._on_socket_tap(0, 2)  ## FIRE active
+	inst._shop_items[1] = {"id": "WATER", "tier": 1, "cost": 1}
+	inst._on_shop_tap(1); inst._on_socket_tap(0, 2)  ## WATER active, FIRE -> reserve 0
+	inst._on_reserve_tap(0, 0)   ## pick up benched FIRE
+	inst._on_socket_tap(0, 2)    ## re-equip FIRE -> active (WATER swaps back to reserve)
+	var s = inst.get_socket(0, 2)
+	_check("bench: socket FIRE again", s != null and s.id == &"FIRE", "got %s" % str(s))
+	var r0 = inst.get_reserve(0, 0)
+	_check("bench: WATER swapped into reserve", r0 != null and r0.id == &"WATER", "got %s" % str(r0))
 	inst.queue_free()
 
 func _test_reroll_costs_gold() -> void:

@@ -70,12 +70,9 @@ func set_hero_hp(lane: int, hp: int, max_hp: int) -> void:
 	if anchor == null:
 		return
 	var bar := anchor.get_node_or_null("HPBar") as ColorRect
-	var val := anchor.get_node_or_null("HPValue") as Label
 	var frac: float = clampf(float(hp) / maxf(float(max_hp), 1.0), 0.0, 1.0)
 	if bar != null:
-		bar.size = Vector2(48.0 * frac, 5)
-	if val != null:
-		val.text = "%d/%d" % [hp, max_hp]
+		bar.size = Vector2(48.0 * frac, 5)  ## bar only — no numeric text (compact battle)
 
 func _load_tex(path: String) -> Texture2D:
 	if path != "" and ResourceLoader.exists(path):
@@ -232,11 +229,6 @@ func _make_hero_anchor(lane: int) -> Control:
 	hp.position = Vector2(-24, -44)
 	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	anchor.add_child(hp)
-	var hpv := Label.new()
-	hpv.name = "HPValue"
-	hpv.add_theme_font_size_override(&"font_size", 8)
-	hpv.position = Vector2(-24, -58)
-	anchor.add_child(hpv)
 	_position_hero(anchor, lane)
 	return anchor
 
@@ -250,6 +242,15 @@ func _position_hero(anchor: Control, lane: int) -> void:
 		## combat: one hero per lane, anchored left
 		var lane_h: float = vs.y / float(LANE_COUNT)
 		anchor.position = Vector2(HERO_X * vs.x, float(lane) * lane_h + lane_h * 0.5)
+	## compact battle: arena = icons only. Hero name shows only in the forge preview;
+	## the floating HP bar shows only during combat.
+	var nm := anchor.get_node_or_null("Name") as Label
+	if nm != null:
+		nm.visible = _compact
+	for bar_name in ["HPBar", "HPBarBG"]:
+		var b := anchor.get_node_or_null(bar_name) as Control
+		if b != null:
+			b.visible = not _compact
 
 func _reposition_heroes() -> void:
 	var heroes := get_node_or_null("Heroes")
@@ -308,13 +309,7 @@ func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 		box.position = Vector2(-20, -22)
 		node.add_child(box)
 
-	var lbl := Label.new()
-	lbl.name = "Name"
-	lbl.add_theme_font_size_override(&"font_size", 9)
-	lbl.text = str(enemy.id)
-	lbl.position = Vector2(-20, -36)
-	node.add_child(lbl)
-
+	## compact battle (In_Battle.png): icons only — no enemy name / numeric HP text.
 	## HP bar background + fill
 	var hp_bg := ColorRect.new()
 	hp_bg.name = "HPBarBG"
@@ -329,15 +324,10 @@ func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 	hp.position = Vector2(-20, 24)
 	node.add_child(hp)
 
-	var hpv := Label.new()
-	hpv.name = "HPValue"
-	hpv.add_theme_font_size_override(&"font_size", 8)
-	hpv.position = Vector2(-20, 30)
-	node.add_child(hpv)
-
+	## status row = small colored ICONS only (no text)
 	var status := HBoxContainer.new()
 	status.name = "Status"
-	status.position = Vector2(-22, -52)
+	status.position = Vector2(-20, -34)
 	status.add_theme_constant_override(&"separation", 3)
 	node.add_child(status)
 
@@ -345,37 +335,25 @@ func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 
 func _update_enemy_node(node: Control, enemy: Dictionary, cell: int, stack: int) -> void:
 	node.position = _cell_position(int(enemy.lane), cell, stack)
-	var lbl := node.get_node_or_null("Name") as Label
-	if lbl != null:
-		lbl.text = str(enemy.id)
-	## HP fill + numeric value
+	## HP fill only (no numeric text — compact battle)
 	var max_hp: float = maxf(float(enemy.get("max_hp", enemy.hp)), 1.0)
 	var hp := node.get_node_or_null("HPBar") as ColorRect
 	if hp != null:
 		var frac: float = clampf(float(enemy.hp) / max_hp, 0.0, 1.0)
 		hp.size = Vector2(40.0 * frac, 5)
-	var hpv := node.get_node_or_null("HPValue") as Label
-	if hpv != null:
-		hpv.text = str(int(enemy.hp))
-	## status chips (colored dot + name label)
+	## status = small colored ICON dots only (no text)
 	var status := node.get_node_or_null("Status")
 	if status != null:
 		for c in status.get_children():
 			c.queue_free()
 		for s in enemy.statuses.keys():
-			var chip := HBoxContainer.new()
-			chip.add_theme_constant_override(&"separation", 1)
-			chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			var dot := ColorRect.new()
+			dot.name = "StatusDot"
 			dot.color = STATUS_COLORS.get(String(s), Color(1, 1, 1))
-			dot.custom_minimum_size = Vector2(8, 8)
-			chip.add_child(dot)
-			var nlbl := Label.new()
-			nlbl.name = "ChipLabel"
-			nlbl.text = String(s)
-			nlbl.add_theme_font_size_override(&"font_size", 8)
-			chip.add_child(nlbl)
-			status.add_child(chip)
+			dot.custom_minimum_size = Vector2(9, 9)
+			dot.tooltip_text = String(s)
+			dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			status.add_child(dot)
 
 ## Floating reaction shout ("STEAM!", "ELECTROCUTE!") near the enemy, fades up.
 func show_reaction_label(rid: StringName, enemy: Dictionary) -> void:

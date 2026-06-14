@@ -115,8 +115,8 @@ func _set_next_wave(v: bool) -> void:
 
 func _apply_layout(s: int) -> void:
 	if s == STATE_COMBAT:
-		_region(_battle, 0.06, 0.66)
-		_region(_forge, 0.66, 1.0)
+		_region(_battle, 0.06, 0.54)  ## squeeze the arena so the weapon rail + shop fit uncramped
+		_region(_forge, 0.54, 1.0)
 		if _battle.has_method("set_compact"): _battle.set_compact(false)
 		if _forge.has_method("set_compact"): _forge.set_compact(true)
 		if _chain_hud != null: _chain_hud.visible = true

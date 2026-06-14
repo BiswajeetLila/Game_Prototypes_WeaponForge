@@ -307,8 +307,8 @@ func _test_layout_combat() -> void:
 	var inst = packed.instantiate()
 	add_child(inst)  ## opens FORGE
 	inst.advance_wave()  ## press START -> COMBAT layout
-	_check("layout combat: battle big (bottom ~0.66)", is_equal_approx(inst._battle.anchor_bottom, 0.66), "got %.2f" % inst._battle.anchor_bottom)
-	_check("layout combat: forge compact (top ~0.66)", is_equal_approx(inst._forge.anchor_top, 0.66), "got %.2f" % inst._forge.anchor_top)
+	_check("layout combat: battle squeezed (bottom ~0.54)", is_equal_approx(inst._battle.anchor_bottom, 0.54), "got %.2f" % inst._battle.anchor_bottom)
+	_check("layout combat: forge gets the rest (top ~0.54)", is_equal_approx(inst._forge.anchor_top, 0.54), "got %.2f" % inst._forge.anchor_top)
 	_check("layout combat: ChainHUD visible", inst._chain_hud.visible == true, "")
 	_check("layout combat: forge is_compact", inst._forge.has_method("is_compact") and inst._forge.is_compact() == true, "")
 	_check("layout combat: battle not compact", inst._battle.has_method("is_compact") and inst._battle.is_compact() == false, "")

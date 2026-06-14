@@ -34,6 +34,14 @@ const STATUS_COLORS: Dictionary = {
 	"Shocked": Color(0.95, 0.85, 0.25),
 	"Cracked": Color(0.55, 0.55, 0.58),
 }
+## background-cut status sprites (transparent) — fall back to a colored dot if missing
+const STATUS_ICON_TEX: Dictionary = {
+	"Burning": "res://assets/generated/status/burning_cut.png",
+	"Wet": "res://assets/generated/status/wet_cut.png",
+	"Chilled": "res://assets/generated/status/chilled_cut.png",
+	"Shocked": "res://assets/generated/status/shocked_cut.png",
+	"Cracked": "res://assets/generated/status/cracked_cut.png",
+}
 
 ## Real chibi art (reused from existing generated assets).
 const HERO_TEX: Dictionary = {
@@ -337,14 +345,17 @@ func _make_enemy_node(eid: String, enemy: Dictionary) -> Control:
 	hp.position = Vector2(-20, 24)
 	node.add_child(hp)
 
-	## status row = small colored ICONS only (no text)
+	## status row = small element icons (above the sprite)
 	var status := HBoxContainer.new()
 	status.name = "Status"
-	status.position = Vector2(-20, -34)
+	status.position = Vector2(-20, -44)
 	status.add_theme_constant_override(&"separation", 3)
 	node.add_child(status)
 
 	return node
+
+func _status_icon(s: String) -> Texture2D:
+	return _load_tex(String(STATUS_ICON_TEX.get(s, "")))
 
 func _update_enemy_node(node: Control, enemy: Dictionary, cell: int, stack: int) -> void:
 	node.position = _cell_position(int(enemy.lane), cell, stack)
@@ -354,19 +365,31 @@ func _update_enemy_node(node: Control, enemy: Dictionary, cell: int, stack: int)
 	if hp != null:
 		var frac: float = clampf(float(enemy.hp) / max_hp, 0.0, 1.0)
 		hp.size = Vector2(40.0 * frac, 5)
-	## status = small colored ICON dots only (no text)
+	## status = small element ICON (bg-cut sprite) per status; colored-dot fallback
 	var status := node.get_node_or_null("Status")
 	if status != null:
 		for c in status.get_children():
 			c.queue_free()
 		for s in enemy.statuses.keys():
-			var dot := ColorRect.new()
-			dot.name = "StatusDot"
-			dot.color = STATUS_COLORS.get(String(s), Color(1, 1, 1))
-			dot.custom_minimum_size = Vector2(9, 9)
-			dot.tooltip_text = String(s)
-			dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			status.add_child(dot)
+			var tex := _status_icon(String(s))
+			if tex != null:
+				var ico := TextureRect.new()
+				ico.name = "StatusIcon"
+				ico.texture = tex
+				ico.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				ico.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				ico.custom_minimum_size = Vector2(16, 16)
+				ico.tooltip_text = String(s)
+				ico.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				status.add_child(ico)
+			else:
+				var dot := ColorRect.new()
+				dot.name = "StatusDot"
+				dot.color = STATUS_COLORS.get(String(s), Color(1, 1, 1))
+				dot.custom_minimum_size = Vector2(9, 9)
+				dot.tooltip_text = String(s)
+				dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				status.add_child(dot)
 	## hit feedback: this enemy just took damage -> flash + impact + attacking-hero pulse
 	var prev: int = int(_enemy_hp.get(node.name, -1))
 	var cur_hp: int = int(enemy.hp)

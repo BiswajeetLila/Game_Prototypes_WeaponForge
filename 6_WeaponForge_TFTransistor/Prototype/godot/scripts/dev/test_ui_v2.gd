@@ -369,6 +369,9 @@ func _test_ult_button() -> void:
 	inst.set_hero_ult_bars(0, 0)
 	_check("ult: empty -> disabled", ult is Button and ult.disabled == true, "")
 	_check("ult: empty -> fill collapsed", fill != null and is_equal_approx(fill.anchor_top, 1.0), "got %.2f" % (fill.anchor_top if fill != null else -1.0))
+	## 1 bar -> usable (spec §12: fire at >=1 bar, consume 1)
+	inst.set_hero_ult_bars(0, 1)
+	_check("ult: 1 bar -> enabled", ult is Button and ult.disabled == false, "")
 	## full -> enabled, fill spans full height (anchor_top ~0.0), label ULT!
 	inst.set_hero_ult_bars(0, 3)
 	_check("ult: full -> enabled", ult is Button and ult.disabled == false, "")

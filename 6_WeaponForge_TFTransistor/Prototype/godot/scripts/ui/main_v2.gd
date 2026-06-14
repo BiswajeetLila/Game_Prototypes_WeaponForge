@@ -760,15 +760,26 @@ func _on_play_again() -> void:
 func _on_home() -> void:
 	get_tree().change_scene_to_file("res://scenes/HomeV2.tscn")
 
-## Fire a hero's Ult when its meter is full. Ult VFX/effect = Phase 5; for now firing
-## just consumes the (shared) charge so the button + feedback loop is demonstrable.
-func _on_ult(_hero_idx: int) -> void:
+## Fire a hero's Ult (spec §12). Consumes 1 shared bar; UltController applies the per-hero
+## effect (Bran Leap / Elara Storm / Vex Strike) and refunds the bar if the grid was empty.
+func _on_ult(hero_idx: int) -> void:
 	var uc = get_node_or_null("/root/UltController")
-	if uc == null:
+	var ls = get_node_or_null("/root/LaneState")
+	if uc == null or ls == null:
 		return
-	if int(uc.bars) < 3:
+	if int(uc.bars) < 1:
 		return  ## not charged
-	uc.bars = 0  ## consume
+	var hero_id: StringName = &""
+	var lane: int = hero_idx
+	var base: int = 2
+	if hero_idx >= 0 and hero_idx < _heroes.size():
+		hero_id = _heroes[hero_idx].get("id", &"")
+		lane = int(_heroes[hero_idx].get("lane", hero_idx))
+		base = int(_heroes[hero_idx].get("base_dmg", 2))
+	uc.fire_ult(hero_id, {"lane": lane, "enemies": ls.enemies, "base_dmg": base, "lane_state": ls})
+	## reflect ult damage immediately; dead enemies are reaped on the next combat tick
+	if _battle != null and _battle.has_method("_on_tick"):
+		_battle._on_tick()
 	_update_forge()
 
 func _on_pause() -> void:

@@ -459,7 +459,7 @@ func set_hero_ult_bars(hero_idx: int, filled: int) -> void:
 	if fill != null:
 		fill.anchor_top = 1.0 - frac  ## grows up from the bottom
 		fill.offset_top = 0
-	var ready: bool = filled >= 3
+	var ready: bool = filled >= 1  ## fire at >=1 bar, consume 1 (spec §12.4)
 	if ult_bar is Button:
 		ult_bar.disabled = not ready
 	ult_bar.modulate = Color(1, 1, 1, 1) if ready else Color(0.75, 0.75, 0.75, 1)

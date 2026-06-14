@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"BEAM"
+category = &"pattern"
+active_damage_tag = &""
+active_status_emit = &""
+active_dmg_mult = 0.6
+active_targeting = &"own_lane_line"
+active_atk_speed = 0.5
+active_heal_pct = 0.0
+active_max_hits = 9
+mod_dmg_bonus = 0.0
+mod_adds_tag = &""
+mod_applies_status = &""
+passive_id = &"long_sight"
+active_desc = "Pierces every enemy in the lane, front to back"
+mod_desc = "Makes the Active beneath it pierce through targets"
+passive_desc = "Long Sight: +15% damage vs back-of-lane enemies"
+best_fit = &"MODIFIER"

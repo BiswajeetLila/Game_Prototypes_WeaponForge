@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"EARTH"
+category = &"element"
+active_damage_tag = &"EARTH"
+active_status_emit = &"Cracked"
+active_dmg_mult = 1.5
+active_targeting = &"own_lane_closest"
+active_atk_speed = 0.5
+active_heal_pct = 0.0
+mod_dmg_bonus = 0.3
+mod_adds_tag = &"EARTH"
+mod_applies_status = &"Cracked"
+passive_id = &"tectonic_plate"
+active_desc = "Heavy slow strike, stacks Cracked (+dmg taken)"
+mod_desc = "+30% damage, stacks Cracked, -20% attack speed"
+passive_desc = "Tectonic Plate: +30% HP, +10% damage reduction"
+best_fit = &"ACTIVE"

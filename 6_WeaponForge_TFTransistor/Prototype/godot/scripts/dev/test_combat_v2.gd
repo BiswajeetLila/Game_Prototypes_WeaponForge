@@ -1,5 +1,8 @@
 ## Tests for CombatV2 tick order — step 7.
+## + Q2: CombatTargeting resolver + Function-driven attack wiring.
 extends Control
+
+const _Targeting = preload("res://scripts/core/combat_targeting.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -11,6 +14,16 @@ func _ready() -> void:
 	_test_enemy_dies_in_cleanup()
 	_test_status_decays_before_advance()
 	_test_contact_damage()
+	## Q2b — targeting resolver
+	_test_target_own_lane_closest()
+	_test_target_own_lane_ignores_other_lanes()
+	_test_target_own_lane_line_pierces()
+	_test_target_ricochet_chain()
+	_test_target_lowest_hp()
+	## Q2c — Function-driven attack
+	_test_active_fn_applies_status_emit()
+	_test_active_fn_knockback()
+	_test_active_fn_beam_hits_all_in_lane()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -65,6 +78,86 @@ func _test_contact_damage() -> void:
 	_check("contact: engaged enemy damages lane hero", int(hero.hp) < 30, "got %d" % int(hero.hp))
 	## tick order still 4 phases (contact folded into advance, not a new logged step)
 	_check("contact: tick order unchanged (no extra step)", cv2._tick_order_log.size() == 5, "got %s" % str(cv2._tick_order_log))
+
+## ---- Q2b: CombatTargeting resolver ----
+
+func _test_target_own_lane_closest() -> void:
+	var ls = get_node("/root/LaneState")
+	var far = ls.make_enemy(&"a", 1, 0.7)
+	var near = ls.make_enemy(&"b", 1, 0.3)
+	var hit = _Targeting.resolve(&"own_lane_closest", 1, 0.0, [far, near])
+	_check("own_lane_closest hits nearest in lane", hit.size() == 1 and hit[0].id == &"b", "got %s" % str(hit.map(func(e): return e.id)))
+
+func _test_target_own_lane_ignores_other_lanes() -> void:
+	var ls = get_node("/root/LaneState")
+	var other = ls.make_enemy(&"a", 0, 0.1)  ## closer but wrong lane
+	var mine = ls.make_enemy(&"b", 1, 0.5)
+	var hit = _Targeting.resolve(&"own_lane_closest", 1, 0.0, [other, mine])
+	_check("own_lane_closest ignores other lanes", hit.size() == 1 and hit[0].id == &"b", "got %s" % str(hit.map(func(e): return e.id)))
+
+func _test_target_own_lane_line_pierces() -> void:
+	var ls = get_node("/root/LaneState")
+	var e1 = ls.make_enemy(&"a", 1, 0.3)
+	var e2 = ls.make_enemy(&"b", 1, 0.7)
+	var e3 = ls.make_enemy(&"c", 0, 0.5)  ## other lane, excluded
+	var hit = _Targeting.resolve(&"own_lane_line", 1, 0.0, [e1, e2, e3])
+	_check("own_lane_line pierces all in lane (front->back)",
+		hit.size() == 2 and hit[0].id == &"a" and hit[1].id == &"b", "got %s" % str(hit.map(func(e): return e.id)))
+
+func _test_target_ricochet_chain() -> void:
+	var ls = get_node("/root/LaneState")
+	var es := []
+	for i in 5:
+		es.append(ls.make_enemy(StringName("e%d" % i), 1, 0.2 + 0.1 * i))
+	var hit = _Targeting.resolve(&"ricochet", 1, 0.0, es, 3)
+	var ids := {}
+	for e in hit: ids[e.id] = true
+	_check("ricochet returns max_hits distinct targets", hit.size() == 3 and ids.size() == 3, "got %s" % str(hit.map(func(e): return e.id)))
+
+func _test_target_lowest_hp() -> void:
+	var ls = get_node("/root/LaneState")
+	var a = ls.make_enemy(&"a", 1, 0.5, 10)
+	var b = ls.make_enemy(&"b", 2, 0.5, 3)
+	var c = ls.make_enemy(&"c", 0, 0.5, 7)
+	var hit = _Targeting.resolve(&"lowest_hp", 1, 0.0, [a, b, c])
+	_check("lowest_hp hits the weakest enemy anywhere", hit.size() == 1 and hit[0].id == &"b", "got %s" % str(hit.map(func(e): return e.id)))
+
+## ---- Q2c: Function-driven attack ----
+
+func _test_active_fn_applies_status_emit() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	cv2.reset()
+	var fire = load("res://data/functions/fire.tres")
+	var e = ls.make_enemy(&"g", 1, 0.5, 15)
+	var hero = {"id": &"bran", "lane": 1, "base_dmg": 4, "active_fn": fire}
+	var gs = {"enemies": [e], "heroes": [hero], "lane_state": ls}
+	cv2.tick(gs)
+	_check("active FIRE applies Burning to target", ls.has_status(e, &"Burning"), "")
+	_check("active FIRE damages target", int(e.hp) < 15, "got %d" % int(e.hp))
+
+func _test_active_fn_knockback() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	cv2.reset()
+	var knock = load("res://data/functions/knockback.tres")
+	var e = ls.make_enemy(&"g", 1, 0.5, 30)
+	var hero = {"id": &"bran", "lane": 1, "base_dmg": 4, "active_fn": knock}
+	var gs = {"enemies": [e], "heroes": [hero], "lane_state": ls}
+	cv2.tick(gs)
+	_check("KNOCKBACK active pushes target back", e.screen_x > 0.5, "got %f" % e.screen_x)
+
+func _test_active_fn_beam_hits_all_in_lane() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	cv2.reset()
+	var beam = load("res://data/functions/beam.tres")
+	var e1 = ls.make_enemy(&"a", 1, 0.3, 20)
+	var e2 = ls.make_enemy(&"b", 1, 0.7, 20)
+	var hero = {"id": &"bran", "lane": 1, "base_dmg": 10, "active_fn": beam}
+	var gs = {"enemies": [e1, e2], "heroes": [hero], "lane_state": ls}
+	cv2.tick(gs)
+	_check("BEAM pierces: both lane enemies take damage", int(e1.hp) < 20 and int(e2.hp) < 20, "got %d / %d" % [int(e1.hp), int(e2.hp)])
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

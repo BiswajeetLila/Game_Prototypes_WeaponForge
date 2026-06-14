@@ -12,9 +12,11 @@ extends Resource
 @export var active_dmg_mult: float = 1.0           ## damage multiplier relative to hero base
 @export var active_targeting: StringName = &"own_lane_closest"
 ##  own_lane_closest | any_lane_closest | cross_lane_spread | own_lane_line |
-##  chain_arc | radial_5 | fan_3
-@export var active_atk_speed: float = 1.0          ## attacks per tick
+##  chain_arc | radial_5 | fan_3 | ricochet | lowest_hp
+@export var active_atk_speed: float = 1.0          ## attacks per tick (EARTH/BEAM = 0.5)
 @export var active_heal_pct: float = 0.0           ## LEECH: heal self for X% of dmg dealt
+@export var active_max_hits: int = 1               ## BOUNCE ricochet chain length (3); pierce/spread use it too
+@export var active_knockback: bool = false         ## KNOCKBACK: Active pushes target back 1 unit on hit
 
 ## Modifier slot
 @export var mod_dmg_bonus: float = 0.0             ## additive bonus to Active dmg

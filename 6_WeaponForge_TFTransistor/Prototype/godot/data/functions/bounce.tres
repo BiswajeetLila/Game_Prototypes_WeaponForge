@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"BOUNCE"
+category = &"pattern"
+active_damage_tag = &""
+active_status_emit = &""
+active_dmg_mult = 0.8
+active_targeting = &"ricochet"
+active_atk_speed = 1.0
+active_heal_pct = 0.0
+active_max_hits = 3
+mod_dmg_bonus = 0.0
+mod_adds_tag = &""
+mod_applies_status = &""
+passive_id = &"echo"
+active_desc = "Ricochets to up to 3 nearest enemies, no falloff"
+mod_desc = "Active projectile bounces twice more after impact"
+passive_desc = "Echo: 20% chance to fire a free half-damage hit"
+best_fit = &"ACTIVE"

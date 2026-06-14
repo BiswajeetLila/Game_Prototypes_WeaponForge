@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ICE"
+category = &"element"
+active_damage_tag = &"ICE"
+active_status_emit = &"Chilled"
+active_dmg_mult = 1.0
+active_targeting = &"own_lane_closest"
+active_atk_speed = 1.0
+active_heal_pct = 0.0
+mod_dmg_bonus = 0.15
+mod_adds_tag = &"ICE"
+mod_applies_status = &""
+passive_id = &"frost_field"
+active_desc = "Ranged shard, applies Chilled (slows advance)"
+mod_desc = "+15% damage, adds Ice tag, briefly slows target"
+passive_desc = "Frost Field: all enemies advance 15% slower"
+best_fit = &"ACTIVE"

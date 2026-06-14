@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FunctionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/function_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"KNOCKBACK"
+category = &"tactical"
+active_damage_tag = &""
+active_status_emit = &""
+active_dmg_mult = 0.5
+active_targeting = &"own_lane_closest"
+active_atk_speed = 1.0
+active_heal_pct = 0.0
+active_knockback = true
+mod_dmg_bonus = 0.0
+mod_adds_tag = &""
+mod_applies_status = &""
+passive_id = &"repulse_field"
+active_desc = "Strikes closest, pushes it back 1 unit"
+mod_desc = "Active hits push the target back on connect"
+passive_desc = "Repulse Field: pushes back enemies that get too close"
+best_fit = &"ACTIVE"

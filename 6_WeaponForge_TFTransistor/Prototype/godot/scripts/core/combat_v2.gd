@@ -9,7 +9,10 @@ extends Node
 ## Emitted for each hero attack that lands (element_mediator subscribes).
 signal hit_landed(hero_id: StringName, enemy: Dictionary, damage_tag: StringName)
 
+const _Targeting = preload("res://scripts/core/combat_targeting.gd")
+
 var _tick_order_log: Array = []  ## test probe: logs step names per tick
+var _status_cache: Dictionary = {}  ## StringName status -> StatusData (lazy, for emit duration/stacks)
 
 func _ready() -> void:
 	pass
@@ -61,7 +64,39 @@ func _resolve_hero_attack(hero: Dictionary, gs: Dictionary, ls: Node) -> void:
 	var enemies: Array = gs.get("enemies", [])
 	if enemies.is_empty():
 		return
-	## Simple stub: attack first enemy in hero's lane (or any if none in lane)
+	## If the hero carries an equipped Active Function, resolve via the Function Matrix.
+	## Otherwise fall back to the base-weapon stub (unequipped slice / legacy tests).
+	if hero.get("active_fn", null) != null:
+		_resolve_function_attack(hero, enemies, ls)
+	else:
+		_resolve_base_attack(hero, enemies, ls)
+
+## Function-driven attack: targeting + damage tag + status emission + knockback per FunctionData.
+## tier_mult (default 1.0) scales damage — wired by the forge in Q3.
+func _resolve_function_attack(hero: Dictionary, enemies: Array, ls: Node) -> void:
+	var fn = hero.get("active_fn")
+	var lane: int = int(hero.get("lane", 1))
+	var hero_x: float = float(hero.get("hero_x", 0.0))
+	var targets: Array = _Targeting.resolve(fn.active_targeting, lane, hero_x, enemies, int(fn.active_max_hits))
+	if targets.is_empty():
+		return
+	var tier_mult: float = float(hero.get("tier_mult", 1.0))
+	var dmg: int = maxi(1, int(round(float(hero.get("base_dmg", 1)) * float(fn.active_dmg_mult) * tier_mult)))
+	var tag: StringName = fn.active_damage_tag
+	var status_emit: StringName = fn.active_status_emit
+	var em := get_node_or_null("/root/ElementMediator")
+	for t in targets:
+		t["hp"] = int(t["hp"]) - dmg
+		if status_emit != &"":
+			_emit_status(ls, t, status_emit)
+		if fn.active_knockback:
+			ls.knockback_enemy(t)
+		hit_landed.emit(hero.get("id", &""), t, tag)
+		if em != null and tag != &"":
+			em.dispatch_reaction(tag, t)
+
+## Base-weapon stub: attack first enemy in hero's lane (or any if none in lane).
+func _resolve_base_attack(hero: Dictionary, enemies: Array, ls: Node) -> void:
 	var target: Dictionary = {}
 	for e in enemies:
 		if e.lane == hero.get("lane", 1):
@@ -75,7 +110,19 @@ func _resolve_hero_attack(hero: Dictionary, gs: Dictionary, ls: Node) -> void:
 	target["hp"] = target["hp"] - dmg
 	var tag: StringName = hero.get("damage_tag", &"")
 	hit_landed.emit(hero.get("id", &""), target, tag)
-	## Let ElementMediator handle reactions via signal
 	var em := get_node_or_null("/root/ElementMediator")
 	if em != null and tag != &"":
 		em.dispatch_reaction(tag, target)
+
+## Emit a Function's status onto a target, sourcing duration + stack cap from StatusData (SSOT).
+func _emit_status(ls: Node, target: Dictionary, status: StringName) -> void:
+	var def = _status_def(status)
+	var dur: int = int(def.base_duration) if def != null else 3
+	var maxs: int = int(def.max_stacks) if def != null else 1
+	ls.apply_status(target, status, dur, 1, maxs)
+
+func _status_def(status: StringName):
+	if not _status_cache.has(status):
+		var p := "res://data/statuses/%s.tres" % String(status).to_lower()
+		_status_cache[status] = load(p) if ResourceLoader.exists(p) else null
+	return _status_cache[status]

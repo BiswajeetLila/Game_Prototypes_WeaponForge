@@ -23,6 +23,12 @@ func _test_load_all() -> void:
 		"AOE":       {"category": &"pattern", "tag": &"",          "status": &"",        "dmg": 0.7, "target": &"radial_5"},
 		"LEECH":     {"category": &"tactical","tag": &"",          "status": &"",        "dmg": 0.6, "target": &"own_lane_closest"},
 		"BURST":     {"category": &"pattern", "tag": &"",          "status": &"",        "dmg": 0.45,"target": &"fan_3"},
+		"ICE":       {"category": &"element", "tag": &"ICE",       "status": &"Chilled", "dmg": 1.0, "target": &"own_lane_closest"},
+		"EARTH":     {"category": &"element", "tag": &"EARTH",     "status": &"Cracked", "dmg": 1.5, "target": &"own_lane_closest"},
+		"BEAM":      {"category": &"pattern", "tag": &"",          "status": &"",        "dmg": 0.6, "target": &"own_lane_line"},
+		"BOUNCE":    {"category": &"pattern", "tag": &"",          "status": &"",        "dmg": 0.8, "target": &"ricochet"},
+		"SEEKER":    {"category": &"tactical","tag": &"",          "status": &"",        "dmg": 0.9, "target": &"lowest_hp"},
+		"KNOCKBACK": {"category": &"tactical","tag": &"",          "status": &"",        "dmg": 0.5, "target": &"own_lane_closest"},
 	}
 	for fn_id in specs:
 		var path := "res://data/functions/%s.tres" % fn_id.to_lower()
@@ -45,6 +51,18 @@ func _test_load_all() -> void:
 	_check("WATER passive tidepool", water != null and water.passive_id == &"tidepool", "")
 	var leech = load("res://data/functions/leech.tres")
 	_check("LEECH heal_pct 0.5", leech != null and is_equal_approx(leech.active_heal_pct, 0.5), "")
+	## New Function spot-checks (§3)
+	var earth = load("res://data/functions/earth.tres")
+	_check("EARTH slow attack (atk_speed 0.5)", earth != null and is_equal_approx(earth.active_atk_speed, 0.5), "got %s" % (str(earth.active_atk_speed) if earth else "null"))
+	_check("EARTH mod adds Cracked", earth != null and earth.mod_applies_status == &"Cracked", "")
+	var beam = load("res://data/functions/beam.tres")
+	_check("BEAM slow attack (atk_speed 0.5)", beam != null and is_equal_approx(beam.active_atk_speed, 0.5), "")
+	var bounce = load("res://data/functions/bounce.tres")
+	_check("BOUNCE max_hits 3", bounce != null and bounce.active_max_hits == 3, "got %s" % (str(bounce.active_max_hits) if bounce else "null"))
+	var knock = load("res://data/functions/knockback.tres")
+	_check("KNOCKBACK active_knockback true", knock != null and knock.active_knockback == true, "")
+	var ice = load("res://data/functions/ice.tres")
+	_check("ICE mod_adds_tag ICE", ice != null and ice.mod_adds_tag == &"ICE", "")
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

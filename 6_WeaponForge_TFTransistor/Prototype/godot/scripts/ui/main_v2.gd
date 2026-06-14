@@ -43,6 +43,7 @@ var _ticks_this_wave: int = 0
 var _chain: int = 0
 var _loadouts: Array = []      ## 3 heroes, each a loadout_v2 Array[3]
 var _reserves: Array = []      ## 3 heroes, each a reserve_v2 Array[2] (bench)
+var _fn_cache: Dictionary = {} ## fn_id -> FunctionData (combat active-fn lookup)
 ## the item currently "picked up" (one tap), to drop on the next tile tap.
 ## null, or { kind:"shop"|"socket"|"reserve", hero:int, idx:int }. shop hero=-1.
 var _held = null
@@ -236,6 +237,34 @@ func _make_heroes() -> Array:
 		{"id": &"vex", "lane": 2, "base_dmg": 2, "damage_tag": &"LIGHTNING", "hp": 30, "max_hp": 30},
 	]
 
+## Push each hero's equipped Active Function (socket idx 2) into its combat dict so
+## combat_v2 resolves the attack via the Function Matrix. No Active equipped -> the hero
+## falls back to its innate base weapon (damage_tag) in combat_v2. tier_mult scales damage
+## (real scale wired in Q3; 1.0 here).
+func _apply_loadouts_to_heroes() -> void:
+	for i in _heroes.size():
+		if i >= _loadouts.size():
+			continue
+		var active = _loadouts[i][2]  ## 0=PASSIVE 1=MODIFIER 2=ACTIVE
+		if active != null:
+			_heroes[i]["active_fn"] = _fn_data(active.id)
+			_heroes[i]["tier_mult"] = _tier_mult(int(active.tier))
+		else:
+			_heroes[i].erase("active_fn")
+			_heroes[i]["tier_mult"] = 1.0
+
+func _fn_data(fn_id: StringName):
+	if fn_id == &"":
+		return null
+	if not _fn_cache.has(fn_id):
+		var p := "res://data/functions/%s.tres" % String(fn_id).to_lower()
+		_fn_cache[fn_id] = load(p) if ResourceLoader.exists(p) else null
+	return _fn_cache[fn_id]
+
+## Tier stat multiplier (spec §10.1). Q2 placeholder (1.0); Q3 replaces with the real scale.
+func _tier_mult(_tier: int) -> float:
+	return 1.0
+
 func _spawn_current_wave() -> void:
 	var ls = get_node_or_null("/root/LaneState")
 	var wd = get_node_or_null("/root/WaveDirector")
@@ -268,6 +297,7 @@ func _tick_once() -> void:
 	if ls == null or combat == null:
 		return
 	var before: int = ls.enemies.size()
+	_apply_loadouts_to_heroes()  ## equipped Active Function drives each hero's attack this tick
 	var gs: Dictionary = {"enemies": ls.enemies, "heroes": _heroes, "lane_state": ls}
 	combat.tick(gs)
 	ls.enemies = gs.get("enemies", [])

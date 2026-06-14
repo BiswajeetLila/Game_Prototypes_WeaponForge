@@ -67,15 +67,26 @@ Godot procs go zombie under contention — `Get-Process -Name Godot_v4.6.2-stabl
 3. **Forge = per STAGE (not per wave).** Waves auto-battle continuously inside a stage; the forge/equip break is the stage boundary (F0 open + after each stage). `_on_wave_cleared` auto-advances within a stage. *(G1 — superseded the earlier per-wave forge + F1's full-shop-at-open.)*
 4. **Shop: FULL (7) at world start / F0; slow-populates 2/3/2 within each stage** (full again at every stage break). `_reset_stage_shop(full)` + `_drip_shop_for_wave`. *(G1 + G6 — F0-full per user; slow-populate is the within-stage rhythm.)*
 5. **Gold = per-kill** (1g/kill in `_tick_once`), not flat-per-forge.
-6. **Reserve bench = 2 slots/hero** (`reserve_v2.gd`). Buying onto an occupied socket → displace old to reserve; same id+tier → merge; reserve full → blocked + red flash, no charge. *(G2/G3.)*
+6. **Reserve bench = 2 slots/hero** (`reserve_v2.gd`). Buying onto an occupied socket → displace old to reserve; same id+tier → **merge = tier bump (T1→T4, cap 4)**; reserve full → blocked + red flash, no charge. *(G2/G3; merge-bump G13 — lifted the '2/2' stub.)*
 7. **Free tile movement, hero-agnostic** (`forge_grid.gd`): tap any owned tile (socket/reserve, any hero) to pick up, tap any other to drop — empty=move, same=merge, occupied=swap; no gold. Unified `_held` pick/drop in main_v2. *(G5.)*
 8. **Sell = double-click** an owned socket/reserve (floor-50% refund). Single tap = pick up/drop. *(G5 — was long-press.)*
 9. **Re-roll = fresh full board of 7** (the whole list); price = `2× T1 base` scaled by stage. *(G6.)*
 10. **Ult button** per hero (fills with charge, 3 reactions/bar; "ULT!" + enabled at full; press consumes; Ult effect = Phase 5). `ult_pressed` signal. *(G7.)*
 11. **Weapon description** = one line UNDER each hero's sockets (combined ATK/+MOD/PASS), real-time; right-side tooltip removed. HP floats above sprites in the battle scene only. *(D2/G3.)*
 12. Layout SSOT: combat = `In_Battle.png`; forge = `Forge_State_edits.jpg` (the edited one with the Reserve column).
+13. **Item icons** = flat-bold transparent set in `assets/generated/runes/` (fire/water/lightning/aoe/leech/burst), each a **distinct silhouette** (round/rounded-square/diamond/hexagon/shield/octagon). Generated nano-banana, white-cut via `cut_icon_bg.gd`; bake-off tests in `_art-build/icons/_archive`. Shop/socket cards = **icon-top + name-below + cost badge** (no overlap). *(G12.)*
+14. **Tier rarity borders, in-engine** (no per-tier art): slot frame recolors by tier T1 neutral / T2 blue / T3 purple / T4 gold (`forge_panel._apply_tier_border` + `TIER_BORDER`). *(G12; live via merge-bump G13.)*
+15. **Combat juice** (`battle_view`): HP-delta-driven hit-flash + impact burst on enemies (+ attacking-hero pulse) and on heroes; merge sparkle+pop on socket. VFX reused from 5_project. Status = bg-cut element icons (`status/*_cut.png`). *(G9/G11.)*
+16. **Boot = HomeV2** (title + PLAY → Main_v2). Run end: cleared all stages = VICTORY; all heroes dead = DEFEAT (permadeath). Result overlay → Play Again / Home. *(G10.)*
+17. **Combat arena squeezed** (0.06–0.54) so the rail isn't cramped; battle shows icons only (no enemy/hero name/number text). *(G8.)*
 
 ## Commit history (real-asset-pass, newest first)
+`G13` merge bumps tier T1→T4 (rarity borders go live) ·
+`G12` readable item icons (varied shapes) + icon-top/label-below cards + tier borders ·
+`G11` status icon cutouts (transparent) wired into battle ·
+`G10` HomeV2 + run-end VICTORY/DEFEAT result + permadeath ·
+`G9` combat hit VFX (flash/impact/pulse) + merge sparkle ·
+`G8` squeeze combat arena + icons-only battle (declutter) ·
 `G5` any-tile moves (forge_grid) + double-click sell + F0-full shop + reroll-whole-list + Ult button (G5-G7 bundled) ·
 `G4` docs (GDD/HANDOFF) + forge re-sync hardening ·
 `G3` forge layout = Forge_State_edits.jpg (Reserve column + under-row desc + sell + error flash) ·

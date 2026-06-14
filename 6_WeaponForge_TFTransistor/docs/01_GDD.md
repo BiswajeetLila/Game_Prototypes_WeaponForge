@@ -144,7 +144,11 @@ Chain ≥3 reactions in 2-sec window → chain stinger audio + chain HUD counter
 - Items reset between stages (forces commitment; no shop persistence)
 - Cost scales by stage; gold from kills
 - Pity counter: ≥1 Element per 2 consecutive stages
-- 2-to-1 auto-merge on duplicate drop (slice stub: marks `2/2`, no tier bump until the full tier system lands)
+- 2-to-1 merge on same-id same-tier drop = **tier bump T1→T4** (cap 4). **IMPLEMENTED** (G13; `reserve_v2`/`forge_grid`). Triggers the merge sparkle VFX.
+- **Item icons:** flat-bold transparent set, one per Function, each a distinct silhouette (round/square/diamond/hexagon/shield/octagon). Shop/socket cards = icon-top + name-below + cost badge (no overlap). **IMPLEMENTED** (G12; `assets/generated/runes/`).
+- **Tier rarity = border color** (in-engine, no per-tier art): T1 neutral · T2 blue · T3 purple · T4 gold. **IMPLEMENTED** (G12; `forge_panel._apply_tier_border`).
+- **Combat juice:** hit-flash + impact burst on damage (enemy + hero), attacking-hero pulse, merge sparkle, transparent status element-icons over enemies. **IMPLEMENTED** (G9/G11). Real per-Function VFX + 2.5D = Phase 5.
+- **Boot → HomeV2** (PLAY → run); run ends in **VICTORY** (cleared) or **DEFEAT** (all heroes dead / permadeath) with a result overlay. **IMPLEMENTED** (G10). Full Wittle-meta home = Phase 5+.
 - **Reserve (bench): 2 slots per hero.** Buying from the shop onto an occupied socket displaces the old Function to a free Reserve slot (same id+tier → merge; both reserve slots full → **blocked**, red row flash, no charge). **IMPLEMENTED** (`reserve_v2.gd`). Layout = [`_art-build/screens/Forge_State_edits.jpg`](../_art-build/screens/Forge_State_edits.jpg).
 - **Free tile movement (hero-agnostic):** pick up any owned item (any socket or reserve, any hero) with a tap and drop on any other tile — empty = move, same id+tier = merge, occupied = swap. Costs no gold (only buying from the shop costs gold). **IMPLEMENTED** (`forge_grid.gd`, unified `_held` pick/drop).
 - **Sell = double-click** an owned socket/reserve item → reduced refund (floor 50% of cost). Single tap = pick up / drop.

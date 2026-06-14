@@ -18,8 +18,9 @@ func _ready() -> void:
 	_test_battle_view_audio_logs()
 	_test_forge_panel_v2()
 	_test_forge_cards()
-	_test_function_preview()
+	_test_weapon_tooltip()
 	_test_compact_mode()
+	_test_battle_hero_hp()
 	_test_wave_telegraph()
 	_test_chain_hud()
 	_summary()
@@ -216,7 +217,7 @@ func _test_forge_panel_v2() -> void:
 	_check("fp2: HeroRows has 3 children", rows != null and rows.get_child_count() == 3,
 		"got %d" % (rows.get_child_count() if rows != null else -1))
 	_check("fp2: populate_shop method", inst.has_method("populate_shop"), "")
-	_check("fp2: set_hero_hp method", inst.has_method("set_hero_hp"), "")
+	_check("fp2: set_weapon_desc method (HP moved to battle)", inst.has_method("set_weapon_desc"), "")
 	_check("fp2: set_hero_ult_bars method", inst.has_method("set_hero_ult_bars"), "")
 	_check("fp2: socket_tapped signal", inst.has_signal("socket_tapped"), "")
 	_check("fp2: shop_item_tapped signal", inst.has_signal("shop_item_tapped"), "")
@@ -293,35 +294,23 @@ func _test_forge_cards() -> void:
 		_check("fc: reroll disabled toggles", rb2 != null and rb2.disabled == true, "")
 	inst.queue_free()
 
-## -- C8: function behavior preview + best-fit --
+## -- #2: always-on weapon tooltip (combined effect) replaces the C8 overlay --
 
-func _test_function_preview() -> void:
+func _test_weapon_tooltip() -> void:
 	var packed = load("res://scenes/ui/ForgePanel_v2.tscn")
 	if packed == null:
 		return
 	var inst = packed.instantiate()
 	add_child(inst)
-	_check("fp: has show_function_preview", inst.has_method("show_function_preview"), "")
-	if not inst.has_method("show_function_preview"):
-		inst.queue_free()
-		return
-	inst.show_function_preview(&"FIRE")
-	var pp = inst.get_node_or_null("PreviewPanel")
-	_check("fp: preview visible after show", pp != null and pp.visible == true, "")
-	var active_row = pp.get_node_or_null("ActiveRow") if pp != null else null
-	_check("fp: ACTIVE row mentions Burning", active_row != null and "Burning" in active_row.text, "got %s" % (active_row.text if active_row != null else "null"))
-	var passive_row = pp.get_node_or_null("PassiveRow")
-	## C1 order: PASSIVE row above ACTIVE row
-	_check("fp: PASSIVE row above ACTIVE row", passive_row != null and active_row != null and passive_row.get_index() < active_row.get_index(), "")
-	var bf = pp.get_node_or_null("BestFitLabel")
-	_check("fp: FIRE best-fit ACTIVE", bf != null and "ACTIVE" in bf.text, "got %s" % (bf.text if bf != null else "null"))
-	inst.show_function_preview(&"WATER")
-	_check("fp: WATER best-fit MODIFIER", bf != null and "MODIFIER" in bf.text, "got %s" % (bf.text if bf != null else "null"))
-	inst.show_function_preview(&"LEECH")
-	_check("fp: LEECH best-fit PASSIVE", bf != null and "PASSIVE" in bf.text, "got %s" % (bf.text if bf != null else "null"))
-	## BOUNCE has no .tres -> graceful (hidden, no crash)
-	inst.show_function_preview(&"BOUNCE")
-	_check("fp: BOUNCE (no data) hides preview, no crash", pp != null and pp.visible == false, "")
+	_check("wt: no overlapping PreviewPanel (removed)", inst.get_node_or_null("PreviewPanel") == null, "")
+	_check("wt: has set_weapon_desc", inst.has_method("set_weapon_desc"), "")
+	var rows = inst.get_node_or_null("HeroRows")
+	var tip0 = rows.get_child(0).find_child("WeaponTooltip", true, false) if rows != null else null
+	_check("wt: row has WeaponTooltip", tip0 != null, "")
+	_check("wt: tooltip defaults to Empty weapon", tip0 != null and "Empty" in tip0.text, "got %s" % (tip0.text if tip0 != null else "null"))
+	if inst.has_method("set_weapon_desc"):
+		inst.set_weapon_desc(0, "ATK: Hits closest, applies Burning")
+		_check("wt: set_weapon_desc updates tooltip", tip0 != null and "Burning" in tip0.text, "got %s" % (tip0.text if tip0 != null else "null"))
 	inst.queue_free()
 
 ## -- C9: forge compact mode + HP-bar sizing --
@@ -342,9 +331,38 @@ func _test_compact_mode() -> void:
 		inst.set_compact(false)
 		_check("cm: expanded false", inst.is_compact() == false, "")
 		_check("cm: expanded socket >= 56", s00 != null and s00.custom_minimum_size.x >= 56, "got %s" % (str(s00.custom_minimum_size) if s00 != null else "null"))
-	## HP bar must NOT be expand-fill (the "huge HP bar" bug)
-	var hp = inst.find_child("HPBar", true, false)
-	_check("cm: HP bar not expand-fill", hp != null and hp.size_flags_horizontal != Control.SIZE_EXPAND_FILL, "got %d" % (hp.size_flags_horizontal if hp != null else -1))
+	## HP bar must be GONE from the forge rail entirely (moved to battle scene)
+	_check("cm: HP bar removed from forge rail", inst.find_child("HPBar", true, false) == null, "")
+	inst.queue_free()
+
+## -- #2: hero HP floats in battle scene + horizontal heroes in compact (forge) --
+
+func _test_battle_hero_hp() -> void:
+	var packed = load("res://scenes/ui/BattleView_v2.tscn")
+	if packed == null:
+		return
+	var inst = packed.instantiate()
+	add_child(inst)
+	## hero HP bar exists above each hero sprite + set_hero_hp updates it
+	var h0 = inst.get_node_or_null("Heroes/Hero0")
+	_check("bh: hero anchor has HPBar", h0 != null and h0.find_child("HPBar", true, false) != null, "")
+	_check("bh: has set_hero_hp", inst.has_method("set_hero_hp"), "")
+	if inst.has_method("set_hero_hp"):
+		inst.set_hero_hp(0, 15, 30)
+		var hpv = h0.find_child("HPValue", true, false)
+		_check("bh: set_hero_hp updates value 15/30", hpv != null and hpv.text == "15/30", "got %s" % (hpv.text if hpv != null else "null"))
+	## compact (forge) -> heroes laid out HORIZONTALLY (distinct x, ~same y)
+	inst.set_compact(true)
+	var a0 = inst.get_node("Heroes/Hero0")
+	var a1 = inst.get_node("Heroes/Hero1")
+	var a2 = inst.get_node("Heroes/Hero2")
+	_check("bh: compact heroes spread horizontally (x rising)", a0.position.x < a1.position.x and a1.position.x < a2.position.x,
+		"x=%.0f,%.0f,%.0f" % [a0.position.x, a1.position.x, a2.position.x])
+	_check("bh: compact heroes same row (equal y)", is_equal_approx(a0.position.y, a2.position.y), "y=%.0f,%.0f" % [a0.position.y, a2.position.y])
+	## combat -> back to vertical lanes (y rising)
+	inst.set_compact(false)
+	_check("bh: combat heroes stacked by lane (y rising)", a0.position.y < a1.position.y and a1.position.y < a2.position.y,
+		"y=%.0f,%.0f,%.0f" % [a0.position.y, a1.position.y, a2.position.y])
 	inst.queue_free()
 
 ## -- Step 13: WaveTelegraph --

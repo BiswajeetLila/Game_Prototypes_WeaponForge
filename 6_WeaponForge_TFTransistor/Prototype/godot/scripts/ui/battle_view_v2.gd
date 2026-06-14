@@ -56,9 +56,26 @@ var _compact: bool = false          ## forge break = small battle preview
 
 func set_compact(c: bool) -> void:
 	_compact = c
+	_reposition_heroes()
 
 func is_compact() -> bool:
 	return _compact
+
+## Hero HP bar floats above the hero sprite (battle scene only).
+func set_hero_hp(lane: int, hp: int, max_hp: int) -> void:
+	var heroes := get_node_or_null("Heroes")
+	if heroes == null:
+		return
+	var anchor := heroes.get_node_or_null("Hero%d" % lane)
+	if anchor == null:
+		return
+	var bar := anchor.get_node_or_null("HPBar") as ColorRect
+	var val := anchor.get_node_or_null("HPValue") as Label
+	var frac: float = clampf(float(hp) / maxf(float(max_hp), 1.0), 0.0, 1.0)
+	if bar != null:
+		bar.size = Vector2(48.0 * frac, 5)
+	if val != null:
+		val.text = "%d/%d" % [hp, max_hp]
 
 func _load_tex(path: String) -> Texture2D:
 	if path != "" and ResourceLoader.exists(path):
@@ -200,13 +217,48 @@ func _make_hero_anchor(lane: int) -> Control:
 	lbl.text = DEFAULT_HEROES[lane]
 	lbl.position = Vector2(-24, 28)
 	anchor.add_child(lbl)
+	## HP bar floating above the hero sprite (battle scene only)
+	var hp_bg := ColorRect.new()
+	hp_bg.name = "HPBarBG"
+	hp_bg.color = Color(0.1, 0.1, 0.1, 0.8)
+	hp_bg.size = Vector2(48, 5)
+	hp_bg.position = Vector2(-24, -44)
+	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anchor.add_child(hp_bg)
+	var hp := ColorRect.new()
+	hp.name = "HPBar"
+	hp.color = Color(0.30, 0.85, 0.35)
+	hp.size = Vector2(48, 5)
+	hp.position = Vector2(-24, -44)
+	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anchor.add_child(hp)
+	var hpv := Label.new()
+	hpv.name = "HPValue"
+	hpv.add_theme_font_size_override(&"font_size", 8)
+	hpv.position = Vector2(-24, -58)
+	anchor.add_child(hpv)
 	_position_hero(anchor, lane)
 	return anchor
 
 func _position_hero(anchor: Control, lane: int) -> void:
 	var vs := _view_size()
-	var lane_h: float = vs.y / float(LANE_COUNT)
-	anchor.position = Vector2(HERO_X * vs.x, float(lane) * lane_h + lane_h * 0.5)
+	if _compact:
+		## forge break: small preview strip -> heroes in a horizontal row (no overlap)
+		var col_w: float = vs.x / float(LANE_COUNT)
+		anchor.position = Vector2(col_w * (float(lane) + 0.5), vs.y * 0.55)
+	else:
+		## combat: one hero per lane, anchored left
+		var lane_h: float = vs.y / float(LANE_COUNT)
+		anchor.position = Vector2(HERO_X * vs.x, float(lane) * lane_h + lane_h * 0.5)
+
+func _reposition_heroes() -> void:
+	var heroes := get_node_or_null("Heroes")
+	if heroes == null:
+		return
+	for lane in LANE_COUNT:
+		var anchor := heroes.get_node_or_null("Hero%d" % lane)
+		if anchor != null:
+			_position_hero(anchor, lane)
 
 ## ---- tick / sync ----
 

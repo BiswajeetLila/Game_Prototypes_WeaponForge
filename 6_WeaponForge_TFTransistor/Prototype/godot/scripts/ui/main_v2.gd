@@ -355,12 +355,14 @@ func _update_forge() -> void:
 		if i < _heroes.size():
 			hp = int(_heroes[i].get("hp", 100))
 			mhp = int(_heroes[i].get("max_hp", 100))
-		if _forge.has_method("set_hero_hp"):
-			_forge.set_hero_hp(i, hp, mhp)
+		## HP lives on the battle scene (floats above the hero sprite), not the forge rail
+		if _battle != null and _battle.has_method("set_hero_hp"):
+			_battle.set_hero_hp(i, hp, mhp)
 		if _forge.has_method("set_hero_ult_bars"):
 			_forge.set_hero_ult_bars(i, bars)
 	if _forge.has_method("set_gold"):
 		_forge.set_gold(gold)
+	_refresh_weapon_tips()
 
 ## Reroll the unbought (non-null) visible shop slots for 1g (slice deviation from
 ## spec §11.2 pending-only, so the forge-break reroll button actually works).
@@ -388,10 +390,43 @@ func _on_reroll() -> void:
 
 func _on_shop_tap(slot_idx: int) -> void:
 	_selected_shop = slot_idx
-	## show the tapped function's per-slot behavior + best-fit (decision 1)
-	if slot_idx >= 0 and slot_idx < _shop_items.size() and _shop_items[slot_idx] != null:
-		if _forge != null and _forge.has_method("show_function_preview"):
-			_forge.show_function_preview(StringName(_shop_items[slot_idx].get("id", "")))
+
+## ---- real-time weapon tooltip (combined P/M/A effect per hero) ----
+
+func _fn_slot_desc(fn_id: StringName, slot: int) -> String:
+	var path := "res://data/functions/%s.tres" % String(fn_id).to_lower()
+	if ResourceLoader.exists(path):
+		var f = load(path)
+		if f != null:
+			return f.describe(slot)
+	return String(fn_id)
+
+## Combined "what does this weapon do now" text from the hero's loadout (0=P,1=M,2=A).
+func _weapon_desc(hero_idx: int) -> String:
+	if hero_idx < 0 or hero_idx >= _loadouts.size():
+		return "Empty weapon"
+	var lo: Array = _loadouts[hero_idx]
+	var passive = lo[0]
+	var modf = lo[1]
+	var active = lo[2]
+	if active == null and modf == null and passive == null:
+		return "Empty weapon"
+	var lines: Array = []
+	if active != null:
+		lines.append("ATK: " + _fn_slot_desc(active.id, 2))
+	else:
+		lines.append("ATK: — (equip an Active)")
+	if modf != null:
+		lines.append("+MOD: " + _fn_slot_desc(modf.id, 1))
+	if passive != null:
+		lines.append("PASS: " + _fn_slot_desc(passive.id, 0))
+	return "\n".join(lines)
+
+func _refresh_weapon_tips() -> void:
+	if _forge == null or not _forge.has_method("set_weapon_desc"):
+		return
+	for i in _loadouts.size():
+		_forge.set_weapon_desc(i, _weapon_desc(i))
 
 func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
 	if state != STATE_FORGE:
@@ -420,6 +455,7 @@ func _on_socket_tap(hero_idx: int, socket_idx: int) -> void:
 	if _forge != null and _forge.has_method("set_socket_fn") and entry != null:
 		_forge.set_socket_fn(hero_idx, socket_idx, entry.id, int(entry.tier), String(entry.id), String(entry.get("merge", "")))
 	_refresh_shop_ui()
+	_refresh_weapon_tips()  ## real-time: weapon tooltip updates as you equip
 
 func get_socket(hero_idx: int, socket_idx: int):
 	if hero_idx < 0 or hero_idx >= _loadouts.size():

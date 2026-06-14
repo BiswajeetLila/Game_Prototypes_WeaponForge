@@ -57,51 +57,6 @@ func _ready() -> void:
 	_build_hero_rows()
 	_build_shop_rail()
 	_build_shop_footer()
-	_build_preview_panel()
-
-## ---- C8: per-slot behavior preview (decision 1: show, don't restrict) ----
-
-func _build_preview_panel() -> void:
-	var pp := VBoxContainer.new()
-	pp.name = "PreviewPanel"
-	pp.anchor_left = 0.04; pp.anchor_right = 0.96
-	pp.anchor_top = 0.30; pp.anchor_bottom = 0.62
-	pp.add_theme_constant_override(&"separation", 2)
-	pp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg := ColorRect.new()
-	bg.name = "Bg"
-	bg.color = Color(0.06, 0.05, 0.04, 0.92)
-	bg.anchor_right = 1.0; bg.anchor_bottom = 1.0
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pp.add_child(bg)
-	for n in ["PreviewTitle", "PassiveRow", "ModifierRow", "ActiveRow", "BestFitLabel"]:
-		var lbl := Label.new()
-		lbl.name = n
-		lbl.add_theme_font_size_override(&"font_size", 10 if n == "PreviewTitle" else 9)
-		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		pp.add_child(lbl)
-	add_child(pp)
-	pp.visible = false
-
-## Show the 3 per-slot behaviors (order PASSIVE/MODIFIER/ACTIVE) + best-fit badge.
-func show_function_preview(fn_id: StringName) -> void:
-	var pp := get_node_or_null("PreviewPanel")
-	if pp == null:
-		return
-	var path := "res://data/functions/%s.tres" % String(fn_id).to_lower()
-	if not ResourceLoader.exists(path):
-		pp.visible = false
-		return
-	var f = load(path)
-	if f == null:
-		pp.visible = false
-		return
-	(pp.get_node("PreviewTitle") as Label).text = String(fn_id)
-	(pp.get_node("PassiveRow") as Label).text = "PASSIVE — " + f.describe(0)
-	(pp.get_node("ModifierRow") as Label).text = "MODIFIER — " + f.describe(1)
-	(pp.get_node("ActiveRow") as Label).text = "ACTIVE — " + f.describe(2)
-	(pp.get_node("BestFitLabel") as Label).text = "BEST: " + String(f.best_fit)
-	pp.visible = true
 
 ## ---- top: socket-column header (cosmetic, matches mockup A/M/P labels) ----
 
@@ -239,19 +194,17 @@ func _make_hero_row(hero_idx: int) -> HBoxContainer:
 		var sock := _make_socket(hero_idx, s)
 		row.add_child(sock)
 
-	var hp_bar := ProgressBar.new()
-	hp_bar.name = "HPBar"
-	hp_bar.min_value = 0; hp_bar.max_value = 100; hp_bar.value = 100
-	hp_bar.show_percentage = false
-	hp_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  ## not expand-fill (kills the "huge bar")
-	hp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	hp_bar.custom_minimum_size = Vector2(84, 14)
-	row.add_child(hp_bar)
-	var hp_val := Label.new()
-	hp_val.name = "HPValue"
-	hp_val.add_theme_font_size_override(&"font_size", 9)
-	hp_val.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(hp_val)
+	## Always-on weapon tooltip: what this hero's weapon CURRENTLY does (combined P/M/A),
+	## updated in real-time as functions are equipped. (HP lives on the battle scene only.)
+	var tip := Label.new()
+	tip.name = "WeaponTooltip"
+	tip.text = "Empty weapon"
+	tip.add_theme_font_size_override(&"font_size", 8)
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tip.size_flags_vertical = Control.SIZE_FILL
+	tip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(tip)
 
 	var ult_hbox := HBoxContainer.new()
 	ult_hbox.name = "UltBar"
@@ -273,7 +226,7 @@ func _make_socket(hero_idx: int, sock_idx: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.name = "Socket%d_%d" % [hero_idx, sock_idx]
 	panel.custom_minimum_size = Vector2(64, 64)
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER  ## fixed width -> leaves room for weapon tooltip
 	panel.add_child(_make_icon())
 	var nm := Label.new()
 	nm.name = "NameLabel"
@@ -338,15 +291,13 @@ func set_gold(amount: int) -> void:
 	if g != null:
 		g.text = "Gold: %d" % amount
 
-func set_hero_hp(hero_idx: int, hp: int, max_hp: int) -> void:
+## Real-time weapon tooltip: the combined effect of the hero's equipped P/M/A functions.
+func set_weapon_desc(hero_idx: int, text: String) -> void:
 	if hero_idx >= _hero_rows.size():
 		return
-	var bar: ProgressBar = _hero_rows[hero_idx].get_node("HPBar")
-	bar.max_value = max(max_hp, 1)
-	bar.value = hp
-	var val := _hero_rows[hero_idx].get_node_or_null("HPValue") as Label
-	if val != null:
-		val.text = "%d/%d" % [hp, max_hp]
+	var tip := _hero_rows[hero_idx].get_node_or_null("WeaponTooltip") as Label
+	if tip != null:
+		tip.text = text if text != "" else "Empty weapon"
 
 func set_compact(c: bool) -> void:
 	_compact = c

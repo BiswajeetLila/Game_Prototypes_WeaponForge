@@ -1,6 +1,6 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-14 · **Branch:** `weaponforge-tftransistor/real-asset-pass` (pushed, this is CANON) · **Model context:** post-compaction resume doc.
+**Updated:** 2026-06-15 · **Slice CANON:** `weaponforge-tftransistor/real-asset-pass` @ `718ab2d` (pushed) — **vertical slice COMPLETE.** · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5` (forked from `718ab2d`, pushed — do next-steps work here). · post-compaction resume doc.
 
 ## Read-first
 
@@ -101,29 +101,44 @@ Godot procs go zombie under contention — `Get-Process -Name Godot_v4.6.2-stabl
 `C6+C7` socket+shop cards · `C5` FunctionData descriptions · `C3+C4` shop economy wiring+pity ·
 `C2` ShopV2 economy core · `C1` socket index flip · earlier: B1–B4 real assets, A1–A7 layout slice.
 
-## OPEN — awaiting user F5 retest of G1–G3
-The E1 freeze is resolved (user confirmed "reroll works"). Current build to retest:
-- **Loop:** opens in FORGE (F0, 2 shop items), START → stage auto-battles all 3 waves continuously (no inter-wave stop), shop drips 2/3/2, stage-end forge break shows the full board → equip → START next stage. 6 forge breaks F0–F5.
-- **Reserve/sell:** equip onto an occupied socket benches the old item; bench full → red flash + no charge; tap a benched item then a socket to re-equip; **long-press ~0.5s** a socket/reserve item to sell (50% refund).
-- The reserve/sell GESTURES are UI-only (not exercised by headless tests — the handlers + pure logic ARE tested). **Long-press is release-timed** (decided on button release), not held-fire — confirm it feels right.
+## STATUS — vertical slice COMPLETE (playtest-ready)
+Full loop built + TDD'd (last sweep **587/587** across 17 suites) + AUTOSHOT-verified + pushed. Ready for the human feel-gate playtest (roadmap Gate 4.5). G1–G14 this session are in the commit log below; locked-decisions list above is current.
+
+**Playtest flow:** Home (PLAY) → F0 forge (full 7 shop) → equip → START → stage auto-battles 3 waves (slow-populate drip + hit VFX + status element-icons) → stage-end forge (full board) → buy 2 same → **MERGE = tier up T1→T4** (rarity border recolors + merge sparkle) → reserve bench (tap-move any tile hero-agnostic, double-click to sell 50%) → next stage → clear stage 5 = **VICTORY** / all heroes dead = **DEFEAT** → result overlay (Play Again / Home).
 
 ## Session gotchas / trials (engineering — for future me)
 - **Shell auto-backgrounding + stdout encoding:** PowerShell `*>` writes UTF-16 (Select-String saw garble); the harness also auto-backgrounded long Godot runs. **Fix that worked:** Bash tool, redirect Godot `> file 2>&1`, then Read the file (plain UTF-8). Use a known absolute Windows path for the out-file.
 - **Parse error masks the whole suite:** a renamed test fn left a stale `_ready` call → `SCRIPT ERROR: Parse Error ... not found` → exit 255, ZERO test output (looked like "no RED"). Always check for `SCRIPT ERROR/Parse Error` in the grep, and if a suite emits nothing, suspect a parse error before assuming pass.
 - **Clean RED for a new module:** write the test + a COMPILING stub (functions return defaults) → run for clean per-assertion RED → fill in. (Preloading a missing script = parse error, not clean RED.) For an in-place behavior change, retroactive RED via `git stash push -- <file>` (path-scoped) then run then `git stash pop` — note pop prints the full `.import` churn `git status`, that's noise.
-- **`pressed` → gesture migration breaks tap tests:** sockets moved from Button `pressed` to `button_down`/`button_up` (for long-press). Tests that did `tap.pressed.emit()` must do `button_down.emit(); button_up.emit()`.
-- **const Arrays/Dicts are READ-ONLY in Godot 4** (still true): combat writes `hero["hp"]`; any test feeding heroes from a `const` array must `.duplicate(true)`.
-- **`Time.get_ticks_msec()`** is fine in Godot runtime (used for the long-press timing) — unrelated to the Workflow-script `Date.now` ban.
+- **Sell = double-click via `gui_input` `event.double_click`** (final; long-press was reverted). Sockets/reserve emit `*_tapped` on Button `pressed` (single) + `*_sell` on the double-click event. Tests drive a tap via `tap.pressed.emit()`.
+- **const Arrays/Dicts are READ-ONLY in Godot 4**: combat writes `hero["hp"]`; tests feeding heroes from a `const` array must `.duplicate(true)`.
+- **New PNGs need import before `load()`:** drop a `.png` then run `<godot> --headless --path . --import` ONCE, else `ResourceLoader.exists/load` returns null (icons fell back to dots until imported). White-bg→transparent done by flood-fill-from-edges tools `cut_status_bg.gd` / `cut_icon_bg.gd` (run via `--script`).
+- **Image-gen (lila-art MCP):** nano-banana + recraft-v4 one-shot transparent PNG/webp; seedream returns opaque JPG (needs cutout). Tier rarity = in-engine border color, NOT per-tier art. Cost policy: nano-banana default; premium models only when user names them in-turn.
+- **Permadeath broke the full-run test:** all-heroes-dead = DEFEAT fires in `_tick_once`; the 15-wave full-run test must `_buff_heroes` to reach VICTORY.
+- **Shell:** Godot runs auto-background under contention + PowerShell `*>` is UTF-16 garble. Use Bash, redirect `> file 2>&1`, then Read the file. Parse error → exit 255 + ZERO output (looks like a pass); always grep for `SCRIPT ERROR/Parse Error`.
 
-## Known cosmetic / deferred (not blocking)
-- Status icons generated but white-bg (`assets/generated/status/*.png`) — NOT wired; battle uses colored dots. Needs bg cutout.
-- 2.5D perspective faked as flat 3×3 grid (art/shader pass = Phase 5).
-- Audio is stub (`_on_audio_triggered` prints). No SFX wired.
-- Tiny 6-function T1-only pool → reroll options look samey by design.
-- Home→Main_v2 nav not wired (main_scene jumps straight to slice).
+## Known deferred (Phase 5 / post-playtest)
+- Real per-Function combat VFX + bigger reaction VFX (only generic hit-flash/impact + merge sparkle now). 2.5D battlefield (flat 3×3 grid now). Audio = stub (`_on_audio_triggered` prints; no SFX/music).
+- Full catalog: 12 Functions + 15 reactions + tiers T1-T5 (slice = 6 Functions, 2 reactions [Steam/Electrocute], T1-T4 rarity borders). Spec: `docs/superpowers/specs/2026-06-12-function-catalog-and-status-matrix.md`.
+- FTUE playable flow (smoke-tested only; slice runs post-FTUE 3-hero). Real stage-5 boss AI (currently a hp30 enemy). Ult EFFECT (button charges + consumes, fires nothing). Wittle-meta home (HomeV2 is a title+PLAY stub).
+- Wave telegraph [ROADMAP]. Balance pass (gold econ, hero hp vs permadeath, sell value floor-50% → 0g for T1).
+- Repo hygiene: working tree has unrelated uncommitted changes NOT from this session — repo-root `docs/research/anime_autobattlers/` shows DELETED, `5_.../project.godot` modified, dev-scene `uid` churn. Left untouched; user to decide (likely `git checkout -- docs/research/anime_autobattlers`).
 
-## Next moves (suggested)
-1. User retests F5 → confirm the per-stage loop + slow-populate drip + reserve/sell (long-press) feel right.
-2. Decide merge real-asset-pass→vertical-slice or open PR (still not merged; their call).
-3. Feel-test pass / Phase 5 art (status sprites, real VFX, 2.5D). Wave-telegraph still [ROADMAP].
-4. Possible polish: true held-fire long-press (currently release-timed); reserve slot art (circles); sell confirmation toast.
+## PROPOSED NEXT STEPS — for approval (work on `post-slice-phase5`)
+Next work is gated by tomorrow's playtest (roadmap Gate 4.5: forge feel / chain dopamine / FTUE retention). Proposed order:
+
+0. **Playtest (user, tomorrow).** Run the slice with testers; capture feedback vs the 3 feel-gate objectives.
+1. **Post-playtest triage (fast).** Fold tester feedback into a fix list + balance pass (enemy/hero hp vs permadeath, gold economy, sell value).
+2. **Juice + feel (high ROI, if gate passes):** (a) real per-Function attack VFX + bigger Steam/Electrocute; (b) audio pass (wire `ElementMediator.audio_triggered`); (c) make the ULT button actually FIRE an effect.
+3. **Content depth (Phase 5 core):** (d) full 12-Function catalog + 15 reactions + tiers T1-T5 per the catalog spec; (e) FTUE playable flow (staged hero unlock + PullOverlay cinematics + scripted waves, gated on `AccountState.ftue_complete`) + real stage-5 boss AI.
+4. **Meta + presentation (Phase 5+):** (f) 2.5D battlefield (perspective shader/layered art); (g) Wittle-meta home (replace HomeV2: hero levels, equipment, dailies).
+
+Cheap, ungated wins anytime: wave telegraph, status-icon/reserve-slot polish.
+**ACTION: user picks which of 1–4 to start (or reorders) after the playtest. Then `superpowers:writing-plans` → phased plan → TDD build.**
+
+## Suggested skills (next session)
+- **`superpowers:test-driven-development`** (the `tdd` skill) — mandatory per global policy on every production change (RED→GREEN; stub-compile new modules; retroactive RED via path-scoped `git stash`).
+- **`superpowers:brainstorming`** — before any new Phase-5 feature (FTUE flow, ult effects, meta home) to lock scope/UX.
+- **`superpowers:writing-plans`** — turn the approved next-steps into a phased implementation plan.
+- **`lila-skills:ai-art-set`** — if generating a fuller Phase-5 art set (per-Function VFX, hero/enemy art, key UI).
+- **`anthropic-skills:game-design`** — balance pass + feel tuning from playtest feedback.

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Mudslide E"
+trigger_tag = &"EARTH"
+trigger_status = &"Wet"
+dmg_mult = 1.4
+splash = &"none"
+splash_filter = &"none"
+cleanse_origin = PackedStringArray("Wet")
+apply_origin = PackedStringArray("Chilled")
+apply_origin_duration = 2
+vfx_hook = &"vfx_mudslide"
+audio_hook = &"sfx_mudslide"

@@ -19,6 +19,11 @@ func _ready() -> void:
 	_test_vfx_signal_emits()
 	_test_audio_signal_emits()
 	_test_no_emit_when_no_reaction()
+	_test_full_matrix_15()
+	_test_apply_origin_quench()
+	_test_consume_cracked_magma()
+	_test_refresh_capacitor()
+	_test_knockback_avalanche()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -108,10 +113,10 @@ func _test_no_match() -> void:
 	var rd =em.dispatch_reaction(&"FIRE", e)
 	_check("no status: no reaction", rd == null, "got %s" % (str(rd.id) if rd else "null"))
 
-	## Tag not in registry for that status
+	## Tag x status genuinely absent from the matrix (spec §5 "not in matrix" list): FIRE x Burning.
 	ls.apply_status(e, &"Burning", 3)
-	rd = em.dispatch_reaction(&"WATER", e)
-	_check("WATER x Burning: no match in slice registry", rd == null, "got %s" % (str(rd.id) if rd else "null"))
+	rd = em.dispatch_reaction(&"FIRE", e)
+	_check("FIRE x Burning: not in matrix -> base dmg only", rd == null, "got %s" % (str(rd.id) if rd else "null"))
 
 func _test_priority_wet_over_burning() -> void:
 	## Wet takes priority (Wet > Burning per spec §8.1)
@@ -122,6 +127,78 @@ func _test_priority_wet_over_burning() -> void:
 	ls.apply_status(e, &"Burning", 3)
 	var rd =em.dispatch_reaction(&"FIRE", e)
 	_check("FIRE + Wet+Burning: Steam fires (Wet priority)", rd != null and rd.id == &"Steam", "got %s" % (str(rd.id) if rd else "null"))
+
+## Each of the 15 reactions fires under its correct (tag × status) input (spec §5).
+func _test_full_matrix_15() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var matrix := [
+		[&"FIRE", &"Wet", &"Steam"],
+		[&"FIRE", &"Chilled", &"Thaw"],
+		[&"FIRE", &"Cracked", &"Magma Burst"],
+		[&"ICE", &"Wet", &"Freeze Solid"],
+		[&"ICE", &"Burning", &"Frostbite"],
+		[&"ICE", &"Shocked", &"Capacitor"],
+		[&"WATER", &"Burning", &"Quench"],
+		[&"WATER", &"Shocked", &"Backsplash"],
+		[&"WATER", &"Cracked", &"Mudslide W"],
+		[&"EARTH", &"Wet", &"Mudslide E"],
+		[&"EARTH", &"Burning", &"Ash Cloud"],
+		[&"EARTH", &"Chilled", &"Avalanche"],
+		[&"LIGHTNING", &"Wet", &"Electrocute"],
+		[&"LIGHTNING", &"Cracked", &"Stonesmith"],
+		[&"LIGHTNING", &"Burning", &"Arc Storm"],
+	]
+	for row in matrix:
+		var e = ls.make_enemy(&"g", 1, 0.5)
+		if row[1] == &"Cracked":
+			ls.apply_status(e, row[1], 4, 1, 3)
+		else:
+			ls.apply_status(e, row[1], 4)
+		var rd = em.dispatch_reaction(row[0], e)
+		_check("%s x %s = %s" % [row[0], row[1], row[2]],
+			rd != null and rd.id == row[2], "got %s" % (str(rd.id) if rd else "null"))
+
+func _test_apply_origin_quench() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var e = ls.make_enemy(&"g", 1, 0.5)
+	ls.apply_status(e, &"Burning", 3)
+	var rd = em.dispatch_reaction(&"WATER", e)
+	_check("Quench fires (WATER x Burning)", rd != null and rd.id == &"Quench", "got %s" % (str(rd.id) if rd else "null"))
+	_check("Quench cleanses Burning", not ls.has_status(e, &"Burning"), "")
+	_check("Quench applies Wet to origin", ls.has_status(e, &"Wet"), "")
+
+func _test_consume_cracked_magma() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var e = ls.make_enemy(&"g", 1, 0.5)
+	ls.apply_status(e, &"Cracked", 4, 2, 3)  ## 2 stacks
+	var rd = em.dispatch_reaction(&"FIRE", e)
+	_check("Magma Burst fires (FIRE x Cracked)", rd != null and rd.id == &"Magma Burst", "got %s" % (str(rd.id) if rd else "null"))
+	_check("Magma consumes 1 Cracked stack (2->1)", ls.get_status_stacks(e, &"Cracked") == 1, "got %d" % ls.get_status_stacks(e, &"Cracked"))
+
+func _test_refresh_capacitor() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var e = ls.make_enemy(&"g", 1, 0.5)
+	ls.apply_status(e, &"Shocked", 1)  ## about to expire
+	var rd = em.dispatch_reaction(&"ICE", e)
+	_check("Capacitor fires (ICE x Shocked)", rd != null and rd.id == &"Capacitor", "got %s" % (str(rd.id) if rd else "null"))
+	_check("Capacitor refreshes Shocked to 2x base (4 ticks)",
+		e.statuses.has(&"Shocked") and int(e.statuses[&"Shocked"]["ticks"]) == 4,
+		"got %s" % (str(e.statuses.get(&"Shocked", {}))))
+
+func _test_knockback_avalanche() -> void:
+	var ls = get_node("/root/LaneState")
+	var em = get_node("/root/ElementMediator")
+	var e = ls.make_enemy(&"g", 1, 0.3)
+	ls.apply_status(e, &"Chilled", 3)
+	var x0: float = e.screen_x
+	var rd = em.dispatch_reaction(&"EARTH", e)
+	_check("Avalanche fires (EARTH x Chilled)", rd != null and rd.id == &"Avalanche", "got %s" % (str(rd.id) if rd else "null"))
+	_check("Avalanche cleanses Chilled", not ls.has_status(e, &"Chilled"), "")
+	_check("Avalanche knocks origin back", e.screen_x > x0, "x0=%f now=%f" % [x0, e.screen_x])
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

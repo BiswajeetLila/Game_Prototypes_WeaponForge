@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Stonesmith"
+trigger_tag = &"LIGHTNING"
+trigger_status = &"Cracked"
+dmg_mult = 2.0
+splash = &"none"
+splash_filter = &"none"
+apply_origin = PackedStringArray("Shocked")
+apply_origin_duration = 2
+consume_cracked = true
+vfx_hook = &"vfx_arc_stone"
+audio_hook = &"sfx_arc_stone"

@@ -11,4 +11,5 @@ extends Resource
 @export var hp_dmg_per_tick: int = 0        ## Burning=2, Shocked=1
 @export var speed_mult: float = 1.0         ## Chilled=0.5, Frozen=0.0
 @export var dmg_amp_per_stack: float = 0.0  ## Cracked=0.15 per stack
-@export var skip_attack_chance: float = 0.0 ## Shocked=0.10 (10%)
+@export var skip_attack_chance: float = 0.0 ## Shocked=0.10 (10%); Blind/Frozen=1.0 (miss)
+@export var hp_dmg_pct_per_tick: float = 0.0 ## Bleed=0.05 (5% maxHP/tick); applied by combat per-tick status pass

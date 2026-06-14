@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Thaw"
+trigger_tag = &"FIRE"
+trigger_status = &"Chilled"
+dmg_mult = 1.5
+splash = &"none"
+splash_filter = &"none"
+cleanse_origin = PackedStringArray("Chilled")
+vfx_hook = &"vfx_fire_burst"
+audio_hook = &"sfx_thaw_crack"

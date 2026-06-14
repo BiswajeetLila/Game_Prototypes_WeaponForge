@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Capacitor"
+trigger_tag = &"ICE"
+trigger_status = &"Shocked"
+dmg_mult = 1.4
+splash = &"none"
+splash_filter = &"none"
+cleanse_origin = PackedStringArray("Chilled")
+apply_origin = PackedStringArray("Shocked")
+apply_origin_duration = 4
+vfx_hook = &"vfx_arc_freeze"
+audio_hook = &"sfx_capacitor_hum"

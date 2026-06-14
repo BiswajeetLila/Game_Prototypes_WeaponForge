@@ -10,6 +10,7 @@ var _lines: Array = []
 func _ready() -> void:
 	_log("=== StatusData tests ===")
 	_test_load_all()
+	_test_aux_statuses()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -37,6 +38,27 @@ func _test_load_all() -> void:
 		_check("%s speed_mult" % fname, is_equal_approx(res.speed_mult, s[3]), "got %f" % res.speed_mult)
 		_check("%s dmg_amp" % fname, is_equal_approx(res.dmg_amp_per_stack, s[4]), "got %f" % res.dmg_amp_per_stack)
 		_check("%s skip_chance" % fname, is_equal_approx(res.skip_attack_chance, s[5]), "got %f" % res.skip_attack_chance)
+
+## Auxiliary reaction-only statuses (spec §5): Blind, Frozen, Bleed.
+func _test_aux_statuses() -> void:
+	var blind = load("res://data/statuses/blind.tres")
+	_check("blind loads", blind != null and blind.get_script() == _StatusScript, "")
+	if blind != null:
+		_check("blind duration 1", blind.base_duration == 1, "got %d" % blind.base_duration)
+		_check("blind forces miss (skip 1.0)", is_equal_approx(blind.skip_attack_chance, 1.0), "got %f" % blind.skip_attack_chance)
+
+	var frozen = load("res://data/statuses/frozen.tres")
+	_check("frozen loads", frozen != null and frozen.get_script() == _StatusScript, "")
+	if frozen != null:
+		_check("frozen duration 1", frozen.base_duration == 1, "got %d" % frozen.base_duration)
+		_check("frozen halts advance (speed 0)", is_equal_approx(frozen.speed_mult, 0.0), "got %f" % frozen.speed_mult)
+		_check("frozen skips attack (1.0)", is_equal_approx(frozen.skip_attack_chance, 1.0), "got %f" % frozen.skip_attack_chance)
+
+	var bleed = load("res://data/statuses/bleed.tres")
+	_check("bleed loads", bleed != null and bleed.get_script() == _StatusScript, "")
+	if bleed != null:
+		_check("bleed duration 4", bleed.base_duration == 4, "got %d" % bleed.base_duration)
+		_check("bleed 5%% maxHP/tick", is_equal_approx(bleed.hp_dmg_pct_per_tick, 0.05), "got %f" % bleed.hp_dmg_pct_per_tick)
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

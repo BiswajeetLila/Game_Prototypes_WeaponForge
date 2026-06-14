@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="StatusData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/status_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Frozen"
+max_stacks = 1
+base_duration = 1
+hp_dmg_per_tick = 0
+speed_mult = 0.0
+dmg_amp_per_stack = 0.0
+skip_attack_chance = 1.0
+hp_dmg_pct_per_tick = 0.0

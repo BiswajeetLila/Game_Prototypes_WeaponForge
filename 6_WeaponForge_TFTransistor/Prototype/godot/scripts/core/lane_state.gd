@@ -96,6 +96,18 @@ func decay_statuses(enemy: Dictionary) -> void:
 func cleanse_status(enemy: Dictionary, status_name: StringName) -> void:
 	enemy.statuses.erase(status_name)
 
+## Remove `amount` stacks from a status; erase the status if it hits 0. Returns remaining stacks.
+## Used by reactions that consume Cracked stacks (Magma Burst, Mudslide-W, Stonesmith).
+func consume_status_stack(enemy: Dictionary, status_name: StringName, amount: int = 1) -> int:
+	if not enemy.statuses.has(status_name):
+		return 0
+	var entry: Dictionary = enemy.statuses[status_name]
+	entry["stacks"] = int(entry["stacks"]) - amount
+	if entry["stacks"] <= 0:
+		enemy.statuses.erase(status_name)
+		return 0
+	return int(entry["stacks"])
+
 func get_status_stacks(enemy: Dictionary, status_name: StringName) -> int:
 	if not enemy.statuses.has(status_name):
 		return 0

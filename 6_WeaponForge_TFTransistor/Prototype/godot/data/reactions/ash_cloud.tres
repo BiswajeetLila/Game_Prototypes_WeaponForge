@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ReactionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/reaction_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"Ash Cloud"
+trigger_tag = &"EARTH"
+trigger_status = &"Burning"
+dmg_mult = 1.2
+splash = &"own_lane_radius"
+splash_filter = &"none"
+cleanse_origin = PackedStringArray("Burning")
+apply_splashed = PackedStringArray("Blind")
+vfx_hook = &"vfx_ash_cloud"
+audio_hook = &"sfx_ash_cloud"

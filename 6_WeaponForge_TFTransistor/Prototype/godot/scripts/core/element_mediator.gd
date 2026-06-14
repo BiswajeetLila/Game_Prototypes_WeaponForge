@@ -47,13 +47,15 @@ func dispatch_reaction(damage_tag: StringName, enemy: Dictionary):
 	var ls = get_node_or_null("/root/LaneState")
 	if ls == null:
 		return null
-	## Priority order: Wet > Burning > Chilled > Cracked > Shocked
+	## Priority order: Wet > Burning > Chilled > Cracked > Shocked (spec rule 6).
+	## One reaction per hit: the FIRST status in priority order that has a registered
+	## reaction for this tag fires. Cracked sits at priority 4 so a higher-priority status
+	## (if it has a reaction for this tag) is consumed first and Cracked is left untouched
+	## ("never consumed as a passenger"). Cracked only triggers its own reactions
+	## (Magma Burst / Mudslide-W / Stonesmith) when nothing above it matched.
 	var priority: Array[StringName] = [&"Wet", &"Burning", &"Chilled", &"Cracked", &"Shocked"]
 	for status in priority:
 		if not ls.has_status(enemy, status):
-			continue
-		## Cracked is never consumed by reaction priority — skip as trigger
-		if status == &"Cracked":
 			continue
 		var key := _key(damage_tag, status)
 		if _registry.has(key):
@@ -70,3 +72,11 @@ func dispatch_reaction(damage_tag: StringName, enemy: Dictionary):
 func _apply_reaction(rd, enemy: Dictionary, ls: Node) -> void:
 	for s in rd.cleanse_origin:
 		ls.cleanse_status(enemy, StringName(s))
+	if rd.consume_cracked:
+		ls.consume_status_stack(enemy, &"Cracked", 1)
+	## Apply statuses to the origin (Frostbite→Chilled, Quench→Wet, Freeze Solid→Frozen,
+	## Stonesmith→Shocked, Mudslide→Chilled-slow, Capacitor→refresh Shocked). After cleanse.
+	for s in rd.apply_origin:
+		ls.apply_status(enemy, StringName(s), rd.apply_origin_duration)
+	if rd.knockback:
+		ls.knockback_enemy(enemy)

@@ -25,8 +25,11 @@ Behavior-level TDD per step (RED→GREEN). Test runner: headless `Test*.tscn`, e
 | LEECH | melee ×0.6, heals self 50% | Active hits heal 25% | lifelink: +1HP/t but DISABLES attacks | PASSIVE |
 | BURST | 3-fan ×0.45 (×1.35) | Active→3-fan, 3 reactions | rapid_fire: atk speed +40% | MODIFIER |
 
+## STATUS: ALL DONE ✅ (full sweep 446/446 across 15 suites, 2026-06-14)
+Remaining cosmetic-only (not blocking): behavior preview panel overlaps the socket grid (readable but sits on top); tighten in a polish pass.
+
 ## Steps / commits
-- [ ] **C1** socket index flip P|M|A — forge_panel SOCKET_LABELS + loadout doc + grep combat/element_mediator for socket-0=active assumptions. (commit 1)
+- [x] **C1** socket index flip P|M|A — forge_panel SOCKET_LABELS + loadout doc + grep combat/element_mediator for socket-0=active assumptions. (commit 1)
 - [ ] **C2** ShopV2 economy core: cost_for, roll_items (T1-only, pity), buy(), reroll() contracts. (commit 2 w/ C4)
 - [ ] **C4** pity wiring + per-stage element tracking. (commit 2)
 - [ ] **C3** main_v2 buy/reroll wiring: deduct gold, clear slot, equip/merge-stub "2/2", forge-break-gated, per-kill gold. (commit 3)

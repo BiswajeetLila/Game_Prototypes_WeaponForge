@@ -48,7 +48,6 @@ var _battle: Control
 var _forge: Control
 var _chain_hud: Control
 var _hud: Control
-var _next_btn: Button
 var _heroes: Array = []
 var _paused: bool = false   ## pause gates the tick; does NOT change state/layout
 
@@ -85,18 +84,15 @@ func _build_layout() -> void:
 		_forge.shop_item_tapped.connect(_on_shop_tap)
 	if _forge.has_signal("socket_tapped"):
 		_forge.socket_tapped.connect(_on_socket_tap)
+	if _forge.has_signal("start_next_wave"):
+		_forge.start_next_wave.connect(advance_wave)
 
 	_chain_hud = ChainHUDScene.instantiate()
 	add_child(_chain_hud)
 
-	_next_btn = Button.new()
-	_next_btn.name = "NextWaveBtn"
-	_next_btn.text = "START NEXT WAVE"
-	_next_btn.anchor_left = 0.18; _next_btn.anchor_right = 0.82
-	_next_btn.anchor_top = 0.335; _next_btn.anchor_bottom = 0.385  ## top of expanded forge panel
-	_next_btn.pressed.connect(advance_wave)
-	add_child(_next_btn)
-	_next_btn.visible = false
+func _set_next_wave(v: bool) -> void:
+	if _forge != null and _forge.has_method("set_next_wave_visible"):
+		_forge.set_next_wave_visible(v)
 
 ## ---- phase-adaptive layout (combat = big battle / compact rail; forge = small preview / big forge) ----
 
@@ -197,8 +193,7 @@ func start_run() -> void:
 	_spawn_current_wave()
 	state = STATE_COMBAT
 	_paused = false
-	if _next_btn != null:
-		_next_btn.visible = false
+	_set_next_wave(false)
 	_apply_layout(STATE_COMBAT)
 
 func _make_heroes() -> Array:
@@ -258,8 +253,9 @@ func _enter_forge_break() -> void:
 	waves_played += 1
 	## gold is earned per-kill in _tick_once now (no flat grant)
 	_populate_shop()
-	if _next_btn != null:
-		_next_btn.visible = true
+	_set_next_wave(true)
+	if _forge != null and _forge.has_method("set_reroll_cost"):
+		_forge.set_reroll_cost(1)
 	_apply_layout(STATE_FORGE)
 	_update_hud()
 
@@ -281,13 +277,11 @@ func advance_wave() -> void:
 		_stage_elements_seen = []
 	if current_stage >= STAGES:
 		state = STATE_DONE
-		if _next_btn != null:
-			_next_btn.visible = false
+		_set_next_wave(false)
 		_update_hud()
 		return
 	_spawn_current_wave()
-	if _next_btn != null:
-		_next_btn.visible = false
+	_set_next_wave(false)
 	state = STATE_COMBAT
 	_apply_layout(STATE_COMBAT)
 

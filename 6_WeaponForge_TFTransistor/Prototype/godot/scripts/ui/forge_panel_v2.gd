@@ -44,6 +44,8 @@ signal socket_tapped(hero_idx: int, socket_idx: int)
 signal shop_item_tapped(slot_idx: int)
 ## Emitted when player taps the Re-roll button.
 signal reroll_tapped()
+## Emitted when player taps START NEXT WAVE (in the footer).
+signal start_next_wave()
 
 var _hero_rows: Array = []   ## 3 HeroRow containers (HBoxContainer)
 var _shop_slots: Array = []  ## 7 PanelContainer nodes for shop items
@@ -141,7 +143,7 @@ func _build_shop_rail() -> void:
 	var rail := HBoxContainer.new()
 	rail.name = "ShopRail"
 	rail.anchor_left = 0.0; rail.anchor_right = 1.0
-	rail.anchor_top = 0.82; rail.anchor_bottom = 0.93
+	rail.anchor_top = 0.80; rail.anchor_bottom = 0.90
 	rail.offset_left = 4; rail.offset_right = -4
 	rail.offset_top = 2; rail.offset_bottom = -2
 	rail.add_theme_constant_override(&"separation", 4)
@@ -155,15 +157,15 @@ func _build_shop_footer() -> void:
 	var footer := HBoxContainer.new()
 	footer.name = "ShopFooter"
 	footer.anchor_left = 0.0; footer.anchor_right = 1.0
-	footer.anchor_top = 0.94; footer.anchor_bottom = 1.0
+	footer.anchor_top = 0.905; footer.anchor_bottom = 1.0
 	footer.offset_left = 8; footer.offset_right = -8
+	footer.add_theme_constant_override(&"separation", 6)
 	add_child(footer)
 
 	var gold := Label.new()
 	gold.name = "GoldLabel"
 	gold.text = "Gold: 0"
 	gold.add_theme_font_size_override(&"font_size", 12)
-	gold.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(gold)
 
 	var reroll := Button.new()
@@ -171,6 +173,14 @@ func _build_shop_footer() -> void:
 	reroll.text = "Re-roll"
 	reroll.pressed.connect(func(): reroll_tapped.emit())
 	footer.add_child(reroll)
+
+	var start := Button.new()
+	start.name = "StartNextWaveBtn"
+	start.text = "START NEXT WAVE"
+	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	start.pressed.connect(func(): start_next_wave.emit())
+	start.visible = false
+	footer.add_child(start)
 
 func _make_shop_slot(idx: int) -> PanelContainer:
 	var panel := PanelContainer.new()
@@ -400,3 +410,8 @@ func set_reroll_enabled(enabled: bool) -> void:
 	var rb := find_child("RerollBtn", true, false) as Button
 	if rb != null:
 		rb.disabled = not enabled
+
+func set_next_wave_visible(v: bool) -> void:
+	var b := find_child("StartNextWaveBtn", true, false) as Button
+	if b != null:
+		b.visible = v

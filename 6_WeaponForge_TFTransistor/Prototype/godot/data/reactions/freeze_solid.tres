@@ -12,6 +12,6 @@ splash = &"none"
 splash_filter = &"none"
 cleanse_origin = PackedStringArray("Wet")
 apply_origin = PackedStringArray("Frozen")
-apply_origin_duration = 1
+apply_origin_duration = 2
 vfx_hook = &"vfx_freeze_solid"
 audio_hook = &"sfx_freeze_shatter"

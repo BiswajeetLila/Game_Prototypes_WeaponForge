@@ -28,6 +28,12 @@ func _ready() -> void:
 	## Q3 — tier stat scaling
 	_test_tier_scale_values()
 	_test_tier_mult_scales_damage()
+	## Q6 — review fixes
+	_test_reaction_dmg_mult_applied()
+	_test_reaction_cracked_amplifies()
+	_test_per_tick_burning_damage()
+	_test_per_tick_bleed_pct_damage()
+	_test_freeze_solid_halts_advance()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -190,6 +196,79 @@ func _test_tier_mult_scales_damage() -> void:
 	cv2.tick({"enemies": [e4], "heroes": [h4], "lane_state": ls})
 	var dmg_t4: int = 100 - int(e4.hp)
 	_check("T4 Function deals more damage than T1 (merge payoff)", dmg_t4 > dmg_t1, "t1=%d t4=%d" % [dmg_t1, dmg_t4])
+
+## ---- Q6 fix F1: reaction dmg_mult applied as bonus damage ----
+
+func _test_reaction_dmg_mult_applied() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var light = load("res://data/functions/lightning.tres")  ## tag LIGHTNING
+	## Wet enemy -> LIGHTNING x Wet = Electrocute (2.0x); dry enemy -> no reaction
+	cv2.reset()
+	var ewet = ls.make_enemy(&"w", 1, 0.5, 200)
+	ls.apply_status(ewet, &"Wet", 4)
+	cv2.tick({"enemies": [ewet], "heroes": [{"id": &"e", "lane": 1, "base_dmg": 10, "active_fn": light}], "lane_state": ls})
+	var with_reaction: int = 200 - int(ewet.hp)
+	cv2.reset()
+	var edry = ls.make_enemy(&"d", 1, 0.5, 200)
+	cv2.tick({"enemies": [edry], "heroes": [{"id": &"e", "lane": 1, "base_dmg": 10, "active_fn": light}], "lane_state": ls})
+	var no_reaction: int = 200 - int(edry.hp)
+	_check("reaction dmg_mult: Electrocute (2.0x) deals more than a no-reaction hit",
+		with_reaction > no_reaction, "with=%d no=%d" % [with_reaction, no_reaction])
+
+func _test_reaction_cracked_amplifies() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var light = load("res://data/functions/lightning.tres")
+	## Wet only vs Wet+Cracked(2): Cracked amps the reaction (spec §4: x1.30 at 2 stacks)
+	cv2.reset()
+	var e1 = ls.make_enemy(&"a", 1, 0.5, 300)
+	ls.apply_status(e1, &"Wet", 4)
+	cv2.tick({"enemies": [e1], "heroes": [{"id": &"e", "lane": 1, "base_dmg": 10, "active_fn": light}], "lane_state": ls})
+	var plain: int = 300 - int(e1.hp)
+	cv2.reset()
+	var e2 = ls.make_enemy(&"b", 1, 0.5, 300)
+	ls.apply_status(e2, &"Wet", 4)
+	ls.apply_status(e2, &"Cracked", 4, 2, 3)
+	cv2.tick({"enemies": [e2], "heroes": [{"id": &"e", "lane": 1, "base_dmg": 10, "active_fn": light}], "lane_state": ls})
+	var cracked: int = 300 - int(e2.hp)
+	_check("reaction Cracked amp: Wet+Cracked Electrocute > Wet-only", cracked > plain, "plain=%d cracked=%d" % [plain, cracked])
+
+## ---- Q6 fix F2: per-tick status DoT (Burning/Shocked/Bleed) ----
+
+func _test_per_tick_burning_damage() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	cv2.reset()
+	var e = ls.make_enemy(&"b", 1, 0.9, 100)
+	ls.apply_status(e, &"Burning", 5)
+	## hero in an empty lane dealing 0 -> isolates the DoT
+	cv2.tick({"enemies": [e], "heroes": [{"id": &"x", "lane": 2, "base_dmg": 0}], "lane_state": ls})
+	_check("Burning deals -2 HP/tick", int(e.hp) == 98, "got %d" % int(e.hp))
+
+func _test_per_tick_bleed_pct_damage() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	cv2.reset()
+	var e = ls.make_enemy(&"b", 1, 0.9, 100)  ## max_hp 100
+	ls.apply_status(e, &"Bleed", 4)
+	cv2.tick({"enemies": [e], "heroes": [{"id": &"x", "lane": 2, "base_dmg": 0}], "lane_state": ls})
+	_check("Bleed deals 5% maxHP/tick (-5 of 100)", int(e.hp) == 95, "got %d" % int(e.hp))
+
+## ---- Q6 fix F3: Freeze Solid's Frozen must halt the enemy's advance ----
+
+func _test_freeze_solid_halts_advance() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var ice = load("res://data/functions/ice.tres")  ## ICE active
+	cv2.reset()
+	var e = ls.make_enemy(&"w", 1, 0.7, 500)  ## big HP so it survives the hits
+	ls.apply_status(e, &"Wet", 6)
+	var hero = {"id": &"x", "lane": 1, "base_dmg": 2, "active_fn": ice}
+	cv2.tick({"enemies": [e], "heroes": [hero], "lane_state": ls})  ## tick A: ICE x Wet = Freeze Solid -> Frozen
+	var xA: float = e.screen_x
+	cv2.tick({"enemies": [e], "heroes": [hero], "lane_state": ls})  ## tick B: Frozen must halt advance
+	_check("Freeze Solid's Frozen halts advance the next tick", is_equal_approx(e.screen_x, xA), "xA=%f xB=%f" % [xA, e.screen_x])
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

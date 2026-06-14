@@ -42,8 +42,9 @@ func _key(tag: StringName, status: StringName) -> StringName:
 	return StringName(String(tag) + "x" + String(status))
 
 ## Check enemy status list against damage tag. Returns ReactionData or null.
-## Mutates enemy statuses per reaction spec on match.
-func dispatch_reaction(damage_tag: StringName, enemy: Dictionary):
+## Mutates enemy statuses per reaction spec on match. `enemies` (the full live list) enables
+## splash targeting (apply_splashed to cross-lane / own-lane-radius neighbours); pass [] to skip.
+func dispatch_reaction(damage_tag: StringName, enemy: Dictionary, enemies: Array = []):
 	var ls = get_node_or_null("/root/LaneState")
 	if ls == null:
 		return null

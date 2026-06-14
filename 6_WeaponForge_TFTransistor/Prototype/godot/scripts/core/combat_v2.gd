@@ -28,9 +28,10 @@ func tick(gs: Dictionary) -> void:
 	if ls == null:
 		return
 
-	## 1. Status decay
+	## 1. Status decay (+ per-tick status damage: Burning -2, Shocked -1, Bleed 5% maxHP)
 	_tick_order_log.append("decay")
 	for enemy in gs.get("enemies", []):
+		_apply_status_dot(enemy)
 		ls.decay_statuses(enemy)
 
 	## 2. Enemy advance (+ contact damage: an engaged enemy hits the hero in its lane, spec §7)
@@ -84,7 +85,6 @@ func _resolve_function_attack(hero: Dictionary, enemies: Array, ls: Node) -> voi
 	var dmg: int = maxi(1, int(round(float(hero.get("base_dmg", 1)) * float(fn.active_dmg_mult) * tier_mult)))
 	var tag: StringName = fn.active_damage_tag
 	var status_emit: StringName = fn.active_status_emit
-	var em := get_node_or_null("/root/ElementMediator")
 	for t in targets:
 		t["hp"] = int(t["hp"]) - dmg
 		if status_emit != &"":
@@ -92,8 +92,7 @@ func _resolve_function_attack(hero: Dictionary, enemies: Array, ls: Node) -> voi
 		if fn.active_knockback:
 			ls.knockback_enemy(t)
 		hit_landed.emit(hero.get("id", &""), t, tag)
-		if em != null and tag != &"":
-			em.dispatch_reaction(tag, t)
+		_dispatch_and_amplify(tag, t, dmg, ls, enemies)
 
 ## Base-weapon stub: attack first enemy in hero's lane (or any if none in lane).
 func _resolve_base_attack(hero: Dictionary, enemies: Array, ls: Node) -> void:
@@ -110,9 +109,40 @@ func _resolve_base_attack(hero: Dictionary, enemies: Array, ls: Node) -> void:
 	target["hp"] = target["hp"] - dmg
 	var tag: StringName = hero.get("damage_tag", &"")
 	hit_landed.emit(hero.get("id", &""), target, tag)
+	_dispatch_and_amplify(tag, target, dmg, ls, enemies)
+
+## Dispatch a reaction for a landed hit and apply its damage multiplier (spec §5) on top of
+## the base hit, scaled by the target's Cracked dmg-amp (spec §4: +15%/stack). Cracked stacks are
+## read BEFORE dispatch (a Cracked-triggered reaction may consume one). `enemies` enables splash.
+func _dispatch_and_amplify(tag: StringName, target: Dictionary, base_hit: int, ls: Node, enemies: Array) -> void:
 	var em := get_node_or_null("/root/ElementMediator")
-	if em != null and tag != &"":
-		em.dispatch_reaction(tag, target)
+	if em == null or tag == &"":
+		return
+	var cracked: int = int(ls.get_status_stacks(target, &"Cracked"))
+	var rd = em.dispatch_reaction(tag, target, enemies)
+	if rd == null:
+		return
+	var amp: float = 1.0 + 0.15 * float(cracked)
+	var extra: int = int(round(float(base_hit) * (float(rd.dmg_mult) * amp - 1.0)))
+	if extra > 0:
+		target["hp"] = int(target["hp"]) - extra
+
+## Per-tick status damage (spec §4): Burning -2/tick, Shocked -1/tick, Bleed 5% maxHP/tick.
+## Sourced from StatusData (hp_dmg_per_tick + hp_dmg_pct_per_tick).
+func _apply_status_dot(enemy: Dictionary) -> void:
+	var statuses: Dictionary = enemy.get("statuses", {})
+	if statuses.is_empty():
+		return
+	var total: int = 0
+	for s in statuses.keys():
+		var def = _status_def(s)
+		if def == null:
+			continue
+		total += int(def.hp_dmg_per_tick)
+		if float(def.hp_dmg_pct_per_tick) > 0.0:
+			total += int(ceil(float(enemy.get("max_hp", 0)) * float(def.hp_dmg_pct_per_tick)))
+	if total > 0:
+		enemy["hp"] = int(enemy["hp"]) - total
 
 ## Emit a Function's status onto a target, sourcing duration + stack cap from StatusData (SSOT).
 func _emit_status(ls: Node, target: Dictionary, status: StringName) -> void:

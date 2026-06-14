@@ -23,6 +23,7 @@ const ChainHUDScene: PackedScene = preload("res://scenes/ui/ChainHUD.tscn")
 const Loadout = preload("res://scripts/core/loadout_v2.gd")
 const Reserve = preload("res://scripts/core/reserve_v2.gd")
 const ForgeGrid = preload("res://scripts/core/forge_grid.gd")
+const TierScale = preload("res://scripts/core/tier_scale.gd")
 
 const STATE_COMBAT: int = 0
 const STATE_FORGE: int = 1
@@ -261,9 +262,9 @@ func _fn_data(fn_id: StringName):
 		_fn_cache[fn_id] = load(p) if ResourceLoader.exists(p) else null
 	return _fn_cache[fn_id]
 
-## Tier stat multiplier (spec §10.1). Q2 placeholder (1.0); Q3 replaces with the real scale.
-func _tier_mult(_tier: int) -> float:
-	return 1.0
+## Tier stat multiplier (spec §10.1): T1..T5 -> 1.0/1.4/2.0/2.8/4.0.
+func _tier_mult(tier: int) -> float:
+	return TierScale.mult(tier)
 
 func _spawn_current_wave() -> void:
 	var ls = get_node_or_null("/root/LaneState")

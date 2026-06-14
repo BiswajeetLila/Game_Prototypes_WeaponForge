@@ -3,6 +3,7 @@
 extends Control
 
 const _Targeting = preload("res://scripts/core/combat_targeting.gd")
+const _TierScale = preload("res://scripts/core/tier_scale.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -24,6 +25,9 @@ func _ready() -> void:
 	_test_active_fn_applies_status_emit()
 	_test_active_fn_knockback()
 	_test_active_fn_beam_hits_all_in_lane()
+	## Q3 — tier stat scaling
+	_test_tier_scale_values()
+	_test_tier_mult_scales_damage()
 	_summary()
 	_render_to_ui()
 	if DisplayServer.get_name() == "headless":
@@ -158,6 +162,34 @@ func _test_active_fn_beam_hits_all_in_lane() -> void:
 	var gs = {"enemies": [e1, e2], "heroes": [hero], "lane_state": ls}
 	cv2.tick(gs)
 	_check("BEAM pierces: both lane enemies take damage", int(e1.hp) < 20 and int(e2.hp) < 20, "got %d / %d" % [int(e1.hp), int(e2.hp)])
+
+## ---- Q3: tier stat scaling (spec §10.1) ----
+
+func _test_tier_scale_values() -> void:
+	_check("T1 mult 1.0", is_equal_approx(_TierScale.mult(1), 1.0), "got %f" % _TierScale.mult(1))
+	_check("T2 mult 1.4", is_equal_approx(_TierScale.mult(2), 1.4), "got %f" % _TierScale.mult(2))
+	_check("T3 mult 2.0", is_equal_approx(_TierScale.mult(3), 2.0), "got %f" % _TierScale.mult(3))
+	_check("T4 mult 2.8", is_equal_approx(_TierScale.mult(4), 2.8), "got %f" % _TierScale.mult(4))
+	_check("T5 mult 4.0", is_equal_approx(_TierScale.mult(5), 4.0), "got %f" % _TierScale.mult(5))
+
+## Higher tier_mult on a hero = strictly more damage from the same Function (merge payoff).
+func _test_tier_mult_scales_damage() -> void:
+	var cv2 = get_node("/root/CombatV2")
+	var ls = get_node("/root/LaneState")
+	var fire = load("res://data/functions/fire.tres")
+	## T1 hero
+	cv2.reset()
+	var e1 = ls.make_enemy(&"a", 1, 0.5, 100)
+	var h1 = {"id": &"bran", "lane": 1, "base_dmg": 10, "active_fn": fire, "tier_mult": _TierScale.mult(1)}
+	cv2.tick({"enemies": [e1], "heroes": [h1], "lane_state": ls})
+	var dmg_t1: int = 100 - int(e1.hp)
+	## T4 hero
+	cv2.reset()
+	var e4 = ls.make_enemy(&"b", 1, 0.5, 100)
+	var h4 = {"id": &"bran", "lane": 1, "base_dmg": 10, "active_fn": fire, "tier_mult": _TierScale.mult(4)}
+	cv2.tick({"enemies": [e4], "heroes": [h4], "lane_state": ls})
+	var dmg_t4: int = 100 - int(e4.hp)
+	_check("T4 Function deals more damage than T1 (merge payoff)", dmg_t4 > dmg_t1, "t1=%d t4=%d" % [dmg_t1, dmg_t4])
 
 func _check(name: String, ok: bool, detail: String) -> void:
 	if ok: _passed += 1; _log("  PASS  " + name)

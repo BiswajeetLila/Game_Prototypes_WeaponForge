@@ -1,173 +1,99 @@
-# HANDOFF — WeaponForge TFTransistor Phase 4 (18/18 mech-complete; feel-test pending)
+# HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Last updated:** 2026-06-13 · **Branch:** `weaponforge-tftransistor/vertical-slice`
+**Updated:** 2026-06-14 · **Branch:** `weaponforge-tftransistor/real-asset-pass` (pushed, this is CANON) · **Model context:** post-compaction resume doc.
 
-## TL;DR
+## Read-first
 
-**Phase 4 build sequence steps 1-18 all mechanically complete and committed.** Feel-test
-remains a human job (open editor, run, judge pacing). All systems are TDD-gated with
-268/268 tests green and 7 AUTOSHOT artifacts captured.
+- SSOT: [`docs/01_GDD.md`](docs/01_GDD.md) + the Godot build in `Prototype/godot/`.
+- Engine: Godot **4.6 Mono**, binary `C:\Godot_v4.6.2-stable_mono_win64\Godot_v4.6.2-stable_mono_win64_console.exe`.
+- Project path: `6_WeaponForge_TFTransistor/Prototype/godot`.
+- Main scene = `res://scenes/Main_v2.tscn` (F5 boots the slice).
+- Approved art SSOT (the look we build toward): `_art-build/screens/In_Battle.png` + `Forge_State.jpeg` + `keyart_01.jpeg`.
+- Rebuild tracker: [`REBUILD_PLAN.md`](REBUILD_PLAN.md) (all C1–C11 done).
 
-## Test totals (all green)
+## Branch state
 
-```
-TestLaneState:        29/29
-TestFunctions:        45/45
-TestStatuses:         35/35
-TestReactions:        18/18
-TestElementMediator:  14/14   (was 10; +VFX/audio emit assertions)
-TestCombatV2:          6/6
-TestUltController:    11/11
-TestWaveDirector:     32/32   (was 22; +enemies_for_stage_wave + boss-wave asserts)
-TestShopV2:           12/12
-TestUiV2:             34/34   (was 30; +BattleView_v2 vfx/audio handler asserts)
-TestFtueSmoke:        32/32   (NEW step 17 — 11-wave FTUE integration smoke)
-TOTAL:               268/268
-```
-
-## What landed this session (steps 1-18)
-
-| Commit | Steps | Scope |
-|---|---|---|
-| `cd030cc` | 1 | AccountState v3 — `ftue_complete` + v2 migration |
-| `8e9c5b1` | 2-10, 15 | LaneState, 6 Functions, 5 Statuses, 2 Reactions, ElementMediator, CombatV2, UltController, WaveDirector, ShopV2, DebugOverlay |
-| `6c42ee4` | 11-14 | BattleView_v2, ForgePanel_v2, WaveTelegraph, ChainHUD |
-| `751fbc2` | docs | HANDOFF v1 |
-| `21974c4` | 16 | VFX/audio signal stubs + temp BattleView ColorRect flash |
-| `25e51ad` | 17 | FTUE 11-wave mechanical smoke (TestFtueSmoke + enemies_for_stage_wave) |
-| (next) | 18 | AUTOSHOT artifacts + demo wrappers |
-
-## AUTOSHOT artifacts — step 18
-
-7 PNGs captured under `Prototype/godot/shots_phase4/`:
-
-| File | Scene | What it proves |
-|---|---|---|
-| `00_home.png` | `Home.tscn` (P0 inherit) | Home screen still renders; hero panel + FORM SQUAD + BATTLE button |
-| `01_battle_view.png` | `BattleView_v2.tscn` | 3-lane corridor + 3 enemies (1 with Wet status) render correctly |
-| `02_forge_panel.png` | `ForgePanel_v2.tscn` | 7-slot shop (4 filled) + 3 hero rows + HP/Ult bars + mounted Functions |
-| `03_wave_telegraph.png` | `WaveTelegraph.tscn` | Pre-wave overlay shows enemy roster + READY button |
-| `04_chain_hud.png` | `ChainHUD.tscn` | Chain counter renders "×3" after 3 reactions |
-| `05_boss_wave.png` | `BattleView_v2` + WaveDirector | Stage-4 wave-2 BOSS (HP 30) lane 1 |
-| `06_battle_chain.png` | `BattleView_v2` + `ChainHUD` | Composite: 5 enemies + chain ×4 + Wet/Burning statuses |
-
-**Note**: BattleView label rendering is placeholder text (`goblin HP:5 []`) — final art
-sprites land in Phase 5. AUTOSHOT proves *contract* (UI mounts, data flows), not *polish*.
-
-Each shot's demo wrapper:
-- `scripts/dev/autoshot_<scene>.gd` — populates state in `_ready()`
-- `scenes/dev/AutoShot_<Scene>.tscn` — wraps the demo script
-
-Re-capture command pattern:
-```powershell
-$env:WC_AUTOSHOT = "<absolute-png-path>"
-& <godot.exe> --path <project> "res://scenes/dev/AutoShot_<X>.tscn"
-```
-ScreenshotHelper autoload captures viewport at t=1.5s then quits.
-
-## What each system does
-
-| Script | Autoload | Purpose |
-|---|---|---|
-| `lane_state.gd` | LaneState | Enemy dict pool, distance metric, status lifecycle, advance/knockback |
-| `element_mediator.gd` | ElementMediator | Reacts damage tags against enemy statuses; emits `reaction_triggered`, **`vfx_triggered`**, **`audio_triggered`** |
-| `ult_controller.gd` | UltController | 3 reactions → +1 Ult bar (cap 3); `consume_bar()` |
-| `wave_director.gd` | WaveDirector | FTUE 11-wave scripted sequence + **`enemies_for_stage_wave(stage, wave)`** spawn roster |
-| `combat_v2.gd` | CombatV2 | Locked tick loop: decay → advance → attack → react → cleanup |
-| `shop_v2.gd` | ShopV2 | 7-slot slow-populate schedule + 2-stage pity counter |
-| `debug_overlay.gd` | DebugOverlay | F8 = reaction log, F11 = FTUE skip, F12 = toggle |
-
-| Scene | Script | Purpose |
-|---|---|---|
-| `scenes/ui/BattleView_v2.tscn` | `battle_view_v2.gd` | 3-lane corridor + enemy sync + **temp VFX ColorRect flash + audio-stub print** |
-| `scenes/ui/ForgePanel_v2.tscn` | `forge_panel_v2.gd` | 3×3 socket grid + HP/Ult bars + 7-slot shop rail |
-| `scenes/ui/WaveTelegraph.tscn` | `wave_telegraph.gd` | Pre-stage enemy preview overlay |
-| `scenes/ui/ChainHUD.tscn` | `chain_hud.gd` | ×N reaction chain counter (auto-resets 2s) |
-
-## What's still TODO for human (feel-test, Phase 5)
-
-This is the work that I (Claude) cannot do without a human at the keyboard:
-
-1. **Feel-test the 11-wave FTUE** — open editor, wire `Main_v2.tscn` to compose
-   BattleView_v2 + ForgePanel_v2 + ChainHUD, hit F5, play through. Judge pacing,
-   satisfaction, clarity, frustration spots. Mechanical green ≠ "fun".
-
-2. **Replace VFX placeholders** (Phase 5) — currently `BattleView_v2._on_vfx_triggered`
-   spawns a 40px ColorRect that fades over 0.4s. Real assets needed: steam puff
-   sprite, electrocute arc sprite, Bran Ult effect. Hook field on each ReactionData
-   already points to the right asset name.
-
-3. **Wire AudioStreamPlayer** (Phase 5) — currently `_on_audio_triggered` only prints
-   the hook to stdout. Need actual SFX assets (sfx_steam_hiss.wav, sfx_electrocute_zap.wav)
-   loaded and played per ReactionData.audio_hook.
-
-4. **Polish enemy rendering** (Phase 5) — current labels are `goblin HP:5 []` text.
-   Replace with sprite + HP bar + status icons.
-
-5. **Wire CombatV2 to BattleView_v2** — BattleView listens for `Heartbeat.ticked` but
-   Heartbeat is a liveness pinger, no signal. Need a tick driver (Timer or `_process`)
-   that calls CombatV2.tick() then BattleView._on_tick() each frame/step.
-
-## Approved presentation mockups (Phase 5 art/UX SSOT — locked 2026-06-14)
-
-Two user-approved screens are the build target. They are a matched frame set; build to them.
-- [`_art-build/screens/In_Battle.png`](_art-build/screens/In_Battle.png) — combat screen
-- [`_art-build/screens/Forge_State.jpeg`](_art-build/screens/Forge_State.jpeg) — forge-break screen
-
-**Rebuild deltas (current v0 code → mockup):**
-- **BattleView_v2**: replace the 3 flat full-width ColorRect lane bands with ONE shared
-  2.5D ~30° battlefield + faint 3×3 grid overlay. Render hero sprites anchored LEFT
-  (one per lane), enemy sprites advancing leftward. Add per-unit HP bar + floating
-  status-icon stack (Wet/Burning/Chilled/Shocked/Cracked) + VFX layer (Steam puff,
-  Electrocute arc, fire projectile). Heroes are currently NOT drawn in battle view at
-  all — add them.
-- **Hybrid grid render-snap**: mechanic keeps continuous `screen_x` (LaneState, 268
-  tests unchanged); BattleView snaps each enemy's *visual* x to nearest of 3 depth
-  cells per lane (`≥0.67`→far, `0.33–0.67`→mid, `<0.33`→near). Same-cell enemies need
-  stack-offset so they don't overlap.
-- **ForgePanel_v2**: move shop rail to the BOTTOM (below weapon rail). Sockets labelled
-  ACTIVE/MODIFIER/PASSIVE (full words). Forge break = shop fully populated + big
-  `START NEXT WAVE` button + merge-spark affordance on duplicate runes.
-- **Composition (Main_v2)**: HUD + battlefield + weapon rail + shop are ONE screen, not
-  4 detached scenes. Forge break = same screen, combat paused, no enemies, heroes idle.
-
-## Environment
-
-| Thing | Value |
+| Branch | What |
 |---|---|
-| Godot binary | `C:\Godot_v4.6.2-stable_mono_win64\Godot_v4.6.2-stable_mono_win64_console.exe` |
-| Project path | `C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes\6_WeaponForge_TFTransistor\Prototype\godot` |
-| Headless test | `<godot.exe> --headless --path <proj> res://scenes/dev/<Scene>.tscn` — exit code = failure count |
-| AUTOSHOT capture | set `WC_AUTOSHOT` env var, run WITHOUT --headless (needs GL render context) |
-| Git root | `C:\_BISU\_WORKSPACE\AI_Explorations\_Claude\Game_Prototypes` |
-| Branch | `weaponforge-tftransistor/vertical-slice` |
+| `weaponforge-tftransistor/real-asset-pass` | **CANON.** Functional slice + real chibi assets + forge/shop rebuild + live-bug fixes. All work below is here. |
+| `weaponforge-tftransistor/vertical-slice` | Older placeholder-art snapshot; strict ancestor of real-asset-pass. Can be fast-forwarded or retired. |
+| `main` | untouched. |
 
-## Known issues / quirks
+User confirmed art version is canon. No merge to vertical-slice/main done yet (their call).
 
-- `class_name` types (FunctionData, StatusData, ReactionData) are preload-checked in
-  tests (`get_script() == preload(...)`) because Godot 4.6 headless mode doesn't
-  reliably register `class_name` before autoloads parse. Works fine in editor.
-- BattleView label uses `screen_x * size.x` which puts labels off-viewport past 0.85.
-  Demo wrappers clamp screen_x to ≤0.85 for visible captures. Sprite rendering in
-  Phase 5 will use anchored layout, not raw x position.
-- `Heartbeat` autoload is liveness-only (writes heartbeat.txt). It does NOT emit a
-  tick signal — BattleView_v2._ready() guards with `has_signal("ticked")`. Phase 5
-  needs to either add the signal to Heartbeat or introduce a CombatClock autoload.
-- `.import` autosave churn is noise — discard.
-- `_archive/docs-pre-pivot-2026-06-12/` is historical only.
-
-## Task list state
+## How to run / test / capture
 
 ```
-#1. [completed]   Phase 2: doc redirect + freeze markers
-#2. [completed]   Phase 3: spec LOCKED (function catalog + status matrix)
-#3. [in_progress] Phase 4: vertical slice — 18/18 mech-complete; feel-test pending
+# headless test (exit code = failure count)
+<godot> --headless --path . res://scenes/dev/<Scene>.tscn
+
+# full sweep (15 suites, last green = 460/460)
+for s in TestLaneState TestFunctions TestStatuses TestReactions TestElementMediator \
+  TestCombatV2 TestUltController TestWaveDirector TestShopV2 TestUiV2 TestFtueSmoke \
+  TestLoadoutV2 TestMainV2 TestSocketOrder TestFunctionPreviewData; do
+  <godot> --headless --path . "res://scenes/dev/$s.tscn"; done
+
+# AUTOSHOT (windowed, needs GL): set WC_AUTOSHOT then run a scenes/dev/AutoShot_*.tscn
+$env:WC_AUTOSHOT="<abs>.png"; & <godot> --path . "res://scenes/dev/AutoShot_MainForge.tscn"
+
+# DIAGNOSTIC auto-play (windowed, drives waves itself, prints [play] log): AutoShot_MainPlay.tscn
+timeout 16 <godot> --path . res://scenes/dev/AutoShot_MainPlay.tscn
 ```
 
-## Next chat first moves
+Godot procs go zombie under contention — `Get-Process -Name Godot_v4.6.2-stable_mono_win64_console | Stop-Process -Force` between runs. `.import` + scene-`uid` churn is noise; don't commit it.
 
-1. Open `6_WeaponForge_TFTransistor/Prototype/godot/` in Godot 4.6 editor.
-2. Inspect the 7 `shots_phase4/*.png` artifacts.
-3. Compose `Main_v2.tscn` from BattleView_v2 + ForgePanel_v2 + ChainHUD (TODO).
-4. Wire a tick driver (Timer 0.1s) → CombatV2.tick() → BattleView._on_tick().
-5. Play one FTUE wave. Judge feel. Either greenlight Phase 5 or iterate Phase 4.5.
+## Architecture (the v2 slice — all on real-asset-pass)
+
+**Autoloads (core, headless-tested, do not casually refactor):**
+- `lane_state.gd` — enemy dicts, distance, status lifecycle, advance/knockback.
+- `combat_v2.gd` — 5-phase tick (decay→advance(+contact dmg)→attack→react→cleanup); engaged enemy deals 1 dmg/tick to its lane hero (folded into advance, no extra log step).
+- `element_mediator.gd` — reaction dispatch; emits `reaction_triggered`/`vfx_triggered`/`audio_triggered`.
+- `ult_controller.gd` — 3 reactions → +1 Ult bar (cap 3).
+- `wave_director.gd` — `waves_for_stage`, `enemies_for_stage_wave(stage,wave)` (post-FTUE 3 waves/stage, 5 stages; stage4 wave2 = BOSS hp30).
+- `shop_v2.gd` — `cost_for(stage,tier)` (T1_BASE=[1,1,2,2,3], TIER_MULT=[1,1.4,2,2.8,4], REROLL_COST=1), `roll_items(stage,count,pity)`, `buy(item,gold)`, `reroll(gold,rollable)`, pity (`notify_stage_end`).
+- `loadout_v2.gd` — 3 sockets/hero (idx 0=PASSIVE,1=MODIFIER,2=ACTIVE — flipped in C1); `apply_drop(lo,idx,id,tier,allow_merge=true)`; slice passes `allow_merge=false` → duplicate shows `{merge:"2/2"}`, no T2 bump.
+- `function_data.gd` — +`active_desc/mod_desc/passive_desc/best_fit` + `describe(slot)`; 6 `.tres` populated (fire/water/lightning/aoe/leech/burst; BOUNCE has no .tres).
+
+**UI (the rebuilt screens):**
+- `scenes/Main_v2.tscn` + `main_v2.gd` — controller. State machine COMBAT/FORGE_BREAK/DONE. Composes HudBar + BattleView_v2 + ForgePanel_v2 + ChainHUD. Timer drives combat windowed (0.3s); headless tests drive `_tick_once()`/`advance_wave()` directly. Slice runs post-FTUE (3 heroes elara/bran/vex, hp 30, lanes 0/1/2; base_dmg 2; tags WATER/FIRE/LIGHTNING).
+- `battle_view_v2.gd` — single field + faint 3×3 grid + hero anchors (HP bar floats ABOVE sprite, battle-only) + enemies render-snapped to 3 depth cells (`_depth_cell_for`) + status chips (dot+name) + numeric HP + reaction labels (`show_reaction_label`) + VFX layer. `set_compact(true)` → heroes lay out HORIZONTALLY (forge preview); `false` → vertical lanes. mouse_filter IGNORE.
+- `forge_panel_v2.gd` — weapon rail (3 rows: portrait + PASSIVE|MODIFIER|ACTIVE socket cards (icon+name+tier stars+merge label, empty=slot-name watermark) + always-on **WeaponTooltip** on right + Ult pips) ; shop rail (7 rune cards: icon+name+cost+tier) ; footer (Gold + Re-roll + START NEXT WAVE). `set_compact` resizes sockets 64↔40. NO HP bar in rail (moved to battle). `set_weapon_desc(hero,text)`, `set_reroll_cost/enabled`, `set_next_wave_visible`.
+- `chain_hud.gd` — ×N reaction badge (top strip). mouse_filter IGNORE.
+
+## Locked design decisions (this session)
+1. **Universal Transistor slots** — any Function any slot, behaves differently per 36-cell matrix. Distinction via shown behavior, NOT restriction.
+2. **Socket order PASSIVE | MODIFIER | ACTIVE** (data idx 0/1/2).
+3. **Shop = per STAGE** — rolls once at stage start, persists across the stage's 3 waves' forge breaks (bought slots stay empty); re-rolls only at next stage. (`_shop_populate_count` probe.)
+4. **Gold = per-kill** (1g/kill in `_tick_once`), not flat-per-forge.
+5. **Weapon tooltip** = always-on per-hero, shows combined ATK(active)/+MOD(modifier)/PASS(passive), real-time on equip. HP lives in battle scene only.
+6. Deviations from spec (intentional, user-approved): forge-break reroll re-rolls visible unbought slots for 1g (spec §11.2 says pending-only); per-kill gold.
+
+## Commit history (real-asset-pass, newest first)
+`E1` freeze fix (ChainHUD click-eating + pause trap) + reroll visible-change ·
+`D2` weapon tooltip + HP→battle + horizontal heroes + removed overlap panel ·
+`D1` shop per-stage + reroll-button-path test ·
+`C11` START→footer + AUTOSHOT QC · `C10` status chips+numeric HP+reaction labels+contact dmg ·
+`C9` phase-adaptive layout + HP/Ult sizing + pause fix · `C8` (superseded by D2 tooltip) ·
+`C6+C7` socket+shop cards · `C5` FunctionData descriptions · `C3+C4` shop economy wiring+pity ·
+`C2` ShopV2 economy core · `C1` socket index flip · earlier: B1–B4 real assets, A1–A7 layout slice.
+
+## OPEN — what the user is testing right now (last turn)
+User reported live (F5) bugs: "reroll didn't get new items, 2nd wave no new items, 3rd wave enemies didn't die, nothing responsive." Diagnosed as **ChainHUD (top-strip, mouse_filter STOP, topmost) ate pause/2× clicks → pause-in-forge carried into combat → frozen → couldn't unpause (click eaten) → permanent freeze.** Fixed in E1 (overlays mouse-transparent + advance_wave unpauses + PAUSED indicator + reroll avoid-same-id). **Could NOT reproduce the exact freeze via code** (logic + auto-play run all 15 waves clean) — fix targets the strongest root cause. **Awaiting user retest.**
+
+### If freeze persists after retest
+- Get the EXACT button sequence before freeze (I can't drive live mouse).
+- Suspect remaining mouse-occlusion: check any full-rect/overlapping Control with `mouse_filter != IGNORE` on top of forge footer/HUD. Use AutoShot_MainPlay to confirm logic still cycles.
+- Nuclear option offered to user: remove the pause button entirely for the slice (footgun).
+- Per-stage shop "no new items on wave 2" is INTENDED (user asked per-stage); user may still want per-wave refill — confirm before changing.
+
+## Known cosmetic / deferred (not blocking)
+- Status icons generated but white-bg (`assets/generated/status/*.png`) — NOT wired; battle uses colored dots. Needs bg cutout.
+- 2.5D perspective faked as flat 3×3 grid (art/shader pass = Phase 5).
+- Audio is stub (`_on_audio_triggered` prints). No SFX wired.
+- Tiny 6-function T1-only pool → reroll options look samey by design.
+- Home→Main_v2 nav not wired (main_scene jumps straight to slice).
+
+## Next moves (suggested)
+1. User retests F5 → confirm freeze gone + reroll visibly changes.
+2. If good: fold decisions 1–6 into 01_GDD as a [ROADMAP] note; decide merge real-asset-pass→vertical-slice or open PR.
+3. Then: feel-test pass / Phase 5 art (sprites for status, real VFX, 2.5D).

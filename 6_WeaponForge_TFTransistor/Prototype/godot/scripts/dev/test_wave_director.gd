@@ -132,6 +132,7 @@ func _test_telegraph_for_stage() -> void:
 	_check("telegraph: 3 wave entries for a normal stage", tg.size() == 3, "got %d" % tg.size())
 	if tg.size() >= 1:
 		_check("telegraph: wave 0 lists goblin", &"goblin" in tg[0].get("enemies", []), "got %s" % str(tg[0].get("enemies", [])))
+		_check("telegraph: wave 0 carries enemy count (3)", int(tg[0].get("count", 0)) == 3, "got %s" % str(tg[0].get("count", 0)))
 		_check("telegraph: wave 0 carries goblin weakness LIGHTNING", tg[0].get("weak_tag", &"") == &"LIGHTNING", "got %s" % str(tg[0].get("weak_tag", &"")))
 		_check("telegraph: wave 0 carries a resist tag", tg[0].get("resist_tag", &"") != &"", "got %s" % str(tg[0].get("resist_tag", &"")))
 	## Boss stage telegraph: stage 4 wave 2 = BOSS

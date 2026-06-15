@@ -7,7 +7,7 @@ extends Control
 
 const MAX_HEROES: int = 3
 const MAX_SOCKETS: int = 3
-const MAX_RESERVE: int = 2
+const MAX_RESERVE: int = 1
 const SHOP_SLOTS: int = 7
 ## Canonical socket index: 0=PASSIVE, 1=MODIFIER, 2=ACTIVE (visual L->R == ascending index).
 const SOCKET_LABELS: Array = ["PASSIVE", "MODIFIER", "ACTIVE"]
@@ -285,7 +285,7 @@ func _make_hero_row(hero_idx: int) -> HBoxContainer:
 	tip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mid.add_child(tip)
 
-	## reserve bench (2 slots) on the right
+	## reserve bench (1 slot) on the right
 	var reserve_col := VBoxContainer.new()
 	reserve_col.name = "ReserveCol"
 	reserve_col.size_flags_horizontal = Control.SIZE_SHRINK_END

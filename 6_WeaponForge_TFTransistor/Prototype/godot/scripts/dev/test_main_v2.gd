@@ -70,6 +70,9 @@ func _test_telegraph_wiring() -> void:
 	add_child(inst)
 	var btn = inst.find_child("TelegraphBtn", true, false)
 	_check("main_v2: HUD has TelegraphBtn (intel)", btn != null, "")
+	## persistent intel strip: weak/resist element icons for the upcoming stage, always visible
+	var icons = inst.find_child("IntelIcons", true, false)
+	_check("main_v2: HUD intel strip shows icons on open", icons != null and icons.get_child_count() > 0, "children=%d" % (icons.get_child_count() if icons != null else -1))
 	_check("main_v2: has _on_telegraph", inst.has_method("_on_telegraph"), "")
 	if inst.has_method("_on_telegraph"):
 		inst._on_telegraph()  ## opens in forge -> preview the upcoming stage
@@ -190,18 +193,17 @@ func _test_reserve_full_blocks_equip() -> void:
 	if inst == null:
 		return
 	inst.gold = 99
-	var ids = ["FIRE", "WATER", "AOE", "LEECH"]
-	for i in 4:
+	var ids = ["FIRE", "WATER", "AOE"]
+	for i in 3:
 		inst._shop_items[i] = {"id": ids[i], "tier": 1, "cost": 1}
-	inst._on_shop_tap(0); inst._on_socket_tap(0, 2)  ## FIRE
-	inst._on_shop_tap(1); inst._on_socket_tap(0, 2)  ## WATER (FIRE -> reserve 0)
-	inst._on_shop_tap(2); inst._on_socket_tap(0, 2)  ## AOE (WATER -> reserve 1) -> reserve full
+	inst._on_shop_tap(0); inst._on_socket_tap(0, 2)  ## FIRE -> socket
+	inst._on_shop_tap(1); inst._on_socket_tap(0, 2)  ## WATER -> socket (FIRE -> reserve 0; bench now full at 1 slot)
 	var gold_before: int = inst.gold
-	inst._on_shop_tap(3); inst._on_socket_tap(0, 2)  ## LEECH -> blocked (reserve full)
+	inst._on_shop_tap(2); inst._on_socket_tap(0, 2)  ## AOE: WATER would displace but bench full -> blocked
 	var s = inst.get_socket(0, 2)
-	_check("full: socket unchanged (still AOE)", s != null and s.id == &"AOE", "got %s" % str(s))
+	_check("full: socket unchanged (still WATER)", s != null and s.id == &"WATER", "got %s" % str(s))
 	_check("full: blocked equip does NOT charge gold", inst.gold == gold_before, "before=%d now=%d" % [gold_before, inst.gold])
-	_check("full: blocked shop item stays in shop", inst._shop_items[3] != null, "got %s" % str(inst._shop_items[3]))
+	_check("full: blocked shop item stays in shop", inst._shop_items[2] != null, "got %s" % str(inst._shop_items[2]))
 	inst.queue_free()
 
 func _test_sell_socket_refunds() -> void:

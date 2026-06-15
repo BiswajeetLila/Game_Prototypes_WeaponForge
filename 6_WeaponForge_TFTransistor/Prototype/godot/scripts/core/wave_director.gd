@@ -97,7 +97,7 @@ func telegraph_for_stage(stage: int) -> Array:
 			if ed != null:
 				weak = ed.weak_tag
 				resist = ed.resist_tag
-		out.append({"wave": w, "enemies": ids, "weak_tag": weak, "resist_tag": resist})
+		out.append({"wave": w, "enemies": ids, "count": roster.size(), "weak_tag": weak, "resist_tag": resist})
 	return out
 
 func _enemy_data(id: StringName):

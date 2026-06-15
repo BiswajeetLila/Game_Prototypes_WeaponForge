@@ -337,9 +337,9 @@ func _test_reserve_ui() -> void:
 	_check("rsv: Reserve header label", inst.find_child("ReserveHeader", true, false) != null, "")
 	var r00 = inst.find_child("Reserve0_0", true, false)
 	var r01 = inst.find_child("Reserve0_1", true, false)
-	var r21 = inst.find_child("Reserve2_1", true, false)
-	_check("rsv: hero 0 has 2 reserve slots", r00 != null and r01 != null, "")
-	_check("rsv: hero 2 reserve slot exists", r21 != null, "")
+	var r20 = inst.find_child("Reserve2_0", true, false)
+	_check("rsv: hero 0 has exactly 1 reserve slot", r00 != null and r01 == null, "")
+	_check("rsv: hero 2 reserve slot exists", r20 != null, "")
 	## weapon desc now lives UNDER the sockets (inside MidCol), not a right-side column
 	var mid0 = inst.find_child("MidCol", true, false)
 	var wt = mid0.find_child("WeaponTooltip", true, false) if mid0 != null else null
@@ -530,12 +530,16 @@ func _test_wave_telegraph() -> void:
 	_check("wt: show_stage method", inst.has_method("show_stage"), "")
 	if inst.has_method("show_stage"):
 		inst.show_stage(0, [
-			{"wave": 0, "enemies": [&"goblin"], "weak_tag": &"LIGHTNING", "resist_tag": &"FIRE"},
-			{"wave": 1, "enemies": [&"goblin"], "weak_tag": &"LIGHTNING", "resist_tag": &"FIRE"},
+			{"wave": 0, "enemies": [&"goblin"], "count": 3, "weak_tag": &"LIGHTNING", "resist_tag": &"FIRE"},
+			{"wave": 1, "enemies": [&"goblin"], "count": 4, "weak_tag": &"LIGHTNING", "resist_tag": &"FIRE"},
 		])
 		_check("wt: visible after show_stage", inst.visible == true, "")
 		var el = inst.find_child("EnemyList", true, false)
 		_check("wt: show_stage renders one row per wave", el != null and el.get_child_count() == 2, "got %d" % (el.get_child_count() if el != null else -1))
+		## detail: each wave row carries weak/resist element icons
+		var row0 = el.get_child(0) if (el != null and el.get_child_count() > 0) else null
+		var icon_count = row0.find_children("*", "TextureRect", true, false).size() if row0 != null else 0
+		_check("wt: detail rows show weak/resist icons", icon_count >= 1, "got %d icons" % icon_count)
 	inst.queue_free()
 
 ## -- Step 14: ChainHUD --

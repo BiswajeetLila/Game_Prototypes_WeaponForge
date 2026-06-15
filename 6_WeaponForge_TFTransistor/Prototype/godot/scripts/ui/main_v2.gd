@@ -158,14 +158,25 @@ func _build_hud() -> Control:
 	wave.position = Vector2(10, 6)
 	hud.add_child(wave)
 
+	## Persistent intel strip: always-visible weak/resist element icons for the upcoming stage.
+	## Transparent tap-button (catches the click) + a display-only icon HBox on top of it.
 	var intel := Button.new()
 	intel.name = "TelegraphBtn"
-	intel.text = "INTEL"
-	intel.tooltip_text = "Preview the upcoming stage's enemies + weaknesses"
-	intel.add_theme_font_size_override(&"font_size", 10)
-	intel.position = Vector2(96, 4)
+	intel.flat = true
+	intel.tooltip_text = "Upcoming enemies — weak / resist. Tap for full intel."
+	intel.position = Vector2(86, 2)
+	intel.size = Vector2(168, 24)
 	intel.pressed.connect(_on_telegraph)
 	hud.add_child(intel)
+	## Plain Control (NOT a Container) — a Container child of the non-container HUD gets
+	## re-laid-out away from its position at render time; plain Controls honour position
+	## (same pattern as WaveLabel). Children are placed manually in _update_intel_strip.
+	var icons := Control.new()
+	icons.name = "IntelIcons"
+	icons.mouse_filter = Control.MOUSE_FILTER_IGNORE  ## display only — taps fall through to the button
+	icons.position = Vector2(90, 1)
+	icons.custom_minimum_size = Vector2(168, 24)
+	hud.add_child(icons)  ## sibling on top of the button (added after = renders above)
 
 	var stage := Label.new()
 	stage.name = "StageLabel"
@@ -493,6 +504,80 @@ func _update_hud() -> void:
 		w.text = "WAVE %d/%d" % [current_wave + 1, total]
 	if s != null:
 		s.text = "STAGE %d" % (current_stage + 1)
+	_update_intel_strip()
+
+## Element tag -> status-cutout icon (FIRE→burning, WATER→wet, LIGHTNING→shocked, ICE→chilled, EARTH→cracked).
+const _ELEM_ICON: Dictionary = {
+	&"FIRE": "burning", &"WATER": "wet", &"LIGHTNING": "shocked", &"ICE": "chilled", &"EARTH": "cracked",
+}
+
+## Repopulate the always-on HUD intel strip with the upcoming stage's distinct weak/resist icons.
+func _update_intel_strip() -> void:
+	if _hud == null:
+		return
+	var box = _hud.find_child("IntelIcons", true, false)
+	if box == null:
+		return
+	for c in box.get_children():
+		box.remove_child(c)
+		c.queue_free()
+	var wd = get_node_or_null("/root/WaveDirector")
+	if wd == null or not wd.has_method("telegraph_for_stage"):
+		return
+	var entries: Array = wd.telegraph_for_stage(current_stage)
+	var weak: Dictionary = {}
+	var resist: Dictionary = {}
+	for e in entries:
+		var wt = e.get("weak_tag", &"")
+		if wt != &"": weak[wt] = true
+		var rt = e.get("resist_tag", &"")
+		if rt != &"": resist[rt] = true
+	## manual left-to-right layout in box-local coords (plain Control, no auto-layout).
+	## Icons keep their natural element colour; the WEAK/RES labels carry the green/red cue.
+	var x: float = 0.0
+	x = _place(box, _intel_label("WEAK", Color(0.55, 1.0, 0.55)), x, 5) + 3
+	for t in weak.keys():
+		x = _place(box, _intel_icon(t), x, 3) + 2
+	x += 6
+	x = _place(box, _intel_label("RES", Color(1.0, 0.55, 0.55)), x, 5) + 3
+	for t in resist.keys():
+		x = _place(box, _intel_icon(t), x, 3) + 2
+
+## Add `node` to the strip at x, return the next free x. Sets the rect AFTER add_child so
+## the enter-tree anchor recompute (which zeroes a plain-Control child's size) doesn't win.
+func _place(box: Control, node: Control, x: float, y: float) -> float:
+	box.add_child(node)
+	node.position = Vector2(x, y)
+	var w: float = node.custom_minimum_size.x
+	if node is TextureRect:
+		node.size = Vector2(18, 18)
+		w = 18.0
+	elif node is Label:
+		node.size = Vector2(float((node as Label).text.length()) * 7.0 + 2.0, 16)
+		w = node.size.x
+	return x + maxf(w, 14.0)
+
+func _intel_label(txt: String, col: Color = Color(1, 1, 1, 0.85)) -> Label:
+	var l := Label.new()
+	l.text = txt
+	l.add_theme_font_size_override(&"font_size", 10)
+	l.modulate = col
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return l
+
+func _intel_icon(tag: StringName) -> TextureRect:
+	var tr := TextureRect.new()
+	tr.custom_minimum_size = Vector2(18, 18)
+	tr.size = Vector2(18, 18)  ## plain-Control parent won't size us — set explicitly or we draw nothing
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE  ## scale tex to our 18px rect (else it demands native 256px)
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.tooltip_text = String(tag)
+	var key: String = _ELEM_ICON.get(tag, "")
+	if key != "":
+		var p := "res://assets/generated/status/%s_cut.png" % key
+		if ResourceLoader.exists(p):
+			tr.texture = load(p)
+	return tr
 
 func _update_forge() -> void:
 	if _forge == null:
@@ -696,7 +781,7 @@ func _sync_hero_forge(hero_idx: int) -> void:
 			else:
 				_forge.set_socket_fn(hero_idx, s, e.id, int(e.tier), String(e.id), String(e.get("merge", "")))
 	if _forge.has_method("set_reserve_item"):
-		for r in 2:
+		for r in _reserves[hero_idx].size():
 			var ri = _reserves[hero_idx][r]
 			if ri == null:
 				_forge.set_reserve_item(hero_idx, r, &"")

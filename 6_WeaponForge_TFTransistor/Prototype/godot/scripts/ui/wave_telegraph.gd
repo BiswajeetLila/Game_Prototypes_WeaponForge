@@ -59,26 +59,64 @@ func show_wave(wave_number: int, total_waves: int, enemies: Array) -> void:
 ## Show the full upcoming-stage preview (spec §17): one row per wave with its enemy
 ## lineup + primary weakness / resistance. entries = Array of
 ## { wave:int, enemies:Array[StringName], weak_tag:StringName, resist_tag:StringName }.
+## Element tag -> status-cutout icon (matches main_v2 intel strip).
+const _ELEM_ICON: Dictionary = {
+	&"FIRE": "burning", &"WATER": "wet", &"LIGHTNING": "shocked", &"ICE": "chilled", &"EARTH": "cracked",
+}
+
 func show_stage(stage_num: int, entries: Array) -> void:
 	_wave_count_label.text = "Stage %d — %d waves" % [stage_num + 1, entries.size()]
 	for child in _enemy_list.get_children():
 		_enemy_list.remove_child(child)  ## immediate (queue_free alone defers a frame)
 		child.queue_free()
 	for e in entries:
-		var names := ""
-		for x in e.get("enemies", []):
-			names += (", " if names != "" else "") + String(x)
-		if names == "":
-			names = "—"
-		var weak := String(e.get("weak_tag", &""))
-		var resist := String(e.get("resist_tag", &""))
-		var row := Label.new()
-		row.text = "W%d: %s   weak %s / resist %s" % [
-			int(e.get("wave", 0)) + 1, names,
-			(weak if weak != "" else "—"), (resist if resist != "" else "—")]
-		row.add_theme_font_size_override(&"font_size", 12)
-		_enemy_list.add_child(row)
+		_enemy_list.add_child(_build_wave_row(e))
 	visible = true
+
+## One detailed row per wave: "W{n}: {enemies} ×{count}  weak [icon]  resist [icon]".
+func _build_wave_row(e: Dictionary) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 4)
+	var names := ""
+	for x in e.get("enemies", []):
+		names += (", " if names != "" else "") + String(x)
+	if names == "":
+		names = "—"
+	var cnt: int = int(e.get("count", 0))
+	var lbl := Label.new()
+	lbl.text = "W%d: %s%s" % [int(e.get("wave", 0)) + 1, names, ("  ×%d" % cnt) if cnt > 0 else ""]
+	lbl.add_theme_font_size_override(&"font_size", 12)
+	row.add_child(lbl)
+	_add_tag_chip(row, "weak", StringName(e.get("weak_tag", &"")), Color(0.5, 1.0, 0.5))
+	_add_tag_chip(row, "resist", StringName(e.get("resist_tag", &"")), Color(1.0, 0.5, 0.5))
+	return row
+
+func _add_tag_chip(row: HBoxContainer, caption: String, tag: StringName, tint: Color) -> void:
+	if tag == &"":
+		return
+	var cap := Label.new()
+	cap.text = "  " + caption
+	cap.add_theme_font_size_override(&"font_size", 10)
+	cap.modulate = tint  ## green=weak / red=resist cue on the caption (icon keeps natural colour)
+	row.add_child(cap)
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(16, 16)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE  ## scale to 16px (else demands native 256px -> huge row)
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.tooltip_text = String(tag)
+	var key: String = _ELEM_ICON.get(tag, "")
+	if key != "":
+		var p := "res://assets/generated/status/%s_cut.png" % key
+		if ResourceLoader.exists(p):
+			icon.texture = load(p)
+	row.add_child(icon)
+	## fallback: if no texture, show the tag letters so the row still conveys the element
+	if icon.texture == null:
+		var t := Label.new()
+		t.text = String(tag)
+		t.add_theme_font_size_override(&"font_size", 10)
+		t.modulate = tint
+		row.add_child(t)
 
 func _on_dismiss() -> void:
 	visible = false

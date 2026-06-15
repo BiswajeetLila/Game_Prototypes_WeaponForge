@@ -27,15 +27,13 @@ func _ready() -> void:
 
 func _test_make_and_room() -> void:
 	var r: Array = Reserve.make_reserve()
-	_check("make: 2 empty slots", r.size() == 2 and r[0] == null and r[1] == null, "got %s" % str(r))
+	_check("make: 1 empty slot", r.size() == 1 and r[0] == null, "got %s" % str(r))
 	_check("count: empty = 0", Reserve.count(r) == 0, "got %d" % Reserve.count(r))
 	_check("has_room: empty = true", Reserve.has_room(r) == true, "")
 	_check("first_empty: empty = 0", Reserve.first_empty(r) == 0, "got %d" % Reserve.first_empty(r))
 	r[0] = {"id": &"FIRE", "tier": 1, "cost": 1}
 	_check("count: one filled = 1", Reserve.count(r) == 1, "got %d" % Reserve.count(r))
-	_check("first_empty: skips filled -> 1", Reserve.first_empty(r) == 1, "got %d" % Reserve.first_empty(r))
-	r[1] = {"id": &"WATER", "tier": 1, "cost": 1}
-	_check("has_room: full = false", Reserve.has_room(r) == false, "")
+	_check("has_room: full (1 slot) = false", Reserve.has_room(r) == false, "")
 	_check("first_empty: full = -1", Reserve.first_empty(r) == -1, "got %d" % Reserve.first_empty(r))
 
 func _test_equip_empty() -> void:
@@ -69,11 +67,11 @@ func _test_equip_merge() -> void:
 func _test_equip_blocked_when_full() -> void:
 	var lo: Array = Loadout.make_loadout()
 	lo[2] = {"id": &"FIRE", "tier": 1, "cost": 1}
-	var r: Array = [{"id": &"WATER", "tier": 1, "cost": 1}, {"id": &"AOE", "tier": 1, "cost": 1}]
+	var r: Array = [{"id": &"WATER", "tier": 1, "cost": 1}]  ## single reserve slot, full
 	var res: Dictionary = Reserve.equip(lo, r, 2, {"id": "LEECH", "tier": 1, "cost": 1})
 	_check("full: not ok + result=blocked_full", res.get("ok") == false and res.get("result") == "blocked_full", "got %s" % str(res))
 	_check("full: socket unchanged (still FIRE)", lo[2] != null and lo[2].id == &"FIRE", "got %s" % str(lo[2]))
-	_check("full: reserve unchanged (no LEECH)", Reserve.count(r) == 2 and r[0].id == &"WATER", "got %s" % str(r))
+	_check("full: reserve unchanged (no LEECH)", Reserve.count(r) == 1 and r[0].id == &"WATER", "got %s" % str(r))
 
 func _test_equip_from_reserve_swaps() -> void:
 	var lo: Array = Loadout.make_loadout()

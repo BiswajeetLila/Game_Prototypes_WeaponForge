@@ -1,6 +1,6 @@
 ## reserve_v2 — per-hero Reserve (bench) + equip-with-displacement + sell logic (G2).
 ##
-## Each hero has 2 Reserve slots. The forge-equip flow (spec / Forge_State_edits.jpg):
+## Each hero has 1 Reserve slot. The forge-equip flow (spec / Forge_State_edits.jpg):
 ##   - Empty weapon socket + equip            -> place.
 ##   - Occupied socket + equip SAME id+tier    -> merge (slice stub: marks 2/2, no bump).
 ##   - Occupied socket + equip DIFFERENT       -> displaced item drops into a free Reserve
@@ -13,12 +13,12 @@
 ## Pure static logic (no Node state) — trivially testable + reusable.
 extends RefCounted
 
-const SLOTS: int = 2          ## reserve slots per hero
+const SLOTS: int = 1          ## reserve slots per hero
 const SELL_RATIO: float = 0.5 ## refund fraction when selling (reduced amount)
 const MAX_TIER: int = 4       ## tier cap (T1-T4 rarity: none/blue/purple/gold)
 
 static func make_reserve() -> Array:
-	return [null, null]
+	return [null]
 
 static func count(reserve: Array) -> int:
 	var n: int = 0

@@ -1,6 +1,22 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-15 · **Slice CANON:** `weaponforge-tftransistor/real-asset-pass` @ `718ab2d` (pushed) — vertical slice complete. · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5` — **Phase-5 content batch Q1–Q5 landed** (see below). · post-compaction resume doc.
+**Updated:** 2026-06-16 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
+
+## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, paused 2026-06-16 (← RESUME HERE)
+
+**What this is:** a from-the-research rethink of the **core gameplay + craft**, well beyond the shipped prototype. The shipped build (3-lane auto-runner + flat 3-socket forge + Q1–Q6) is now the **baseline to evolve from, not the target.** **No new code started** — this is design only.
+
+**One-line state:** moat = **the CRAFT is the engagement** (Magicka reactions are *visual payoff*, not the hook); positioning = **GD-derived casual + TFT shop + Transistor/Magicka twist**; **tentative craft = "hero-as-frame": each hero is a silhouette, you clip element-parts onto attach-nubs, and adjacency authors reactions** (gacha heroes = new layouts).
+
+**Read these to resume, in order:**
+1. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + the **2026-06-16 update** + the **decision ledger** (✅ approved / 🟡 tentative / ⏳ pending).
+2. [`docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md`](docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md) — ~30 craft metaphors ranked, the chosen "skeleton attach-points," + **7 open sub-questions** to develop it.
+
+**Resume sequence:** develop the craft mechanic (answer the 7 sub-Qs) → **Items/Synergies/Catalysts** deep brainstorm (define "catalyst") → **Wittle-meta** lift (Layer-2 retention) → balance → full spec → `writing-plans` → **moat-first** TDD build (craft toy + reaction legibility/juice + FTUE before wide content).
+
+**Suggested skills on resume:** `brainstorming` (continue), `game-design` (mechanic eval), later `writing-plans`.
+
+**Research base used (in `docs/research/reference-games/`):** TFT ×2, Transistor ×4, Magicka, Gear Defenders, Wittle Defender. Transistor's "one part / 3 roles + MEM budget + forced-recombination pressures + lore-unlock-by-using-all-3-roles" and GD's "casual spatial craft" are the load-bearing borrows.
 
 ## ⭐ Phase-5 content batch (Q1–Q5) — autonomous overnight build, 2026-06-15
 

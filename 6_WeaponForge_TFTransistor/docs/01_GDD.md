@@ -9,6 +9,8 @@
 
 ## ⚠ SSOT & doc tree (read first)
 
+> **🎨 ACTIVE REDESIGN (2026-06-16, in progress):** a research-grounded rethink of the core gameplay/craft is underway and **paused for resume**. The forward direction (moat = the *craft* is the engagement; GD-derived casual + TFT shop + Transistor/Magicka twist; tentative craft = "hero-as-frame" assembly) lives in [`superpowers/specs/2026-06-15-prototype-direction-design.md`](superpowers/specs/2026-06-15-prototype-direction-design.md) + [`superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md`](superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md). Until that's specced, the sections below describe the **shipped baseline** (3-lane auto-runner + Function Matrix + Magicka reactions, Phase-5 Q1–Q6) — treat the redesign docs as the newer intent.
+
 **This document is the single source of truth (SSOT) for `6_WeaponForge_TFTransistor`.**
 
 - Every spec under `docs/` either **is** the SSOT (this doc) or is a spec that **points to** it and elaborates a subsystem.

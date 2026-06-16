@@ -37,5 +37,37 @@ Everything else (shop, merge, gacha, levels, tiers, lanes) is genre-commodity. T
 ## NOT in prototype scope (guardrails)
 Full gacha currency/economy, repeatable pulls, multi-world, full Wittle-meta build, real multi-phase boss AI, monetization, localization, 2.5D battlefield.
 
-## Next step
-Resume the parked content discussion → finalise Functions + juice + items/synergies/catalysts + Wittle-meta → write the full implementation spec → `writing-plans` → TDD build, **moat-first** (reaction legibility + juice + light placement + FTUE before any wide content).
+---
+
+## 2026-06-16 update — moat REFINED + craft direction chosen (brainstorm paused mid-stream)
+
+Deep brainstorm on "point 1: the gameplay + what's juicy," cross-referenced against full research docs (TFT ×2, Transistor ×4, Magicka). Key shifts — these **supersede** parts of the spine above:
+
+1. **Moat refined (important correction).** The earlier framing put the *reaction MOMENT* as the moat. The user corrected it: **the CRAFT is the main engagement** ("the juice is me making stuff, like Gear Defenders' power-train"); **the reaction cascade is *visual payoff*** that confirms the craft worked. This settles the agency question — reactions stay **auto/visual**; the player's hands live in the **forge/craft**, not in combat.
+2. **Positioning locked: closer to Gear Defenders than TFT.** Six of six structural dimensions (casual audience, PvE auto, collection-dominant, generous loss, spatial craft, come-back-stronger) land on GD; TFT is the *less* casual parent. **Strategy = derive the casual loop from a proven success (GD skeleton) + reskin the shop (TFT draft/merge) + add ONE legible twist (Transistor 3-role parts + Magicka adjacency-reactions).** The twist must be the *named centerpiece*, not cosmetic, or it's a GD clone that loses on LiveOps.
+3. **Craft shape chosen (tentative): assembly, not gears, not a menu.** Rejected: literal gears-on-power-core; flat 3-socket menu; whimsical non-forge metaphors. **Tentative winner = "Skeleton attach-points (hero = the frame)"** — each (collectible) hero is a silhouette you clip element-parts onto; adjacency between nubs authors reactions; gacha heroes = new board layouts. Full ranked option set + open sub-questions in [`2026-06-16-craft-mechanic-options-ranked.md`](2026-06-16-craft-mechanic-options-ranked.md).
+
+**Build implication (big):** this is a **redesign of the craft layer** — the current build's flat 3-socket forge (and possibly the 3-lane combat framing) is the *baseline to evolve from*, not the target. No new code started; the shipped post-slice build (Q1–Q6) remains the working prototype baseline.
+
+### Decision ledger (as of 2026-06-16)
+| Decision | Status |
+|---|---|
+| Dominant thrill = collection power-fantasy + hint of optimization | ✅ approved |
+| Persistence: collection persists / loadout resets / partial reward / no across-run permadeath | ✅ approved |
+| Moat = the CRAFT (engagement); reactions = visual payoff | ✅ approved |
+| Positioning = GD-derived casual + TFT shop + Transistor/Magicka twist | ✅ approved |
+| Craft mechanic = "Skeleton attach-points (hero=frame)" | 🟡 **tentative** (validate next) |
+| Hero-pull = real gacha pull revealing Ashe (archer, projectile weapon-passive); no currency economy | ✅ approved |
+| Level-gated unlocks (2 sockets→3rd @Lv5; reserves @Lv10/15; low thresholds for prototype) | ✅ approved (re-map onto the new craft mechanic) |
+| Per-hero innate weapon-passive (distinct from Function Passive role) | ✅ approved |
+| "Catalyst" item type | ❓ undefined — pending the items brainstorm |
+| Final Function set + "juicy bits" | ⏳ pending |
+| Items / Synergies / Catalysts deep brainstorm | ⏳ pending |
+| Wittle-meta lift (which systems, ~as-is) | ⏳ pending (Layer 2) |
+| Balance numbers | ⏳ pending |
+
+## Next step (resume here)
+1. **Develop the tentative craft mechanic** (#4 skeleton attach-points) — answer the 7 open sub-questions in the craft-options doc (board, parts, adjacency rule, 3-role mapping, hero/gacha, combat mapping, legibility). Validate it's the toy.
+2. Then the **Items / Synergies / Catalysts** deep brainstorm (define "catalyst," star/evolve, set-bonuses, synergy surfacing, Ashe projectile rules).
+3. Then **Wittle-meta lift** (Layer 2 retention) + **balance**.
+4. Then write the full implementation spec → `writing-plans` → TDD build, **moat-first** (the craft toy + reaction-legibility/juice + FTUE before any wide content).

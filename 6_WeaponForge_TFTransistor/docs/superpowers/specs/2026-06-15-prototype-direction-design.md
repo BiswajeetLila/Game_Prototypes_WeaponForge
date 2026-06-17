@@ -56,7 +56,13 @@ Deep brainstorm on "point 1: the gameplay + what's juicy," cross-referenced agai
 | Persistence: collection persists / loadout resets / partial reward / no across-run permadeath | ✅ approved |
 | Moat = the CRAFT (engagement); reactions = visual payoff | ✅ approved |
 | Positioning = GD-derived casual + TFT shop + Transistor/Magicka twist | ✅ approved |
-| Craft mechanic = "Skeleton attach-points (hero=frame)" | 🟡 **tentative** (validate next) |
+| Craft mechanic = "Skeleton attach-points (hero=frame)" | ✅ **resolved + refined** 2026-06-17 → see [`2026-06-17-craft-model-resolved-and-gating.md`](2026-06-17-craft-model-resolved-and-gating.md) |
+| ↳ Reaction locus = cross-hero in combat (not intra-hero forge) | ✅ approved 2026-06-17 |
+| ↳ Forge adjacency verb = Modifier-warp (GD power-train) | ✅ approved 2026-06-17 |
+| ↳ Hero diff = shared parts + per-hero frame shape | ✅ approved 2026-06-17 |
+| ↳ 3-role mapping = emitter-distance (emitter=Active / adjacent=Modifier / far=Passive) | ✅ approved 2026-06-17 |
+| ↳ Part vocab = 2 classes: Functions (element, Active+Passive) + Modifiers (shape, adjacent-only) | ✅ approved 2026-06-17 |
+| Power-gating mechanism (what meters output / times the cascade) | ⏳ **brainstorm in progress** 2026-06-17 |
 | Hero-pull = real gacha pull revealing Ashe (archer, projectile weapon-passive); no currency economy | ✅ approved |
 | Level-gated unlocks (2 sockets→3rd @Lv5; reserves @Lv10/15; low thresholds for prototype) | ✅ approved (re-map onto the new craft mechanic) |
 | Per-hero innate weapon-passive (distinct from Function Passive role) | ✅ approved |
@@ -67,7 +73,7 @@ Deep brainstorm on "point 1: the gameplay + what's juicy," cross-referenced agai
 | Balance numbers | ⏳ pending |
 
 ## Next step (resume here)
-1. **Develop the tentative craft mechanic** (#4 skeleton attach-points) — answer the 7 open sub-questions in the craft-options doc (board, parts, adjacency rule, 3-role mapping, hero/gacha, combat mapping, legibility). Validate it's the toy.
+1. ✅ **Craft mechanic RESOLVED 2026-06-17** — 5 forks locked (reaction locus, adjacency verb, hero differentiation, 3-role mapping, 2-class part vocab). Full model + the **in-progress power-gating brainstorm** live in [`2026-06-17-craft-model-resolved-and-gating.md`](2026-06-17-craft-model-resolved-and-gating.md). **RESUME on power-gating** (pick currency → cadence), then board specifics + LINEUP detail + legibility.
 2. Then the **Items / Synergies / Catalysts** deep brainstorm (define "catalyst," star/evolve, set-bonuses, synergy surfacing, Ashe projectile rules).
 3. Then **Wittle-meta lift** (Layer 2 retention) + **balance**.
 4. Then write the full implementation spec → `writing-plans` → TDD build, **moat-first** (the craft toy + reaction-legibility/juice + FTUE before any wide content).

@@ -2,17 +2,20 @@
 
 **Updated:** 2026-06-16 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
 
-## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, paused 2026-06-16 (← RESUME HERE)
+## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, paused 2026-06-17 (← RESUME HERE)
 
 **What this is:** a from-the-research rethink of the **core gameplay + craft**, well beyond the shipped prototype. The shipped build (3-lane auto-runner + flat 3-socket forge + Q1–Q6) is now the **baseline to evolve from, not the target.** **No new code started** — this is design only.
 
-**One-line state:** moat = **the CRAFT is the engagement** (Magicka reactions are *visual payoff*, not the hook); positioning = **GD-derived casual + TFT shop + Transistor/Magicka twist**; **tentative craft = "hero-as-frame": each hero is a silhouette, you clip element-parts onto attach-nubs, and adjacency authors reactions** (gacha heroes = new layouts).
+**One-line state:** moat = **the CRAFT is the engagement** (reactions are *visual payoff*); positioning = **GD-derived casual + TFT shop + Transistor/Magicka twist**. **Craft model RESOLVED 2026-06-17** — 3-layer (FORGE → LINEUP → COMBAT); 5 locks: reaction cross-hero, adjacency=Modifier-warp, per-hero frame shapes + shared fungible parts, role-by-emitter-distance, part vocab = Functions(element, Active+Passive) + Modifiers(shape, adjacent-only). **NOW brainstorming: power-gating** (what meters output / times the cascade) — likes E33 mana/AP, wants casual + hypercasual-research blend.
 
 **Read these to resume, in order:**
-1. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + the **2026-06-16 update** + the **decision ledger** (✅ approved / 🟡 tentative / ⏳ pending).
-2. [`docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md`](docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md) — ~30 craft metaphors ranked, the chosen "skeleton attach-points," + **7 open sub-questions** to develop it.
+1. [`docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md`](docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md) — **freshest.** The resolved craft model (5 locks) + the **in-progress power-gating brainstorm** (RESUME HERE: pick currency → cadence).
+2. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + decision ledger (now shows the 2026-06-17 ✅ locks).
+3. [`docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md`](docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md) — the ~30 ranked metaphors + the original 7 sub-Qs (mostly resolved now; board/lineup/legibility still open).
 
-**Resume sequence:** develop the craft mechanic (answer the 7 sub-Qs) → **Items/Synergies/Catalysts** deep brainstorm (define "catalyst") → **Wittle-meta** lift (Layer-2 retention) → balance → full spec → `writing-plans` → **moat-first** TDD build (craft toy + reaction legibility/juice + FTUE before wide content).
+**Resume sequence:** finish power-gating (currency → cadence) → board specifics + LINEUP detail + legibility → finalise part vocab → **Items/Synergies/Catalysts** brainstorm → **Wittle-meta** lift → balance → full spec → `writing-plans` → **moat-first** TDD build.
+
+**Visual brainstorm artifacts** (this session's screens): `.superpowers/brainstorm/*/content/*.html` (reaction-locus, three-layer-reshape, hero-frame-differentiation, three-role-mapping, part-grain, function-role-gallery, function-modifier-combos, gate-currency).
 
 **Suggested skills on resume:** `brainstorming` (continue), `game-design` (mechanic eval), later `writing-plans`.
 

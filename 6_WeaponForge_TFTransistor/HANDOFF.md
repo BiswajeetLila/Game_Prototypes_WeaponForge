@@ -1,21 +1,26 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-16 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
+**Updated:** 2026-06-18 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
 
-## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, paused 2026-06-17 (← RESUME HERE)
+## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, 2026-06-18 (← RESUME HERE)
 
 **What this is:** a from-the-research rethink of the **core gameplay + craft**, well beyond the shipped prototype. The shipped build (3-lane auto-runner + flat 3-socket forge + Q1–Q6) is now the **baseline to evolve from, not the target.** **No new code started** — this is design only.
 
-**One-line state:** moat = **the CRAFT is the engagement** (reactions are *visual payoff*); positioning = **GD-derived casual + TFT shop + Transistor/Magicka twist**. **Craft model RESOLVED 2026-06-17** — 3-layer (FORGE → LINEUP → COMBAT); 5 locks: reaction cross-hero, adjacency=Modifier-warp, per-hero frame shapes + shared fungible parts, role-by-emitter-distance, part vocab = Functions(element, Active+Passive) + Modifiers(shape, adjacent-only). **NOW brainstorming: power-gating** (what meters output / times the cascade) — likes E33 mana/AP, wants casual + hypercasual-research blend.
+**One-line state:** moat = **the CRAFT is the engagement** (NO fill-then-explode cascade — the "reaction" is a *component of the fired volley*). Craft deeply brainstormed by **2026-06-18**: **hex forge-board, 3 lane-rows; runes = Element×Style (TFT 2-tag, e.g. Fire-DOT); directional modifiers bridge UNLIKE elements (rarity = +directions → 6-ring hub); base attack fills MANA → on full, fires the current MIX (3×Fire, or 2×Fire+1×Steam if a modifier bridged a fire to water); same-element adjacent links free; Magicka = the bridge-combo table (combinable / neutral / opposite-cancel)**. Enemy rock-paper-scissors + combo mega-weakness mapped; FTUE (beats 1–7) planned + a **playable throwaway prototype** built. **Next = formal spec on approval.**
 
 **Read these to resume, in order:**
-1. [`docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md`](docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md) — **freshest.** The resolved craft model (5 locks) + the **in-progress power-gating brainstorm** (RESUME HERE: pick currency → cadence).
-2. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + decision ledger (now shows the 2026-06-17 ✅ locks).
-3. [`docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md`](docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md) — the ~30 ranked metaphors + the original 7 sub-Qs (mostly resolved now; board/lineup/legibility still open).
+1. [`docs/superpowers/specs/2026-06-18-core-craft-mechanic-brainstorm.html`](docs/superpowers/specs/2026-06-18-core-craft-mechanic-brainstorm.html) — **freshest.** Full consolidated mechanic: mana→fire-the-mix engine, 57-item master list, mixture + movement examples, enemy RPS map, FTUE beats 1–7, reveal schedule (stages 5/10/15), open pins.
+2. [`docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md`](docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md) — the 5 structural locks + 3-layer (FORGE → LINEUP → COMBAT) architecture.
+3. [`docs/superpowers/specs/2026-06-17-gear-defenders-to-weaponforge-mapping.html`](docs/superpowers/specs/2026-06-17-gear-defenders-to-weaponforge-mapping.html) — GD→ours mapping + weapon-board slot layouts (§6).
+4. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + decision ledger.
 
-**Resume sequence:** finish power-gating (currency → cadence) → board specifics + LINEUP detail + legibility → finalise part vocab → **Items/Synergies/Catalysts** brainstorm → **Wittle-meta** lift → balance → full spec → `writing-plans` → **moat-first** TDD build.
+**Playable prototype:** [`_paper-prototypes/ftue-beat5.html`](_paper-prototypes/ftue-beat5.html) — throwaway FTUE toy (beats 1–7), self-contained, open in a browser. Click/drag tiles → mana fills → fires the mix; break the fire-resist Ironclad by bridging to Steam, then re-tune to Magma vs the Steam-resistant Frostkin (matchup-churn). Verified working via headless preview.
 
-**Visual brainstorm artifacts** (this session's screens): `.superpowers/brainstorm/*/content/*.html` (reaction-locus, three-layer-reshape, hero-frame-differentiation, three-role-mapping, part-grain, function-role-gallery, function-modifier-combos, gate-currency).
+**GD research correction (2026-06-17):** GD's "King" IS an active gacha-summoned combatant (auto-fires a skill from the wall + army buffs) — the earlier "static cosmetic" claim was WRONG. See [`../../docs/research/reference-games/Gear Defenders/CORRECTION-2026-06-17-king-is-an-active-combatant.md`](../../docs/research/reference-games/Gear%20Defenders/CORRECTION-2026-06-17-king-is-an-active-combatant.md).
+
+**Resume sequence:** finalise open pins (element/style lists, mana numbers, full Magicka pair table) → on approval convert the brainstorm → **formal craft spec** → `writing-plans` → **moat-first** TDD build. Items/Synergies/Catalysts + Wittle-meta + balance still parked.
+
+**Earlier visual brainstorm screens** (gitignored): `.superpowers/brainstorm/*/content/*.html`.
 
 **Suggested skills on resume:** `brainstorming` (continue), `game-design` (mechanic eval), later `writing-plans`.
 

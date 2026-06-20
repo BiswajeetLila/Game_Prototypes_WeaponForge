@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponForge — Core Craft Mechanic (consolidated brainstorm)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--font-display:"Jost","Futura","Century Gothic","Helvetica Neue",sans-serif;--font-body:"Helvetica Neue",Helvetica,Arial,"Segoe UI",sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;--paper:#C9CDD0;--card:#D5D9DC;--paper-2:#B3B7BC;--ink:#182030;--ink-mut:#3C4655;--rule:#9CA1A9;--rule-2:#888F98;--accent:#16407A;--accent-2:#0E2E5C;--accent-wash:rgba(22,64,122,0.11);--ok:#246B38;--warn:#8A5E10;--bad:#9E2A2B;--toggle:#7E4D1C;--toggle-wash:rgba(126,77,28,0.13);--measure:72ch;--gutter:clamp(1rem,4vw,3rem);--radius:5px;}
+:root.dark{--paper:#0E1116;--card:#161A20;--paper-2:#1B212A;--ink:#E3E8EF;--ink-mut:#98A3B3;--rule:#262D38;--rule-2:#353E4B;--accent:#5C97DB;--accent-2:#82B2EC;--accent-wash:rgba(92,151,219,0.13);--ok:#6FBE7F;--warn:#D6A848;--bad:#E5736F;--toggle:#D6A06A;--toggle-wash:rgba(214,160,106,0.16);}
+@media(prefers-color-scheme:dark){:root:not(.light):not(.dark){--paper:#0E1116;--card:#161A20;--paper-2:#1B212A;--ink:#E3E8EF;--ink-mut:#98A3B3;--rule:#262D38;--rule-2:#353E4B;--accent:#5C97DB;--accent-2:#82B2EC;--accent-wash:rgba(92,151,219,0.13);--ok:#6FBE7F;--warn:#D6A848;--bad:#E5736F;--toggle:#D6A06A;--toggle-wash:rgba(214,160,106,0.16);}}
+*{box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:clamp(1.05rem,1rem+0.35vw,1.18rem);line-height:1.65;-webkit-font-smoothing:antialiased;}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.6;background-image:radial-gradient(circle at 1px 1px,var(--rule-2) 1px,transparent 0);background-size:26px 26px;mask-image:linear-gradient(transparent,black 25%,black 75%,transparent);}
+.progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--accent);z-index:50;transition:width 0.1s linear;}
+.theme-toggle{position:fixed;top:1rem;right:1rem;z-index:60;display:inline-flex;align-items:center;gap:0.5rem;font-family:var(--font-mono);font-size:0.78rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--toggle);background:var(--card);border:1.5px solid var(--toggle);border-radius:999px;padding:0.45rem 0.85rem;cursor:pointer;}
+.theme-toggle svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;}.theme-toggle .moon{display:none;}.theme-toggle .label::after{content:"Light";}
+:root.dark .theme-toggle .sun{display:none;}:root.dark .theme-toggle .moon{display:block;}:root.dark .theme-toggle .label::after{content:"Dark";}
+@media(prefers-color-scheme:dark){:root:not(.light):not(.dark) .theme-toggle .sun{display:none;}:root:not(.light):not(.dark) .theme-toggle .moon{display:block;}:root:not(.light):not(.dark) .theme-toggle .label::after{content:"Dark";}}
+@media print{.theme-toggle,.progress{display:none;}}
+.doc{position:relative;z-index:1;display:grid;grid-template-columns:[full-start] minmax(var(--gutter),1fr) [wide-start] minmax(0,7rem) [content-start] min(var(--measure),100% - (var(--gutter)*2)) [content-end] minmax(0,7rem) [wide-end] minmax(var(--gutter),1fr) [full-end];padding:clamp(2rem,6vw,5rem) 0 6rem;}
+.doc>*{grid-column:content;}.doc>.wide{grid-column:wide;}.doc>.full{grid-column:full;}
+.cover{margin-bottom:clamp(2.5rem,6vw,4.5rem);}
+.eyebrow{font-family:var(--font-mono);font-size:0.79rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.75rem;margin:0 0 1.4rem;}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule-2);}
+.cover h1{font-family:var(--font-display);font-weight:700;font-size:clamp(2.2rem,1.4rem+4vw,4rem);line-height:1.03;letter-spacing:-0.02em;margin:0 0 1rem;}
+.cover .lede{font-family:var(--font-display);font-size:clamp(1.25rem,1.1rem+0.6vw,1.6rem);line-height:1.4;color:var(--ink-mut);font-weight:400;max-width:54ch;margin:0 0 2rem;}
+.meta{font-family:var(--font-mono);font-size:0.86rem;color:var(--ink-mut);display:flex;flex-wrap:wrap;gap:0.5rem 1.75rem;padding-top:1.4rem;border-top:2px solid var(--ink);}
+.meta b{color:var(--ink);font-weight:600;}
+.toc{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:var(--radius);padding:1.4rem 1.6rem;margin:2.2rem 0;}
+.toc h2{font-family:var(--font-mono);font-size:0.79rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mut);margin:0 0 0.9rem;padding:0;border:0;}
+.toc h2::before{content:none;}.toc ol{margin:0;padding:0;list-style:none;counter-reset:toc;}.toc li{counter-increment:toc;margin:0.3rem 0;}
+.toc a{font-family:var(--font-mono);font-size:0.95rem;text-decoration:none;color:var(--ink);display:flex;gap:0.8rem;align-items:baseline;padding:0.1rem 0;border:0;}
+.toc a::before{content:counter(toc,decimal-leading-zero);color:var(--accent);font-weight:600;}
+.doc{counter-reset:h2;}
+h2{font-family:var(--font-display);font-weight:600;font-size:clamp(1.6rem,1.3rem+1.4vw,2.3rem);line-height:1.12;margin:3rem 0 1rem;padding-top:1.3rem;border-top:1px solid var(--rule);counter-increment:h2;scroll-margin-top:2rem;}
+h2::before{content:counter(h2,decimal-leading-zero);display:block;font-family:var(--font-mono);font-size:0.84rem;font-weight:500;letter-spacing:0.15em;color:var(--accent);margin-bottom:0.4rem;}
+h3{font-family:var(--font-display);font-weight:600;font-size:clamp(1.25rem,1.1rem+0.6vw,1.55rem);margin:2rem 0 0.7rem;}
+h4{font-family:var(--font-mono);font-weight:600;font-size:0.86rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-mut);margin:1.8rem 0 0.5rem;}
+p{margin:0 0 1.2rem;}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--rule-2);}a:hover{color:var(--accent-2);border-color:var(--accent);}
+strong{font-weight:600;}em{font-style:italic;}
+ul,ol{margin:0 0 1.2rem;padding-left:1.4rem;}li{margin:0.3rem 0;padding-left:0.2rem;}
+ul li::marker{color:var(--accent);}ol li::marker{color:var(--accent);font-family:var(--font-mono);font-size:0.9em;}
+blockquote{margin:1.8rem 0;padding:1.1rem 1.4rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:var(--radius);font-family:var(--font-display);font-size:1.25rem;font-weight:500;line-height:1.4;}
+.callout{margin:1.8rem 0;padding:1.1rem 1.3rem;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--accent);border-radius:var(--radius);font-size:1.02rem;line-height:1.55;}
+.callout>:last-child{margin-bottom:0;}
+.callout .label{display:inline-flex;align-items:center;gap:0.5rem;font-family:var(--font-mono);font-size:0.76rem;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.45rem;}
+.callout.tip{border-left-color:var(--ok);}.callout.tip .label{color:var(--ok);}
+.callout.warn{border-left-color:var(--warn);}.callout.warn .label{color:var(--warn);}
+.table-wrap{overflow-x:auto;margin:1.8rem 0;}
+table{width:100%;border-collapse:collapse;font-size:0.95rem;line-height:1.45;}
+caption{font-family:var(--font-mono);font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mut);text-align:left;padding-bottom:0.6rem;}
+th,td{text-align:left;padding:0.55rem 0.8rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{font-family:var(--font-mono);font-size:0.75rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-mut);font-weight:600;border-bottom:2px solid var(--ink);}
+tbody tr:hover{background:var(--accent-wash);}tbody tr:last-child td{border-bottom:0;}
+code{font-family:var(--font-mono);font-size:0.85em;background:var(--paper-2);border:1px solid var(--rule);padding:0.08em 0.38em;border-radius:3px;}
+.cols2{column-count:2;column-gap:2rem;}.cols2 li{break-inside:avoid;}
+@media(max-width:640px){.cols2{column-count:1;}}
+hr{border:0;height:1px;background:var(--rule);margin:2.5rem 0;}
+.doc-footer{margin-top:3.5rem;padding-top:1.4rem;border-top:2px solid var(--ink);font-family:var(--font-mono);font-size:0.84rem;color:var(--ink-mut);display:flex;flex-wrap:wrap;gap:0.5rem 2rem;justify-content:space-between;}
+.fire{color:#c2410c;font-weight:600;}.water{color:#1d6fb8;font-weight:600;}.storm{color:#9a6a00;font-weight:600;}.earth{color:#3b6d11;font-weight:600;}
+:root.dark .fire{color:#f0903a;}:root.dark .water{color:#5fb0ee;}:root.dark .storm{color:#e0b84a;}:root.dark .earth{color:#9cc766;}
+::selection{background:var(--accent);color:#fff;}
+</style>
+<script>try{var t=localStorage.getItem('reportTheme');if(t==='light'||t==='dark')document.documentElement.classList.add(t);}catch(e){}</script>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<button class="theme-toggle" id="themeBtn" type="button" aria-label="Toggle theme"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span class="label"></span></button>
+
+<article class="doc">
+<header class="cover reveal">
+<p class="eyebrow">Brainstorm consolidation · WeaponForge TFTransistor</p>
+<h1>Core Craft Mechanic — everything, in one place</h1>
+<p class="lede">The full mechanic as brainstormed: hex forge-board, Element×Style runes, directional modifier-bridges, the mana→fire-the-mix engine, the enemy rock-paper-scissors map, and a paper-prototype FTUE plan.</p>
+<div class="meta"><span><b>For</b> Biswa</span><span><b>Date</b> 18 Jun 2026</span><span><b>Status</b> Brainstorm — NOT spec yet</span><span><b>Sibling docs</b> GD mapping · craft-model-resolved</span></div>
+</header>
+
+<nav class="toc reveal" aria-label="Contents"><h2>Contents</h2><ol>
+<li><a href="#loop">The core loop — mana → fire the mix</a></li>
+<li><a href="#master">Master list — every decision (60+)</a></li>
+<li><a href="#mix">Mixtures — first examples of every type</a></li>
+<li><a href="#move">Movements — modifier directionality + re-placing</a></li>
+<li><a href="#enemies">Enemy rock-paper-scissors map</a></li>
+<li><a href="#ftue">Paper-prototype FTUE plan</a></li>
+<li><a href="#reveal">Complexity reveal schedule</a></li>
+<li><a href="#open">Open pins + status</a></li>
+</ol></nav>
+
+<!-- CONTENT START -->
+
+<div class="callout warn"><span class="label">Status</span> This is a <strong>consolidated brainstorm</strong>, not a spec. Nothing here is locked into the build. Ready to convert to a formal spec + implementation plan on your approval. Open decisions are flagged in §8.</div>
+
+<h2 id="loop">The core loop — mana → fire the mix</h2>
+<p>The engine that replaces GD's "gears spin → produce troops." No charge-then-explode cascade — the reaction is a <em>component of the fired volley</em>, not a separate pop.</p>
+<ol>
+<li>Each hero's <strong>weapon</strong> auto-does its <strong>base attack</strong> (slash, shot — the innate delivery). Each base attack <strong>fills a mana bar</strong>.</li>
+<li>When mana is <strong>full</strong>, the weapon <strong>fires its current power-mix</strong> — a volley composed from whatever's arranged on its board right now.</li>
+<li>The mix = each <strong>element tile</strong> contributes its element to the volley; <strong>modifiers transform components</strong> by bridging neighbours.</li>
+<li>Mana <strong>refills</strong>; repeat. Mana fill-rate = the production rate; the arrangement/synergy tunes it.</li>
+</ol>
+<div class="callout tip"><span class="label">The worked example you gave</span>
+<strong>3× <span class="fire">Fire</span> in a line</strong> → mana full → fires a <strong>3×Fire volley</strong> (common, low-mid damage).<br>
+Same line, but a modifier bridges one <span class="fire">Fire</span> to the <span class="water">Water</span> tile below it → fires <strong>2×Fire + 1×<span class="storm">Steam</span></strong> when mana is full. The arrangement <em>composes</em> the volley.</div>
+
+<h2 id="master">Master list — every decision so far</h2>
+<p>Everything we've landed across the session, grouped — 57 items across 10 groups. Tags: ✅ agreed · 🟡 leaning · ⏳ open.</p>
+
+<h3>A · Architecture &amp; layers</h3>
+<ol>
+<li>✅ Three layers: <strong>FORGE</strong> (build) → <strong>LINEUP</strong> (assign to lanes) → <strong>COMBAT</strong> (auto-plays the result).</li>
+<li>✅ Forge is a calm planning layer; combat is fully auto-resolved (no in-combat micro).</li>
+<li>✅ The <strong>weapon is the board</strong> — you build on the weapon, per hero.</li>
+<li>✅ <strong>Hex grid</strong>, not square (6 neighbours, one uniform adjacency, TFT-native).</li>
+<li>✅ 3 hero lanes = 3 hex rows (H1 / H2 / H3).</li>
+<li>✅ <strong>Hero = the lane carry</strong> (gacha collectible, ≈ GD's King); wields the weapon-board.</li>
+<li>🟡 Heroes collected via gacha; runes drafted per-run (TFT shop).</li>
+</ol>
+
+<h3>B · Runes (the tiles)</h3>
+<ol start="8">
+<li>✅ A rune = <strong>Element × Style</strong> (two tags), like TFT origin × class.</li>
+<li>🟡 Elements (proto): <span class="fire">Fire</span>, <span class="water">Water</span>, <span class="storm">Storm</span>, <span class="earth">Earth</span> (+ more later).</li>
+<li>🟡 Styles / functions (proto): <strong>DOT</strong>, <strong>Burst</strong>, <strong>Spread</strong> (+ more later).</li>
+<li>✅ <strong>Both</strong> elements get all styles → e.g. multi-Fire AND multi-Water → 3×3 combination space per element-pair.</li>
+<li>✅ New element/style types <strong>revealed slowly via gacha over stages 5+</strong> (anti-overwhelm).</li>
+<li>🟡 Rune visual: <strong>fill = element</strong>, <strong>icon/letter = style</strong>, frame = rarity.</li>
+<li>🟡 Runes <strong>merge</strong> T1→T5 (rarity borders), TFT-style.</li>
+</ol>
+
+<h3>C · Modifiers (the connectors)</h3>
+<ol start="15">
+<li>✅ Modifier = separate part class; its job is to <strong>bridge UNLIKE elements</strong>.</li>
+<li>✅ Modifiers have <strong>directionality</strong> — they connect specific neighbour directions (e.g. <em>top + right</em>).</li>
+<li>✅ <strong>Rarity adds directions</strong>: rare = 2 dirs, epic = 3 (top-right-bottom), legendary = up to 6 (a hub).</li>
+<li>🟡 Modifier shape = which directions it bridges (the visual tells you).</li>
+<li>✅ Rarity = a <strong>frame colour</strong> (silver / purple / gold) — never reuse an element colour.</li>
+<li>✅ Same-element adjacent runes link <strong>free</strong> (no modifier needed).</li>
+<li>🟡 Same-style adjacent runes also give a style synergy (free).</li>
+</ol>
+
+<h3>D · Synergy &amp; combos (spatial, never count)</h3>
+<ol start="22">
+<li>✅ Synergy is <strong>spatial</strong> (adjacency) — never positionless "have 3 of X".</li>
+<li>✅ Bridge output: the <strong>element pair sets WHAT the combo is</strong> (Steam, Conduct, Magma); the <strong>style sets the DELIVERY</strong> (DoT / Burst / Spread).</li>
+<li>✅ Three pair buckets: <strong>Combinable</strong> (named combo) · <strong>Neutral</strong> (generic rider) · <strong>Opposite</strong> (cancel/fizzle).</li>
+<li>✅ Opposite = a <em>teachable mistake</em>; early levels are designed so the player never hits the bad feeling.</li>
+<li>✅ <strong>Forbidden/opposite pairs</strong> unlock as premium combos via epic/legendary modifiers (late-game tactic shift).</li>
+<li>🟡 <strong>Conduct chains</strong>: Storm arcs through adjacent Waters (multi-tile spatial effect).</li>
+<li>🟡 <strong>Hub</strong> (legendary, 6-ring) = multi-combine; several bridges at once.</li>
+<li>✅ <strong>Magicka lives here</strong>: the combination table + opposite/conduct rules + the hub = multi-combine.</li>
+</ol>
+
+<h3>E · Production / firing (the mana model)</h3>
+<ol start="30">
+<li>✅ Base attack fills a <strong>mana bar</strong>; full mana → fire the current mix.</li>
+<li>✅ The fired <strong>mix is composed</strong> by the arrangement (3×Fire, or 2×Fire+1×Steam, …).</li>
+<li>✅ Modifiers <strong>transform components</strong> of the mix (bridged Fire→Water makes that shot Steam).</li>
+<li>✅ No separate reaction meter — the "reaction" is a <em>volley component</em>, not an explosion.</li>
+<li>🟡 Mana fill-rate = production rate; synergy/arrangement tunes how fast you fire.</li>
+<li>🟡 "Mana runes" sell as parts: regen-rate = Modifier (≈ GD speed gear); max-pool = Passive (≈ GD troop cap).</li>
+<li>🟡 Bigger/heavier mix components may cost more to fire (fast-small vs slow-big tradeoff).</li>
+<li>⏳ Stamina/energy = a re-skin of mana for physical heroes (same mechanic).</li>
+</ol>
+
+<h3>F · Heroes / weapons / progression</h3>
+<ol start="38">
+<li>✅ Per-hero <strong>innate weapon-passive</strong> = the base attack shape (slash / projectile / AoE) = the delivery + the mana-filler.</li>
+<li>🟡 Hero <strong>leveling unlocks more board slots</strong> on the weapon (the upgrade incentive).</li>
+<li>✅ Locked slots expand the <strong>modifier/output</strong> side (not "+1 passive aura").</li>
+<li>🟡 Rune rarity ladder: rare → epic → legendary → (mythic).</li>
+<li>✅ Manual <strong>tap-ult</strong> survives as a hero ability (charged by play) — a divergence from GD's auto-cast King skill.</li>
+</ol>
+
+<h3>G · Lanes / cross-hero</h3>
+<ol start="43">
+<li>✅ Cross-hero synergy = a <strong>bridge spanning two lanes</strong> (vertical hex adjacency).</li>
+<li>✅ <strong>Which hero in which lane</strong> = the lane-assignment agency (cross-lane optimisation).</li>
+<li>🟡 Chars join over a run → new lane → new seams → re-optimise.</li>
+<li>🟡 Combat stays 3-lane; hex rows map to the 3 lanes (offset bands).</li>
+</ol>
+
+<h3>H · Why-rearrange (the engagement engine)</h3>
+<ol start="47">
+<li>✅ <strong>Piece-churn</strong>: new runes/modifiers/heroes keep arriving → re-fit the board.</li>
+<li>✅ <strong>Matchup-churn</strong>: each wave/stage favours a different element (enemy weak/resist) → re-tune.</li>
+<li>✅ <strong>Scarce adjacency</strong>: 6 neighbours, synergy goals compete for them → the packing puzzle.</li>
+<li>✅ A <strong>visible metric</strong> (mana-rate + mix composition → output) is the number you chase.</li>
+</ol>
+
+<h3>I · Complexity reveal</h3>
+<ol start="51">
+<li>✅ New mechanics drip at <strong>stages 5 / 10 / 15</strong> — always a next cool thing to chase.</li>
+<li>✅ Early levels: simple same-element mixes only; no opposite-cancel bad feeling.</li>
+<li>🟡 Reveal order (draft): same-element → modifier bridge → cross-lane → directional/epic modifiers → conduct → hubs → forbidden pairs.</li>
+</ol>
+
+<h3>J · Enemies / matchup</h3>
+<ol start="54">
+<li>✅ ~5 enemy types, each with element strengths/weaknesses (rock-paper-scissors).</li>
+<li>✅ Enemies have a <strong>mega-weakness to a COMBO</strong> (weak to Fire, <em>mega</em>-weak to Steam) → craft incentive.</li>
+<li>✅ Enemy composition <strong>forces craft adaptation</strong> (GD: archers come → you pivot to cavalry).</li>
+<li>🟡 Telegraph the wave's enemies at the forge break so the player can re-tune toward the matchup.</li>
+</ol>
+
+<h2 id="mix">Mixtures — first examples of every type</h2>
+<p>The "current mix" is what fires on full mana. Examples (numbers are placeholder).</p>
+
+<h4>Same-element mixes (the floor)</h4>
+<ul>
+<li><span class="fire">F</span>+<span class="fire">F</span>+<span class="fire">F</span> → <strong>3×Fire volley</strong> — common, low-mid, reliable.</li>
+<li><span class="water">W</span>+<span class="water">W</span> → 2×Water — applies Wet stacks (sets up Conduct/Steam later).</li>
+</ul>
+
+<h4>Same-style mixes (the other axis)</h4>
+<ul>
+<li><span class="fire">Fire-DOT</span> + <span class="water">Water-DOT</span> adjacent → <strong>DoT-style synergy</strong>: both tick faster / longer (style match, no modifier needed).</li>
+<li><span class="fire">Fire-Burst</span> + <span class="storm">Storm-Burst</span> → Burst-style synergy: bigger alpha on the full-mana volley.</li>
+</ul>
+
+<h4>Bridge — combinable (signature, the Magicka table)</h4>
+<ul>
+<li><span class="fire">Fire</span> + <span class="water">Water</span> (modifier) → <strong>Steam</strong>. Delivery by style: <span class="fire">Fire-DOT</span>+W = <strong>Scald</strong> (DoT); <span class="fire">Fire-Burst</span>+W = <strong>Steam-blast</strong> (AoE); <span class="fire">Fire-Spread</span>+W = <strong>Steam-cloud</strong> (lingering).</li>
+<li><span class="water">Water</span> + <span class="storm">Storm</span> (modifier) → <strong>Conduct</strong> — arcs through adjacent wet tiles (chain).</li>
+<li><span class="fire">Fire</span> + <span class="earth">Earth</span> (modifier) → <strong>Magma</strong> — heavy sustained burn.</li>
+</ul>
+
+<h4>Bridge — neutral (generic floor)</h4>
+<ul>
+<li><span class="storm">Storm</span> + <span class="earth">Earth</span> (no signature) → generic combined rider (both statuses, modest). Any pair does <em>something</em>.</li>
+</ul>
+
+<h4>Bridge — opposite (cancel; late-game premium)</h4>
+<ul>
+<li><span class="fire">Fire</span> + <span class="water">Frost</span> (common modifier) → <strong>fizzle</strong> (dead bridge — a mistake to learn).</li>
+<li><span class="fire">Fire</span> + <span class="water">Frost</span> (<strong>epic</strong> modifier) → <strong>Thermal Shock</strong> — a premium late-game combo (forbidden pair forced).</li>
+</ul>
+
+<h4>3×3 element-pair × style grid (Fire × Water, illustrative)</h4>
+<div class="table-wrap"><table><caption>Same pair (Fire+Water), 9 combo flavours from style</caption>
+<thead><tr><th>Fire ↓ / Water →</th><th>Water-DOT</th><th>Water-Burst</th><th>Water-Spread</th></tr></thead>
+<tbody>
+<tr><td><b>Fire-DOT</b></td><td>Scald (heavy DoT)</td><td>Scald-burst</td><td>Scald-cloud</td></tr>
+<tr><td><b>Fire-Burst</b></td><td>Steam-jet</td><td>Steam-blast (big AoE)</td><td>Steam-wall</td></tr>
+<tr><td><b>Fire-Spread</b></td><td>Mist-DoT</td><td>Steam-spray</td><td>Steam-cloud (wide lingering)</td></tr>
+</tbody></table></div>
+<p>One element-pair → nine distinct outputs, purely from the style tags. That's the variety multiplier.</p>
+
+<h2 id="move">Movements — modifier directionality + re-placing</h2>
+<p>"Moving a piece" changes the mix. Examples:</p>
+<ul>
+<li><strong>Directional bridge:</strong> a <em>Split-shot, top+right</em> modifier connects only the tiles above and to its right. Put <span class="fire">Fire</span> top and <span class="water">Water</span> right → it bridges them → Steam enters the mix.</li>
+<li><strong>Rotate / re-aim:</strong> same modifier rotated so its arms face <em>top+left</em> instead → now it bridges different neighbours → different combo (or none).</li>
+<li><strong>Rarity upgrade adds a direction:</strong> rare <em>(top+right)</em> → epic <em>(top+right+bottom)</em> → now also grabs the tile below → a 3-way combo from the same slot.</li>
+<li><strong>Slide to cluster:</strong> move the hub one cell into the centre of a ring → it goes from bridging 2 to bridging all (the B1→B2 lesson).</li>
+<li><strong>Form a conduct chain:</strong> slide a Storm between two Waters → it arcs to both → a chain that can cross the lane seam.</li>
+<li><strong>Spread vs concentrate:</strong> cluster 3 Fire for a fat 3×Fire volley, OR split them across lanes so each lane fires + bridges its own neighbour.</li>
+</ul>
+
+<h2 id="enemies">Enemy rock-paper-scissors map</h2>
+<p>Five enemy archetypes. Each has a plain weakness and a <strong>mega-weakness to a specific combo</strong> — the hook that makes you craft toward the wave (GD's "archers → bring cavalry"). Numbers placeholder.</p>
+<div class="table-wrap full"><table><caption>5 enemies × element/combo matchups</caption>
+<thead><tr><th>Enemy</th><th>Resists</th><th>Weak to</th><th>MEGA-weak to (combo)</th><th>Forces you to…</th></tr></thead>
+<tbody>
+<tr><td><b>Swarmlings</b> (many, fragile)</td><td>single-target</td><td>Spread / AoE</td><td><span class="storm">Steam-cloud</span> (Fire-Spread + Water)</td><td>build wide, not tall</td></tr>
+<tr><td><b>Ironclads</b> (armoured)</td><td><span class="fire">Fire</span>, physical</td><td><span class="storm">Storm</span> (pierces armour)</td><td><span class="storm">Conduct</span> (Water + Storm)</td><td>get a Water tile next to Storm</td></tr>
+<tr><td><b>Frostkin</b> (ice)</td><td><span class="water">Water</span>, Frost</td><td><span class="fire">Fire</span></td><td><span class="earth">Magma</span> (Fire + Earth) — sustained melt</td><td>bridge Fire to Earth</td></tr>
+<tr><td><b>Tempest-fliers</b> (storm)</td><td><span class="storm">Storm</span></td><td><span class="earth">Earth</span> (grounds them)</td><td>Grounded (Earth + Storm overload)</td><td>pivot off your Storm build</td></tr>
+<tr><td><b>Bog-golems</b> (tanky earth)</td><td><span class="earth">Earth</span>, physical</td><td><span class="water">Water</span> (erodes)</td><td><span class="fire">Scald</span> (Fire-DOT + Water)</td><td>run a DoT, not a burst</td></tr>
+</tbody></table></div>
+<div class="callout"><span class="label">Why this matters</span> A wave of <strong>Ironclads</strong> punishes a fire build and rewards re-routing to Conduct; next wave of <strong>Frostkin</strong> flips it — fire's back, now bridged to Earth. That's <strong>matchup-churn</strong> — the reason to keep rearranging even with no new pieces.</div>
+
+<h2 id="ftue">Paper-prototype FTUE plan</h2>
+<p>Goal: in ~7 beats, teach <em>place → mana → fire</em>, same-element synergy, the matchup, and land the <strong>modifier-bridge "aha"</strong> against a wall. Keep one hero until the cross-lane beat. Numbers/art throwaway.</p>
+<div class="table-wrap full"><table><caption>FTUE beats</caption>
+<thead><tr><th>#</th><th>On screen</th><th>Player does</th><th>Teaches</th><th>Felt</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>1 hero, empty weapon-board, 1 Fire rune offered</td><td>drop the Fire rune</td><td>place a tile</td><td>"oh, it goes here"</td></tr>
+<tr><td>2</td><td>mana bar fills from base attacks → fires 1×Fire</td><td>watch</td><td>mana → fire the mix</td><td>satisfying first shot</td></tr>
+<tr><td>3</td><td>weak goblin; draft a 2nd Fire</td><td>place it adjacent</td><td>same-element link → 2×Fire, faster</td><td>"more = stronger"</td></tr>
+<tr><td>4</td><td>an <b>Ironclad</b> (fire-resist) blocks — fire barely scratches it</td><td>try, stall</td><td>matchup matters; a wall</td><td>friction / "hmm"</td></tr>
+<tr><td>5</td><td>shop offers a Water rune + a Modifier; Ironclad is MEGA-weak to Conduct</td><td>place Water, bridge it with the modifier</td><td>modifier bridges unlike → combo in the mix</td><td><b>the aha</b> — wall melts</td></tr>
+<tr><td>6</td><td>2nd hero joins (lane 2)</td><td>line a bridge across the seam</td><td>cross-hero synergy</td><td>"the team combos"</td></tr>
+<tr><td>7</td><td>stage-end forge: full board, telegraph next wave</td><td>re-tune toward the telegraph</td><td>matchup-churn / re-arrange</td><td>agency, ownership</td></tr>
+</tbody></table></div>
+<p>Beat 5 is the whole game in one moment: a wall you can't brute-force, a craft move that breaks it. Everything after stage 5 (directional modifiers, conduct, hubs, forbidden pairs) is paced reveal — not FTUE.</p>
+
+<h2 id="reveal">Complexity reveal schedule</h2>
+<div class="table-wrap"><table><caption>What unlocks when</caption>
+<thead><tr><th>When</th><th>Introduced</th></tr></thead>
+<tbody>
+<tr><td>FTUE (stages 1–4)</td><td>place → mana → fire · same-element link · matchup · modifier bridge (the aha)</td></tr>
+<tr><td>Stage 5+</td><td>more element types + styles (gacha drip) · cross-lane bridges · directional modifiers</td></tr>
+<tr><td>Stage 10+</td><td>epic modifiers (extra direction) · conduct chains · style-axis synergies</td></tr>
+<tr><td>Stage 15+</td><td>legendary hubs (multi-combine) · forbidden/opposite pairs as premium combos</td></tr>
+</tbody></table></div>
+
+<h2 id="open">Open pins + status</h2>
+<ul>
+<li>⏳ Final element list + style list (proto: 4 elements × 3 styles = 12 tiles).</li>
+<li>⏳ Exact mana numbers (fill rate, per-shot cost, fast-vs-slow tradeoff).</li>
+<li>⏳ Does style also drive a separate synergy, or only flavour the combo delivery?</li>
+<li>⏳ Hero roster + which heroes unlock when; gacha vs free.</li>
+<li>⏳ The full Magicka pair table (combinable / neutral / opposite) once the element list is fixed.</li>
+<li>⏳ Balance: enemy HP curves, mana economy, slot-unlock thresholds.</li>
+</ul>
+<div class="callout tip"><span class="label">Next</span> On approval: convert to a formal spec (craft model + combat + FTUE) → <code>writing-plans</code> → moat-first TDD build. Immediate option: a throwaway interactive prototype of the §6 FTUE to feel beat 5 before speccing.</div>
+
+<!-- CONTENT END -->
+<footer class="doc-footer"><span>WeaponForge TFTransistor · core craft brainstorm · 2026-06-18</span><span>Generated by Claude</span></footer>
+</article>
+<script>
+var bar=document.getElementById('progress');function onScroll(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;bar.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}document.addEventListener('scroll',onScroll,{passive:true});onScroll();
+var root=document.documentElement;function isDarkNow(){if(root.classList.contains('dark'))return true;if(root.classList.contains('light'))return false;return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;}
+document.getElementById('themeBtn').addEventListener('click',function(){var next=isDarkNow()?'light':'dark';root.classList.remove('light','dark');root.classList.add(next);try{localStorage.setItem('reportTheme',next);}catch(e){}});
+</script>
+</body>
+</html>

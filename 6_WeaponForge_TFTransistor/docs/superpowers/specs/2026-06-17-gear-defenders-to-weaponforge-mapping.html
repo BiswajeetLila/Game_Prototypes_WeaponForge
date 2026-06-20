@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gear Defenders → WeaponForge — Mechanics Mapping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   HOUSE REPORT STYLE — "software manual"  (template @ ~/.claude/report-template.html)
+   ============================================================ */
+:root {
+  --font-display: "Jost", "Futura", "Century Gothic", "Helvetica Neue", sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --paper:    #C9CDD0;  --card:     #D5D9DC;  --paper-2:  #B3B7BC;
+  --ink:      #182030;  --ink-mut:  #3C4655;  --rule:     #9CA1A9;  --rule-2:   #888F98;
+  --accent:   #16407A;  --accent-2: #0E2E5C;  --accent-wash: rgba(22, 64, 122, 0.11);
+  --ok:       #246B38;  --warn:     #8A5E10;  --bad: #9E2A2B;
+  --toggle:      #7E4D1C;  --toggle-wash: rgba(126, 77, 28, 0.13);
+  --measure: 70ch;  --gutter: clamp(1rem, 4vw, 3rem);  --radius: 5px;
+}
+:root.dark {
+  --paper:    #0E1116;  --card:     #161A20;  --paper-2:  #1B212A;
+  --ink:      #E3E8EF;  --ink-mut:  #98A3B3;  --rule:     #262D38;  --rule-2:   #353E4B;
+  --accent:   #5C97DB;  --accent-2: #82B2EC;  --accent-wash: rgba(92, 151, 219, 0.13);
+  --ok:       #6FBE7F;  --warn:     #D6A848;  --bad: #E5736F;
+  --toggle:      #D6A06A;  --toggle-wash: rgba(214, 160, 106, 0.16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    --paper:    #0E1116;  --card:     #161A20;  --paper-2:  #1B212A;
+    --ink:      #E3E8EF;  --ink-mut:  #98A3B3;  --rule:     #262D38;  --rule-2:   #353E4B;
+    --accent:   #5C97DB;  --accent-2: #82B2EC;  --accent-wash: rgba(92, 151, 219, 0.13);
+    --ok:       #6FBE7F;  --warn:     #D6A848;  --bad: #E5736F;
+    --toggle:      #D6A06A;  --toggle-wash: rgba(214, 160, 106, 0.16);
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body);
+  font-size: clamp(1.1rem, 1.01rem + 0.4vw, 1.23rem); line-height: 1.7; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.6;
+  background-image: radial-gradient(circle at 1px 1px, var(--rule-2) 1px, transparent 0); background-size: 26px 26px;
+  mask-image: linear-gradient(transparent, black 25%, black 75%, transparent); }
+.progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: var(--accent); z-index: 50; transition: width 0.1s linear; }
+.theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 60; display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--toggle); background: var(--card); border: 1.5px solid var(--toggle); border-radius: 999px; padding: 0.45rem 0.85rem;
+  cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.12); transition: color .2s, border-color .2s, background .2s, box-shadow .2s; }
+.theme-toggle:hover { background: var(--toggle-wash); box-shadow: 0 2px 9px rgba(0,0,0,0.16); }
+.theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+.theme-toggle .moon { display: none; } .theme-toggle .label::after { content: "Light"; }
+:root.dark .theme-toggle .sun { display: none; } :root.dark .theme-toggle .moon { display: block; } :root.dark .theme-toggle .label::after { content: "Dark"; }
+@media (prefers-color-scheme: dark) { :root:not(.light):not(.dark) .theme-toggle .sun { display: none; } :root:not(.light):not(.dark) .theme-toggle .moon { display: block; } :root:not(.light):not(.dark) .theme-toggle .label::after { content: "Dark"; } }
+@media print { .theme-toggle, .progress { display: none; } }
+.doc { position: relative; z-index: 1; display: grid;
+  grid-template-columns: [full-start] minmax(var(--gutter), 1fr) [wide-start] minmax(0, 8rem)
+    [content-start] min(var(--measure), 100% - (var(--gutter) * 2)) [content-end] minmax(0, 8rem) [wide-end] minmax(var(--gutter), 1fr) [full-end];
+  padding: clamp(2rem, 6vw, 6rem) 0 6rem; }
+.doc > * { grid-column: content; } .doc > .wide { grid-column: wide; } .doc > .full { grid-column: full; }
+.cover { margin-bottom: clamp(3rem, 7vw, 5.5rem); }
+.eyebrow { font-family: var(--font-mono); font-size: 0.79rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); display: flex; align-items: center; gap: 0.75rem; margin: 0 0 1.4rem; }
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--rule-2); }
+.cover h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(2.4rem, 1.4rem + 4.6vw, 4.6rem); line-height: 1.02; letter-spacing: -0.02em; margin: 0 0 1rem; }
+.cover .lede { font-family: var(--font-display); font-size: clamp(1.32rem, 1.15rem + 0.66vw, 1.7rem); line-height: 1.4; color: var(--ink-mut); font-weight: 400; max-width: 52ch; margin: 0 0 2rem; }
+.meta { font-family: var(--font-mono); font-size: 0.88rem; color: var(--ink-mut); display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; padding-top: 1.4rem; border-top: 2px solid var(--ink); }
+.meta b { color: var(--ink); font-weight: 600; }
+.toc { background: var(--card); border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 1.5rem 1.75rem; margin: 2.5rem 0; }
+.toc h2 { font-family: var(--font-mono); font-size: 0.79rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mut); margin: 0 0 1rem; padding: 0; border: 0; }
+.toc h2::before { content: none; }
+.toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+.toc li { counter-increment: toc; margin: 0.35rem 0; }
+.toc a { font-family: var(--font-mono); font-size: 0.99rem; text-decoration: none; color: var(--ink); display: flex; gap: 0.85rem; align-items: baseline; padding: 0.15rem 0; border: 0; }
+.toc a::before { content: counter(toc, decimal-leading-zero); color: var(--accent); font-weight: 600; }
+.toc a:hover { color: var(--accent); background: none; }
+.doc { counter-reset: h2; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.76rem, 1.38rem + 1.65vw, 2.48rem); line-height: 1.12; letter-spacing: -0.01em; margin: 3.5rem 0 1.2rem; padding-top: 1.4rem; border-top: 1px solid var(--rule); counter-increment: h2; scroll-margin-top: 2rem; }
+h2::before { content: counter(h2, decimal-leading-zero); display: block; font-family: var(--font-mono); font-size: 0.86rem; font-weight: 500; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.45rem; }
+h3 { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.32rem, 1.15rem + 0.66vw, 1.65rem); line-height: 1.2; margin: 2.4rem 0 0.8rem; scroll-margin-top: 2rem; }
+h4 { font-family: var(--font-mono); font-weight: 600; font-size: 0.88rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mut); margin: 2rem 0 0.6rem; }
+p { margin: 0 0 1.3rem; }
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--rule-2); transition: border-color .2s, color .2s; }
+a:hover { color: var(--accent-2); border-color: var(--accent); }
+strong { font-weight: 600; } em { font-style: italic; }
+mark { background: var(--accent-wash); color: inherit; padding: 0.05em 0.3em; border-radius: 3px; box-decoration-break: clone; }
+ul, ol { margin: 0 0 1.3rem; padding-left: 1.4rem; } li { margin: 0.4rem 0; padding-left: 0.3rem; }
+ul li::marker { color: var(--accent); } ol li::marker { color: var(--accent); font-family: var(--font-mono); font-size: 0.9em; }
+blockquote { margin: 2rem 0; padding: 1.3rem 1.6rem; background: var(--card); border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: var(--radius); font-family: var(--font-display); font-size: 1.32rem; font-weight: 500; line-height: 1.4; color: var(--ink); }
+.callout { margin: 2rem 0; padding: 1.2rem 1.4rem; background: var(--card); border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: var(--radius); font-size: 1.07rem; line-height: 1.6; }
+.callout > :last-child { margin-bottom: 0; }
+.callout .label { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.77rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+.callout.tip { border-left-color: var(--ok); } .callout.tip .label { color: var(--ok); }
+.callout.warn { border-left-color: var(--warn); } .callout.warn .label { color: var(--warn); }
+.table-wrap { overflow-x: auto; margin: 2rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.98rem; line-height: 1.45; }
+caption { font-family: var(--font-mono); font-size: 0.81rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mut); text-align: left; padding-bottom: 0.7rem; }
+th, td { text-align: left; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th { font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mut); font-weight: 600; border-bottom: 2px solid var(--ink); }
+tbody tr:hover { background: var(--accent-wash); } tbody tr:last-child td { border-bottom: 0; }
+hr { border: 0; height: 1px; background: var(--rule); margin: 3rem 0; }
+.dinkus { border: 0; text-align: center; margin: 3rem 0; height: auto; background: none; color: var(--accent); font-family: var(--font-mono); font-size: 0.77rem; letter-spacing: 0.4em; }
+.dinkus::before { content: "▪ ▪ ▪"; }
+.doc-footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); font-family: var(--font-mono); font-size: 0.86rem; color: var(--ink-mut); display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-content: space-between; }
+.v-lift { color: var(--ok); font-weight: 600; white-space: nowrap; }
+.v-twist { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.v-ours { color: var(--warn); font-weight: 600; white-space: nowrap; }
+.v-drop { color: var(--bad); font-weight: 600; white-space: nowrap; }
+.reframe { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 2rem 0; }
+.reframe .col { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 1rem 1.1rem; }
+.reframe .col.gd { border-left: 3px solid var(--warn); }
+.reframe .col.us { border-left: 3px solid var(--ok); }
+.reframe .arrow { display: flex; align-items: center; font-family: var(--font-mono); color: var(--accent); font-weight: 600; }
+.reframe h4 { margin: 0 0 0.5rem; }
+@media (max-width: 720px) { .reframe { grid-template-columns: 1fr; } .reframe .arrow { justify-content: center; transform: rotate(90deg); } }
+::selection { background: var(--accent); color: #fff; }
+</style>
+<script>
+  try { var t = localStorage.getItem('reportTheme'); if (t === 'light' || t === 'dark') document.documentElement.classList.add(t); } catch (e) {}
+</script>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<button class="theme-toggle" id="themeBtn" type="button" aria-label="Toggle light or dark theme">
+  <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>
+  <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  <span class="label"></span>
+</button>
+
+<article class="doc">
+
+  <header class="cover reveal">
+    <p class="eyebrow">Design Mapping · WeaponForge TFTransistor</p>
+    <h1>Gear Defenders → WeaponForge</h1>
+    <p class="lede">Mapping Gear Defenders' proven 4.5★ / 5M-install skeleton onto our resolved craft model — keeping what derisks, swapping the one organ that is our moat.</p>
+    <div class="meta">
+      <span><b>For</b> Biswa</span>
+      <span><b>Date</b> 17 Jun 2026</span>
+      <span><b>Status</b> Working map (craft model locked; gate open)</span>
+      <span><b>Read</b> ~9 min</span>
+    </div>
+  </header>
+
+  <nav class="toc reveal" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#reframe">The one structural reframe (factory vs tuning-bench)</a></li>
+      <li><a href="#craft">Core craft &amp; combat mapping</a></li>
+      <li><a href="#diverge">Where we deliberately diverge (the moat)</a></li>
+      <li><a href="#meta">The meta layer to lift (~as-is)</a></li>
+      <li><a href="#gate">The open seam: the power gate</a></li>
+      <li><a href="#weapons">Weapon-board layouts (slots + upgrade locks)</a></li>
+    </ol>
+  </nav>
+
+  <!-- CONTENT START -->
+
+  <p class="reveal">Gear Defenders is our closest commercial sibling: a tower-defense + idle <strong>gear-merge</strong> hybrid, fully auto-resolved combat, casual portrait audience, 4.50★ across 88k Play ratings on 5M+ installs. We are deriving our casual loop from its skeleton. This document maps every GD system onto our <strong>resolved craft model</strong> (3-layer <em>FORGE → LINEUP → COMBAT</em>; <em>Functions</em> + <em>Modifiers</em>; emitter-distance roles; cross-hero Magicka reactions) and judges the fit.</p>
+
+  <div class="callout"><span class="label">Verdict legend</span>
+    <span class="v-lift">✅ LIFT</span> — proven, port ~as-is (reskin only) &nbsp;·&nbsp;
+    <span class="v-twist">🔀 TWIST</span> — port the shape, change one rule to fit our model &nbsp;·&nbsp;
+    <span class="v-ours">✳ OURS</span> — deliberate divergence; this is where we win &nbsp;·&nbsp;
+    <span class="v-drop">✕ DROP</span> — GD failure mode, avoid on purpose.
+  </div>
+
+  <h2 id="reframe">The one structural reframe</h2>
+  <p>Your assumption — "GD's gear types are my items; Function gears could be a Modifier" — is <strong>right for the connector/buff gears</strong> and needs <strong>one correction for troop gears</strong>. The correction is the whole hinge of the mapping, so it goes first.</p>
+
+  <div class="reframe">
+    <div class="col gd">
+      <h4>Gear Defenders — a FACTORY</h4>
+      <p style="margin:0;font-size:0.98rem">The gear grid <strong>manufactures an army</strong>. A troop-gear next to the Power Core spawns soldiers at <code>X/s</code>; those soldiers march off and do the fighting. Your build is a <strong>production line</strong>; the combat actors are disposable, spawned, and not the thing you collect.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col us">
+      <h4>WeaponForge — a TUNING BENCH</h4>
+      <p style="margin:0;font-size:0.98rem">Each <strong>persistent hero</strong> is a frame. The Function on its emitter = <strong>what that hero shoots</strong>; adjacent Modifiers warp the shot. The combat actors <em>are</em> the drafted heroes you collect — not a spawned army. The forge <strong>tunes units</strong>, it doesn't manufacture them.</p>
+    </div>
+  </div>
+
+  <p>Consequence for the mapping: GD's <strong>troop-gear</strong> splits into our <strong>Function</strong> (the element/Active on the emitter), while GD's <strong>troops</strong> become our <strong>hero's emission/shots</strong> — not a separate item. And GD's central gate, <strong>production rate (troops/s)</strong>, becomes for us a <strong>rate of shots / rate of reaction-charge</strong> (see §5). Everything else maps cleanly.</p>
+
+  <h2 id="craft">Core craft &amp; combat mapping</h2>
+  <p>The build-space, merge, shop, and tier systems port almost directly — they are the derisked, 5M-install-proven part. The combat <em>resolution</em> is where we twist.</p>
+
+  <div class="table-wrap full"><table>
+    <caption>Table 1 — GD craft/combat system → WeaponForge equivalent</caption>
+    <thead><tr><th>Gear Defenders</th><th>What it does in GD</th><th>WeaponForge equivalent</th><th>Fit</th></tr></thead>
+    <tbody>
+      <tr><td><b>Gear grid</b> (4×4 around Power Core)</td><td>Shared build space; place &amp; merge gears</td><td><b>Per-hero frame</b> — nubs + bones around the emitter</td><td><span class="v-twist">🔀 TWIST</span> — ours is per-hero, smaller (3–5 nubs), shape varies by hero</td></tr>
+      <tr><td><b>Power Core</b> (centre orb)</td><td>Fixed adjacency anchor; troop-gears next to it produce</td><td><b>Emitter nub</b> — the muzzle; the Active fires from here</td><td><span class="v-lift">✅ LIFT</span> — same role: the anchor everything is measured against</td></tr>
+      <tr><td><b>Troop Gear</b></td><td>Spawns a soldier type at <code>X/s</code></td><td><b>Function</b> on the emitter (Fire / Frost / Storm…) = what the hero shoots</td><td><span class="v-twist">🔀 TWIST</span> — hero is persistent; "troops" = the hero's shots, not a spawned army</td></tr>
+      <tr><td><b>Speed Gear</b> (connector)</td><td>Boosts production of adjacent gears; tier = bigger boost</td><td><b>Modifier — Amplify</b> (adjacency-warp on an adjacent nub)</td><td><span class="v-lift">✅ LIFT</span> — <em>your assumption, exactly</em></td></tr>
+      <tr><td><b>Shield / Function Gear</b></td><td>Buffs adjacent troops (e.g. 31% HP shield)</td><td><b>Modifier</b> (utility/defensive warp) on an adjacent nub; or a <b>Function-Passive</b> on a far nub</td><td><span class="v-lift">✅ LIFT</span> — buff-the-neighbour = our Modifier role</td></tr>
+      <tr><td><b>Chain card</b></td><td>Cross-feeds 10% progress between two gears</td><td><b>Bone / route</b> between nubs (the lineup "valve/route" idea)</td><td><span class="v-twist">🔀 TWIST</span> — folds into adjacency + the routing gate option</td></tr>
+      <tr><td><b>Merge</b> (stack same-tier → tier-up; 1→2→4→8)</td><td>Core in-run power growth</td><td><b>Merge</b> T1→T5 (already built; rarity borders recolor)</td><td><span class="v-lift">✅ LIFT</span> — already shipped in our slice</td></tr>
+      <tr><td><b>3-card shop + reroll</b> (coin / ad)</td><td>Between-wave draft of new gears</td><td><b>TFT slow-roll shop + reroll</b> (already built)</td><td><span class="v-lift">✅ LIFT</span> — already shipped</td></tr>
+      <tr><td><b>Tier badge</b> (grey→blue→gold→red)</td><td>Visual rarity / power tier</td><td><b>Tier rarity borders</b> (in-engine recolor, no per-tier art)</td><td><span class="v-lift">✅ LIFT</span> — already shipped</td></tr>
+      <tr><td><b>Type triangle</b> (Infantry/Ranged/Cavalry/Heavy bonus)</td><td>GD's entire combat-depth layer</td><td><b>Elements + enemy weak/resist tags</b>, then the richer <b>cross-hero Magicka reactions</b></td><td><span class="v-ours">✳ OURS</span> — see §3; this is the swap</td></tr>
+      <tr><td><b>Production rate</b> <code>X/s</code></td><td>GD's core gate: build tunes troops/sec</td><td><b>The power gate</b> — but metering the <em>reaction</em>, not raw output</td><td><span class="v-ours">✳ OURS</span> — open; see §5</td></tr>
+      <tr><td><b>Castle HP</b> (lose threshold)</td><td>Reach 0 → lose the run</td><td><b>Hero/base HP</b>; loss softened (revive + partial reward, no across-run permadeath)</td><td><span class="v-twist">🔀 TWIST</span> — softer fail per our locked persistence</td></tr>
+      <tr><td><b>Troop cap</b> ("Chicken Legs")</td><td>Caps simultaneous troops; raised by Castle level</td><td><b>Lane/party size + gate capacity</b> (e.g. AP/charge cap)</td><td><span class="v-twist">🔀 TWIST</span> — caps our throughput, not an army count</td></tr>
+      <tr><td><b>Hero Gears / Skill Gears</b> (recent)</td><td>Troop-specific buffs / skill-trigger mods</td><td><b>Per-hero innate weapon-passive</b> (Bran=Slash, Ashe=projectile) + later <b>Catalysts</b></td><td><span class="v-twist">🔀 TWIST</span> — Catalysts parked for their own brainstorm</td></tr>
+      <tr><td><b>Restrained VFX</b> (no shake/juice, by design)</td><td>Keeps attention on the grid; low-end device safe</td><td><b>Juice the reaction pop</b> (slow-mo, chain counter, cause→effect VFX)</td><td><span class="v-ours">✳ OURS</span> — invert <em>only</em> for the cascade; see §3</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout tip"><span class="label">Your assumption, scored</span> "Gear types → my items" lands <span class="v-lift">✅</span> for the <strong>connector/buff gears → Modifiers</strong> (Speed→Amplify, Shield→defensive Modifier). It needs a <span class="v-twist">🔀</span> for <strong>troop gears → Functions</strong>: the item is the Function, but the <em>unit</em> is the persistent hero, not a spawned troop. So: <strong>GD's two gear families = our two part-classes</strong> — troop-gears ≈ Functions, function/connector-gears ≈ Modifiers. That's a clean two-to-two map.</p></div>
+
+  <h2 id="diverge">Where we deliberately diverge — the moat</h2>
+  <p>Three GD design choices we intentionally do <em>not</em> copy. Everything in §2 marked <span class="v-ours">✳ OURS</span> lives here. This is the entire reason to build our game instead of reskinning GD.</p>
+
+  <h3>1. Type-triangle → cross-hero Magicka reactions</h3>
+  <p>GD's combat depth is a flat unit-vs-unit bonus (Archer beats Infantry, Lancer beats Ranged). Legible, but commodity — every auto-battler has a type wheel. <strong>Our depth is elements colliding across lanes</strong>: line up a Fire hero beside a Water hero and the lanes cross-react into Steam — a screen-wide cascade. GD has no elemental reaction system at all. This is our only non-commodity asset; the type-triangle becomes a minor secondary layer (enemy weak/resist tags), and the reaction becomes the headline.</p>
+
+  <h3>2. Production-rate gate → reaction gate</h3>
+  <p>GD's gate meters <strong>raw output</strong> (troops/sec, tuned by Speed gears + tier + adjacency). If we copy that literally we optimize a commodity (DPS) and the reaction is incidental. We instead want the gate to meter <strong>time-to-next-cascade</strong> — the craft pushes toward screen-pops, not toward bigger numbers. (Open; §5.)</p>
+
+  <h3>3. Restrained VFX → juiced payoff (selectively)</h3>
+  <p>GD strips juice on purpose: no camera shake, no hit-pause, flat damage numbers — to keep the player's eye on the grid and run on cheap phones. We <strong>keep that restraint on the ordinary field</strong> (calm, legible, auto-resolving) but <strong>invert it hard for the reaction moment</strong>: the cascade must pop (slow-mo, chain-counter dopamine, crystalline cause→effect). If a cold player can't <em>see</em> the reaction they set up, the moat is invisible and we are a me-too. Juice is not polish here — it is the product.</p>
+
+  <h2 id="meta">The meta layer to lift (~as-is)</h2>
+  <p>GD's retention skeleton overlaps almost entirely with our planned <strong>Wittle-style Layer-2 meta</strong> (parked for its own session). These port with reskins, not redesigns — they are the proven "come back tomorrow" engine.</p>
+
+  <div class="table-wrap full"><table>
+    <caption>Table 2 — GD meta system → WeaponForge (Layer 2, parked)</caption>
+    <thead><tr><th>Gear Defenders</th><th>WeaponForge equivalent</th><th>Fit</th></tr></thead>
+    <tbody>
+      <tr><td><b>Castle upgrades</b> (HP + troop cap)</td><td><b>Hero leveling → slot unlocks</b> (2→3 sockets @Lv5; reserves @Lv10/15 — already locked)</td><td><span class="v-twist">🔀 TWIST</span></td></tr>
+      <tr><td><b>Energy / stamina</b> (30 cap, 5/run)</td><td><b>Run energy</b> (meta gate on session length)</td><td><span class="v-lift">✅ LIFT</span></td></tr>
+      <tr><td><b>Patrol / AFK income</b></td><td><b>AFK idle layer</b> (offline rewards)</td><td><span class="v-lift">✅ LIFT</span></td></tr>
+      <tr><td><b>Daily 5-chest bar + weekly + events</b></td><td><b>Daily cadence</b> (Wittle overlap)</td><td><span class="v-lift">✅ LIFT</span></td></tr>
+      <tr><td><b>Difficulty tiers</b> (Normal→Elite→Nightmare)</td><td><b>Realm replays</b> at higher difficulty</td><td><span class="v-lift">✅ LIFT</span></td></tr>
+      <tr><td><b>Gacha</b> (troop pulls + pity)</td><td><b>Hero gacha</b> (Ashe etc.), pity, <em>transparent rates</em></td><td><span class="v-lift">✅ LIFT</span> (the pull) / <span class="v-drop">✕ DROP</span> (the bait, below)</td></tr>
+      <tr><td><b>Partial reward on loss</b></td><td><b>Partial reward on loss</b> (anti-rage-quit — already locked)</td><td><span class="v-lift">✅ LIFT</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>GD failure modes — drop on purpose</h4>
+  <div class="table-wrap full"><table>
+    <caption>Table 3 — what NOT to copy</caption>
+    <thead><tr><th>GD failure mode</th><th>Our policy</th></tr></thead>
+    <tbody>
+      <tr><td><span class="v-drop">✕</span> VIP "permanent" sub that silently expires at 30 days (top 1★, 793👍)</td><td>Honest perma-vs-timed labeling at the IAP</td></tr>
+      <tr><td><span class="v-drop">✕</span> Gacha = 99% "materials", 0.02% for a specific troop</td><td>Transparent, humane rates; pulls feel like pulls</td></tr>
+      <tr><td><span class="v-drop">✕</span> Mid-level save loss on ad crash</td><td>Per-wave save state</td></tr>
+      <tr><td><span class="v-drop">✕</span> Unskippable tutorial for every new mechanic (220👍, 2★)</td><td>Skippable from session 2</td></tr>
+      <tr><td><span class="v-drop">✕</span> Difficulty cliff at ~15 min railroading into ads</td><td>Short runs + generous loss sidestep the cliff structurally</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="gate">The open seam: the power gate</h2>
+  <p>GD's gate is <strong>production rate</strong>, tuned spatially (Speed gears + adjacency + tier). It proves a <em>rate gate works for a casual audience</em> — the build becomes "how much can I push per cycle." Our open question is <strong>what flows through our gate</strong>: raw power (GD-literal, rejected), the reaction (on-brand), or an economy.</p>
+
+  <p>Live candidates from the gating brainstorm (parked at currency-choice):</p>
+  <ul>
+    <li><b>AP Economy</b> (Expedition 33) — basic attacks earn AP; the reaction auto-fires when affordable. Earn-by-doing → spend-on-payoff.</li>
+    <li><b>Multiplier Gates</b> (Mob Control / Count Masters) — on-field ×/+ gates the output crosses before it hits. Literally "gates," maximally casual.</li>
+    <li><b>Route-to-Connect</b> (Tangle Master / Mini Metro) — charge flows along a route you set; connecting emitter → reaction-node fires it.</li>
+    <li><i>+ a spatial-structure set</i> (bridge-the-span, circuit board, marble-run, valve hub) and a <i>dual-resource AP + team-gauge</i> (full E33) under consideration.</li>
+  </ul>
+
+  <div class="callout warn"><span class="label">Resume</span> The gate is the one undecided organ. Sequence: pick the <strong>currency</strong> (what flows through) → pick the <strong>cadence</strong> (beat / charge / route) → fold into <a href="2026-06-17-craft-model-resolved-and-gating.md">the craft-model doc</a>. GD says a rate gate is casual-safe; our twist is metering the cascade, not the DPS.</p></div>
+
+  <blockquote>Lift GD's proven skeleton — grid, merge, shop, tiers, meta. Swap the one organ that is our moat — type-triangle → cross-hero Magicka reactions + a juiced pop. Then pick our gate. Everything green is derisked by 5M installs; everything <span class="v-ours" style="font-family:var(--font-display)">✳ OURS</span> is where we win or lose.</blockquote>
+
+  <h2 id="weapons">Weapon-board layouts (slots + upgrade locks)</h2>
+  <p>The weapon <em>is</em> the board (per the §1 reframe). Four heroes, four weapon-frames — different silhouette each (matches the locked per-hero-frame call). Crucially these are <strong>not fixed colour-holes</strong>: role comes from <strong>distance to the emitter</strong> (the business end). The dashed ring = the <strong>modifier zone</strong> — a part dropped inside it warps the shot; the same part dropped outside it acts as a Passive. That preserves "one part, three roles by placement" (the thing typed slots would have killed).</p>
+
+  <div class="callout"><span class="label">Slot legend</span>
+    <span style="color:#e0403a;font-weight:700">●</span> <b>Active</b> — the emitter; the element you fire (keep at <b>1</b>: the cross-hero lineup is the element axis) &nbsp;·&nbsp;
+    <span style="color:#2aa0e0;font-weight:700">●</span> <b>Modifier</b> — hugs the emitter; warps/speeds the shot &nbsp;·&nbsp;
+    <span style="color:var(--ink-mut);font-weight:700">◯</span> <b>Passive</b> — far out; auras/stats &nbsp;·&nbsp;
+    <span style="color:#2aa0e0;font-weight:700">⊘🔒</span> <b>Locked</b> — opens by leveling the hero. <b>The unlocks expand the MODIFIER zone</b> (fix for the backwards economy) — leveling = your weapon shoots <em>crazier</em>, not "+1 stat aura."
+  </div>
+
+  <div class="figrow two wide">
+    <figure>
+      <svg viewBox="0 0 380 150" style="width:100%;background:var(--paper-2);border-radius:5px">
+        <!-- SWORD (Bran) — blade points right; emitter mid-blade -->
+        <circle cx="34" cy="75" r="6" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <line x1="40" y1="75" x2="62" y2="75" stroke="currentColor" stroke-width="3" opacity="0.5"/>
+        <line x1="62" y1="58" x2="62" y2="92" stroke="currentColor" stroke-width="3" opacity="0.5"/>
+        <path d="M64 70 L352 74 L352 76 L64 80 Z" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <line x1="80" y1="75" x2="320" y2="75" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+        <!-- modifier zone -->
+        <circle cx="220" cy="75" r="52" fill="#2aa0e0" opacity="0.07"/>
+        <circle cx="220" cy="75" r="52" fill="none" stroke="#2aa0e0" stroke-width="1" stroke-dasharray="4 4" opacity="0.55"/>
+        <!-- emitter / active -->
+        <circle cx="220" cy="75" r="22" fill="#e0403a" opacity="0.13"/>
+        <circle cx="220" cy="75" r="10" fill="#e0403a"/>
+        <text x="220" y="44" text-anchor="middle" font-size="8.5" fill="#e0403a" font-weight="700">⌖ ACTIVE</text>
+        <!-- modifiers: 1 open + 2 locked -->
+        <circle cx="180" cy="75" r="9" fill="#2aa0e0"/>
+        <circle cx="262" cy="75" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="262" y="79" text-anchor="middle" font-size="9">🔒</text>
+        <circle cx="295" cy="75" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="295" y="79" text-anchor="middle" font-size="9">🔒</text>
+        <!-- passive far (hilt) -->
+        <circle cx="95" cy="75" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity="0.8"/>
+        <text x="95" y="103" text-anchor="middle" font-size="8" opacity="0.6">passive</text>
+      </svg>
+      <figcaption><b>Sword · Bran.</b> Delivery = melee arc. Emitter mid-blade, modifier zone hugging it (1 open + 2× 🔒), one passive at the hilt. Compact frame — modifiers cluster tight.</figcaption>
+    </figure>
+
+    <figure>
+      <svg viewBox="0 0 380 150" style="width:100%;background:var(--paper-2);border-radius:5px">
+        <!-- BOW (Ashe) — arrow points right; emitter at tip -->
+        <path d="M70 28 Q40 75 70 122" fill="none" stroke="currentColor" stroke-width="2.5" opacity="0.5"/>
+        <line x1="70" y1="28" x2="70" y2="122" stroke="currentColor" stroke-width="1.2" opacity="0.4"/>
+        <line x1="74" y1="75" x2="338" y2="75" stroke="currentColor" stroke-width="2" opacity="0.45"/>
+        <path d="M338 75 L326 69 L326 81 Z" fill="currentColor" opacity="0.5"/>
+        <!-- modifier zone -->
+        <circle cx="300" cy="75" r="48" fill="#2aa0e0" opacity="0.07"/>
+        <circle cx="300" cy="75" r="48" fill="none" stroke="#2aa0e0" stroke-width="1" stroke-dasharray="4 4" opacity="0.55"/>
+        <circle cx="318" cy="75" r="20" fill="#e0403a" opacity="0.13"/>
+        <circle cx="318" cy="75" r="10" fill="#e0403a"/>
+        <text x="312" y="46" text-anchor="middle" font-size="8.5" fill="#e0403a" font-weight="700">⌖ ACTIVE</text>
+        <!-- modifiers along the shaft -->
+        <circle cx="270" cy="75" r="9" fill="#2aa0e0"/>
+        <circle cx="232" cy="75" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="232" y="79" text-anchor="middle" font-size="9">🔒</text>
+        <circle cx="190" cy="75" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="190" y="79" text-anchor="middle" font-size="9">🔒</text>
+        <!-- passive at grip -->
+        <circle cx="90" cy="75" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity="0.8"/>
+        <text x="90" y="103" text-anchor="middle" font-size="8" opacity="0.6">passive</text>
+      </svg>
+      <figcaption><b>Bow · Ashe.</b> Delivery = projectile. Long thin frame — modifiers string out <em>along</em> the shaft (a sequential line feeding the tip), echoing her projectile fantasy.</figcaption>
+    </figure>
+
+    <figure>
+      <svg viewBox="0 0 380 150" style="width:100%;background:var(--paper-2);border-radius:5px">
+        <!-- STAFF (Elara) — orb head top-right -->
+        <line x1="70" y1="128" x2="300" y2="52" stroke="currentColor" stroke-width="3" opacity="0.5"/>
+        <circle cx="312" cy="46" r="16" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <!-- modifier zone around orb -->
+        <circle cx="312" cy="46" r="46" fill="#2aa0e0" opacity="0.07"/>
+        <circle cx="312" cy="46" r="46" fill="none" stroke="#2aa0e0" stroke-width="1" stroke-dasharray="4 4" opacity="0.55"/>
+        <circle cx="312" cy="46" r="10" fill="#e0403a"/>
+        <text x="312" y="20" text-anchor="middle" font-size="8.5" fill="#e0403a" font-weight="700">⌖ ACTIVE</text>
+        <!-- modifiers ring the orb -->
+        <circle cx="276" cy="64" r="9" fill="#2aa0e0"/>
+        <circle cx="300" cy="86" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="300" y="90" text-anchor="middle" font-size="9">🔒</text>
+        <circle cx="338" cy="72" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="338" y="76" text-anchor="middle" font-size="9">🔒</text>
+        <!-- passives down the shaft (far) -->
+        <circle cx="150" cy="103" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity="0.8"/>
+        <circle cx="95" cy="120" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity="0.55"/>
+        <text x="120" y="138" text-anchor="middle" font-size="8" opacity="0.6">passives (far)</text>
+      </svg>
+      <figcaption><b>Staff · Elara.</b> Delivery = AoE cast. Modifiers <em>ring</em> the orb (radial, not linear) — a wide frame; two passive nubs trail down the shaft.</figcaption>
+    </figure>
+
+    <figure>
+      <svg viewBox="0 0 380 150" style="width:100%;background:var(--paper-2);border-radius:5px">
+        <!-- HAND CANNON — muzzle right -->
+        <path d="M95 70 L120 60 L150 60 L150 92 L120 92 L100 110 L88 104 L100 86 Z" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <rect x="150" y="64" width="195" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+        <line x1="160" y1="71" x2="320" y2="71" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+        <!-- modifier zone at muzzle -->
+        <circle cx="312" cy="71" r="48" fill="#2aa0e0" opacity="0.07"/>
+        <circle cx="312" cy="71" r="48" fill="none" stroke="#2aa0e0" stroke-width="1" stroke-dasharray="4 4" opacity="0.55"/>
+        <circle cx="330" cy="71" r="20" fill="#e0403a" opacity="0.13"/>
+        <circle cx="330" cy="71" r="10" fill="#e0403a"/>
+        <text x="322" y="42" text-anchor="middle" font-size="8.5" fill="#e0403a" font-weight="700">⌖ ACTIVE</text>
+        <circle cx="288" cy="71" r="9" fill="#2aa0e0"/>
+        <circle cx="300" cy="52" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="300" y="56" text-anchor="middle" font-size="9">🔒</text>
+        <circle cx="262" cy="58" r="9" fill="none" stroke="#2aa0e0" stroke-width="2" stroke-dasharray="3 3"/><text x="262" y="62" text-anchor="middle" font-size="9">🔒</text>
+        <!-- passive at stock -->
+        <circle cx="120" cy="76" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity="0.8"/>
+        <text x="120" y="128" text-anchor="middle" font-size="8" opacity="0.6">passive (stock)</text>
+      </svg>
+      <figcaption><b>Hand Cannon · (new hero).</b> Delivery = heavy single shot. Modifiers bunch at the muzzle/chamber; one passive in the stock. A "slow/big" frame — fewer-but-bigger shots (the slow-build archetype).</figcaption>
+    </figure>
+  </div>
+
+  <div class="callout warn"><span class="label">What the four show (re: the modifier-depth point)</span>
+    Every frame keeps <b>Active = 1</b> and grows the <b>Modifier zone</b> via 🔒 hero-level unlocks — so progression deepens the <em>craft puzzle</em> (concentrate vs spread, speed-up vs slow-down), not a stat-aura pile. The frame <em>shape</em> changes how modifiers arrange: Bran clusters them, Ashe lines them up, Elara rings them, the Cannon bunches few-but-heavy. <b>Open question still on the table:</b> Active stays 1 (recommended, protects the cross-hero lineup) vs your "3× Active" (one hero fires multiple elements — richer single hero, weaker team-lineup moat).
+  </div>
+
+  <!-- CONTENT END -->
+
+  <footer class="doc-footer">
+    <span>WeaponForge TFTransistor · GD mapping · 2026-06-17</span>
+    <span>Generated by Claude</span>
+  </footer>
+
+</article>
+
+<script>
+  var bar = document.getElementById('progress');
+  function onScroll() { var h = document.documentElement; var max = h.scrollHeight - h.clientHeight; bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%'; }
+  document.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  var root = document.documentElement;
+  function isDarkNow() { if (root.classList.contains('dark')) return true; if (root.classList.contains('light')) return false; return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+  document.getElementById('themeBtn').addEventListener('click', function () { var next = isDarkNow() ? 'light' : 'dark'; root.classList.remove('light', 'dark'); root.classList.add(next); try { localStorage.setItem('reportTheme', next); } catch (e) {} });
+</script>
+</body>
+</html>

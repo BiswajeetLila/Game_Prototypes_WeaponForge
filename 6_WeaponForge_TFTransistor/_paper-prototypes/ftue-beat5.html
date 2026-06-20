@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponForge — FTUE flow (beats 1–7) throwaway</title>
+<style>
+  :root{--bg:#11151c;--panel:#1a2029;--panel2:#222b36;--ink:#e6ebf2;--mut:#8a97a8;
+    --fire:#e0552e;--water:#2a8fe0;--earth:#3f9b46;--steam:#cfd8df;--magma:#ff7a2a;--mod:#8a6bff;--gold:#e0a020;--ok:#46c46a;--line:#2c3744;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Helvetica,Arial,sans-serif;}
+  body{max-width:940px;margin:0 auto;padding:14px 16px 44px;}
+  h1{font-size:18px;font-weight:600;margin:0 0 2px;}
+  .sub{color:var(--mut);font-size:12.5px;margin:0 0 12px;}
+  .beat{background:linear-gradient(0deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:11px 14px;margin:0 0 14px;min-height:54px;}
+  .beat .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+  .beat .msg{font-size:15px;margin-top:3px;line-height:1.42;}
+  .beat.win{border-left-color:var(--ok);} .beat.win .tag{color:var(--ok);}
+  .grid{display:grid;grid-template-columns:1fr 300px;gap:14px;}
+  @media(max-width:800px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;}
+  .card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:700;}
+  .boardwrap{position:relative;width:300px;height:236px;margin:4px auto 6px;}
+  .boardwrap svg{position:absolute;inset:0;pointer-events:none;z-index:1;}
+  .seam{position:absolute;left:18px;right:18px;top:160px;border-top:1px dashed #3a4756;display:none;}
+  .seam span{position:absolute;left:0;top:-9px;font-size:9.5px;color:var(--mut);background:var(--panel);padding:0 4px;}
+  .hexem{position:absolute;left:6px;width:32px;height:32px;border-radius:50%;background:#3a4554;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);font-weight:700;text-align:center;line-height:1.05;z-index:2;}
+  .cell{position:absolute;width:60px;height:69px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#28323f;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .12s;font-size:11.5px;font-weight:700;color:#0c0f14;text-align:center;line-height:1.05;z-index:2;}
+  .cell:hover{filter:brightness(1.18);}
+  .cell.empty{background:#222b36;color:#3f4b59;font-weight:500;font-size:13px;}
+  .cell.fire{background:var(--fire);}.cell.water{background:var(--water);}.cell.earth{background:var(--earth);}
+  .cell.mod{background:#2a2440;color:#cdbcff;}.cell.mod .mg{font-size:18px;}
+  .cell.placeable{outline:2px dashed var(--gold);outline-offset:-4px;}
+  .cell.hidden{display:none;}
+  .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+  .piece{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:grab;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px;}
+  .piece.sel{outline:2px solid var(--gold);}
+  .piece[disabled]{opacity:.3;pointer-events:none;}
+  .dot{width:14px;height:14px;border-radius:4px;display:inline-block;}
+  .dot.fire{background:var(--fire);}.dot.water{background:var(--water);}.dot.earth{background:var(--earth);}.dot.mod{background:var(--mod);}
+  .mana{height:14px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px;}
+  .mana>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .14s linear;}
+  .manalabel{font-size:11px;color:var(--mut);text-align:center;}
+  .enemy .ename{font-weight:600;font-size:15px;}
+  .tags{margin:7px 0;display:flex;gap:6px;flex-wrap:wrap;}
+  .t{font-size:10.5px;padding:3px 7px;border-radius:6px;font-weight:700;}
+  .t.res{background:#3a2420;color:#f0a48a;}.t.weak{background:#1f3a22;color:#8fe0a0;}.t.mega{background:#2a2440;color:#cdbcff;}
+  .hp{height:18px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;margin-top:4px;}
+  .hp>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#c43a3a,#e06a6a);transition:width .25s;}
+  .hp>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+  .mix{font-size:12.5px;margin-top:10px;min-height:20px;}
+  .log{margin-top:8px;font-size:11.5px;color:var(--mut);height:104px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;line-height:1.5;}
+  .log .big{color:var(--steam);font-weight:700;}.log .x{color:#f0a48a;}
+  .btns{margin-top:12px;display:flex;gap:8px;}
+  button.act{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;}
+  button.act:hover{border-color:var(--gold);}
+  .float{position:absolute;font-weight:800;font-size:15px;pointer-events:none;animation:fl .9s ease-out forwards;}
+  @keyframes fl{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-28px);}}
+  .note{color:var(--mut);font-size:11px;margin-top:10px;line-height:1.5;}
+</style>
+</head>
+<body>
+<h1>WeaponForge — FTUE flow (beats 1–7) <span style="color:var(--mut);font-weight:400;font-size:13px;">· throwaway prototype</span></h1>
+<p class="sub">Drag a piece onto a hex (or click piece then hex). Mana fills on its own → fires your current mix. Break each wall by crafting the right combo.</p>
+
+<div class="beat" id="beat"><span class="tag" id="btag">Beat 1</span><div class="msg" id="bmsg">Drag <b>Fire</b> onto any hex (or click Fire, then a hex).</div></div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Forge — weapon boards</h2>
+    <div class="boardwrap" id="boardwrap">
+      <svg id="links"></svg>
+      <div class="seam" id="seam"><span>lane seam — cross-hero bridges here</span></div>
+      <div class="hexem" id="emA" style="top:78px;">Hero A</div>
+      <div class="hexem hidden" id="emB" style="top:170px;display:none;">Hero B</div>
+    </div>
+    <div class="tray" id="tray"></div>
+    <div class="mana"><i id="manafill"></i></div>
+    <div class="manalabel" id="manalabel">mana 0%</div>
+    <div class="mix" id="mix">Mix: <b>empty</b></div>
+    <div class="note">Same element touching = linked (free). A <b style="color:#cdbcff">modifier</b> bridges two <em>unlike</em> elements into a combo — <b style="color:var(--steam)">Fire+Water=Steam</b>, <b style="color:var(--magma)">Fire+Earth=Magma</b>. A bridge across the seam = <b>cross-hero</b>.</div>
+  </div>
+
+  <div class="card enemy">
+    <h2>Combat (auto)</h2>
+    <div class="ename" id="ename">— no enemy yet —</div>
+    <div class="tags" id="etags"></div>
+    <div class="hp"><i id="hpfill"></i><span id="hptext"></span></div>
+    <div class="log" id="log"></div>
+    <div class="btns"><button class="act" id="reset">Reset</button><button class="act" id="free">Free play</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var ELSET={fire:1,water:1,earth:1};
+  function combo(a,b){ var k=[a,b].sort().join('+'); return {'fire+water':'steam','earth+fire':'magma'}[k]||null; }
+  var COL={fire:'#e0552e',water:'#2a8fe0',earth:'#3f9b46',steam:'#cfd8df',magma:'#ff7a2a'};
+  var ENEMIES={
+    ironclad:{name:'Ironclad (armoured)',hp:120,tags:[['res','resists Fire'],['weak','weak: Storm'],['mega','MEGA-weak: Steam']],dmg:{fire:2,water:5,steam:25,magma:8,earth:4}},
+    frostkin:{name:'Frostkin (ice)',hp:130,tags:[['res','resists Water / Steam'],['weak','weak: Fire'],['mega','MEGA-weak: Magma']],dmg:{fire:12,water:1,steam:3,magma:30,earth:5}}
+  };
+
+  var board=document.getElementById('boardwrap'),svg=document.getElementById('links'),trayEl=document.getElementById('tray');
+  var cells=[],sel=null,beat=1,fireVolleys=0,enemy=null,mana=0,freePlay=false,firstVolley=false,beatFlags={};
+
+  function mkCell(r,c,cx,cy,lane){
+    var d=document.createElement('div'); d.className='cell empty'+(lane===2?' hidden':''); d.textContent='+';
+    d.style.left=(cx-30)+'px'; d.style.top=(cy-35)+'px';
+    var cell={id:cells.length,cx:cx,cy:cy,lane:lane,el:null,dom:d};
+    d.onclick=function(){ onCell(cell); };
+    d.addEventListener('dragover',function(e){ if(cell.dom.classList.contains('hidden'))return; e.preventDefault(); });
+    d.addEventListener('drop',function(e){ e.preventDefault(); var k=e.dataTransfer.getData('text'); if(k&&pieceUnlocked(k)&&!cell.dom.classList.contains('hidden')) placeKind(cell,k); });
+    cells.push(cell); board.appendChild(d);
+  }
+  // lane 1: rows 0..2 x cols 0..3 ; lane 2: row 3 x cols 0..2 (hidden until beat 6)
+  for(var r=0;r<3;r++)for(var c=0;c<4;c++) mkCell(r,c,46+c*52+(r%2)*26,45+r*46,1);
+  for(var c2=0;c2<3;c2++) mkCell(3,c2,46+c2*52+26,45+3*46,2);
+  cells.forEach(function(a){ a.nb=cells.filter(function(b){ if(b===a)return false; var dx=a.cx-b.cx,dy=a.cy-b.cy; return Math.sqrt(dx*dx+dy*dy)<60; }); });
+  svg.setAttribute('viewBox','0 0 300 236'); svg.setAttribute('width','300'); svg.setAttribute('height','236');
+
+  var PIECES=[{k:'fire',label:'Fire'},{k:'water',label:'Water'},{k:'earth',label:'Earth'},{k:'mod',label:'Modifier'}];
+  function pieceUnlocked(k){ if(freePlay)return true; if(k==='fire')return true; if((k==='water'||k==='mod'))return beat>=5; if(k==='earth')return beat>=7; return false; }
+  function renderTray(){
+    trayEl.innerHTML='';
+    PIECES.forEach(function(p){
+      var b=document.createElement('div'); b.className='piece'+(sel===p.k?' sel':''); var on=pieceUnlocked(p.k); if(!on)b.setAttribute('disabled','');
+      b.setAttribute('draggable', on?'true':'false');
+      b.innerHTML='<span class="dot '+p.k+'"></span>'+p.label;
+      b.onclick=function(){ if(!on)return; sel=(sel===p.k?null:p.k); renderTray(); markPlaceable(); };
+      b.addEventListener('dragstart',function(e){ if(!on){e.preventDefault();return;} e.dataTransfer.setData('text',p.k); sel=p.k; });
+      trayEl.appendChild(b);
+    });
+  }
+  function markPlaceable(){ cells.forEach(function(c){ c.dom.classList.toggle('placeable', !!sel && !c.el && !c.dom.classList.contains('hidden')); }); }
+  function onCell(cell){ if(cell.dom.classList.contains('hidden'))return; if(cell.el){ cell.el=null; paint(cell); after(); return;} if(!sel)return; placeKind(cell,sel); }
+  function placeKind(cell,k){ cell.el=k; paint(cell); after(); }
+  function after(){ recompute(); markPlaceable(); checkBeats(); }
+  function paint(cell){ var d=cell.dom; d.className='cell '+(cell.el||'empty')+(cell.lane===2&&!revealedB?' hidden':''); if(!cell.el)d.textContent='+'; else if(cell.el==='mod')d.innerHTML='<span class="mg">✦</span>'; else d.textContent=cell.el.charAt(0).toUpperCase()+cell.el.slice(1); }
+
+  function compute(){
+    var mods=cells.filter(function(c){return c.el==='mod';});
+    var used={},shots={},links=[],crossHero=false;
+    mods.forEach(function(m){
+      var adj=m.nb.filter(function(n){return n.el&&ELSET[n.el]&&!used[n.id];});
+      for(var i=0;i<adj.length&&!used[m.id];i++)for(var j=i+1;j<adj.length;j++){
+        var c=combo(adj[i].el,adj[j].el);
+        if(c){ used[adj[i].id]=used[adj[j].id]=used[m.id]=1; shots[c]=(shots[c]||0)+1;
+          if(adj[i].lane!==adj[j].lane)crossHero=true;
+          links.push([m,adj[i],COL[c]]); links.push([m,adj[j],COL[c]]); break; }
+      }
+    });
+    cells.forEach(function(c){ if(c.el&&ELSET[c.el]&&!used[c.id]) shots[c.el]=(shots[c.el]||0)+1; });
+    // same-element visual links
+    var seen={};
+    cells.forEach(function(a){ if(!a.el||!ELSET[a.el])return; a.nb.forEach(function(b){ if(b.el===a.el){ var key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); if(!seen[key]){seen[key]=1;links.push([a,b,COL[a.el]]);} } }); });
+    return {shots:shots,links:links,crossHero:crossHero};
+  }
+  var MIX={shots:{},links:[],crossHero:false};
+  function recompute(){
+    MIX=compute(); svg.innerHTML='';
+    MIX.links.forEach(function(l){ var ln=document.createElementNS('http://www.w3.org/2000/svg','line'); ln.setAttribute('x1',l[0].cx);ln.setAttribute('y1',l[0].cy);ln.setAttribute('x2',l[1].cx);ln.setAttribute('y2',l[1].cy);ln.setAttribute('stroke',l[2]);ln.setAttribute('stroke-width','5');ln.setAttribute('stroke-linecap','round');ln.setAttribute('opacity','0.85'); svg.appendChild(ln); });
+    document.getElementById('mix').innerHTML='Mix: '+mixHTML()+(MIX.crossHero?' <b style="color:var(--gold)">· cross-hero!</b>':'');
+  }
+  function mixHTML(){ var p=[]; for(var t in MIX.shots){ p.push('<b style="color:'+(COL[t]||'#ccc')+'">'+MIX.shots[t]+'×'+cap(t)+'</b>'); } return p.length?p.join(' + '):'<b>empty</b>'; }
+  function mixText(){ var p=[]; for(var t in MIX.shots)p.push(MIX.shots[t]+'×'+cap(t)); return p.join(' + ')||'nothing'; }
+  function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+  function totalShots(){ var n=0; for(var t in MIX.shots)n+=MIX.shots[t]; return n; }
+
+  function tick(){ if(totalShots()===0){ setMana(0); return;} mana+=28; if(mana>=100){mana=0;fire();} setMana(mana); }
+  function setMana(v){ document.getElementById('manafill').style.width=v+'%'; document.getElementById('manalabel').textContent='mana '+Math.round(v)+'%'; }
+
+  function fire(){
+    if(!enemy){ log('Weapon fires '+mixText()+' — (no enemy yet)'); afterFire(false); return; }
+    var dmg=0,hasMega=false; for(var t in MIX.shots){ var d=(enemy.dmg[t]!=null?enemy.dmg[t]:3); dmg+=MIX.shots[t]*d; if(d>=20)hasMega=true; }
+    enemy.hp=Math.max(0,enemy.hp-dmg); drawEnemy();
+    log((hasMega?'<span class="big">':(dmg<8?'<span class="x">':'<span>'))+'FIRE → '+mixText()+' = '+dmg+' dmg'+(hasMega?' 💥':'')+'</span>');
+    floatDmg(dmg,hasMega);
+    if(enemy.hp<=0){ log('<span class="big">'+enemy.name.split(' ')[0].toUpperCase()+' DOWN.</span>'); var was=enemy.key; enemy=null; onEnemyDead(was); }
+    afterFire(hasMega);
+  }
+  function afterFire(mega){ if(!firstVolley){firstVolley=true;checkBeats();} checkBeats(mega); }
+  function floatDmg(d,big){ var f=document.createElement('div'); f.className='float'; f.textContent='-'+d; f.style.color=big?'#cfd8df':'#f0a48a'; f.style.left='150px'; f.style.top='40px'; document.querySelector('.enemy .hp').parentNode.appendChild(f); setTimeout(function(){if(f.parentNode)f.parentNode.removeChild(f);},900); }
+  function log(s){ var l=document.getElementById('log'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
+
+  function spawn(key){ var e=ENEMIES[key]; enemy={key:key,name:e.name,hp:e.hp,max:e.hp,dmg:e.dmg};
+    document.getElementById('ename').textContent=e.name;
+    document.getElementById('etags').innerHTML=e.tags.map(function(t){return '<span class="t '+t[0]+'">'+t[1]+'</span>';}).join('');
+    drawEnemy(); }
+  function drawEnemy(){ var has=!!enemy; document.getElementById('hpfill').style.width=(has?100*enemy.hp/enemy.max:0)+'%'; document.getElementById('hptext').textContent=has?enemy.hp+' / '+enemy.max:''; if(!has)document.getElementById('ename').textContent='— defeated —'; }
+
+  var revealedB=false;
+  function revealLaneB(){ revealedB=true; document.getElementById('seam').style.display='block'; var b=document.getElementById('emB'); b.classList.remove('hidden'); b.style.display='flex'; cells.forEach(function(c){ if(c.lane===2)c.dom.classList.remove('hidden'); }); markPlaceable(); }
+
+  function setBeat(n,tag,msg,win){ beat=n; document.getElementById('btag').textContent=tag; document.getElementById('bmsg').innerHTML=msg; document.getElementById('beat').className='beat'+(win?' win':''); renderTray(); }
+  function checkBeats(mega){
+    var fires=cells.filter(function(c){return c.el==='fire';}).length;
+    var firePair=cells.some(function(c){return c.el==='fire'&&c.nb.some(function(n){return n.el==='fire';});});
+    if(beat===1&&fires>=1) setBeat(2,'Beat 2','Your weapon auto-attacks, fills <b>mana</b>, and fires the mix when full. Watch it shoot.');
+    if(beat===2&&firstVolley) setBeat(3,'Beat 3','Place a <b>2nd Fire</b> next to the first — same element links into a bigger volley.');
+    if(beat===3&&firePair){ setBeat(4,'Beat 4','An <b>Ironclad</b> marches in — it <b style="color:#f0a48a">resists Fire</b>. Watch your volleys barely scratch it.'); if(!enemy)spawn('ironclad'); }
+    if(beat===4&&enemy&&enemy.key==='ironclad'){ fireVolleys++; if(fireVolleys>=2&&!beatFlags.b5){ beatFlags.b5=1; setBeat(5,'Beat 5 — the aha','Fire can\'t crack it. Unlock <b style="color:#2a8fe0">Water</b> + <b style="color:#cdbcff">Modifier</b>: drop a Water, then a Modifier touching a Fire <em>and</em> the Water → <b style="color:var(--steam)">Steam</b>. Ironclad is MEGA-weak to Steam.'); } }
+  }
+  function onEnemyDead(key){
+    if(key==='ironclad'&&beat===5){ setBeat(6,'Beat 6 — the team','💥 Steam melted it. Now <b>Hero B joins</b> (lane 2 revealed below). Bridge a tile in lane 1 to a tile in lane 2 across the seam → a <b style="color:var(--gold)">cross-hero</b> combo.'); revealLaneB(); }
+    else if(key==='frostkin'&&beat===7){ setBeat(7,'FTUE complete!','🏆 You re-tuned to the matchup: Steam was useless on Frostkin, so you bridged <b style="color:var(--magma)">Fire+Earth = Magma</b> and melted it. That\'s the whole loop — craft, read the enemy, re-craft.',true); }
+  }
+  // cross-hero detection + beat 7 trigger
+  var origRecompute=recompute;
+  recompute=function(){ origRecompute(); if(beat===6&&MIX.crossHero&&!beatFlags.b7){ beatFlags.b7=1; setBeat(7,'Beat 7 — the wall moves','Cross-hero combo, nice. Now a <b>Frostkin</b> appears — it <b style="color:#f0a48a">resists Steam</b>! Your old build is useless. Re-tune: unlock <b style="color:var(--earth)">Earth</b> and bridge <b style="color:var(--magma)">Fire+Earth = Magma</b> (Frostkin is mega-weak to it).'); spawn('frostkin'); } };
+
+  document.getElementById('reset').onclick=function(){ location.reload(); };
+  document.getElementById('free').onclick=function(){ freePlay=true; revealLaneB(); if(!enemy)spawn('ironclad'); renderTray(); document.getElementById('btag').textContent='Free play'; document.getElementById('bmsg').innerHTML='All pieces + both lanes unlocked. Rearrange freely; swap enemies via Reset. Watch the mix and damage change.'; };
+
+  renderTray(); recompute(); setMana(0);
+  setInterval(tick,650);
+})();
+</script>
+</body>
+</html>

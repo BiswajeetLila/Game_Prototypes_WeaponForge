@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="410" viewBox="0 0 680 410" font-family="Inter, Arial, sans-serif">
+  <text x="40" y="26" font-size="14" font-weight="600" fill="#1f2430">Set A — same 5 pieces (2 Fire-DOT, Fire-Burst, Water-Burst, 1 modifier), 3 arrangements</text>
+  <text x="40" y="48" font-size="12" fill="#5a6072">links: orange = same element · teal = same style · purple = modifier bridge · dim = unused</text>
+
+  <line x1="160" y1="110" x2="175" y2="83" stroke="#d85a30" stroke-width="4"/>
+  <line x1="160" y1="110" x2="191" y2="110" stroke="#d85a30" stroke-width="4"/>
+  <line x1="175" y1="83" x2="191" y2="110" stroke="#d85a30" stroke-width="4"/>
+  <polygon points="176,101 160,92 144,101 144,119 160,128 176,119" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="160" y="115" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">D</text>
+  <polygon points="191,74 175,65 159,74 159,92 175,101 191,92" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="175" y="88" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">D</text>
+  <polygon points="207,101 191,92 175,101 175,119 191,128 207,119" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="191" y="115" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">B</text>
+  <polygon points="142,153 126,144 110,153 110,171 126,180 142,171" fill="#2a8fe0" stroke="#18608f" stroke-width="1.5" opacity="0.35"/>
+  <text x="126" y="167" font-size="14" font-weight="600" fill="#fff" text-anchor="middle" opacity="0.35">B</text>
+  <polygon points="174,153 164,147 154,153 154,165 164,171 174,165" fill="#efeefb" stroke="#7f77dd" stroke-width="2" opacity="0.4"/>
+  <text x="330" y="98" font-size="14" font-weight="600" fill="#1f2430">A1 · Fire clustered</text>
+  <text x="330" y="118" font-size="12" fill="#5a6072">3-Fire synergy → mono-fire spike, huge single-target.</text>
+  <text x="330" y="136" font-size="12" fill="#5a6072">Water + modifier idle. Folds to a fire-resist wave.</text>
+
+  <line x1="160" y1="230" x2="175" y2="203" stroke="#7f77dd" stroke-width="4"/>
+  <line x1="160" y1="230" x2="175" y2="257" stroke="#7f77dd" stroke-width="4"/>
+  <line x1="129" y1="230" x2="145" y2="257" stroke="#d85a30" stroke-width="4"/>
+  <polygon points="176,221 160,212 144,221 144,239 160,248 176,239" fill="#efeefb" stroke="#7f77dd" stroke-width="2.5"/>
+  <text x="160" y="235" font-size="14" font-weight="600" fill="#3a3470" text-anchor="middle">M</text>
+  <polygon points="191,194 175,185 159,194 159,212 175,221 191,212" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="175" y="208" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">B</text>
+  <polygon points="191,248 175,239 159,248 159,266 175,275 191,266" fill="#2a8fe0" stroke="#18608f" stroke-width="1.5"/>
+  <text x="175" y="262" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">B</text>
+  <polygon points="145,221 129,212 113,221 113,239 129,248 145,239" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="129" y="235" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">D</text>
+  <polygon points="161,248 145,239 129,248 129,266 145,275 161,266" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="145" y="262" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">D</text>
+  <text x="330" y="218" font-size="14" font-weight="600" fill="#1f2430">A2 · Modifier bridges Fire + Water</text>
+  <text x="330" y="238" font-size="12" fill="#5a6072">→ Scald DoT, two lanes lit. Balanced, anti-swarm.</text>
+  <text x="330" y="256" font-size="12" fill="#5a6072">Every tile working — no wasted pieces.</text>
+
+  <line x1="175" y1="350" x2="206" y2="350" stroke="#1d9e75" stroke-width="4"/>
+  <line x1="110" y1="350" x2="126" y2="323" stroke="#d85a30" stroke-width="4"/>
+  <polygon points="191,341 175,332 159,341 159,359 175,368 191,359" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="175" y="355" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">B</text>
+  <polygon points="222,341 206,332 190,341 190,359 206,368 222,359" fill="#2a8fe0" stroke="#18608f" stroke-width="1.5"/>
+  <text x="206" y="355" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">B</text>
+  <polygon points="126,341 110,332 94,341 94,359 110,368 126,359" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="110" y="355" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">D</text>
+  <polygon points="142,314 126,305 110,314 110,332 126,341 142,332" fill="#e0552e" stroke="#a83a1c" stroke-width="1.5"/>
+  <text x="126" y="328" font-size="14" font-weight="600" fill="#fff" text-anchor="middle">D</text>
+  <polygon points="190,372 180,366 170,372 170,384 180,390 190,384" fill="#efeefb" stroke="#7f77dd" stroke-width="2" opacity="0.4"/>
+  <text x="330" y="338" font-size="14" font-weight="600" fill="#1f2430">A3 · Same pieces, stacked by STYLE</text>
+  <text x="330" y="358" font-size="12" fill="#5a6072">Burst pair (teal) → double alpha-strike; DoT pair trickles.</text>
+  <text x="330" y="376" font-size="12" fill="#5a6072">Spiky front-load instead of sustained — modifier idle.</text>
+</svg>

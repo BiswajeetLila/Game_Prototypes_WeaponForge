@@ -1,23 +1,29 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-16 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
+**Updated:** 2026-06-20 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
 
-## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, paused 2026-06-17 (← RESUME HERE)
+## 🎨 DESIGN REDESIGN brainstorm — DIRECTION CHOSEN 2026-06-20 (← RESUME HERE)
 
-**What this is:** a from-the-research rethink of the **core gameplay + craft**, well beyond the shipped prototype. The shipped build (3-lane auto-runner + flat 3-socket forge + Q1–Q6) is now the **baseline to evolve from, not the target.** **No new code started** — this is design only.
+**What this is:** a from-the-research rethink of the **core gameplay + craft**, well beyond the shipped prototype. The shipped build (3-lane auto-runner + flat 3-socket forge + Q1–Q6) is the **baseline to evolve from, not the target.** Still **design + paper-prototype only** — no production code touched.
 
-**One-line state:** moat = **the CRAFT is the engagement** (reactions are *visual payoff*); positioning = **GD-derived casual + TFT shop + Transistor/Magicka twist**. **Craft model RESOLVED 2026-06-17** — 3-layer (FORGE → LINEUP → COMBAT); 5 locks: reaction cross-hero, adjacency=Modifier-warp, per-hero frame shapes + shared fungible parts, role-by-emitter-distance, part vocab = Functions(element, Active+Passive) + Modifiers(shape, adjacent-only). **NOW brainstorming: power-gating** (what meters output / times the cascade) — likes E33 mana/AP, wants casual + hypercasual-research blend.
+**One-line state (2026-06-20):** moat = **the CRAFT is the engagement**; positioning = **GD-derived casual + TFT shop + Transistor/Magicka twist**. Engine = **mana → fire-the-mix** (cascade killed). **DIRECTION CHOSEN: a unified hex weapon-board, realized as a STAGED game mode** (5 stages + sandbox) — elements + **spatial clusters** (TFT trait→adjacency) + **merge-on-grid** (3→1, frees cells) + **modifier bridges** (Magicka combos), with a **cell-scarcity tug-of-war** as the depth engine. Prototype validated. **Now → tune scarcity/numbers → formal spec.**
+
+> ⚠️ The 06-17 doc's "5 locks" are **history** (cascade killed; hero-as-frame/emitter-distance → hex weapon-board; gating resolved to mana). Read the 06-20 direction doc + 06-18 FIRST.
 
 **Read these to resume, in order:**
-1. [`docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md`](docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md) — **freshest.** The resolved craft model (5 locks) + the **in-progress power-gating brainstorm** (RESUME HERE: pick currency → cadence).
-2. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + decision ledger (now shows the 2026-06-17 ✅ locks).
-3. [`docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md`](docs/superpowers/specs/2026-06-16-craft-mechanic-options-ranked.md) — the ~30 ranked metaphors + the original 7 sub-Qs (mostly resolved now; board/lineup/legibility still open).
+1. [`docs/superpowers/specs/2026-06-20-staged-game-mode-direction.md`](docs/superpowers/specs/2026-06-20-staged-game-mode-direction.md) — **THE DIRECTION.** Unified grid + the 5-stage reveal + merge/cluster/bridge mechanics + game-design rationale + open tuning items.
+2. [`_paper-prototypes/ftue-beat5.html`](_paper-prototypes/ftue-beat5.html) — **playable**: 6 sections; the **Staged game mode** at the bottom is the live realization (double-click; offline).
+3. [`docs/superpowers/specs/2026-06-18-core-craft-mechanic-brainstorm.html`](docs/superpowers/specs/2026-06-18-core-craft-mechanic-brainstorm.html) — the 57-item consolidated model it builds on.
+4. [`docs/superpowers/specs/2026-06-20-slot-models-and-gamedesign.md`](docs/superpowers/specs/2026-06-20-slot-models-and-gamedesign.md) — the A/B/C analysis (resolved → C / staged).
+5. [`docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md`](docs/superpowers/specs/2026-06-17-craft-model-resolved-and-gating.md) — HISTORY (superseded 06-18).
 
-**Resume sequence:** finish power-gating (currency → cadence) → board specifics + LINEUP detail + legibility → finalise part vocab → **Items/Synergies/Catalysts** brainstorm → **Wittle-meta** lift → balance → full spec → `writing-plans` → **moat-first** TDD build.
+**Resume sequence:** tune board scarcity + cluster-vs-combo values (play stage 5) → pick merge rule (identical vs same-element) → finalise element/style lists + Magicka pair table → **formal craft spec** → `writing-plans` → moat-first TDD build. *(Deferred: the 6 connector-logics drip; the cross-lane / LINEUP layer.)*
 
-**Visual brainstorm artifacts** (this session's screens): `.superpowers/brainstorm/*/content/*.html` (reaction-locus, three-layer-reshape, hero-frame-differentiation, three-role-mapping, part-grain, function-role-gallery, function-modifier-combos, gate-currency).
+**✅ Committed 2026-06-20** on `post-slice-phase5`: the design pile (06-18 brainstorm, 06-17 GD mapping, 06-20 slot-models + direction docs, the prototype, launch.json) + a separate commit for the GD King correction. *Still uncommitted & unrelated:* the broader reference-games research corpus (afk-journey / Magicka / TFT / Transistor + MANIFEST) and pre-existing churn (`docs/research/anime_autobattlers` deletions, `5_` project.godot) — user to decide.
 
-**Suggested skills on resume:** `brainstorming` (continue), `game-design` (mechanic eval), later `writing-plans`.
+**Visual brainstorm artifacts** (06-16/17 screens): `.superpowers/brainstorm/*/content/*.html` (reaction-locus, three-layer-reshape, hero-frame-differentiation, three-role-mapping, part-grain, function-role-gallery, function-modifier-combos, gate-currency).
+
+**Suggested skills on resume:** `game-design` (mechanic eval — used 06-20), later `writing-plans`.
 
 **Research base used (in `docs/research/reference-games/`):** TFT ×2, Transistor ×4, Magicka, Gear Defenders, Wittle Defender. Transistor's "one part / 3 roles + MEM budget + forced-recombination pressures + lore-unlock-by-using-all-3-roles" and GD's "casual spatial craft" are the load-bearing borrows.
 

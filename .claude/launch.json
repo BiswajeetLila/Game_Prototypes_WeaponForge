@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ppftue",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8771", "--directory", "6_WeaponForge_TFTransistor/_paper-prototypes"],
+      "port": 8771
+    }
+  ]
+}

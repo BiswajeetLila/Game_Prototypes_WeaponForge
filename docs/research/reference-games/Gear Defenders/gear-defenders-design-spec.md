@@ -216,7 +216,8 @@ From the tier-list video and warband captures, **13 named troops** confirmed acr
 Notable observations:
 - Both Spearman variants exist with identical names — creator calls this out: *"I don't know if the developers realize that they named two of the characters in the game the same thing."* [Source: GameHydro2]
 - The v1.4.9 update added new top-tier units: **"First Mythic Cavalry: Elephant Knight. Trample everything!"** and **"Legendary Mage: Thunder Caller. Thunder strikes!"** [Source: AppStore] Mythic appears to be a new rarity above Legendary, introduced post-Tier-List video.
-- The Player Hero (blonde chibi at the bridge gate, sometimes shown reading a book) is a static cosmetic character, not a controlled unit. [Source: Pryszard, PryGames, PGames] Gains visual variation (sword, fire aura on Counter Active). [Source: Pryszard, PGames]
+- **⚠ CORRECTED 2026-06-17 — THIS LINE IS WRONG. See [`CORRECTION-2026-06-17-king-is-an-active-combatant.md`](CORRECTION-2026-06-17-king-is-an-active-combatant.md).** It describes only the passive *mascot*. A SEPARATE gacha-summoned **King** stands on the wall and auto-fires a skill ("Gale Arrowstorm", CD 60s), grants army-wide passive bonuses, and has its own gacha/level/equipment system (v1.3.5+).
+- ~~The Player Hero (blonde chibi at the bridge gate, sometimes shown reading a book) is a static cosmetic character, not a controlled unit.~~ [Source: Pryszard, PryGames, PGames] Gains visual variation (sword, fire aura on Counter Active). [Source: Pryszard, PGames] *(← "cosmetic" claim conflated the mascot with the King; corrected above.)*
 
 ### 3.2 Gear (the merge-able cards — core economy)
 

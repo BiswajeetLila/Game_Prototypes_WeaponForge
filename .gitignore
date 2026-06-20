@@ -24,3 +24,8 @@ dist-build/
 # the .godot/ cache dir and Mono build output are ignored.
 .godot/
 .mono/
+
+# Local tool configs + scratch (not project content)
+.tmp_gd_imgs/
+.codex/
+.claude/

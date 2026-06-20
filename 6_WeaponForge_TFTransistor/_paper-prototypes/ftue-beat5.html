@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WeaponForge — FTUE flow (beats 1–7) throwaway</title>
+<title>WeaponForge — FTUE flow (build → battle) throwaway</title>
 <style>
   :root{--bg:#11151c;--panel:#1a2029;--panel2:#222b36;--ink:#e6ebf2;--mut:#8a97a8;
     --fire:#e0552e;--water:#2a8fe0;--earth:#3f9b46;--steam:#cfd8df;--magma:#ff7a2a;--mod:#8a6bff;--gold:#e0a020;--ok:#46c46a;--line:#2c3744;}
@@ -19,11 +19,13 @@
   .grid{display:grid;grid-template-columns:1fr 300px;gap:14px;}
   @media(max-width:800px){.grid{grid-template-columns:1fr;}}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;}
-  .card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:700;}
+  .card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 8px;font-weight:700;display:flex;justify-content:space-between;}
+  .phase{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;}
+  .phase.build{background:#22304a;color:#9cc2ff;} .phase.battle{background:#3a2420;color:#f0a48a;}
   .boardwrap{position:relative;width:300px;height:236px;margin:4px auto 6px;}
   .boardwrap svg{position:absolute;inset:0;pointer-events:none;z-index:1;}
-  .seam{position:absolute;left:18px;right:18px;top:160px;border-top:1px dashed #3a4756;display:none;}
-  .seam span{position:absolute;left:0;top:-9px;font-size:9.5px;color:var(--mut);background:var(--panel);padding:0 4px;}
+  .seam{position:absolute;left:14px;right:14px;top:160px;border-top:2px dashed #4a6b3a;display:none;}
+  .seam span{position:absolute;left:0;top:-9px;font-size:9.5px;color:#7fae6a;background:var(--panel);padding:0 4px;}
   .hexem{position:absolute;left:6px;width:32px;height:32px;border-radius:50%;background:#3a4554;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);font-weight:700;text-align:center;line-height:1.05;z-index:2;}
   .cell{position:absolute;width:60px;height:69px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#28323f;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .12s;font-size:11.5px;font-weight:700;color:#0c0f14;text-align:center;line-height:1.05;z-index:2;}
   .cell:hover{filter:brightness(1.18);}
@@ -32,6 +34,8 @@
   .cell.mod{background:#2a2440;color:#cdbcff;}.cell.mod .mg{font-size:18px;}
   .cell.placeable{outline:2px dashed var(--gold);outline-offset:-4px;}
   .cell.hidden{display:none;}
+  .cell.lane2{filter:none;}
+  .lanetag{position:absolute;left:42px;font-size:9px;color:var(--mut);z-index:2;}
   .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
   .piece{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:grab;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px;}
   .piece.sel{outline:2px solid var(--gold);}
@@ -41,6 +45,11 @@
   .mana{height:14px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px;}
   .mana>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .14s linear;}
   .manalabel{font-size:11px;color:var(--mut);text-align:center;}
+  .mix{font-size:12.5px;margin-top:8px;min-height:20px;}
+  #battle{width:100%;margin-top:10px;background:#2b3a24;border:1px solid #4a6b3a;color:#cdebb6;font-size:14px;font-weight:700;border-radius:9px;padding:10px;cursor:pointer;letter-spacing:.04em;}
+  #battle:hover{border-color:var(--ok);}
+  #battle[disabled]{opacity:.4;pointer-events:none;background:#222b36;border-color:var(--line);color:var(--mut);}
+  #battle.fighting{background:#3a2420;border-color:#7a4a3a;color:#f0a48a;}
   .enemy .ename{font-weight:600;font-size:15px;}
   .tags{margin:7px 0;display:flex;gap:6px;flex-wrap:wrap;}
   .t{font-size:10.5px;padding:3px 7px;border-radius:6px;font-weight:700;}
@@ -48,42 +57,42 @@
   .hp{height:18px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;margin-top:4px;}
   .hp>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#c43a3a,#e06a6a);transition:width .25s;}
   .hp>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
-  .mix{font-size:12.5px;margin-top:10px;min-height:20px;}
-  .log{margin-top:8px;font-size:11.5px;color:var(--mut);height:104px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;line-height:1.5;}
-  .log .big{color:var(--steam);font-weight:700;}.log .x{color:#f0a48a;}
-  .btns{margin-top:12px;display:flex;gap:8px;}
-  button.act{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;}
+  .log{margin-top:8px;font-size:11.5px;color:var(--mut);height:120px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;line-height:1.5;}
+  .log .big{color:var(--steam);font-weight:700;}.log .x{color:#f0a48a;}.log .ok{color:#8fe0a0;}
+  .btns{margin-top:10px;display:flex;gap:8px;}
+  button.act{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12px;}
   button.act:hover{border-color:var(--gold);}
   .float{position:absolute;font-weight:800;font-size:15px;pointer-events:none;animation:fl .9s ease-out forwards;}
   @keyframes fl{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-28px);}}
-  .note{color:var(--mut);font-size:11px;margin-top:10px;line-height:1.5;}
+  .note{color:var(--mut);font-size:11px;margin-top:9px;line-height:1.5;}
 </style>
 </head>
 <body>
-<h1>WeaponForge — FTUE flow (beats 1–7) <span style="color:var(--mut);font-weight:400;font-size:13px;">· throwaway prototype</span></h1>
-<p class="sub">Drag a piece onto a hex (or click piece then hex). Mana fills on its own → fires your current mix. Break each wall by crafting the right combo.</p>
+<h1>WeaponForge — FTUE flow <span style="color:var(--mut);font-weight:400;font-size:13px;">· build → battle · throwaway</span></h1>
+<p class="sub">BUILD: drag/click tiles onto hexes (mana frozen). Hit <b style="color:#cdebb6">⚔ Battle</b> to fight — only then does mana fill and fire your mix. Break each wall by crafting the right combo.</p>
 
-<div class="beat" id="beat"><span class="tag" id="btag">Beat 1</span><div class="msg" id="bmsg">Drag <b>Fire</b> onto any hex (or click Fire, then a hex).</div></div>
+<div class="beat" id="beat"><span class="tag" id="btag">Beat 1</span><div class="msg" id="bmsg">Drop a <b>Fire</b> on a hex, then hit <b>⚔ Battle</b>.</div></div>
 
 <div class="grid">
   <div class="card">
-    <h2>Forge — weapon boards</h2>
+    <h2>Forge — weapon boards <span class="phase build" id="phaselbl">BUILD</span></h2>
     <div class="boardwrap" id="boardwrap">
       <svg id="links"></svg>
-      <div class="seam" id="seam"><span>lane seam — cross-hero bridges here</span></div>
+      <div class="seam" id="seam"><span>lane seam — cross-hero links here</span></div>
       <div class="hexem" id="emA" style="top:78px;">Hero A</div>
       <div class="hexem hidden" id="emB" style="top:170px;display:none;">Hero B</div>
     </div>
     <div class="tray" id="tray"></div>
     <div class="mana"><i id="manafill"></i></div>
-    <div class="manalabel" id="manalabel">mana 0%</div>
+    <div class="manalabel" id="manalabel">build phase — mana frozen</div>
     <div class="mix" id="mix">Mix: <b>empty</b></div>
-    <div class="note">Same element touching = linked (free). A <b style="color:#cdbcff">modifier</b> bridges two <em>unlike</em> elements into a combo — <b style="color:var(--steam)">Fire+Water=Steam</b>, <b style="color:var(--magma)">Fire+Earth=Magma</b>. A bridge across the seam = <b>cross-hero</b>.</div>
+    <button id="battle">⚔ Battle</button>
+    <div class="note">Same element touching = linked (free). A <b style="color:#cdbcff">modifier</b> bridges two <em>unlike</em> elements — <b style="color:var(--steam)">Fire+Water=Steam</b>, <b style="color:var(--magma)">Fire+Earth=Magma</b>. A link across the seam = <b>cross-hero</b>.</div>
   </div>
 
   <div class="card enemy">
-    <h2>Combat (auto)</h2>
-    <div class="ename" id="ename">— no enemy yet —</div>
+    <h2>Combat</h2>
+    <div class="ename" id="ename">—</div>
     <div class="tags" id="etags"></div>
     <div class="hp"><i id="hpfill"></i><span id="hptext"></span></div>
     <div class="log" id="log"></div>
@@ -94,126 +103,139 @@
 <script>
 (function(){
   var ELSET={fire:1,water:1,earth:1};
-  function combo(a,b){ var k=[a,b].sort().join('+'); return {'fire+water':'steam','earth+fire':'magma'}[k]||null; }
+  function combo(a,b){ return {'fire+water':'steam','earth+fire':'magma'}[[a,b].sort().join('+')]||null; }
   var COL={fire:'#e0552e',water:'#2a8fe0',earth:'#3f9b46',steam:'#cfd8df',magma:'#ff7a2a'};
   var ENEMIES={
-    ironclad:{name:'Ironclad (armoured)',hp:120,tags:[['res','resists Fire'],['weak','weak: Storm'],['mega','MEGA-weak: Steam']],dmg:{fire:2,water:5,steam:25,magma:8,earth:4}},
-    frostkin:{name:'Frostkin (ice)',hp:130,tags:[['res','resists Water / Steam'],['weak','weak: Fire'],['mega','MEGA-weak: Magma']],dmg:{fire:12,water:1,steam:3,magma:30,earth:5}}
+    goblin:{name:'Goblin (fragile)',hp:14,tags:[['weak','weak to anything']],dmg:{fire:8,water:8,steam:10,magma:10,earth:8}},
+    ironclad:{name:'Ironclad (armoured)',hp:75,tags:[['res','resists Fire'],['mega','MEGA-weak: Steam']],dmg:{fire:2,water:5,steam:25,magma:8,earth:4}},
+    frostkin:{name:'Frostkin (ice)',hp:90,tags:[['res','resists Water/Steam'],['weak','weak: Fire'],['mega','MEGA-weak: Magma']],dmg:{fire:12,water:1,steam:3,magma:30,earth:5}}
   };
-
-  var board=document.getElementById('boardwrap'),svg=document.getElementById('links'),trayEl=document.getElementById('tray');
-  var cells=[],sel=null,beat=1,fireVolleys=0,enemy=null,mana=0,freePlay=false,firstVolley=false,beatFlags={};
+  var board=document.getElementById('boardwrap'),svg=document.getElementById('links'),trayEl=document.getElementById('tray'),battleBtn=document.getElementById('battle');
+  var cells=[],sel=null,stage=1,enemy=null,mana=0,phase='build',volleys=0,revealedB=false,freePlay=false;
+  var unlockWM=false,unlockEarth=false,stalled={};
 
   function mkCell(r,c,cx,cy,lane){
-    var d=document.createElement('div'); d.className='cell empty'+(lane===2?' hidden':''); d.textContent='+';
+    var d=document.createElement('div'); d.className='cell empty'+(lane===2?' hidden lane2':''); d.textContent='+';
     d.style.left=(cx-30)+'px'; d.style.top=(cy-35)+'px';
     var cell={id:cells.length,cx:cx,cy:cy,lane:lane,el:null,dom:d};
     d.onclick=function(){ onCell(cell); };
-    d.addEventListener('dragover',function(e){ if(cell.dom.classList.contains('hidden'))return; e.preventDefault(); });
-    d.addEventListener('drop',function(e){ e.preventDefault(); var k=e.dataTransfer.getData('text'); if(k&&pieceUnlocked(k)&&!cell.dom.classList.contains('hidden')) placeKind(cell,k); });
+    d.addEventListener('dragover',function(e){ if(phase!=='build'||cell.dom.classList.contains('hidden'))return; e.preventDefault(); });
+    d.addEventListener('drop',function(e){ e.preventDefault(); if(phase!=='build')return; var k=e.dataTransfer.getData('text'); if(k&&pieceUnlocked(k)&&!cell.dom.classList.contains('hidden')) placeKind(cell,k); });
     cells.push(cell); board.appendChild(d);
   }
-  // lane 1: rows 0..2 x cols 0..3 ; lane 2: row 3 x cols 0..2 (hidden until beat 6)
   for(var r=0;r<3;r++)for(var c=0;c<4;c++) mkCell(r,c,46+c*52+(r%2)*26,45+r*46,1);
   for(var c2=0;c2<3;c2++) mkCell(3,c2,46+c2*52+26,45+3*46,2);
   cells.forEach(function(a){ a.nb=cells.filter(function(b){ if(b===a)return false; var dx=a.cx-b.cx,dy=a.cy-b.cy; return Math.sqrt(dx*dx+dy*dy)<60; }); });
   svg.setAttribute('viewBox','0 0 300 236'); svg.setAttribute('width','300'); svg.setAttribute('height','236');
 
   var PIECES=[{k:'fire',label:'Fire'},{k:'water',label:'Water'},{k:'earth',label:'Earth'},{k:'mod',label:'Modifier'}];
-  function pieceUnlocked(k){ if(freePlay)return true; if(k==='fire')return true; if((k==='water'||k==='mod'))return beat>=5; if(k==='earth')return beat>=7; return false; }
+  function pieceUnlocked(k){ if(freePlay)return true; if(k==='fire')return true; if(k==='water'||k==='mod')return unlockWM; if(k==='earth')return unlockEarth; return false; }
   function renderTray(){
     trayEl.innerHTML='';
     PIECES.forEach(function(p){
-      var b=document.createElement('div'); b.className='piece'+(sel===p.k?' sel':''); var on=pieceUnlocked(p.k); if(!on)b.setAttribute('disabled','');
-      b.setAttribute('draggable', on?'true':'false');
+      var on=pieceUnlocked(p.k); var b=document.createElement('div'); b.className='piece'+(sel===p.k?' sel':''); if(!on||phase!=='build')b.setAttribute('disabled','');
+      b.setAttribute('draggable',(on&&phase==='build')?'true':'false');
       b.innerHTML='<span class="dot '+p.k+'"></span>'+p.label;
-      b.onclick=function(){ if(!on)return; sel=(sel===p.k?null:p.k); renderTray(); markPlaceable(); };
-      b.addEventListener('dragstart',function(e){ if(!on){e.preventDefault();return;} e.dataTransfer.setData('text',p.k); sel=p.k; });
+      b.onclick=function(){ if(!on||phase!=='build')return; sel=(sel===p.k?null:p.k); renderTray(); markPlaceable(); };
+      b.addEventListener('dragstart',function(e){ if(!on||phase!=='build'){e.preventDefault();return;} e.dataTransfer.setData('text',p.k); sel=p.k; });
       trayEl.appendChild(b);
     });
   }
-  function markPlaceable(){ cells.forEach(function(c){ c.dom.classList.toggle('placeable', !!sel && !c.el && !c.dom.classList.contains('hidden')); }); }
-  function onCell(cell){ if(cell.dom.classList.contains('hidden'))return; if(cell.el){ cell.el=null; paint(cell); after(); return;} if(!sel)return; placeKind(cell,sel); }
+  function markPlaceable(){ cells.forEach(function(c){ c.dom.classList.toggle('placeable', phase==='build'&&!!sel&&!c.el&&!c.dom.classList.contains('hidden')); }); }
+  function onCell(cell){ if(phase!=='build'||cell.dom.classList.contains('hidden'))return; if(cell.el){ cell.el=null; paint(cell); after(); return;} if(!sel)return; placeKind(cell,sel); }
   function placeKind(cell,k){ cell.el=k; paint(cell); after(); }
-  function after(){ recompute(); markPlaceable(); checkBeats(); }
-  function paint(cell){ var d=cell.dom; d.className='cell '+(cell.el||'empty')+(cell.lane===2&&!revealedB?' hidden':''); if(!cell.el)d.textContent='+'; else if(cell.el==='mod')d.innerHTML='<span class="mg">✦</span>'; else d.textContent=cell.el.charAt(0).toUpperCase()+cell.el.slice(1); }
+  function after(){ recompute(); markPlaceable(); updateBattleBtn(); }
+  function paint(cell){ var d=cell.dom; d.className='cell '+(cell.el||'empty')+(cell.lane===2?' lane2':'')+(cell.lane===2&&!revealedB?' hidden':''); if(!cell.el)d.textContent='+'; else if(cell.el==='mod')d.innerHTML='<span class="mg">✦</span>'; else d.textContent=cell.el.charAt(0).toUpperCase()+cell.el.slice(1); }
 
   function compute(){
     var mods=cells.filter(function(c){return c.el==='mod';});
-    var used={},shots={},links=[],crossHero=false;
+    var used={},shots={},links=[],crossLink=false;
     mods.forEach(function(m){
       var adj=m.nb.filter(function(n){return n.el&&ELSET[n.el]&&!used[n.id];});
       for(var i=0;i<adj.length&&!used[m.id];i++)for(var j=i+1;j<adj.length;j++){
-        var c=combo(adj[i].el,adj[j].el);
-        if(c){ used[adj[i].id]=used[adj[j].id]=used[m.id]=1; shots[c]=(shots[c]||0)+1;
-          if(adj[i].lane!==adj[j].lane)crossHero=true;
-          links.push([m,adj[i],COL[c]]); links.push([m,adj[j],COL[c]]); break; }
+        var cb=combo(adj[i].el,adj[j].el);
+        if(cb){ used[adj[i].id]=used[adj[j].id]=used[m.id]=1; shots[cb]=(shots[cb]||0)+1;
+          if(adj[i].lane!==adj[j].lane||m.lane!==adj[i].lane||m.lane!==adj[j].lane)crossLink=true;
+          links.push([m,adj[i],COL[cb]]); links.push([m,adj[j],COL[cb]]); break; }
       }
     });
     cells.forEach(function(c){ if(c.el&&ELSET[c.el]&&!used[c.id]) shots[c.el]=(shots[c.el]||0)+1; });
-    // same-element visual links
     var seen={};
-    cells.forEach(function(a){ if(!a.el||!ELSET[a.el])return; a.nb.forEach(function(b){ if(b.el===a.el){ var key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); if(!seen[key]){seen[key]=1;links.push([a,b,COL[a.el]]);} } }); });
-    return {shots:shots,links:links,crossHero:crossHero};
+    cells.forEach(function(a){ if(!a.el||!ELSET[a.el])return; a.nb.forEach(function(b){ if(b.el===a.el){ var key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); if(!seen[key]){seen[key]=1;links.push([a,b,COL[a.el]]); if(a.lane!==b.lane)crossLink=true;} } }); });
+    return {shots:shots,links:links,crossLink:crossLink};
   }
-  var MIX={shots:{},links:[],crossHero:false};
+  var MIX={shots:{},links:[],crossLink:false};
   function recompute(){
     MIX=compute(); svg.innerHTML='';
     MIX.links.forEach(function(l){ var ln=document.createElementNS('http://www.w3.org/2000/svg','line'); ln.setAttribute('x1',l[0].cx);ln.setAttribute('y1',l[0].cy);ln.setAttribute('x2',l[1].cx);ln.setAttribute('y2',l[1].cy);ln.setAttribute('stroke',l[2]);ln.setAttribute('stroke-width','5');ln.setAttribute('stroke-linecap','round');ln.setAttribute('opacity','0.85'); svg.appendChild(ln); });
-    document.getElementById('mix').innerHTML='Mix: '+mixHTML()+(MIX.crossHero?' <b style="color:var(--gold)">· cross-hero!</b>':'');
+    document.getElementById('mix').innerHTML='Mix: '+mixHTML()+(MIX.crossLink?' <b style="color:var(--gold)">· cross-hero!</b>':'');
   }
-  function mixHTML(){ var p=[]; for(var t in MIX.shots){ p.push('<b style="color:'+(COL[t]||'#ccc')+'">'+MIX.shots[t]+'×'+cap(t)+'</b>'); } return p.length?p.join(' + '):'<b>empty</b>'; }
+  function mixHTML(){ var p=[]; for(var t in MIX.shots)p.push('<b style="color:'+(COL[t]||'#ccc')+'">'+MIX.shots[t]+'×'+cap(t)+'</b>'); return p.length?p.join(' + '):'<b>empty</b>'; }
   function mixText(){ var p=[]; for(var t in MIX.shots)p.push(MIX.shots[t]+'×'+cap(t)); return p.join(' + ')||'nothing'; }
   function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
   function totalShots(){ var n=0; for(var t in MIX.shots)n+=MIX.shots[t]; return n; }
 
-  function tick(){ if(totalShots()===0){ setMana(0); return;} mana+=28; if(mana>=100){mana=0;fire();} setMana(mana); }
-  function setMana(v){ document.getElementById('manafill').style.width=v+'%'; document.getElementById('manalabel').textContent='mana '+Math.round(v)+'%'; }
+  function updateBattleBtn(){
+    if(phase==='battle'){ battleBtn.textContent='…in combat…'; battleBtn.classList.add('fighting'); battleBtn.setAttribute('disabled',''); return; }
+    battleBtn.classList.remove('fighting');
+    var ok=enemy && totalShots()>0;
+    if(stage===4 && !MIX.crossLink){ ok=false; battleBtn.textContent='⚔ Battle — make a cross-seam link first'; }
+    else battleBtn.textContent='⚔ Battle';
+    if(ok)battleBtn.removeAttribute('disabled'); else battleBtn.setAttribute('disabled','');
+  }
+  battleBtn.onclick=function(){ if(phase!=='build'||battleBtn.hasAttribute('disabled'))return; startBattle(); };
+  function startBattle(){ phase='battle'; volleys=0; mana=0; setMana(0); document.getElementById('phaselbl').className='phase battle'; document.getElementById('phaselbl').textContent='BATTLE'; document.getElementById('manalabel').textContent='battle — mana filling'; log('<span class="ok">⚔ Battle!</span>'); renderTray(); markPlaceable(); updateBattleBtn(); }
+  function toBuild(){ phase='build'; mana=0; setMana(0); document.getElementById('phaselbl').className='phase build'; document.getElementById('phaselbl').textContent='BUILD'; document.getElementById('manalabel').textContent='build phase — mana frozen'; renderTray(); markPlaceable(); updateBattleBtn(); }
+
+  function tick(){ if(phase!=='battle'||!enemy||totalShots()===0){ return; } mana+=34; if(mana>=100){mana=0;fire();} setMana(Math.min(100,mana)); }
+  function setMana(v){ document.getElementById('manafill').style.width=v+'%'; }
 
   function fire(){
-    if(!enemy){ log('Weapon fires '+mixText()+' — (no enemy yet)'); afterFire(false); return; }
-    var dmg=0,hasMega=false; for(var t in MIX.shots){ var d=(enemy.dmg[t]!=null?enemy.dmg[t]:3); dmg+=MIX.shots[t]*d; if(d>=20)hasMega=true; }
+    volleys++;
+    var dmg=0,mega=false; for(var t in MIX.shots){ var d=(enemy.dmg[t]!=null?enemy.dmg[t]:3); dmg+=MIX.shots[t]*d; if(d>=20)mega=true; }
     enemy.hp=Math.max(0,enemy.hp-dmg); drawEnemy();
-    log((hasMega?'<span class="big">':(dmg<8?'<span class="x">':'<span>'))+'FIRE → '+mixText()+' = '+dmg+' dmg'+(hasMega?' 💥':'')+'</span>');
-    floatDmg(dmg,hasMega);
-    if(enemy.hp<=0){ log('<span class="big">'+enemy.name.split(' ')[0].toUpperCase()+' DOWN.</span>'); var was=enemy.key; enemy=null; onEnemyDead(was); }
-    afterFire(hasMega);
+    log((mega?'<span class="big">':(dmg<10?'<span class="x">':'<span>'))+'volley '+volleys+': '+mixText()+' = '+dmg+' dmg'+(mega?' 💥':'')+'</span>');
+    floatDmg(dmg,mega);
+    if(enemy.hp<=0){ var k=enemy.key; log('<span class="ok">'+enemy.name.split(' ')[0]+' down!</span>'); enemy=null; onKill(k); return; }
+    if(volleys>=3){ log('<span class="x">…that mix isn\'t cracking it. Back to the forge.</span>'); onStall(); }
   }
-  function afterFire(mega){ if(!firstVolley){firstVolley=true;checkBeats();} checkBeats(mega); }
   function floatDmg(d,big){ var f=document.createElement('div'); f.className='float'; f.textContent='-'+d; f.style.color=big?'#cfd8df':'#f0a48a'; f.style.left='150px'; f.style.top='40px'; document.querySelector('.enemy .hp').parentNode.appendChild(f); setTimeout(function(){if(f.parentNode)f.parentNode.removeChild(f);},900); }
   function log(s){ var l=document.getElementById('log'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
 
-  function spawn(key){ var e=ENEMIES[key]; enemy={key:key,name:e.name,hp:e.hp,max:e.hp,dmg:e.dmg};
-    document.getElementById('ename').textContent=e.name;
-    document.getElementById('etags').innerHTML=e.tags.map(function(t){return '<span class="t '+t[0]+'">'+t[1]+'</span>';}).join('');
-    drawEnemy(); }
-  function drawEnemy(){ var has=!!enemy; document.getElementById('hpfill').style.width=(has?100*enemy.hp/enemy.max:0)+'%'; document.getElementById('hptext').textContent=has?enemy.hp+' / '+enemy.max:''; if(!has)document.getElementById('ename').textContent='— defeated —'; }
+  function spawn(key){ var e=ENEMIES[key]; enemy={key:key,name:e.name,hp:e.hp,max:e.hp,dmg:e.dmg}; document.getElementById('ename').textContent=e.name; document.getElementById('etags').innerHTML=e.tags.map(function(t){return '<span class="t '+t[0]+'">'+t[1]+'</span>';}).join(''); drawEnemy(); }
+  function drawEnemy(){ var has=!!enemy; document.getElementById('hpfill').style.width=(has?100*enemy.hp/enemy.max:0)+'%'; document.getElementById('hptext').textContent=has?enemy.hp+' / '+enemy.max:''; if(!has){document.getElementById('ename').textContent='— defeated —';document.getElementById('etags').innerHTML='';} }
+  function revealLaneB(){ revealedB=true; document.getElementById('seam').style.display='block'; var b=document.getElementById('emB'); b.classList.remove('hidden'); b.style.display='flex'; cells.forEach(function(c){ if(c.lane===2){c.dom.classList.remove('hidden'); paint(c);} }); }
 
-  var revealedB=false;
-  function revealLaneB(){ revealedB=true; document.getElementById('seam').style.display='block'; var b=document.getElementById('emB'); b.classList.remove('hidden'); b.style.display='flex'; cells.forEach(function(c){ if(c.lane===2)c.dom.classList.remove('hidden'); }); markPlaceable(); }
+  function setBeat(tag,msg,win){ document.getElementById('btag').textContent=tag; document.getElementById('bmsg').innerHTML=msg; document.getElementById('beat').className='beat'+(win?' win':''); }
 
-  function setBeat(n,tag,msg,win){ beat=n; document.getElementById('btag').textContent=tag; document.getElementById('bmsg').innerHTML=msg; document.getElementById('beat').className='beat'+(win?' win':''); renderTray(); }
-  function checkBeats(mega){
-    var fires=cells.filter(function(c){return c.el==='fire';}).length;
-    var firePair=cells.some(function(c){return c.el==='fire'&&c.nb.some(function(n){return n.el==='fire';});});
-    if(beat===1&&fires>=1) setBeat(2,'Beat 2','Your weapon auto-attacks, fills <b>mana</b>, and fires the mix when full. Watch it shoot.');
-    if(beat===2&&firstVolley) setBeat(3,'Beat 3','Place a <b>2nd Fire</b> next to the first — same element links into a bigger volley.');
-    if(beat===3&&firePair){ setBeat(4,'Beat 4','An <b>Ironclad</b> marches in — it <b style="color:#f0a48a">resists Fire</b>. Watch your volleys barely scratch it.'); if(!enemy)spawn('ironclad'); }
-    if(beat===4&&enemy&&enemy.key==='ironclad'){ fireVolleys++; if(fireVolleys>=2&&!beatFlags.b5){ beatFlags.b5=1; setBeat(5,'Beat 5 — the aha','Fire can\'t crack it. Unlock <b style="color:#2a8fe0">Water</b> + <b style="color:#cdbcff">Modifier</b>: drop a Water, then a Modifier touching a Fire <em>and</em> the Water → <b style="color:var(--steam)">Steam</b>. Ironclad is MEGA-weak to Steam.'); } }
+  function setStage(n){ stage=n; toBuild();
+    if(n===1){ spawn('goblin'); setBeat('Beat 1','Drop a <b>Fire</b> on a hex, then hit <b>⚔ Battle</b>.'); }
+    else if(n===2){ spawn('goblin'); setBeat('Beat 2','Add a <b>2nd Fire</b> next to the first (they link), then <b>⚔ Battle</b>.'); }
+    else if(n===3){ spawn('ironclad'); setBeat('Beat 3 — a wall','An <b>Ironclad</b> — it <b style="color:#f0a48a">resists Fire</b>. <b>⚔ Battle</b> and watch your fire stall.'); }
+    else if(n===4){ revealLaneB(); spawn('goblin'); setBeat('Beat 5 — the team','💥 Steam cracked it! <b>Hero B</b> joined (lane 2, below). Make a synergy link <b>across the seam</b> (same element touching, or a modifier bridge) → <b>cross-hero</b>. Battle unlocks once you do.'); }
+    else if(n===5){ spawn('frostkin'); setBeat('Beat 6 — the wall moves','A <b>Frostkin</b> — it <b style="color:#f0a48a">resists Steam</b>! Your old build is useless here. <b>⚔ Battle</b> to see it stall.'); }
+    updateBattleBtn();
   }
-  function onEnemyDead(key){
-    if(key==='ironclad'&&beat===5){ setBeat(6,'Beat 6 — the team','💥 Steam melted it. Now <b>Hero B joins</b> (lane 2 revealed below). Bridge a tile in lane 1 to a tile in lane 2 across the seam → a <b style="color:var(--gold)">cross-hero</b> combo.'); revealLaneB(); }
-    else if(key==='frostkin'&&beat===7){ setBeat(7,'FTUE complete!','🏆 You re-tuned to the matchup: Steam was useless on Frostkin, so you bridged <b style="color:var(--magma)">Fire+Earth = Magma</b> and melted it. That\'s the whole loop — craft, read the enemy, re-craft.',true); }
+  function onKill(key){
+    if(stage===1) setStage(2);
+    else if(stage===2) setStage(3);
+    else if(stage===3) setStage(4);
+    else if(stage===4) setStage(5);
+    else if(stage===5){ toBuild(); setBeat('FTUE complete! 🏆','You re-tuned to the matchup: Steam was dead on Frostkin, so you bridged <b style="color:var(--magma)">Fire+Earth = Magma</b> and melted it. Craft → read the enemy → re-craft. That\'s the loop.',true); battleBtn.setAttribute('disabled',''); battleBtn.textContent='✓ complete'; }
   }
-  // cross-hero detection + beat 7 trigger
-  var origRecompute=recompute;
-  recompute=function(){ origRecompute(); if(beat===6&&MIX.crossHero&&!beatFlags.b7){ beatFlags.b7=1; setBeat(7,'Beat 7 — the wall moves','Cross-hero combo, nice. Now a <b>Frostkin</b> appears — it <b style="color:#f0a48a">resists Steam</b>! Your old build is useless. Re-tune: unlock <b style="color:var(--earth)">Earth</b> and bridge <b style="color:var(--magma)">Fire+Earth = Magma</b> (Frostkin is mega-weak to it).'); spawn('frostkin'); } };
+  function onStall(){
+    toBuild();
+    if(stage===3 && !unlockWM){ unlockWM=true; renderTray(); setBeat('Beat 4 — the aha','Fire can\'t crack the Ironclad. <b style="color:#2a8fe0">Water</b> + <b style="color:#cdbcff">Modifier</b> unlocked: drop a Water, then a Modifier touching a Fire <em>and</em> the Water → <b style="color:var(--steam)">Steam</b> (Ironclad is MEGA-weak). Then <b>⚔ Battle</b>.'); }
+    else if(stage===5 && !unlockEarth){ unlockEarth=true; renderTray(); setBeat('Beat 7 — re-tune','Steam is useless on Frostkin. <b style="color:var(--earth)">Earth</b> unlocked: bridge <b style="color:var(--magma)">Fire+Earth = Magma</b> (Frostkin is mega-weak). Rebuild, then <b>⚔ Battle</b>.'); }
+    else setBeat(document.getElementById('btag').textContent,'That mix wasn\'t enough — rearrange and <b>⚔ Battle</b> again.');
+    updateBattleBtn();
+  }
 
   document.getElementById('reset').onclick=function(){ location.reload(); };
-  document.getElementById('free').onclick=function(){ freePlay=true; revealLaneB(); if(!enemy)spawn('ironclad'); renderTray(); document.getElementById('btag').textContent='Free play'; document.getElementById('bmsg').innerHTML='All pieces + both lanes unlocked. Rearrange freely; swap enemies via Reset. Watch the mix and damage change.'; };
+  document.getElementById('free').onclick=function(){ freePlay=true; unlockWM=unlockEarth=true; revealLaneB(); if(!enemy)spawn('ironclad'); toBuild(); setBeat('Free play','All pieces + both lanes unlocked. Build any mix, hit Battle. Reset to replay the FTUE.'); };
 
-  renderTray(); recompute(); setMana(0);
-  setInterval(tick,650);
+  renderTray(); recompute(); setMana(0); setStage(1);
+  setInterval(tick,600);
 })();
 </script>
 </body>

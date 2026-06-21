@@ -1125,7 +1125,7 @@
   function clustersFor(c){ var v=c.val, seen={}, st=[c], out=[]; while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v){seen[x.id]=1;out.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v)st.push(n);});}} return out; }
   function tick(){ if(!running||won)return; var v=volley(), N=v.groups.length;
     if(N<=0){ mana=0; charge=0; setMana(); return; }
-    mana+=34;
+    mana+=7;   // small steps @100ms = ONE smooth fill per tick (was +34 @640ms = 3 chunky jumps, misread as 3 ticks)
     if(mana>=100){ mana=0; charge++; if(charge>=N){ charge=0; fire(v); } else if(cur.enemy){ flash('<span style="color:var(--mut)">· tick '+charge+'/'+N+' charged</span>'); } }
     setMana(); }
   function setMana(){ var v=volley(), N=v.groups.length, fill=document.getElementById('pymanafill'), bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');
@@ -1161,7 +1161,7 @@
   document.getElementById('pyclear').onclick=function(){ CELLS.forEach(function(c){c.val=null;c.tier=0;}); sel=null; running=false; mana=0; charge=0; paintAll(); renderTray(); recompute(); markPlaceable(); setBattleBtn(); };
   document.getElementById('pyreplay').onclick=function(){ loadStage(cur); };
   loadStage(STAGES[0]);
-  setInterval(tick,640);
+  setInterval(tick,100);
 })();
 </script>
 </body>

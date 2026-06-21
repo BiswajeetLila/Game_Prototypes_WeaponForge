@@ -1,8 +1,8 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-18 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
+**Updated:** 2026-06-21 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: a DESIGN REDESIGN brainstorm (paused for resume) — see the next section.** Shipped build below (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
 
-## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, 2026-06-18 (← RESUME HERE)
+## 🎨 DESIGN REDESIGN brainstorm — IN PROGRESS, 2026-06-21 (← RESUME HERE)
 
 **What this is:** a from-the-research rethink of the **core gameplay + craft**, well beyond the shipped prototype. The shipped build (3-lane auto-runner + flat 3-socket forge + Q1–Q6) is now the **baseline to evolve from, not the target.** **No new code started** — this is design only.
 
@@ -14,11 +14,13 @@
 3. [`docs/superpowers/specs/2026-06-17-gear-defenders-to-weaponforge-mapping.html`](docs/superpowers/specs/2026-06-17-gear-defenders-to-weaponforge-mapping.html) — GD→ours mapping + weapon-board slot layouts (§6).
 4. [`docs/superpowers/specs/2026-06-15-prototype-direction-design.md`](docs/superpowers/specs/2026-06-15-prototype-direction-design.md) — strategic spine + decision ledger.
 
-**Playable prototype:** [`_paper-prototypes/ftue-beat5.html`](_paper-prototypes/ftue-beat5.html) — throwaway FTUE toy (beats 1–7), self-contained, open in a browser. Click/drag tiles → mana fills → fires the mix; break the fire-resist Ironclad by bridging to Steam, then re-tune to Magma vs the Steam-resistant Frostkin (matchup-churn). Verified working via headless preview.
+**Playable prototype:** [`_paper-prototypes/ftue-beat5.html`](_paper-prototypes/ftue-beat5.html) — throwaway FTUE toy, **v3 "build → battle"** (BUILD phase: drag/click tiles, mana frozen → hit **⚔ Battle** to fire the mix). Beats 1–7: place→mana→fire · same-element link · Ironclad fire-wall → bridge to **Steam** · Hero-B joins (lane 2; Battle gated until a **cross-seam** link) · Frostkin resists Steam → re-tune to **Magma** (matchup-churn). Self-contained — open in a browser, no server. Verified via headless preview; committed in `af333e1`.
 
 **GD research correction (2026-06-17):** GD's "King" IS an active gacha-summoned combatant (auto-fires a skill from the wall + army buffs) — the earlier "static cosmetic" claim was WRONG. See [`../../docs/research/reference-games/Gear Defenders/CORRECTION-2026-06-17-king-is-an-active-combatant.md`](../../docs/research/reference-games/Gear%20Defenders/CORRECTION-2026-06-17-king-is-an-active-combatant.md).
 
 **Resume sequence:** finalise open pins (element/style lists, mana numbers, full Magicka pair table) → on approval convert the brainstorm → **formal craft spec** → `writing-plans` → **moat-first** TDD build. Items/Synergies/Catalysts + Wittle-meta + balance still parked.
+
+**Repo / branch state (2026-06-21):** `post-slice-phase5` is **canon**, pushed to origin (tip `af333e1`). All WF-TFT branches form a **linear stack** — every older branch is a pure ancestor: `seed-from-2wc → design-spec → vertical-slice → real-asset-pass → post-slice-phase5`. **Pending decision (not done):** delete the stale ancestor branches (local+remote) + fast-forward `main` to the pivot (clean, no divergence). Working tree clean; `.tmp_gd_imgs/`, `.codex/`, `.claude/` are gitignored.
 
 **Earlier visual brainstorm screens** (gitignored): `.superpowers/brainstorm/*/content/*.html`.
 

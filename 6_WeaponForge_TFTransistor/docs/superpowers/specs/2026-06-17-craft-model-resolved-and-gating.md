@@ -1,7 +1,7 @@
 # Craft Model — RESOLVED + Power-Gating brainstorm (in progress)
 
 > **Subordinate to** [`../../01_GDD.md`](../../01_GDD.md). **Date:** 2026-06-17 · **Branch:** `weaponforge-tftransistor/post-slice-phase5`.
-> **Status:** Craft model **RESOLVED** this session (supersedes the tentative #4 in [`2026-06-16-craft-mechanic-options-ranked.md`](2026-06-16-craft-mechanic-options-ranked.md)). Power-gating = **brainstorm IN PROGRESS** (paused mid-stream). No code started.
+> **Status:** Craft model **RESOLVED** this session (supersedes the tentative #4 in [`2026-06-16-craft-mechanic-options-ranked.md`](2026-06-16-craft-mechanic-options-ranked.md)). Power-gating **RESOLVED 2026-06-21** = **mana → fire-the-mix** (base attack fills a mana bar → on full, the weapon fires its composed volley; no charge-then-explode). **Newer/fuller model + enemy rock-paper-scissors + FTUE live in [`2026-06-18-core-craft-mechanic-brainstorm.html`](2026-06-18-core-craft-mechanic-brainstorm.html) — read that first.** No code started.
 
 ## The 3-layer architecture (settled)
 

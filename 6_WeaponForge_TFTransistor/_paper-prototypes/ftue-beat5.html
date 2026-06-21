@@ -943,11 +943,9 @@
 .pyroot .pypiece.sel{outline:2px solid var(--gold);}
 .pyroot .pydot{width:14px;height:14px;border-radius:4px;display:inline-block;}
 .pyroot .pydot.fire{background:var(--fire);}.pyroot .pydot.water{background:var(--water);}.pyroot .pydot.storm{background:var(--storm);}.pyroot .pydot.mod{background:var(--mod);}
-.pyroot .pymana{display:flex;gap:3px;height:15px;margin:10px 0 2px;}
-.pyroot .pyseg{flex:1;background:#0c1118;border:1px solid var(--line);border-radius:4px;overflow:hidden;}
-.pyroot .pyseg.cur{border-color:var(--gold);box-shadow:0 0 5px #e0a02077;}
-.pyroot .pyseg>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .12s linear;}
-.pyroot .pyseg.done>i{background:linear-gradient(90deg,#46c46a,#8fe0a8);}
+.pyroot .pymana{height:15px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px;}
+.pyroot .pymana>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .1s linear;}
+.pyroot .pymana.charged>i{background:linear-gradient(90deg,#e0a020,#ffd76a);}
 .pyroot .pymanalabel{font-size:11px;color:var(--mut);text-align:center;}
 .pyroot .pybtns{margin-top:10px;display:flex;gap:8px;justify-content:center;}
 .pyroot button.pyact{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;}
@@ -976,14 +974,14 @@
 <section class="pyroot pysep">
   <span class="v2tag">Playable · the FIXED model</span>
   <h1>Path Y — modifier converts its cluster <span style="color:var(--mut);font-weight:400;font-size:13px;">· 5-cell scarce board · sim-verified</span></h1>
-  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements for power · <b>merge</b> 3 alike (tap the glow) to densify + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar = one <b>tick</b> per cluster / combo / lone tile, and the hero fires one group per tick — so <b>fewer groups attack faster</b>. Press <b>⚔ Battle</b> — combat is automatic.</p>
+  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements for power · <b>merge</b> 3 alike (tap the glow) to densify + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar <b>charges one tick</b> per cluster / combo / lone tile, then the hero attacks — so <b>fewer groups attack faster</b> (a cluster or combo = one tick). Press <b>⚔ Battle</b> — combat is automatic.</p>
   <div class="pystagesel" id="pystagesel"></div>
   <div class="pystagecard" id="pystagecard"><span class="pytag" id="pytag">Stage 1</span><div class="pynew" id="pynew"></div><div class="pygoal" id="pygoal"></div></div>
   <div class="pygrid">
     <div class="pycard">
       <h2>Weapon board</h2>
       <div class="pyboard" id="pyboard"><svg id="pysvg" viewBox="0 0 244 130"></svg></div>
-      <div class="pymana" id="pymanabar"></div>
+      <div class="pymana" id="pymanabar"><i id="pymanafill"></i></div>
       <div class="pymanalabel" id="pymanalabel">— place tiles to attack —</div>
       <div class="pytray" id="pytray"></div>
       <div class="pybtns"><button class="pyact prim" id="pybattle">⚔ Battle!</button><button class="pyact" id="pyclear">Clear board</button><button class="pyact" id="pyreplay">Replay stage</button></div>
@@ -999,7 +997,7 @@
       <div class="pylog" id="pylog"></div>
     </div>
   </div>
-  <p class="pynote"><b>Model (Path Y):</b> a Key doesn't fire its own shot — it <b>converts the element clusters its arrows point at into combo-type damage</b> (scales with cluster size, bypasses resist, ×3 vs a mega-weak enemy). Keys are <b>directional</b>: a 2-arrow Key fuses 2 tiles, the epic Star fuses 3 — a tile no arrow points at is left raw, so there is <b>no hidden priority</b>. A cluster is keyed <b>once</b>. The <b>Splitter</b> instead doubles its pointed tiles as raw damage (no combo, no resist-bypass). <b>Mana = ticks:</b> every cluster, combo, or lone tile is one tick of the bar; the hero fires one group per tick and completes a full attack after the last — so a cluster or combo collapsing many tiles into a single tick means <b>fewer ticks = faster attacks</b> (a combo turns 2 ticks into 1). Combat runs only after you press <b>⚔ Battle</b>. Numbers placeholder.</p>
+  <p class="pynote"><b>Model (Path Y):</b> a Key doesn't fire its own shot — it <b>converts the element clusters its arrows point at into combo-type damage</b> (scales with cluster size, bypasses resist, ×3 vs a mega-weak enemy). Keys are <b>directional</b>: a 2-arrow Key fuses 2 tiles, the epic Star fuses 3 — a tile no arrow points at is left raw, so there is <b>no hidden priority</b>. A cluster is keyed <b>once</b>. The <b>Splitter</b> instead doubles its pointed tiles as raw damage (no combo, no resist-bypass). <b>Mana = ticks:</b> the bar charges <b>one tick per cluster, combo, or lone tile</b>, then the hero attacks. A cluster or combo counts as ONE tick no matter how many tiles, so <b>fewer ticks = faster attacks</b> (a combo turns 2 ticks into 1). Combat runs only after you press <b>⚔ Battle</b>. Numbers placeholder.</p>
 </section>
 <script>
 (function(){
@@ -1028,7 +1026,7 @@
      nw:'The basics. Drop a <b style="color:#e0552e">Fire</b> rune — your weapon auto-attacks, fills <b>mana</b>, and on full fires your build.',
      goal:'Goal: chip the dummy down. Place a couple of fire and watch the volley grow.'},
    {n:2,title:'Clusters',tray:['fire','water'],unlock:{cluster:1},enemy:{name:'Bandit',hp:140},
-     nw:'<b>Placement matters.</b> Same element in <b>adjacent</b> cells forms a <b style="color:#6fe09a">cluster</b> — your damage engine. A cluster also fires as <b>one tick</b>, so clustering attacks <b>faster</b>, not just harder. Pack them together.',
+     nw:'<b>Placement matters.</b> Same element in <b>adjacent</b> cells forms a <b style="color:#6fe09a">cluster</b> — your damage engine. A cluster also counts as <b>one tick</b> (not one per tile), so clustering attacks <b>faster</b>, not just harder. Pack them together.',
      goal:'Goal: beat the Bandit. A tight cluster hits far harder than scattered tiles.'},
    {n:3,title:'Merge',tray:['fire','water'],unlock:{cluster:1,merge:1},enemy:{name:'Brute',hp:230},
      nw:'<b>Merge.</b> 3 identical runes touching glow <b style="color:var(--gold)">gold</b> — tap to fuse into one higher-tier rune, <b>freeing 2 cells</b>. Denser cluster = more power.',
@@ -1044,7 +1042,7 @@
      goal:'Free play. Compare a Star combo against a Splitter-doubled raw cluster. Reset to any stage with the buttons above.'}
   ];
   STAGES.forEach(function(s){ if(s.enemy) s.enemy._hp0=s.enemy.hp; });
-  var cur=STAGES[0], sel=null, mana=0, won=false, running=false, cycleIdx=0;
+  var cur=STAGES[0], sel=null, mana=0, won=false, running=false, charge=0;
   var board=document.getElementById('pyboard'), svg=document.getElementById('pysvg'), trayEl=document.getElementById('pytray');
   CELLS.forEach(function(c){ var d=document.createElement('div'); d.style.left=c.x+'px'; d.style.top=c.y+'px'; c.dom=d; d.onclick=function(){onCell(c);}; board.appendChild(d); });
 
@@ -1118,7 +1116,7 @@
     svg.innerHTML=S;
     CELLS.forEach(function(c){ c.dom.classList.toggle('keyed', !!v.keyset[c.id]); });
     var gtxt=v.groups.map(function(g){ return '<span style="color:'+g.col+'">'+g.label+'</span> '+g.dmg+(g.combo?(g.mega?' 💥':' ⚡'):'')+(g.resisted?' <span style="color:#f0a48a">(resisted)</span>':''); });
-    document.getElementById('pymixout').innerHTML=(v.groups.length?'<b>'+v.groups.length+' tick'+(v.groups.length>1?'s':'')+'</b> → full attack · ~'+v.dmg+' dmg/cycle':'Build a weapon to attack')+(gtxt.length?'<br><span style="font-size:12px">'+gtxt.join(' &nbsp;·&nbsp; ')+'</span>':'');
+    document.getElementById('pymixout').innerHTML=(v.groups.length?'<b>'+v.groups.length+' tick'+(v.groups.length>1?'s':'')+'</b> to charge → ~'+v.dmg+' dmg attack':'Build a weapon to attack')+(gtxt.length?'<br><span style="font-size:12px">groups: '+gtxt.join(' &nbsp;·&nbsp; ')+'</span>':'');
     var cl=0, seen={}; CELLS.forEach(function(c){ if(isElem(c.val)&&!seen[c.id]){ var g=clustersFor(c); if(g.length>=2){cl++; g.forEach(function(x){seen[x.id]=1;});} } });
     document.getElementById('pyclout').innerHTML=(cur.unlock.cluster?'<span class="cl">Clusters: '+cl+'</span>':'')+(cur.unlock.bridge?' &nbsp; <span class="cm">Combos live: '+v.combos.length+'</span>':'');
     var mh=(cur.unlock.merge && CELLS.some(mergeableAt))?'⚡ A glowing group of 3 is ready — tap it to merge.':'';
@@ -1126,24 +1124,24 @@
     document.getElementById('pymergehint').innerHTML = mh || (deadKey?'<span style="color:#f0a48a">⚠ This Key’s arrows don’t hit 2 different elements — move it or your tiles so each arrow points at a different element.</span>':''); setMana(); }
   function clustersFor(c){ var v=c.val, seen={}, st=[c], out=[]; while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v){seen[x.id]=1;out.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v)st.push(n);});}} return out; }
   function tick(){ if(!running||won)return; var v=volley(), N=v.groups.length;
-    if(N<=0){ mana=0; cycleIdx=0; setMana(); return; }
-    if(cycleIdx>=N)cycleIdx=0;
+    if(N<=0){ mana=0; charge=0; setMana(); return; }
     mana+=34;
-    if(mana>=100){ mana=0; fireGroup(v.groups[cycleIdx]); cycleIdx++; if(cycleIdx>=N){ cycleIdx=0; if(cur.enemy&&!won)flash('<span style="color:var(--mut)">— attack cycle complete —</span>'); } }
+    if(mana>=100){ mana=0; charge++; if(charge>=N){ charge=0; fire(v); } else if(cur.enemy){ flash('<span style="color:var(--mut)">· tick '+charge+'/'+N+' charged</span>'); } }
     setMana(); }
-  function setMana(){ var v=volley(), N=v.groups.length, bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');
-    if(N<=0){ bar.innerHTML='<div class="pyseg"><i></i></div>'; lbl.textContent='— place tiles to attack —'; return; }
-    var html=''; for(var i=0;i<N;i++){ var w=(i<cycleIdx?100:(i===cycleIdx?Math.round(mana):0)); var cl=(i<cycleIdx?'pyseg done':((i===cycleIdx&&running)?'pyseg cur':'pyseg')); html+='<div class="'+cl+'"><i style="width:'+w+'%"></i></div>'; }
-    bar.innerHTML=html; lbl.textContent=N+' tick'+(N>1?'s':'')+' → attack'+(running?'':' · press Battle'); }
-  function fireGroup(g){
-    if(!cur.enemy){ flash('tick → <span style="color:'+g.col+'">'+g.label+'</span> ~'+g.dmg+(g.combo?' ⚡':'')); return; }
-    cur.enemy.hp=Math.max(0,cur.enemy.hp-g.dmg); drawEnemy();
-    flash((g.mega?'<span class="big">':'')+'tick → <span style="color:'+g.col+'">'+g.label+'</span> '+g.dmg+' dmg'+(g.mega?' 💥':'')+(g.mega?'</span>':''));
+  function setMana(){ var v=volley(), N=v.groups.length, fill=document.getElementById('pymanafill'), bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');
+    fill.style.width=(N<=0?0:Math.round(mana))+'%';
+    bar.classList.toggle('charged', running && N>0 && charge>=N-1);
+    lbl.textContent = (N<=0) ? '— place tiles to attack —' : (running ? ('charging tick '+Math.min(charge+1,N)+' / '+N+' → fire') : (N+' tick'+(N>1?'s':'')+' → attack · press Battle')); }
+  function fire(v){
+    if(!cur.enemy){ flash('⚔ ATTACK → ~'+v.dmg+(v.combos.length?' ('+v.combos.map(function(c){return c.nm;}).join('+')+')':'')); return; }
+    cur.enemy.hp=Math.max(0,cur.enemy.hp-v.dmg); drawEnemy();
+    var big=v.combos.some(function(c){return c.mega;});
+    flash((big?'<span class="big">':'')+'⚔ ATTACK → '+v.dmg+' dmg'+(big?' 💥 '+v.combos.map(function(c){return c.nm;}).join('+'):'')+(big?'</span>':''));
     if(cur.enemy.hp<=0 && !won){ won=true; running=false; setBattleBtn(); document.getElementById('pystagecard').className='pystagecard pywin';
       document.getElementById('pytag').textContent=(cur.n?('Stage '+cur.n):'Sandbox')+' — CLEAR!'; flash('<span class="big">'+cur.enemy.name.toUpperCase()+' DOWN. Stage clear.</span>'); } }
   function drawEnemy(){ if(!cur.enemy)return; var p=100*cur.enemy.hp/cur.enemy.max; document.getElementById('pyhpfill').style.width=p+'%'; document.getElementById('pyhptext').textContent=cur.enemy.hp+' / '+cur.enemy.max; }
   function flash(s){ var l=document.getElementById('pylog'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
-  function loadStage(st){ cur=st; sel=null; mana=0; cycleIdx=0; won=false; running=false;
+  function loadStage(st){ cur=st; sel=null; mana=0; charge=0; won=false; running=false;
     CELLS.forEach(function(c){c.val=null;c.tier=0;});
     if(cur.enemy){ cur.enemy.hp=cur.enemy._hp0; cur.enemy.max=cur.enemy._hp0; }
     document.getElementById('pystagecard').className='pystagecard';
@@ -1159,8 +1157,8 @@
   var ss=document.getElementById('pystagesel');
   STAGES.forEach(function(st){ var b=document.createElement('button'); b.dataset.k=String(st.n); b.textContent=st.n?(st.n+' · '+st.title):'Sandbox'; if(!st.n)b.className='sand'; b.onclick=function(){loadStage(st);}; ss.appendChild(b); });
   function setBattleBtn(){ var b=document.getElementById('pybattle'); if(won){ b.textContent='✓ Cleared'; b.disabled=true; b.classList.remove('live'); return; } b.disabled=false; b.textContent=running?'⏸ Pause':'⚔ Battle!'; b.classList.toggle('live',running); }
-  document.getElementById('pybattle').onclick=function(){ if(won)return; running=!running; if(running){cycleIdx=0;mana=0;} setBattleBtn(); setMana(); };
-  document.getElementById('pyclear').onclick=function(){ CELLS.forEach(function(c){c.val=null;c.tier=0;}); sel=null; running=false; mana=0; cycleIdx=0; paintAll(); renderTray(); recompute(); markPlaceable(); setBattleBtn(); };
+  document.getElementById('pybattle').onclick=function(){ if(won)return; running=!running; if(running){charge=0;mana=0;} setBattleBtn(); setMana(); };
+  document.getElementById('pyclear').onclick=function(){ CELLS.forEach(function(c){c.val=null;c.tier=0;}); sel=null; running=false; mana=0; charge=0; paintAll(); renderTray(); recompute(); markPlaceable(); setBattleBtn(); };
   document.getElementById('pyreplay').onclick=function(){ loadStage(cur); };
   loadStage(STAGES[0]);
   setInterval(tick,640);

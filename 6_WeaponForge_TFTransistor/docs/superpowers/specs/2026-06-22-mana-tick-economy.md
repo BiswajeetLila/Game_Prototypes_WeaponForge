@@ -35,3 +35,9 @@ This is the **concentrate-vs-spread cap** from the 06-21 churn-axis roadmap (§3
 
 ## 5. Interaction with the open #1 task
 The tick economy adds the *tempo* dimension but does **not** replace the **setup COST / placement budget** (still the #1 open fix, 06-21 §6) — the board is still free to build. They compose well: a budget caps how many strong groups you can field, and the tick economy makes each group's *placement* (cluster vs combo vs lone) a tempo decision. Re-run the two persona playtests after the budget lands, now also reading DPS as `total ÷ ticks`.
+
+## 6. Correction (2026-06-22, same day) — ONE bar, charge-then-fire
+The first build rendered an **N-segment bar firing one group per segment** (framing A). That was wrong: the intended model is **one bar that ticks N times, then fires** (framing B). **Corrected in the prototype:** a single mana bar charges **one tick per firing group** (cluster / combo / lone tile); after N ticks the hero fires the **whole board at once**, then the cycle repeats. The tick *count* and damage math are unchanged — only the bar visual + when-it-fires changed.
+- **Count rule (unchanged):** ticks = number of firing groups. 1 lone tile = 1, two separated tiles = 2, a cluster of any size = 1, a combo = 1.
+- **Verified live:** a 2-tick board charges twice (`tick 1/2 charged`) then fires the summed board once (12 = two Fire tiles), looping; one bar, no segments; no console errors.
+- **Open ambiguity flagged to user:** three separate tiles *fire-water-fire* = **3 ticks** here (two lone fires + one water). The user's example said "twice"; that only holds if it meant *fire+water* (2 tiles) or a *fire-fire cluster + water*. Shipped the consistent group rule (which also matches "2 separated fire = 2 ticks" and the image-1 board = 3 ticks); awaiting confirmation.

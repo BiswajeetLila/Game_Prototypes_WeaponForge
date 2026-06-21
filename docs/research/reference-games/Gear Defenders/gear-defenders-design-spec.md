@@ -888,6 +888,8 @@ These are honest unknowns. The reader should challenge or update these before tr
 
 15. [Gap] **Why is the developer reply boilerplate?** Out of dozens of developer replies surfaced, ~80% are identical: *"Hello, we are trying to know more from our players to make us improve. Please be patient and believe that we will give you a better experience."* [Source: PlayStore, AppStore passim] This pattern suggests an automated or low-effort CS function — possibly contributing to the customer-support pain point.
 
+16. [Gap] **Gate / threshold-buff gears (user-reported, unverified).** A Lila playtester reports GD has gears that buff troops *as they pass through a specific gate/threshold*, incentivising building production toward that gate — a positional-incentive mechanic not captured in any scraped source. Possibly real and missed (cf. the King omission, corrected 2026-06-17), possibly conflated with hypercasual gate-games (Mob Control / Count Masters). Verify before relying on it. [User report 2026-06-21]
+
 ---
 
 ## 16. Source Index

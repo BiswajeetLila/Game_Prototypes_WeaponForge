@@ -69,6 +69,10 @@
 </style>
 </head>
 <body>
+<div id="demo-header" class="demo-keep" style="text-align:center;margin:6px auto 16px;max-width:640px;">
+<h1 style="margin:0 0 6px;">WeaponForge <span style="color:var(--mut);font-weight:400;font-size:14px;">· a build-a-weapon auto-battler</span></h1>
+<p style="color:var(--mut);font-size:14px;line-height:1.55;margin:0;">Combat runs on its own — <b style="color:var(--ink)">every decision is in the weapon-board you build</b>. <b style="color:var(--gold)">①</b> Learn the pieces in the tutorial, then <b style="color:var(--gold)">②</b> command all three heroes in the full battle below.</p>
+</div>
 <div style="background:#231d33;border:1px solid #3a3155;border-left:4px solid #b39bff;border-radius:8px;padding:8px 12px;margin:0 0 12px;font:13px 'Segoe UI',sans-serif;color:#cdbcff;line-height:1.5;">⚠️ <b>This file stacks the design history.</b> The CURRENT / live build is the <b>"Path Y" section at the very bottom</b> — scroll all the way down. The sections above (FTUE v1, the sketch, Options A/B/C, the old staged mode) are earlier iterations, kept for reference.</div>
 <h1>WeaponForge — FTUE beat-5 <span style="color:var(--mut);font-weight:400;font-size:13px;">· throwaway prototype (history — live build at bottom)</span></h1>
 <p class="sub">Click a piece, then a hex to place it. Click a filled hex to pick it up. Mana fills on its own → fires your current mix. Goal: break the wall that resists fire.</p>
@@ -975,7 +979,7 @@
 </style>
 <section class="pyroot pysep">
   <span class="v2tag">Playable · the FIXED model</span>
-  <h1>Path Y — modifier converts its cluster <span style="color:var(--mut);font-weight:400;font-size:13px;">· 5-cell scarce board · sim-verified</span></h1>
+  <h1>Tutorial <span style="color:var(--mut);font-weight:400;font-size:13px;">· learn one piece at a time — place a tile, watch it fire</span></h1>
   <p class="pysub">Cells are scarce. <b>Cluster</b> same elements to fire as one tick · <b>merge</b> 3 alike (tap the glow) for the damage upgrade + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar grows <b>one segment per tick</b> — one per cluster / combo / lone tile — and fills across them before the hero attacks, so <b>fewer groups = a shorter bar = faster attacks</b> (a cluster or combo = one segment). Press <b>⚔ Battle</b> — combat is automatic.</p>
   <div class="pystagesel" id="pystagesel"></div>
   <div class="pystagecard" id="pystagecard"><span class="pytag" id="pytag">Stage 1</span><div class="pynew" id="pynew"></div><div class="pygoal" id="pygoal"></div></div>
@@ -1036,7 +1040,7 @@
    {n:4,title:'The Key',tray:['fire','water','key_bar','key_vee','key_star'],unlock:{cluster:1,bridge:1},enemy:{name:'Ironclad',hp:340,resist:'ALL',weak:'Steam'},
      nw:'<b>Keys are directional.</b> A Key only fuses the tiles its <b>arrows</b> point at — a tile no arrow touches is left raw, so there is no guessing. The Ironclad shrugs off <b style="color:#f0a48a">every raw element</b>; the answer is a Key that fuses a Fire and a Water into <b style="color:#cdbcff">Steam</b> (it is mega-weak to Steam). Pick the Key whose arrows match your layout — <b>Bar</b> ◄► fuses left+right, <b>Vee</b> ◣◢ fuses the two below, <b>Star</b> ★ is epic and fuses THREE.',
      goal:'Goal: raw bounces off. Put a Fire and a Water on two sides of the centre cell, then drop the Key whose arrows point at BOTH so they fire as Steam.'},
-   {n:5,title:'The Wall',tray:['fire','water','storm','key_bar','key_vee','key_star'],unlock:{cluster:1,merge:1,bridge:1},enemy:{name:'Warden',hp:520,resist:'ALL',weak:'Conduct'},
+   {n:5,title:'The Wall',tray:['fire','water','storm','key_bar','key_vee','key_star'],unlock:{cluster:1,merge:1,bridge:1},enemy:{name:'Warden',hp:120,resist:'ALL',weak:'Conduct'},
      nw:'<b>The Wall.</b> Same armour as the Ironclad — but READ THE TAG: the Warden is mega-weak to <b style="color:#5fb0ee">Conduct</b> (Water + Storm), NOT Steam. Aim a Key at a Water and a Storm; merge to densify the clusters first. The epic <b>Star</b> fuses three tiles for a bigger hit if you can line them up.',
      goal:'Goal: Steam barely dents this one — it wants Conduct. Aim a Key at Water + Storm. Adapt the combo to the enemy you are facing.'},
    {n:0,title:'Sandbox',tray:['fire','water','storm','key_bar','key_vee','key_star','splitter'],unlock:{cluster:1,merge:1,bridge:1,sandbox:1},enemy:null,
@@ -1181,7 +1185,9 @@
 .h3boardAll{position:relative;width:196px;height:262px;flex:none;align-self:center;}
 .h3boardAll svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
 .h3rail{flex:1;min-width:0;display:flex;flex-direction:column;}
-.h3info{flex:1;display:flex;flex-direction:column;justify-content:center;border-top:1px dashed var(--line);padding:3px 0;min-width:0;}
+.h3info{flex:1;display:flex;flex-direction:row;align-items:center;gap:12px;border-top:1px dashed var(--line);padding:4px 0;min-width:0;}
+.h3half{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;}
+.h3foeside{text-align:right;}
 .h3info:first-child{border-top:none;}
 .h3info.h3clear .h3name{color:var(--ok);}
 .h3name{font-weight:700;font-size:13px;color:var(--ink);}
@@ -1190,21 +1196,49 @@
 .h3root .pyhp{height:14px;margin-top:1px;}
 .h3root .pyhp>span{font-size:10px;}
 .h3root .pycell.h3cell{width:46px;height:51px;font-size:9px;}
+.h3root .pycell.h3cell.empty{background:var(--hf,#1e2630);}
 .h3root .pycell.h3cell.modf{font-size:8px;letter-spacing:0;}
 .h3root .pycell.h3borrow{outline:2px dashed #cdbcff;outline-offset:-3px;box-shadow:0 0 8px #cdbcffcc;}
 .h3foe{margin-top:2px;}
-.h3fname{font-size:11px;font-weight:600;color:var(--ink);}
+.h3fname{font-size:13px;font-weight:700;color:var(--ink);}
 .h3mix{font-size:11px;margin-top:2px;min-height:14px;color:var(--ink);line-height:1.3;}
 .h3tray{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
 .h3btns{margin-top:10px;display:flex;gap:8px;justify-content:center;}
+.h3swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+.h3budget{text-align:center;font-size:12px;color:var(--mut);margin-top:6px;}
+.h3root .pypiece .pcost{margin-left:4px;font-size:10px;font-weight:700;color:var(--gold);}
+.h3root .pypiece.unafford{opacity:.38;filter:grayscale(.6);}
+.h3hpnum{font-size:10px;color:var(--mut);margin-left:6px;font-weight:600;}
+.h3hpbar{height:6px;border-radius:3px;background:#2a3340;overflow:hidden;}
+.h3hpbar>i{display:block;height:100%;width:100%;background:#46b96a;transition:width .15s linear,background .2s;}
+.h3threat{font-size:16px;font-weight:700;line-height:1.12;}
+.t-resist{color:#ef8a5a;}
+.t-weak{color:#5ec77a;}
+.t-none{font-size:11px;font-weight:600;color:var(--mut);}
+.h3atk{font-size:10px;color:#e8845a;}
+.h3foehp{font-size:10px;color:var(--mut);margin-left:6px;font-weight:600;}
+.h3foebar{height:6px;border-radius:3px;background:#3a2730;overflow:hidden;}
+.h3foebar>i{display:block;height:100%;width:100%;background:#e0552e;transition:width .15s linear;}
+.h3info.h3down{opacity:.55;}
+.h3info.h3down .h3name{color:#e0552e;}
+.h3result{text-align:center;font-weight:700;font-size:14px;margin-top:8px;min-height:18px;}
+.h3result.win{color:#46b96a;}
+.h3result.lose{color:#e0552e;}
 </style>
+<div id="demo-bridge" class="demo-keep" style="max-width:600px;margin:24px auto;text-align:center;border-top:1px dashed var(--line);padding-top:16px;">
+<div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:4px;">Got the basics? Now the real thing ↓</div>
+<p style="color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 10px;">The full game runs <b>three</b> hero-boards at once — each vs its own enemy, sharing one forge budget. Anything you just learned (cluster, merge, or a Key combo) wins a lane.</p>
+<button onclick="var s=document.querySelector('.h3root');if(s)s.scrollIntoView({behavior:'smooth',block:'start'});" style="background:var(--gold);color:#231a00;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:14px;cursor:pointer;">⚔ Continue to the full battle</button>
+</div>
 <section class="pyroot h3root pysep">
   <span class="v2tag">Multi-hero · Pass 2 — cross-hero seam bridging</span>
-  <h1>3-Hero Board <span style="color:var(--mut);font-weight:400;font-size:13px;">· per-hero tick-bars · Keys bridge the seam</span></h1>
-  <p class="h3sub">Three hex weapon-boards stacked vertically, one per hero — each charges its <b>own</b> tick-bar and fires its own board at its own enemy. <b>Seam bridging:</b> a Key on a hero's <i>bottom-row</i> cell can aim its <b>↓ SW/SE sockets across the seam</b> into the hero below (B0→A0/A1, B1→A1/A2), fusing that neighbour's tiles into a combo that fires for the <i>Key's</i> hero — the borrowed tile is consumed that volley. Clustering stays within a board. Build all three, then press <b>⚔ Battle</b>.</p>
+  <h1>The Full Battle <span style="color:var(--mut);font-weight:400;font-size:13px;">· command all three heroes at once</span></h1>
+  <p class="h3sub">Three hex weapon-boards stacked vertically, one per hero — each charges its <b>own</b> tick-bar and fires its own board at its own enemy. <b>Seam bridging:</b> a Key on a hero's <i>bottom-row</i> cell can aim its <b>↓ SW/SE sockets across the seam</b> into the hero below (B0→A0/A1, B1→A1/A2), fusing that neighbour's tiles into a combo that fires for the <i>Key's</i> hero — the borrowed tile is consumed that volley. Clustering stays within a board. Build all three within the <b>shared forge budget</b> — every piece has a cost, spent across all three boards — then press <b>⚔ Battle</b>.</p>
   <div class="h3row" id="h3row"></div>
+  <div class="h3budget" id="h3budget"></div>
   <div class="h3tray" id="h3tray"></div>
-  <div class="h3btns"><button class="pyact prim" id="h3battle">⚔ Battle!</button><button class="pyact" id="h3clear">Clear all</button><button class="pyact" id="h3replay">Reset enemies</button></div>
+  <div class="h3btns"><button class="pyact prim" id="h3battle">⚔ Battle!</button><button class="pyact" id="h3clear">Clear all</button><button class="pyact" id="h3replay">Reset fight</button></div>
+  <div class="h3result" id="h3result"></div>
   <div class="pymergehint" id="h3hint" style="margin-top:7px;"></div>
 </section>
 <script>
@@ -1221,9 +1255,13 @@
   function comboCol(n){ return ({Steam:'#cfd8df',Conduct:'#5fb0ee',Plasma:'#e08ad0',Tempest:'#ffd76a'})[n]||'#cdbcff'; }
   function elcol(e){ return ({fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'})[e]||'#9aa'; }
   var DEF=[['A0',50,34],['A1',96,34],['A2',142,34],['B0',73,72],['B1',119,72]];
-  var HERODEF=[{name:'Elara',enemy:{name:'Wisp',hp:120}},{name:'Bran',enemy:{name:'Brute',hp:160}},{name:'Vex',enemy:{name:'Shade',hp:120}}];
+  var HERODEF=[{name:'Elara',hhp:60,enemy:{name:'Wisp',hp:55,atk:8,aspd:12}},{name:'Bran',hhp:65,enemy:{name:'Brute',hp:65,atk:8,aspd:13}},{name:'Vex',hhp:60,enemy:{name:'Shade',hp:55,atk:8,aspd:12}}]; // WFT-16 FTUE-demo tuning: FORGIVING — raw mixed tiles (~6 DPS) ≈ coin-flip, but ANY technique (cluster/merge/combo ~16-30 DPS) wins. Resists PARKED for the post-demo rebalance (the WFT-11 puzzle tuning lives in that dated doc).
+  var HEROCOL=['#cdd3da','#9b7bf0','#d98a3c']; // per-hero identity color: SVG hex outline + rail swatch (legibility — playtest-confirmed 2026-06-22)
+  var HEROFILL=['#3e444d','#322a54','#4a3820']; // empty-hex interior = hero colour ~3 shades darker (solid tinted hexes)
   var TRAY=['fire','water','storm','key_bar','key_vee','key_star','splitter'];
-  var heroes=[], sel=null, running=false;
+  var COST={fire:1,water:1,storm:1,splitter:2,key_bar:3,key_vee:3,key_star:5}; // shop cost per piece (starting values — retune in WFT-11)
+  var BUDGET=15; // SHARED forge budget across all 3 boards (WFT-11 tuned — a matched build costs ~12-14, forcing allocation)
+  var heroes=[], sel=null, running=false, started=false, result=null;
   var row=document.getElementById('h3row');
 
   // one shared stage: a packed continuous-honeycomb board (left) + per-hero info rail (right)
@@ -1233,10 +1271,18 @@
   var board=stage.querySelector('.h3boardAll'), sharedSvg=stage.querySelector('.h3svg'), rail=stage.querySelector('.h3rail');
   HERODEF.forEach(function(hd,hi){
     var info=document.createElement('div'); info.className='h3info';
-    info.innerHTML='<div class="h3name">'+hd.name+'</div>'
+    info.innerHTML='<div class="h3half h3heroside">'
+      +'<div class="h3name"><span class="h3swatch" style="background:'+HEROCOL[hi]+'"></span>'+hd.name+'<span class="h3hpnum"></span></div>'
+      +'<div class="h3hpbar"><i></i></div>'
       +'<div class="pymana h3mana"></div><div class="pymanalabel h3lbl">— place tiles —</div>'
-      +'<div class="h3foe"><span class="h3fname"></span><div class="pyhp"><i class="h3hpfill"></i><span class="h3hptext"></span></div></div>'
-      +'<div class="h3mix">—</div>';
+      +'<div class="h3mix">—</div>'
+      +'</div>'
+      +'<div class="h3half h3foeside">'
+      +'<div class="h3fname"><span class="h3fn"></span><span class="h3foehp"></span></div>'
+      +'<div class="h3threat"></div>'
+      +'<div class="h3atk"></div>'
+      +'<div class="h3foebar"><i></i></div>'
+      +'</div>';
     rail.appendChild(info);
     // each hero's 5 cells, offset down by 76px per hero so the rows tessellate into one honeycomb
     var cells=DEF.map(function(d){return {id:'H'+hi+d[0],x:d[1],y:d[2]+76*hi,val:null,tier:0};});
@@ -1244,11 +1290,12 @@
     cells.forEach(function(c){ c.dir={}; c.nb.forEach(function(n){ var dx=n.x-c.x,dy=n.y-c.y,d; if(Math.abs(dy)<10)d=(dx>0?'E':'W'); else if(dy>0)d=(dx>0?'SE':'SW'); else d=(dx>0?'NE':'NW'); c.dir[d]=n; }); });
     var h={idx:hi,name:hd.name,cells:cells,card:info,
       manaEl:info.querySelector('.h3mana'),lblEl:info.querySelector('.h3lbl'),
-      fnameEl:info.querySelector('.h3fname'),hpFill:info.querySelector('.h3hpfill'),hpText:info.querySelector('.h3hptext'),
+      fnameEl:info.querySelector('.h3fn'),foeBarEl:info.querySelector('.h3foebar>i'),foehpEl:info.querySelector('.h3foehp'),
+      hpBarEl:info.querySelector('.h3hpbar>i'),hpNumEl:info.querySelector('.h3hpnum'),threatEl:info.querySelector('.h3threat'),atkEl:info.querySelector('.h3atk'),
       mixEl:info.querySelector('.h3mix'),
-      enemy:{name:hd.enemy.name,hp:hd.enemy.hp,max:hd.enemy.hp,_hp0:hd.enemy.hp},
-      mana:0,charge:0,won:false};
-    cells.forEach(function(c){ c.hero=h; var dv=document.createElement('div'); dv.className='pycell h3cell empty'; dv.style.left=c.x+'px'; dv.style.top=c.y+'px'; dv.innerHTML='+'; c.dom=dv; dv.onclick=function(){onCell(h,c);}; board.appendChild(dv); });
+      enemy:{name:hd.enemy.name,hp:hd.enemy.hp,max:hd.enemy.hp,_hp0:hd.enemy.hp,atk:hd.enemy.atk,aspd:hd.enemy.aspd,resist:hd.enemy.resist||null,weak:hd.enemy.weak||null,_atkc:0},
+      hp:hd.hhp,maxhp:hd.hhp,mana:0,charge:0,won:false,downed:false};
+    cells.forEach(function(c){ c.hero=h; var dv=document.createElement('div'); dv.className='pycell h3cell empty'; dv.style.left=c.x+'px'; dv.style.top=c.y+'px'; dv.style.setProperty('--hf',HEROFILL[hi]); dv.innerHTML='+'; c.dom=dv; dv.onclick=function(){onCell(h,c);}; board.appendChild(dv); });
     heroes.push(h);
   });
 
@@ -1293,16 +1340,22 @@
     return R;
   }
   function volley(h){ return volleyAll()[h.idx]; }
+  function cellCost(c){ return (COST[c.val]||0)*(c.tier>1?Math.pow(3,c.tier-1):1); }
+  function spentNow(){ var s=0; heroes.forEach(function(h){ h.cells.forEach(function(c){ if(c.val)s+=cellCost(c); }); }); return s; }
+  function remaining(){ return BUDGET-spentNow(); }
+  function updBudget(){ var sp=spentNow(),el=document.getElementById('h3budget'); if(!el)return; var over=sp>BUDGET; el.innerHTML='Forge budget · <b style="color:'+(over?'#e0552e':'var(--ink)')+'">'+sp+'</b> / '+BUDGET+' spent'+(over?' <b style="color:#e0552e">· OVER</b>':''); }
   function paint(c){ var d=c.dom; if(!c.val){d.className='pycell h3cell empty';d.innerHTML='+';}
     else if(isKey(c.val)){var kd=KEYDEF[c.val];d.className='pycell h3cell modf'+(kd.epic?' epic':'');d.innerHTML=kd.glyph;}
     else if(c.val==='splitter'){d.className='pycell h3cell modf';d.innerHTML='SPL';}
     else {d.className='pycell h3cell '+c.val;d.innerHTML=ELEMENTS[c.val]+(c.tier>1?'<span class="tier">'+ROMAN[c.tier]+'</span>':'');} }
   function paintBoard(h){ h.cells.forEach(paint); }
-  function onCell(h,c){ if(c.val){ if(mergeableAt(c)){doMerge(h,c);return;} c.val=null;c.tier=0;paint(c);recomputeAll();markAll();return;} if(!sel)return; c.val=sel;c.tier=1;paint(c);recomputeAll();markAll(); }
+  function onCell(h,c){ if(running)return; if(started||result){ started=false; resetFight(); setBattleBtn(); } if(c.val){ if(mergeableAt(c)){doMerge(h,c);return;} c.val=null;c.tier=0;paint(c);recomputeAll();markAll();return;} if(!sel)return; if((COST[sel]||0)>remaining()){ document.getElementById('h3hint').textContent='⛔ Over budget ('+spentNow()+'/'+BUDGET+') — clear a piece or pick a cheaper one.'; return; } c.val=sel;c.tier=1;paint(c);recomputeAll();markAll(); }
   function doMerge(h,c){ var grp=floodSame(c).filter(function(x){return x!==c;}).slice(0,2); c.tier=Math.min(3,c.tier+1); grp.forEach(function(x){x.val=null;x.tier=0;}); paintBoard(h); recomputeAll(); markAll(); }
-  function renderTray(){ var t=document.getElementById('h3tray'); t.innerHTML=''; TRAY.forEach(function(k){ var b=document.createElement('div'); b.className='pypiece'+(sel===k?' sel':''); var label=isKey(k)?(KEYDEF[k].name+' '+KEYDEF[k].glyph):(k==='splitter'?'Splitter ◄2►':ELEMENTS[k]); b.innerHTML=isMod(k)?'<span class="pydot mod"></span>'+label:'<span class="pydot '+k+'"></span>'+label; b.onclick=function(){sel=(sel===k?null:k);renderTray();markAll();}; t.appendChild(b); }); }
-  function markAll(){ var anyM=false; heroes.forEach(function(h){ h.cells.forEach(function(c){ c.dom.classList.toggle('placeable',!!sel&&!c.val); var m=mergeableAt(c); c.dom.classList.toggle('mergeready',m); if(m)anyM=true; }); }); document.getElementById('h3hint').textContent=anyM?'⚡ A glowing group of 3 is ready — tap it to merge.':''; }
-  function drawSvg(VA){ var S='';
+  function renderTray(){ var t=document.getElementById('h3tray'); t.innerHTML=''; var rem=remaining(); TRAY.forEach(function(k){ var b=document.createElement('div'); var cost=COST[k]||0; b.className='pypiece'+(sel===k?' sel':'')+(cost>rem?' unafford':''); b.dataset.cost=cost; var label=(isKey(k)?(KEYDEF[k].name+' '+KEYDEF[k].glyph):(k==='splitter'?'Splitter ◄2►':ELEMENTS[k]))+'<b class="pcost">'+cost+'</b>'; b.innerHTML=isMod(k)?'<span class="pydot mod"></span>'+label:'<span class="pydot '+k+'"></span>'+label; b.onclick=function(){sel=(sel===k?null:k);renderTray();markAll();}; t.appendChild(b); }); }
+  function markAll(){ var anyM=false; heroes.forEach(function(h){ h.cells.forEach(function(c){ c.dom.classList.toggle('placeable',!!sel&&!c.val&&(COST[sel]||0)<=remaining()); var m=mergeableAt(c); c.dom.classList.toggle('mergeready',m); if(m)anyM=true; }); }); updBudget(); var rem=remaining(),tp=document.querySelectorAll('#h3tray .pypiece'); for(var i=0;i<tp.length;i++){ tp[i].classList.toggle('unafford',(+tp[i].dataset.cost)>rem); } document.getElementById('h3hint').textContent=anyM?'⚡ A glowing group of 3 is ready — tap it to merge.':''; }
+  function hexPts(cx,cy){ return cx+','+(cy-25.5)+' '+(cx+23)+','+(cy-12.75)+' '+(cx+23)+','+(cy+12.75)+' '+cx+','+(cy+25.5)+' '+(cx-23)+','+(cy+12.75)+' '+(cx-23)+','+(cy-12.75); }
+  function hexOutlines(){ var s=''; heroes.forEach(function(h){ var col=HEROCOL[h.idx]; h.cells.forEach(function(c){ s+='<polygon points="'+hexPts(c.x,c.y)+'" fill="none" stroke="'+col+'" stroke-width="3" stroke-linejoin="round" opacity=".9"/>'; }); }); return s; }
+  function drawSvg(VA){ var S=hexOutlines();
     heroes.forEach(function(h){ var v=VA[h.idx];
       v.links.forEach(function(l){ S+='<line x1="'+l[0].x+'" y1="'+l[0].y+'" x2="'+l[1].x+'" y2="'+l[1].y+'" stroke="'+l[2]+'" stroke-width="4" stroke-linecap="round" opacity=".9"/>'; });
       h.cells.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; kd.socket.forEach(function(D){ var vec=DIRVEC[D]; if(!vec)return; var n=c.dir[D],lit=n&&isElem(n.val); var ex=c.x+vec[0]*18,ey=c.y+vec[1]*18; S+='<line x1="'+c.x+'" y1="'+c.y+'" x2="'+ex+'" y2="'+ey+'" stroke="'+(lit?'#cdbcff':'#5a4f7a')+'" stroke-width="'+(lit?3:2)+'" stroke-linecap="round" stroke-dasharray="'+(lit?'':'3 3')+'" opacity="'+(lit?'.85':'.6')+'"/>'; }); });
@@ -1316,22 +1369,43 @@
     var extra=v.crossIn.length?' <span style="font-size:10px;color:var(--mut)">(−'+v.crossIn.length+' pulled up)</span>':'';
     h.mixEl.innerHTML=(v.groups.length?'<b>'+v.groups.length+' tick'+(v.groups.length>1?'s':'')+'</b> → ~'+v.dmg:(v.crossIn.length?'<span style="color:var(--mut)">— (borrowed up)</span>':'—'))+(gt.length?' <span style="font-size:10px">'+gt.join(' · ')+'</span>':'')+extra;
     setMana(h,v); }
-  function recomputeAll(){ var VA=volleyAll(); drawSvg(VA); heroes.forEach(function(h){ paintInfo(h,VA[h.idx]); }); }
+  function recomputeAll(){ var VA=volleyAll(); drawSvg(VA); heroes.forEach(function(h){ paintInfo(h,VA[h.idx]); }); updBudget(); }
   function setMana(h,v){ v=v||volley(h); var N=v.groups.length,bar=h.manaEl;
     if(N<=0){ if(bar.childElementCount)bar.innerHTML=''; h.lblEl.textContent=h.won?'cleared ✓':'— place tiles —'; return; }
     if(bar.childElementCount!==N){ var s=''; for(var k=0;k<N;k++)s+='<div class="pyseg"><i></i></div>'; bar.innerHTML=s; }
     for(var i=0;i<N;i++){ var w=(i<h.charge?100:(i===h.charge?Math.round(h.mana):0)); bar.children[i].className='pyseg'+(i<h.charge?' done':((i===h.charge&&running)?' cur':'')); bar.children[i].firstChild.style.width=w+'%'; }
     h.lblEl.textContent=h.won?'cleared ✓':(running?('tick '+Math.min(h.charge+1,N)+' / '+N):(N+' tick'+(N>1?'s':''))); }
-  function drawFoe(h){ h.fnameEl.textContent=h.enemy.name; h.hpFill.style.width=(100*h.enemy.hp/h.enemy.max)+'%'; h.hpText.textContent=h.enemy.hp+' / '+h.enemy.max; }
-  function fire(h,v){ h.enemy.hp=Math.max(0,h.enemy.hp-v.dmg); drawFoe(h); if(h.enemy.hp<=0&&!h.won){ h.won=true; h.card.classList.add('h3clear'); } if(heroes.every(function(x){return x.won;})){ running=false; setBattleBtn(); } }
-  function tick(){ if(!running)return; var VA=volleyAll(); heroes.forEach(function(h){ if(h.won)return; var v=VA[h.idx],N=v.groups.length; if(N<=0){h.mana=0;h.charge=0;setMana(h,v);return;} h.mana+=10; if(h.mana>=100){h.mana=0;h.charge++; if(h.charge>=N){h.charge=0;fire(h,v);}} setMana(h,v); }); }
-  function setBattleBtn(){ var b=document.getElementById('h3battle'); if(heroes.every(function(x){return x.won;})){b.textContent='✓ All clear';b.disabled=true;b.classList.remove('live');return;} b.disabled=false; b.textContent=running?'⏸ Pause':'⚔ Battle!'; b.classList.toggle('live',running); }
-  document.getElementById('h3battle').onclick=function(){ if(heroes.every(function(x){return x.won;}))return; running=!running; if(running){heroes.forEach(function(h){h.charge=0;h.mana=0;});} setBattleBtn(); recomputeAll(); };
-  document.getElementById('h3clear').onclick=function(){ heroes.forEach(function(h){ h.cells.forEach(function(c){c.val=null;c.tier=0;}); paintBoard(h); }); sel=null; running=false; renderTray(); recomputeAll(); markAll(); setBattleBtn(); };
-  document.getElementById('h3replay').onclick=function(){ heroes.forEach(function(h){ h.enemy.hp=h.enemy._hp0; h.enemy.max=h.enemy._hp0; h.won=false; h.mana=0; h.charge=0; h.card.classList.remove('h3clear'); drawFoe(h); }); running=false; recomputeAll(); setBattleBtn(); };
-  heroes.forEach(function(h){ paintBoard(h); drawFoe(h); });
+  function drawFoe(h){ var e=h.enemy; h.fnameEl.textContent=e.name; h.foeBarEl.style.width=(100*e.hp/e.max)+'%'; h.foehpEl.textContent=e.hp+'/'+e.max;
+    var parts=[]; if(e.resist)parts.push('<span class="t-resist">RESIST '+(e.resist==='ALL'?'ALL':String(ELEMENTS[e.resist]||e.resist).toUpperCase())+'</span>'); if(e.weak)parts.push('<span class="t-weak">WEAK '+String(e.weak).toUpperCase()+'</span>');
+    h.threatEl.innerHTML=parts.length?parts.join(' '):'<span class="t-none">no resist</span>'; h.atkEl.textContent='⚔'+e.atk+' / '+(e.aspd/10)+'s'; }
+  function drawHeroHp(h){ var r=h.hp/h.maxhp; h.hpBarEl.style.width=(100*Math.max(0,r))+'%'; h.hpBarEl.style.background=r>0.5?'#46b96a':(r>0.25?'#e8c63a':'#e0552e'); h.hpNumEl.textContent=Math.max(0,Math.round(h.hp))+'/'+h.maxhp; }
+  function setResult(r,msg){ result=r; running=false; var el=document.getElementById('h3result'); el.className='h3result '+(r||''); el.textContent=msg||''; setBattleBtn(); }
+  function resetFight(){ heroes.forEach(function(h){ h.hp=h.maxhp; h.won=false; h.downed=false; h.mana=0; h.charge=0; h.card.classList.remove('h3clear','h3down'); h.enemy.hp=h.enemy._hp0; h.enemy.max=h.enemy._hp0; h.enemy._atkc=0; drawFoe(h); drawHeroHp(h); }); result=null; var el=document.getElementById('h3result'); el.className='h3result'; el.textContent=''; }
+  function fire(h,v){ h.enemy.hp=Math.max(0,h.enemy.hp-v.dmg); drawFoe(h); if(h.enemy.hp<=0&&!h.won){ h.won=true; h.card.classList.add('h3clear'); } if(heroes.every(function(x){return x.won;})){ setResult('win','✓ Victory — all enemies cleared'); } }
+  function tick(){ if(!running||result)return; var VA=volleyAll(); heroes.forEach(function(h){ if(result||h.won||h.downed)return; var v=VA[h.idx],N=v.groups.length;
+    if(N>0){ h.mana+=10; if(h.mana>=100){h.mana=0;h.charge++; if(h.charge>=N){h.charge=0;fire(h,v);}} } else { h.mana=0; h.charge=0; }
+    setMana(h,v);
+    if(result||h.won)return;
+    var en=h.enemy; if(en.hp>0){ en._atkc=(en._atkc||0)+1; if(en._atkc>=en.aspd){ en._atkc=0; h.hp=Math.max(0,h.hp-en.atk); drawHeroHp(h); if(h.hp<=0){ h.downed=true; h.card.classList.add('h3down'); setResult('lose','✗ Defeat — '+h.name+' was downed'); } } }
+  }); }
+  function setBattleBtn(){ var b=document.getElementById('h3battle'); b.disabled=false; b.textContent=result?'↻ Fight again':(running?'⏸ Pause':(started?'▶ Resume':'⚔ Battle!')); b.classList.toggle('live',running); }
+  document.getElementById('h3battle').onclick=function(){ if(result){ resetFight(); started=true; running=true; } else if(running){ running=false; } else { if(!started){ resetFight(); started=true; } running=true; } setBattleBtn(); recomputeAll(); };
+  document.getElementById('h3clear').onclick=function(){ running=false; started=false; heroes.forEach(function(h){ h.cells.forEach(function(c){c.val=null;c.tier=0;}); paintBoard(h); }); sel=null; resetFight(); renderTray(); recomputeAll(); markAll(); setBattleBtn(); };
+  document.getElementById('h3replay').onclick=function(){ running=false; started=false; resetFight(); recomputeAll(); setBattleBtn(); };
+  heroes.forEach(function(h){ paintBoard(h); drawFoe(h); drawHeroHp(h); });
   renderTray(); recomputeAll(); markAll(); setBattleBtn();
   setInterval(tick,100);
+})();
+</script>
+<script>
+(function(){
+  // DEMO MODE — show only the demo header, the Tutorial, the bridge, and the Full Battle.
+  // Historical prototype sections stay in the file but are hidden for first-time viewers.
+  [].slice.call(document.body.children).forEach(function(el){
+    if(el.tagName==='SCRIPT')return;
+    if(el.classList&&(el.classList.contains('pyroot')||el.classList.contains('demo-keep')))return;
+    el.style.display='none';
+  });
 })();
 </script>
 </body>

@@ -1176,25 +1176,32 @@
 
 <style>
 .h3root .h3sub{color:var(--mut);font-size:12.5px;margin:0 0 6px;line-height:1.5;}
-.h3row{display:flex;flex-direction:column;gap:12px;align-items:center;margin:14px 0;}
-.h3card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;width:580px;max-width:96%;display:flex;gap:16px;align-items:center;}
-.h3info{flex:1;min-width:0;}
-.h3card.h3clear{border-color:var(--ok);box-shadow:0 0 8px #46c46a44;}
-.h3name{font-weight:700;font-size:14px;text-align:left;margin-bottom:4px;color:var(--ink);}
-.h3board{position:relative;width:192px;height:110px;flex:none;}
-.h3board svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
+.h3row{display:flex;justify-content:center;margin:14px 0;}
+.h3stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;width:600px;max-width:97%;display:flex;gap:14px;align-items:stretch;}
+.h3boardAll{position:relative;width:196px;height:262px;flex:none;align-self:center;}
+.h3boardAll svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
+.h3rail{flex:1;min-width:0;display:flex;flex-direction:column;}
+.h3info{flex:1;display:flex;flex-direction:column;justify-content:center;border-top:1px dashed var(--line);padding:3px 0;min-width:0;}
+.h3info:first-child{border-top:none;}
+.h3info.h3clear .h3name{color:var(--ok);}
+.h3name{font-weight:700;font-size:13px;color:var(--ink);}
+.h3root .pymana{height:14px;margin:2px 0 1px;}
+.h3root .pymanalabel{display:none;}
+.h3root .pyhp{height:14px;margin-top:1px;}
+.h3root .pyhp>span{font-size:10px;}
 .h3root .pycell.h3cell{width:46px;height:51px;font-size:9px;}
 .h3root .pycell.h3cell.modf{font-size:8px;letter-spacing:0;}
-.h3foe{margin-top:4px;}
-.h3fname{font-size:12px;font-weight:600;color:var(--ink);}
-.h3mix{font-size:12px;margin-top:6px;min-height:32px;color:var(--ink);}
+.h3root .pycell.h3borrow{outline:2px dashed #cdbcff;outline-offset:-3px;box-shadow:0 0 8px #cdbcffcc;}
+.h3foe{margin-top:2px;}
+.h3fname{font-size:11px;font-weight:600;color:var(--ink);}
+.h3mix{font-size:11px;margin-top:2px;min-height:14px;color:var(--ink);line-height:1.3;}
 .h3tray{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
 .h3btns{margin-top:10px;display:flex;gap:8px;justify-content:center;}
 </style>
 <section class="pyroot h3root pysep">
-  <span class="v2tag">Multi-hero · Pass 1 — three independent boards</span>
-  <h1>3-Hero Board <span style="color:var(--mut);font-weight:400;font-size:13px;">· per-hero tick-bars · cross-hero seams = next pass</span></h1>
-  <p class="h3sub">Three weapon-boards, one per hero. Each charges its <b>own</b> tick-bar and fires its own board at its own enemy. Build all three, then press <b>⚔ Battle</b>. <i>(Cross-hero seam bridging — a Key reaching into the neighbour hero — comes next.)</i></p>
+  <span class="v2tag">Multi-hero · Pass 2 — cross-hero seam bridging</span>
+  <h1>3-Hero Board <span style="color:var(--mut);font-weight:400;font-size:13px;">· per-hero tick-bars · Keys bridge the seam</span></h1>
+  <p class="h3sub">Three hex weapon-boards stacked vertically, one per hero — each charges its <b>own</b> tick-bar and fires its own board at its own enemy. <b>Seam bridging:</b> a Key on a hero's <i>bottom-row</i> cell can aim its <b>↓ SW/SE sockets across the seam</b> into the hero below (B0→A0/A1, B1→A1/A2), fusing that neighbour's tiles into a combo that fires for the <i>Key's</i> hero — the borrowed tile is consumed that volley. Clustering stays within a board. Build all three, then press <b>⚔ Battle</b>.</p>
   <div class="h3row" id="h3row"></div>
   <div class="h3tray" id="h3tray"></div>
   <div class="h3btns"><button class="pyact prim" id="h3battle">⚔ Battle!</button><button class="pyact" id="h3clear">Clear all</button><button class="pyact" id="h3replay">Reset enemies</button></div>
@@ -1219,79 +1226,105 @@
   var heroes=[], sel=null, running=false;
   var row=document.getElementById('h3row');
 
+  // one shared stage: a packed continuous-honeycomb board (left) + per-hero info rail (right)
+  var stage=document.createElement('div'); stage.className='h3stage';
+  stage.innerHTML='<div class="h3boardAll"><svg class="h3svg" viewBox="0 0 196 262"></svg></div><div class="h3rail"></div>';
+  row.appendChild(stage);
+  var board=stage.querySelector('.h3boardAll'), sharedSvg=stage.querySelector('.h3svg'), rail=stage.querySelector('.h3rail');
   HERODEF.forEach(function(hd,hi){
-    var card=document.createElement('div'); card.className='h3card';
-    card.innerHTML='<div class="h3board"><svg class="h3svg" viewBox="0 0 192 110"></svg></div>'
-      +'<div class="h3info">'
-      +'<div class="h3name">'+hd.name+'</div>'
+    var info=document.createElement('div'); info.className='h3info';
+    info.innerHTML='<div class="h3name">'+hd.name+'</div>'
       +'<div class="pymana h3mana"></div><div class="pymanalabel h3lbl">— place tiles —</div>'
       +'<div class="h3foe"><span class="h3fname"></span><div class="pyhp"><i class="h3hpfill"></i><span class="h3hptext"></span></div></div>'
-      +'<div class="h3mix">—</div>'
-      +'</div>';
-    row.appendChild(card);
-    var board=card.querySelector('.h3board'), svg=card.querySelector('.h3svg');
-    var cells=DEF.map(function(d){return {id:'H'+hi+d[0],x:d[1],y:d[2],val:null,tier:0};});
-    cells.forEach(function(c){ c.nb=cells.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<52; }); });
+      +'<div class="h3mix">—</div>';
+    rail.appendChild(info);
+    // each hero's 5 cells, offset down by 76px per hero so the rows tessellate into one honeycomb
+    var cells=DEF.map(function(d){return {id:'H'+hi+d[0],x:d[1],y:d[2]+76*hi,val:null,tier:0};});
+    cells.forEach(function(c){ c.nb=cells.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<52; }); }); // within-hero only
     cells.forEach(function(c){ c.dir={}; c.nb.forEach(function(n){ var dx=n.x-c.x,dy=n.y-c.y,d; if(Math.abs(dy)<10)d=(dx>0?'E':'W'); else if(dy>0)d=(dx>0?'SE':'SW'); else d=(dx>0?'NE':'NW'); c.dir[d]=n; }); });
-    var h={idx:hi,name:hd.name,cells:cells,svg:svg,card:card,
-      manaEl:card.querySelector('.h3mana'),lblEl:card.querySelector('.h3lbl'),
-      fnameEl:card.querySelector('.h3fname'),hpFill:card.querySelector('.h3hpfill'),hpText:card.querySelector('.h3hptext'),
-      mixEl:card.querySelector('.h3mix'),
+    var h={idx:hi,name:hd.name,cells:cells,card:info,
+      manaEl:info.querySelector('.h3mana'),lblEl:info.querySelector('.h3lbl'),
+      fnameEl:info.querySelector('.h3fname'),hpFill:info.querySelector('.h3hpfill'),hpText:info.querySelector('.h3hptext'),
+      mixEl:info.querySelector('.h3mix'),
       enemy:{name:hd.enemy.name,hp:hd.enemy.hp,max:hd.enemy.hp,_hp0:hd.enemy.hp},
       mana:0,charge:0,won:false};
-    cells.forEach(function(c){ var dv=document.createElement('div'); dv.className='pycell h3cell empty'; dv.style.left=c.x+'px'; dv.style.top=c.y+'px'; dv.innerHTML='+'; c.dom=dv; dv.onclick=function(){onCell(h,c);}; board.appendChild(dv); });
+    cells.forEach(function(c){ c.hero=h; var dv=document.createElement('div'); dv.className='pycell h3cell empty'; dv.style.left=c.x+'px'; dv.style.top=c.y+'px'; dv.innerHTML='+'; c.dom=dv; dv.onclick=function(){onCell(h,c);}; board.appendChild(dv); });
     heroes.push(h);
   });
 
+  // --- cross-hero seam wiring: a hero's bottom-row cells reach DOWN into the next hero's top row (Key sockets only, NOT clustering) ---
+  function cellOf(h,sfx){ return h.cells.filter(function(c){return c.id==='H'+h.idx+sfx;})[0]; }
+  for(var hw=0;hw<heroes.length-1;hw++){ var Ah=heroes[hw],Bh=heroes[hw+1];
+    var b0=cellOf(Ah,'B0'),b1=cellOf(Ah,'B1'),a0=cellOf(Bh,'A0'),a1=cellOf(Bh,'A1'),a2=cellOf(Bh,'A2');
+    if(b0){ if(a0)b0.dir.SW=a0; if(a1)b0.dir.SE=a1; }
+    if(b1){ if(a1)b1.dir.SW=a1; if(a2)b1.dir.SE=a2; }
+  }
   function floodSame(start){ var key=start.val+'@'+start.tier,seen={},st=[start],out=[]; while(st.length){var x=st.pop(); if(seen[x.id])continue; if(isElem(x.val)&&(x.val+'@'+x.tier)===key){seen[x.id]=1;out.push(x);x.nb.forEach(function(n){if(!seen[n.id])st.push(n);});}} return out; }
   function mergeableAt(c){ return isElem(c.val)&&floodSame(c).length>=3; }
-  function volley(h){
-    var en=h.enemy, dbl={};
-    h.cells.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val))dbl[n.id]=1; }); });
+  function volleyAll(){
+    // splitter doublers — within a hero's own board only
+    var dbl={};
+    heroes.forEach(function(h){ h.cells.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&n.hero===h&&isElem(n.val))dbl[n.id]=1; }); }); });
     function baseOut(c){ var m=6*(TIERMULT[c.tier||1]||1); if(dbl[c.id])m*=2; return m; }
-    var keyedCells={},combos=[],links=[],keyset={},dmg=0,groups=[];
-    h.cells.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; var picked=[],els={};
-      kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)&&!keyedCells[n.id]&&picked.indexOf(n)<0){picked.push(n);els[n.val]=1;} });
-      var de=Object.keys(els);
-      if(de.length>=2){ var nm=de.length>=3?'Tempest':comboName(de[0],de[1]); var bs=0;
-        picked.forEach(function(x){ bs+=baseOut(x); links.push([c,x,comboCol(nm)]); keyset[x.id]=1; keyedCells[x.id]=1; });
-        var mult=(en&&en.weak===nm)?3:(kd.epic?1.5:1.3); var gd=bs*mult; dmg+=gd;
-        groups.push({label:nm,dmg:Math.round(gd),col:comboCol(nm),combo:true}); }
+    var keyed={}; // global: a tile consumed by a combo (own- or cross-hero) fires once
+    var R=heroes.map(function(){ return {dmg:0,groups:[],links:[],keyset:{},crossOut:[],crossIn:[]}; });
+    // pass 1: keys -> combos (cross-hero aware), iterated in hero order for deterministic borrowing
+    heroes.forEach(function(h){ var en=h.enemy;
+      h.cells.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; var picked=[],els={},cross=false;
+        kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)&&!keyed[n.id]&&picked.indexOf(n)<0){picked.push(n);els[n.val]=1; if(n.hero!==h)cross=true;} });
+        var de=Object.keys(els);
+        if(de.length>=2){ var nm=de.length>=3?'Tempest':comboName(de[0],de[1]); var bs=0;
+          picked.forEach(function(x){ bs+=baseOut(x); keyed[x.id]=1; R[h.idx].keyset[x.id]=1;
+            if(x.hero===h){ R[h.idx].links.push([c,x,comboCol(nm)]); }
+            else { R[h.idx].crossOut.push({from:c,to:x,col:comboCol(nm),nm:nm}); R[x.hero.idx].crossIn.push({cell:x,col:comboCol(nm),from:h.idx,nm:nm}); R[x.hero.idx].keyset[x.id]=1; } });
+          var mult=(en&&en.weak===nm)?3:(kd.epic?1.5:1.3); var gd=bs*mult; R[h.idx].dmg+=gd;
+          R[h.idx].groups.push({label:nm,dmg:Math.round(gd),col:comboCol(nm),combo:true,cross:cross}); }
+      });
     });
-    var seen={};
-    h.cells.forEach(function(s){ if(seen[s.id]||!isElem(s.val)||keyedCells[s.id])return; var v=s.val,comp=[],st=[s];
-      while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v&&!keyedCells[x.id]){seen[x.id]=1;comp.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v&&!keyedCells[n.id])st.push(n);});}}
-      var o=0; comp.forEach(function(x){ var b=baseOut(x); if(en&&(en.resist===v||en.resist==='ALL'))b*=0.25; o+=b; }); dmg+=o;
-      groups.push({label:ELEMENTS[v]+(comp.length>1?' ×'+comp.length:''),dmg:Math.round(o),col:elcol(v)});
+    // pass 2: raw element groups — clustering within a hero's own board, skipping keyed tiles
+    heroes.forEach(function(h){ var en=h.enemy,seen={};
+      h.cells.forEach(function(s){ if(seen[s.id]||!isElem(s.val)||keyed[s.id])return; var v=s.val,comp=[],st=[s];
+        while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v&&!keyed[x.id]){seen[x.id]=1;comp.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v&&!keyed[n.id])st.push(n);});}}
+        var o=0; comp.forEach(function(x){ var b=baseOut(x); if(en&&(en.resist===v||en.resist==='ALL'))b*=0.25; o+=b; }); R[h.idx].dmg+=o;
+        R[h.idx].groups.push({label:ELEMENTS[v]+(comp.length>1?' ×'+comp.length:''),dmg:Math.round(o),col:elcol(v)});
+      });
+      R[h.idx].dmg=Math.round(R[h.idx].dmg);
     });
-    return {dmg:Math.round(dmg),groups:groups,links:links,keyset:keyset};
+    return R;
   }
+  function volley(h){ return volleyAll()[h.idx]; }
   function paint(c){ var d=c.dom; if(!c.val){d.className='pycell h3cell empty';d.innerHTML='+';}
     else if(isKey(c.val)){var kd=KEYDEF[c.val];d.className='pycell h3cell modf'+(kd.epic?' epic':'');d.innerHTML=kd.glyph;}
     else if(c.val==='splitter'){d.className='pycell h3cell modf';d.innerHTML='SPL';}
     else {d.className='pycell h3cell '+c.val;d.innerHTML=ELEMENTS[c.val]+(c.tier>1?'<span class="tier">'+ROMAN[c.tier]+'</span>':'');} }
   function paintBoard(h){ h.cells.forEach(paint); }
-  function onCell(h,c){ if(c.val){ if(mergeableAt(c)){doMerge(h,c);return;} c.val=null;c.tier=0;paint(c);recompute(h);markAll();return;} if(!sel)return; c.val=sel;c.tier=1;paint(c);recompute(h);markAll(); }
-  function doMerge(h,c){ var grp=floodSame(c).filter(function(x){return x!==c;}).slice(0,2); c.tier=Math.min(3,c.tier+1); grp.forEach(function(x){x.val=null;x.tier=0;}); paintBoard(h); recompute(h); markAll(); }
+  function onCell(h,c){ if(c.val){ if(mergeableAt(c)){doMerge(h,c);return;} c.val=null;c.tier=0;paint(c);recomputeAll();markAll();return;} if(!sel)return; c.val=sel;c.tier=1;paint(c);recomputeAll();markAll(); }
+  function doMerge(h,c){ var grp=floodSame(c).filter(function(x){return x!==c;}).slice(0,2); c.tier=Math.min(3,c.tier+1); grp.forEach(function(x){x.val=null;x.tier=0;}); paintBoard(h); recomputeAll(); markAll(); }
   function renderTray(){ var t=document.getElementById('h3tray'); t.innerHTML=''; TRAY.forEach(function(k){ var b=document.createElement('div'); b.className='pypiece'+(sel===k?' sel':''); var label=isKey(k)?(KEYDEF[k].name+' '+KEYDEF[k].glyph):(k==='splitter'?'Splitter ◄2►':ELEMENTS[k]); b.innerHTML=isMod(k)?'<span class="pydot mod"></span>'+label:'<span class="pydot '+k+'"></span>'+label; b.onclick=function(){sel=(sel===k?null:k);renderTray();markAll();}; t.appendChild(b); }); }
   function markAll(){ var anyM=false; heroes.forEach(function(h){ h.cells.forEach(function(c){ c.dom.classList.toggle('placeable',!!sel&&!c.val); var m=mergeableAt(c); c.dom.classList.toggle('mergeready',m); if(m)anyM=true; }); }); document.getElementById('h3hint').textContent=anyM?'⚡ A glowing group of 3 is ready — tap it to merge.':''; }
-  function recompute(h){ var v=volley(h),S='';
-    v.links.forEach(function(l){ S+='<line x1="'+l[0].x+'" y1="'+l[0].y+'" x2="'+l[1].x+'" y2="'+l[1].y+'" stroke="'+l[2]+'" stroke-width="4" stroke-linecap="round" opacity=".9"/>'; });
-    h.cells.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; kd.socket.forEach(function(D){ var vec=DIRVEC[D]; if(!vec)return; var n=c.dir[D],lit=n&&isElem(n.val); var ex=c.x+vec[0]*20,ey=c.y+vec[1]*20; S+='<line x1="'+c.x+'" y1="'+c.y+'" x2="'+ex+'" y2="'+ey+'" stroke="'+(lit?'#cdbcff':'#5a4f7a')+'" stroke-width="'+(lit?3:2)+'" stroke-linecap="round" stroke-dasharray="'+(lit?'':'3 3')+'" opacity="'+(lit?'.85':'.6')+'"/>'; }); });
-    h.svg.innerHTML=S;
-    h.cells.forEach(function(c){ c.dom.classList.toggle('keyed',!!v.keyset[c.id]); });
-    var gt=v.groups.map(function(g){return '<span style="color:'+g.col+'">'+g.label+'</span> '+g.dmg+(g.combo?' ⚡':'');});
-    h.mixEl.innerHTML=(v.groups.length?'<b>'+v.groups.length+' tick'+(v.groups.length>1?'s':'')+'</b> → ~'+v.dmg:'—')+(gt.length?'<br><span style="font-size:11px">'+gt.join(' · ')+'</span>':'');
-    setMana(h); }
-  function recomputeAll(){ heroes.forEach(recompute); }
-  function setMana(h){ var v=volley(h),N=v.groups.length,bar=h.manaEl;
+  function drawSvg(VA){ var S='';
+    heroes.forEach(function(h){ var v=VA[h.idx];
+      v.links.forEach(function(l){ S+='<line x1="'+l[0].x+'" y1="'+l[0].y+'" x2="'+l[1].x+'" y2="'+l[1].y+'" stroke="'+l[2]+'" stroke-width="4" stroke-linecap="round" opacity=".9"/>'; });
+      h.cells.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; kd.socket.forEach(function(D){ var vec=DIRVEC[D]; if(!vec)return; var n=c.dir[D],lit=n&&isElem(n.val); var ex=c.x+vec[0]*18,ey=c.y+vec[1]*18; S+='<line x1="'+c.x+'" y1="'+c.y+'" x2="'+ex+'" y2="'+ey+'" stroke="'+(lit?'#cdbcff':'#5a4f7a')+'" stroke-width="'+(lit?3:2)+'" stroke-linecap="round" stroke-dasharray="'+(lit?'':'3 3')+'" opacity="'+(lit?'.85':'.6')+'"/>'; }); });
+      v.crossOut.forEach(function(co){ S+='<line x1="'+co.from.x+'" y1="'+co.from.y+'" x2="'+co.to.x+'" y2="'+co.to.y+'" stroke="'+co.col+'" stroke-width="4" stroke-linecap="round" stroke-dasharray="5 3" opacity=".95"/>'; });
+    });
+    sharedSvg.innerHTML=S; }
+  function paintInfo(h,v){
+    var borrow={}; v.crossIn.forEach(function(ci){ borrow[ci.cell.id]=1; });
+    h.cells.forEach(function(c){ c.dom.classList.toggle('keyed',!!v.keyset[c.id]); c.dom.classList.toggle('h3borrow',!!borrow[c.id]); });
+    var gt=v.groups.map(function(g){return '<span style="color:'+g.col+'">'+g.label+'</span> '+g.dmg+(g.combo?(g.cross?' ⤓':' ⚡'):'');});
+    var extra=v.crossIn.length?' <span style="font-size:10px;color:var(--mut)">(−'+v.crossIn.length+' pulled up)</span>':'';
+    h.mixEl.innerHTML=(v.groups.length?'<b>'+v.groups.length+' tick'+(v.groups.length>1?'s':'')+'</b> → ~'+v.dmg:(v.crossIn.length?'<span style="color:var(--mut)">— (borrowed up)</span>':'—'))+(gt.length?' <span style="font-size:10px">'+gt.join(' · ')+'</span>':'')+extra;
+    setMana(h,v); }
+  function recomputeAll(){ var VA=volleyAll(); drawSvg(VA); heroes.forEach(function(h){ paintInfo(h,VA[h.idx]); }); }
+  function setMana(h,v){ v=v||volley(h); var N=v.groups.length,bar=h.manaEl;
     if(N<=0){ if(bar.childElementCount)bar.innerHTML=''; h.lblEl.textContent=h.won?'cleared ✓':'— place tiles —'; return; }
     if(bar.childElementCount!==N){ var s=''; for(var k=0;k<N;k++)s+='<div class="pyseg"><i></i></div>'; bar.innerHTML=s; }
     for(var i=0;i<N;i++){ var w=(i<h.charge?100:(i===h.charge?Math.round(h.mana):0)); bar.children[i].className='pyseg'+(i<h.charge?' done':((i===h.charge&&running)?' cur':'')); bar.children[i].firstChild.style.width=w+'%'; }
     h.lblEl.textContent=h.won?'cleared ✓':(running?('tick '+Math.min(h.charge+1,N)+' / '+N):(N+' tick'+(N>1?'s':''))); }
   function drawFoe(h){ h.fnameEl.textContent=h.enemy.name; h.hpFill.style.width=(100*h.enemy.hp/h.enemy.max)+'%'; h.hpText.textContent=h.enemy.hp+' / '+h.enemy.max; }
   function fire(h,v){ h.enemy.hp=Math.max(0,h.enemy.hp-v.dmg); drawFoe(h); if(h.enemy.hp<=0&&!h.won){ h.won=true; h.card.classList.add('h3clear'); } if(heroes.every(function(x){return x.won;})){ running=false; setBattleBtn(); } }
-  function tick(){ if(!running)return; heroes.forEach(function(h){ if(h.won)return; var v=volley(h),N=v.groups.length; if(N<=0){h.mana=0;h.charge=0;setMana(h);return;} h.mana+=10; if(h.mana>=100){h.mana=0;h.charge++; if(h.charge>=N){h.charge=0;fire(h,v);}} setMana(h); }); }
+  function tick(){ if(!running)return; var VA=volleyAll(); heroes.forEach(function(h){ if(h.won)return; var v=VA[h.idx],N=v.groups.length; if(N<=0){h.mana=0;h.charge=0;setMana(h,v);return;} h.mana+=10; if(h.mana>=100){h.mana=0;h.charge++; if(h.charge>=N){h.charge=0;fire(h,v);}} setMana(h,v); }); }
   function setBattleBtn(){ var b=document.getElementById('h3battle'); if(heroes.every(function(x){return x.won;})){b.textContent='✓ All clear';b.disabled=true;b.classList.remove('live');return;} b.disabled=false; b.textContent=running?'⏸ Pause':'⚔ Battle!'; b.classList.toggle('live',running); }
   document.getElementById('h3battle').onclick=function(){ if(heroes.every(function(x){return x.won;}))return; running=!running; if(running){heroes.forEach(function(h){h.charge=0;h.mana=0;});} setBattleBtn(); recomputeAll(); };
   document.getElementById('h3clear').onclick=function(){ heroes.forEach(function(h){ h.cells.forEach(function(c){c.val=null;c.tier=0;}); paintBoard(h); }); sel=null; running=false; renderTray(); recomputeAll(); markAll(); setBattleBtn(); };

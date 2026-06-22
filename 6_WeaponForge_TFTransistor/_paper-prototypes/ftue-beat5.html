@@ -976,7 +976,7 @@
 <section class="pyroot pysep">
   <span class="v2tag">Playable · the FIXED model</span>
   <h1>Path Y — modifier converts its cluster <span style="color:var(--mut);font-weight:400;font-size:13px;">· 5-cell scarce board · sim-verified</span></h1>
-  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements for power · <b>merge</b> 3 alike (tap the glow) to densify + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar grows <b>one segment per tick</b> — one per cluster / combo / lone tile — and fills across them before the hero attacks, so <b>fewer groups = a shorter bar = faster attacks</b> (a cluster or combo = one segment). Press <b>⚔ Battle</b> — combat is automatic.</p>
+  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements to fire as one tick · <b>merge</b> 3 alike (tap the glow) for the damage upgrade + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar grows <b>one segment per tick</b> — one per cluster / combo / lone tile — and fills across them before the hero attacks, so <b>fewer groups = a shorter bar = faster attacks</b> (a cluster or combo = one segment). Press <b>⚔ Battle</b> — combat is automatic.</p>
   <div class="pystagesel" id="pystagesel"></div>
   <div class="pystagecard" id="pystagecard"><span class="pytag" id="pytag">Stage 1</span><div class="pynew" id="pynew"></div><div class="pygoal" id="pygoal"></div></div>
   <div class="pygrid">
@@ -1028,8 +1028,8 @@
      nw:'The basics. Drop a <b style="color:#e0552e">Fire</b> rune — your weapon auto-attacks, fills <b>mana</b>, and on full fires your build.',
      goal:'Goal: chip the dummy down. Place a couple of fire and watch the volley grow.'},
    {n:2,title:'Clusters',tray:['fire','water'],unlock:{cluster:1},enemy:{name:'Bandit',hp:140},
-     nw:'<b>Placement matters.</b> Same element in <b>adjacent</b> cells forms a <b style="color:#6fe09a">cluster</b> — your damage engine. A cluster also counts as <b>one tick</b> (not one per tile), so clustering attacks <b>faster</b>, not just harder. Pack them together.',
-     goal:'Goal: beat the Bandit. A tight cluster hits far harder than scattered tiles.'},
+     nw:'<b>Placement matters.</b> Same elements in <b>adjacent</b> cells form a <b style="color:#6fe09a">cluster</b> — they fire together as <b>one tick</b> (not one tick each), so a cluster attacks <b>faster</b>, and 3 alike can be <b>merged</b>. Pack them together.',
+     goal:'Goal: beat the Bandit. A cluster fires as one fast tick; scattered tiles each cost their own tick.'},
    {n:3,title:'Merge',tray:['fire','water'],unlock:{cluster:1,merge:1},enemy:{name:'Brute',hp:230},
      nw:'<b>Merge.</b> 3 identical runes touching glow <b style="color:var(--gold)">gold</b> — tap to fuse into one higher-tier rune, <b>freeing 2 cells</b>. Denser cluster = more power.',
      goal:'Goal: beat the Brute. Build a cluster, merge to densify it, refill the freed cells.'},
@@ -1058,13 +1058,13 @@
       out.push({el:v,cells:comp}); });
     return out; }
   var TIERMULT={1:1,2:4,3:9};
-  function cmult(c){ if(!cur.unlock.cluster)return 1; var same=c.nb.filter(function(n){return n.val===c.val;}).reduce(function(s,n){return s+(n.tier||1);},0)+((c.tier||1)-1); return 1+0.3*Math.min(same,3); }
+  // cmult (the cluster adjacency DAMAGE bonus) REMOVED 2026-06-22 — clustering now only groups ticks + enables merge; merge owns damage scaling.
   function volley(){
     var en=cur.enemy, unl=cur.unlock;
     // Splitter: doubles (raw) ONLY the tiles its W/E arrows point at (not their clusters).
     var dbl={};
     CELLS.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)) dbl[n.id]=1; }); });
-    function baseOut(c){ var m=6*(TIERMULT[c.tier||1]||1)*cmult(c); if(dbl[c.id])m*=2; return m; }
+    function baseOut(c){ var m=6*(TIERMULT[c.tier||1]||1); if(dbl[c.id])m*=2; return m; }   // flat: 6 × tier (×2 if a Splitter points at it). No adjacency bonus.
     var keyedCells={}, combos=[], links=[], keyset={}, dmg=0, groups=[];
     // A Key converts ONLY the exact tiles its arrows point at — one tile per socket, never the whole cluster.
     if(unl.bridge){

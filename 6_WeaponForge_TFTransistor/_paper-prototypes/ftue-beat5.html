@@ -943,9 +943,11 @@
 .pyroot .pypiece.sel{outline:2px solid var(--gold);}
 .pyroot .pydot{width:14px;height:14px;border-radius:4px;display:inline-block;}
 .pyroot .pydot.fire{background:var(--fire);}.pyroot .pydot.water{background:var(--water);}.pyroot .pydot.storm{background:var(--storm);}.pyroot .pydot.mod{background:var(--mod);}
-.pyroot .pymana{height:15px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px;}
-.pyroot .pymana>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .1s linear;}
-.pyroot .pymana.charged>i{background:linear-gradient(90deg,#e0a020,#ffd76a);}
+.pyroot .pymana{display:flex;justify-content:center;gap:4px;height:16px;margin:10px 0 2px;}
+.pyroot .pyseg{width:46px;background:#0c1118;border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+.pyroot .pyseg.cur{border-color:var(--gold);}
+.pyroot .pyseg>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .1s linear;}
+.pyroot .pyseg.done>i{width:100%;background:linear-gradient(90deg,#46c46a,#8fe0a8);}
 .pyroot .pymanalabel{font-size:11px;color:var(--mut);text-align:center;}
 .pyroot .pybtns{margin-top:10px;display:flex;gap:8px;justify-content:center;}
 .pyroot button.pyact{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;}
@@ -974,14 +976,14 @@
 <section class="pyroot pysep">
   <span class="v2tag">Playable · the FIXED model</span>
   <h1>Path Y — modifier converts its cluster <span style="color:var(--mut);font-weight:400;font-size:13px;">· 5-cell scarce board · sim-verified</span></h1>
-  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements for power · <b>merge</b> 3 alike (tap the glow) to densify + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar <b>charges one tick</b> per cluster / combo / lone tile, then the hero attacks — so <b>fewer groups attack faster</b> (a cluster or combo = one tick). Press <b>⚔ Battle</b> — combat is automatic.</p>
+  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements for power · <b>merge</b> 3 alike (tap the glow) to densify + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar grows <b>one segment per tick</b> — one per cluster / combo / lone tile — and fills across them before the hero attacks, so <b>fewer groups = a shorter bar = faster attacks</b> (a cluster or combo = one segment). Press <b>⚔ Battle</b> — combat is automatic.</p>
   <div class="pystagesel" id="pystagesel"></div>
   <div class="pystagecard" id="pystagecard"><span class="pytag" id="pytag">Stage 1</span><div class="pynew" id="pynew"></div><div class="pygoal" id="pygoal"></div></div>
   <div class="pygrid">
     <div class="pycard">
       <h2>Weapon board</h2>
       <div class="pyboard" id="pyboard"><svg id="pysvg" viewBox="0 0 244 130"></svg></div>
-      <div class="pymana" id="pymanabar"><i id="pymanafill"></i></div>
+      <div class="pymana" id="pymanabar"></div>
       <div class="pymanalabel" id="pymanalabel">— place tiles to attack —</div>
       <div class="pytray" id="pytray"></div>
       <div class="pybtns"><button class="pyact prim" id="pybattle">⚔ Battle!</button><button class="pyact" id="pyclear">Clear board</button><button class="pyact" id="pyreplay">Replay stage</button></div>
@@ -997,7 +999,7 @@
       <div class="pylog" id="pylog"></div>
     </div>
   </div>
-  <p class="pynote"><b>Model (Path Y):</b> a Key doesn't fire its own shot — it <b>converts the element clusters its arrows point at into combo-type damage</b> (scales with cluster size, bypasses resist, ×3 vs a mega-weak enemy). Keys are <b>directional</b>: a 2-arrow Key fuses 2 tiles, the epic Star fuses 3 — a tile no arrow points at is left raw, so there is <b>no hidden priority</b>. A cluster is keyed <b>once</b>. The <b>Splitter</b> instead doubles its pointed tiles as raw damage (no combo, no resist-bypass). <b>Mana = ticks:</b> the bar charges <b>one tick per cluster, combo, or lone tile</b>, then the hero attacks. A cluster or combo counts as ONE tick no matter how many tiles, so <b>fewer ticks = faster attacks</b> (a combo turns 2 ticks into 1). Combat runs only after you press <b>⚔ Battle</b>. Numbers placeholder.</p>
+  <p class="pynote"><b>Model (Path Y):</b> a Key doesn't fire its own shot — it <b>converts the element clusters its arrows point at into combo-type damage</b> (scales with cluster size, bypasses resist, ×3 vs a mega-weak enemy). Keys are <b>directional</b>: a 2-arrow Key fuses 2 tiles, the epic Star fuses 3 — a tile no arrow points at is left raw, so there is <b>no hidden priority</b>. A cluster is keyed <b>once</b>. The <b>Splitter</b> instead doubles its pointed tiles as raw damage (no combo, no resist-bypass). <b>Mana = ticks:</b> the bar gains <b>one segment per cluster, combo, or lone tile</b> — it fills across all the segments, then the hero attacks. A cluster or combo counts as ONE segment no matter how many tiles, so <b>fewer / bigger groups = a shorter bar = faster attacks</b> (a combo turns 2 segments into 1). Combat runs only after you press <b>⚔ Battle</b>. Numbers placeholder.</p>
 </section>
 <script>
 (function(){
@@ -1125,13 +1127,14 @@
   function clustersFor(c){ var v=c.val, seen={}, st=[c], out=[]; while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v){seen[x.id]=1;out.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v)st.push(n);});}} return out; }
   function tick(){ if(!running||won)return; var v=volley(), N=v.groups.length;
     if(N<=0){ mana=0; charge=0; setMana(); return; }
-    mana+=7;   // small steps @100ms = ONE smooth fill per tick (was +34 @640ms = 3 chunky jumps, misread as 3 ticks)
-    if(mana>=100){ mana=0; charge++; if(charge>=N){ charge=0; fire(v); } else if(cur.enemy){ flash('<span style="color:var(--mut)">· tick '+charge+'/'+N+' charged</span>'); } }
+    mana+=7;   // small steps @100ms = smooth fill sweeping across the segments
+    if(mana>=100){ mana=0; charge++; if(charge>=N){ charge=0; fire(v); } }
     setMana(); }
-  function setMana(){ var v=volley(), N=v.groups.length, fill=document.getElementById('pymanafill'), bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');
-    fill.style.width=(N<=0?0:Math.round(mana))+'%';
-    bar.classList.toggle('charged', running && N>0 && charge>=N-1);
-    lbl.textContent = (N<=0) ? '— place tiles to attack —' : (running ? ('charging tick '+Math.min(charge+1,N)+' / '+N+' → fire') : (N+' tick'+(N>1?'s':'')+' → attack · press Battle')); }
+  function setMana(){ var v=volley(), N=v.groups.length, bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');
+    if(N<=0){ if(bar.childElementCount)bar.innerHTML=''; lbl.textContent='— place tiles to attack —'; return; }
+    if(bar.childElementCount!==N){ var h=''; for(var k=0;k<N;k++)h+='<div class="pyseg"><i></i></div>'; bar.innerHTML=h; }   // rebuild only when the tick count changes (keeps the fill transition smooth)
+    for(var i=0;i<N;i++){ var w=(i<charge?100:(i===charge?Math.round(mana):0)); bar.children[i].className='pyseg'+(i<charge?' done':((i===charge&&running)?' cur':'')); bar.children[i].firstChild.style.width=w+'%'; }
+    lbl.textContent = running ? ('tick '+Math.min(charge+1,N)+' / '+N+' → attack') : (N+' tick'+(N>1?'s':'')+' → attack · press Battle'); }
   function fire(v){
     if(!cur.enemy){ flash('⚔ ATTACK → ~'+v.dmg+(v.combos.length?' ('+v.combos.map(function(c){return c.nm;}).join('+')+')':'')); return; }
     cur.enemy.hp=Math.max(0,cur.enemy.hp-v.dmg); drawEnemy();

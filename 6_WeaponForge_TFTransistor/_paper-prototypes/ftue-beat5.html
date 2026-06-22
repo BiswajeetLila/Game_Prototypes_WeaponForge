@@ -1176,11 +1176,12 @@
 
 <style>
 .h3root .h3sub{color:var(--mut);font-size:12.5px;margin:0 0 6px;line-height:1.5;}
-.h3row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:14px 0;}
-.h3card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;width:212px;}
+.h3row{display:flex;flex-direction:column;gap:12px;align-items:center;margin:14px 0;}
+.h3card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;width:580px;max-width:96%;display:flex;gap:16px;align-items:center;}
+.h3info{flex:1;min-width:0;}
 .h3card.h3clear{border-color:var(--ok);box-shadow:0 0 8px #46c46a44;}
-.h3name{font-weight:700;font-size:13px;text-align:center;margin-bottom:2px;color:var(--ink);}
-.h3board{position:relative;width:192px;height:110px;margin:2px auto 6px;}
+.h3name{font-weight:700;font-size:14px;text-align:left;margin-bottom:4px;color:var(--ink);}
+.h3board{position:relative;width:192px;height:110px;flex:none;}
 .h3board svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
 .h3root .pycell.h3cell{width:46px;height:51px;font-size:9px;}
 .h3root .pycell.h3cell.modf{font-size:8px;letter-spacing:0;}
@@ -1220,11 +1221,13 @@
 
   HERODEF.forEach(function(hd,hi){
     var card=document.createElement('div'); card.className='h3card';
-    card.innerHTML='<div class="h3name">'+hd.name+'</div>'
-      +'<div class="h3board"><svg class="h3svg" viewBox="0 0 192 110"></svg></div>'
+    card.innerHTML='<div class="h3board"><svg class="h3svg" viewBox="0 0 192 110"></svg></div>'
+      +'<div class="h3info">'
+      +'<div class="h3name">'+hd.name+'</div>'
       +'<div class="pymana h3mana"></div><div class="pymanalabel h3lbl">— place tiles —</div>'
       +'<div class="h3foe"><span class="h3fname"></span><div class="pyhp"><i class="h3hpfill"></i><span class="h3hptext"></span></div></div>'
-      +'<div class="h3mix">—</div>';
+      +'<div class="h3mix">—</div>'
+      +'</div>';
     row.appendChild(card);
     var board=card.querySelector('.h3board'), svg=card.querySelector('.h3svg');
     var cells=DEF.map(function(d){return {id:'H'+hi+d[0],x:d[1],y:d[2],val:null,tier:0};});

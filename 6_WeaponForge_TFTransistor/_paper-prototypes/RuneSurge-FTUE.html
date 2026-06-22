@@ -70,8 +70,8 @@
 </head>
 <body>
 <div id="demo-header" class="demo-keep" style="text-align:center;margin:6px auto 16px;max-width:640px;">
-<h1 style="margin:0 0 6px;">WeaponForge <span style="color:var(--mut);font-weight:400;font-size:14px;">· a build-a-weapon auto-battler</span></h1>
-<p style="color:var(--mut);font-size:14px;line-height:1.55;margin:0;">Combat runs on its own — <b style="color:var(--ink)">every decision is in the weapon-board you build</b>. <b style="color:var(--gold)">①</b> Learn the pieces in the tutorial, then <b style="color:var(--gold)">②</b> command all three heroes in the full battle below.</p>
+<h1 style="margin:0 0 6px;">RuneSurge <span style="color:var(--mut);font-weight:400;font-size:14px;">· a build-a-weapon auto-battler</span></h1>
+<p style="color:var(--mut);font-size:14px;line-height:1.55;margin:0;">Combat runs on its own — <b style="color:var(--ink)">every decision is in the weapon-board you build</b>. Play the stages in order: learn the pieces as <b>Bran</b>, then your squad joins one hero at a time.</p>
 </div>
 <div style="background:#231d33;border:1px solid #3a3155;border-left:4px solid #b39bff;border-radius:8px;padding:8px 12px;margin:0 0 12px;font:13px 'Segoe UI',sans-serif;color:#cdbcff;line-height:1.5;">⚠️ <b>This file stacks the design history.</b> The CURRENT / live build is the <b>"Path Y" section at the very bottom</b> — scroll all the way down. The sections above (FTUE v1, the sketch, Options A/B/C, the old staged mode) are earlier iterations, kept for reference.</div>
 <h1>WeaponForge — FTUE beat-5 <span style="color:var(--mut);font-weight:400;font-size:13px;">· throwaway prototype (history — live build at bottom)</span></h1>
@@ -1029,7 +1029,7 @@
   function elcol(e){ return ({fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'})[e]||'#9aa'; }
   function resisted(en,el){ return en && (en.resist===el || en.resist==='ALL'); }
   var DEF=[['A0',64,42],['A1',122,42],['A2',180,42],['B0',93,90],['B1',151,90]];
-  window.RSseen=window.RSseen||{}; // shared "new piece" tracker (blinking badge until first placed)
+  window.RSseen=window.RSseen||{}; // shared "new piece" tracker (blinking badge until a piece is first placed)
   var CELLS=DEF.map(function(d){return {id:d[0],x:d[1],y:d[2],val:null,tier:0};});
   CELLS.forEach(function(c){ c.nb=CELLS.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<64; }); });
   CELLS.forEach(function(c){ c.dir={}; c.nb.forEach(function(n){ var dx=n.x-c.x,dy=n.y-c.y,d; if(Math.abs(dy)<12)d=(dx>0?'E':'W'); else if(dy>0)d=(dx>0?'SE':'SW'); else d=(dx>0?'NE':'NW'); c.dir[d]=n; }); });
@@ -1046,6 +1046,12 @@
    {n:4,title:'The Wall',tray:['fire','water','storm','key_bar','key_vee'],unlock:{cluster:1,merge:1,bridge:1},enemy:{name:'Warden',hp:120,resist:'ALL',weak:'Conduct'},
      nw:'<b>A new Key.</b> Meet the <b>Vee Key</b> ◣◢ — its arrows point at the <b>two cells below it</b>, not left &amp; right like the Bar. Same armour as the Ironclad, but READ THE TAG: the Warden is mega-weak to <b style="color:#5fb0ee">Conduct</b> (Water + Storm), NOT Steam. Aim a Key at a Water and a Storm.',
      goal:'Goal: Steam barely dents this one — it wants Conduct. Use the Vee (arrows below) or the Bar to fuse Water + Storm.'},
+   {n:5,title:'+ Elara',multi:2,carry:1,tray:[],unlock:{},enemy:null,
+     nw:'<b>Meet Elara.</b> You\'ve mastered Bran\'s board — now a second hero joins. Your <b>Bran build carries over</b> (top board); build <b>Elara\'s</b> board below. Each hero charges and fires at its own enemy. Press ⚔ Battle.',
+     goal:'Goal: clear BOTH lanes. Same tools — cluster, merge, Keys. (A Key on Bran\'s bottom row can bridge a combo down into Elara.)'},
+   {n:6,title:'Full squad',multi:3,keep:1,full:1,tray:[],unlock:{},enemy:null,
+     nw:'<b>The full squad.</b> All three heroes — Bran, Elara, Vex — fight at once, sharing <b>one forge budget</b>. This is the game. Build all three boards, then ⚔ Battle.',
+     goal:'Goal: win all three lanes within the shared budget. Anything you learned wins a lane — spend wisely.'},
    {n:0,title:'Sandbox',tray:['fire','water','storm','key_bar','key_vee','splitter'],unlock:{cluster:1,merge:1,bridge:1,sandbox:1},enemy:null,
      nw:'<b>Sandbox.</b> Everything unlocked, no enemy. Keys fuse the tiles their arrows point at (Bar ◄► left+right, Vee ◣◢ the two below). The <b>Splitter</b> ◄2► doubles its left & right tiles as RAW damage — no combo, does not bypass resist: raw muscle vs a Key’s armour-piercing combo.',
      goal:'Free play. Compare a Star combo against a Splitter-doubled raw cluster. Reset to any stage with the buttons above.'}
@@ -1158,7 +1164,7 @@
       document.getElementById('pytag').textContent=(cur.n?('Stage '+cur.n):'Sandbox')+' — CLEAR!'; flash('<span class="big">'+cur.enemy.name.toUpperCase()+' DOWN. Stage clear.</span>'); } }
   function drawEnemy(){ if(!cur.enemy)return; var p=100*cur.enemy.hp/cur.enemy.max; document.getElementById('pyhpfill').style.width=p+'%'; document.getElementById('pyhptext').textContent=cur.enemy.hp+' / '+cur.enemy.max; }
   function flash(s){ var l=document.getElementById('pylog'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
-  function loadStage(st){ cur=st; sel=null; mana=0; charge=0; won=false; running=false;
+  function loadStage(st){ var prevRunes=CELLS.map(function(c){return [c.val,c.tier];}); cur=st; sel=null; mana=0; charge=0; won=false; running=false;
     CELLS.forEach(function(c){c.val=null;c.tier=0;});
     if(cur.enemy){ cur.enemy.hp=cur.enemy._hp0; cur.enemy.max=cur.enemy._hp0; }
     document.getElementById('pystagecard').className='pystagecard';
@@ -1169,7 +1175,10 @@
       var tg=''; if(cur.enemy.resist)tg+='<span class="pyt pyres">resists '+(cur.enemy.resist==='ALL'?'ALL raw':ELEMENTS[cur.enemy.resist])+'</span>'; if(cur.enemy.weak)tg+='<span class="pyt pymega">MEGA-weak: '+cur.enemy.weak+'</span>';
       document.getElementById('pyetags').innerHTML=tg; drawEnemy();
     } else { document.getElementById('pyename').textContent='— no enemy (sandbox) —'; document.getElementById('pyetags').innerHTML=''; document.getElementById('pyhpfill').style.width='0%'; document.getElementById('pyhptext').textContent=''; }
-    paintAll(); renderTray(); recompute(); markPlaceable(); setMana(0); renderSel(); setBattleBtn(); }
+    paintAll(); renderTray(); recompute(); markPlaceable(); setMana(0); renderSel(); setBattleBtn();
+    var pg=document.querySelector('.pygrid');
+    if(cur.multi){ if(pg)pg.style.display='none'; if(window.RSboard){ window.RSboard.show(); window.RSboard.setHeroes(cur.multi, !!cur.keep, !!cur.full); if(cur.carry)window.RSboard.carryBran(prevRunes); } }
+    else { if(pg)pg.style.display=''; if(window.RSboard)window.RSboard.hide(); } }
   function renderSel(){ document.querySelectorAll('#pystagesel button').forEach(function(b){ b.classList.toggle('on', b.dataset.k===String(cur.n)); }); }
   var ss=document.getElementById('pystagesel');
   STAGES.forEach(function(st){ var b=document.createElement('button'); b.dataset.k=String(st.n); b.textContent=st.n?(st.n+' · '+st.title):'Sandbox'; if(!st.n)b.className='sand'; b.onclick=function(){loadStage(st);}; ss.appendChild(b); });
@@ -1229,15 +1238,11 @@
 .h3result.win{color:#46b96a;}
 .h3result.lose{color:#e0552e;}
 </style>
-<div id="demo-bridge" class="demo-keep" style="max-width:600px;margin:24px auto;text-align:center;border-top:1px dashed var(--line);padding-top:16px;">
-<div style="font-weight:700;font-size:15px;color:var(--ink);margin-bottom:4px;">Got the basics? Now the real thing ↓</div>
-<p style="color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 10px;">The full game runs <b>three</b> hero-boards at once — each vs its own enemy, sharing one forge budget. Anything you just learned (cluster, merge, or a Key combo) wins a lane.</p>
-<button onclick="var s=document.querySelector('.h3root');if(s)s.scrollIntoView({behavior:'smooth',block:'start'});" style="background:var(--gold);color:#231a00;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:14px;cursor:pointer;">⚔ Continue to the full battle</button>
-</div>
+<!-- RuneSurge: the multi-hero board is reached via tutorial stages 5-6 (no separate bridge) -->
 <section class="pyroot h3root pysep">
   <span class="v2tag">Multi-hero · Pass 2 — cross-hero seam bridging</span>
-  <h1>The Full Battle <span style="color:var(--mut);font-weight:400;font-size:13px;">· command all three heroes at once</span></h1>
-  <p class="h3sub">Three hex weapon-boards stacked vertically, one per hero — each charges its <b>own</b> tick-bar and fires its own board at its own enemy. <b>Seam bridging:</b> a Key on a hero's <i>bottom-row</i> cell can aim its <b>↓ SW/SE sockets across the seam</b> into the hero below (B0→A0/A1, B1→A1/A2), fusing that neighbour's tiles into a combo that fires for the <i>Key's</i> hero — the borrowed tile is consumed that volley. Clustering stays within a board. Build all three within the <b>shared forge budget</b> — every piece has a cost, spent across all three boards — then press <b>⚔ Battle</b>.</p>
+  <h1>Squad Battle <span style="color:var(--mut);font-weight:400;font-size:13px;">· each hero fights its own lane — one shared forge budget</span></h1>
+  <p class="h3sub">Build each hero's board within the <b>shared forge budget</b>, then press <b>⚔ Battle</b>. Same tools you learned — cluster, merge, Keys. (A Key on a hero's bottom row can even bridge a combo down into the hero below.)</p>
   <div class="h3row" id="h3row"></div>
   <div class="h3budget" id="h3budget"></div>
   <div class="h3tray" id="h3tray"></div>
@@ -1245,9 +1250,7 @@
   <div class="h3result" id="h3result"></div>
   <div class="pymergehint" id="h3hint" style="margin-top:7px;"></div>
 </section>
-<div id="demo-history-btn" class="demo-keep" style="text-align:center;margin:34px auto 18px;">
-<button onclick="[].slice.call(document.body.children).forEach(function(e){if(e.style&&e.style.display==='none')e.style.display='';});var p=document.getElementById('demo-history-btn');if(p)p.style.display='none';window.scrollTo({top:0,behavior:'smooth'});" style="background:#241d33;color:#cdbcff;border:1px solid #3a3155;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;">▾ Older designs &amp; prototypes (full history)</button>
-</div>
+<!-- history button lives in ftue-beat5.html (the backup), not RuneSurge -->
 <script>
 (function(){
   var ELEMENTS={fire:'Fire',water:'Water',storm:'Storm'};
@@ -1262,12 +1265,13 @@
   function comboCol(n){ return ({Steam:'#cfd8df',Conduct:'#5fb0ee',Plasma:'#e08ad0',Tempest:'#ffd76a'})[n]||'#cdbcff'; }
   function elcol(e){ return ({fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'})[e]||'#9aa'; }
   var DEF=[['A0',50,34],['A1',96,34],['A2',142,34],['B0',73,72],['B1',119,72]];
-  var HERODEF=[{name:'Elara',hhp:60,enemy:{name:'Wisp',hp:55,atk:8,aspd:12}},{name:'Bran',hhp:65,enemy:{name:'Brute',hp:65,atk:8,aspd:13}},{name:'Vex',hhp:60,enemy:{name:'Shade',hp:55,atk:8,aspd:12}}]; // WFT-16 FTUE-demo tuning: FORGIVING — raw mixed tiles (~6 DPS) ≈ coin-flip, but ANY technique (cluster/merge/combo ~16-30 DPS) wins. Resists PARKED for the post-demo rebalance (the WFT-11 puzzle tuning lives in that dated doc).
+  var HERODEF=[{name:'Bran',hhp:65,col:'#9b7bf0',fill:'#322a54',enemy:{name:'Brute',hp:65,atk:8,aspd:13}},{name:'Elara',hhp:60,col:'#cdd3da',fill:'#3e444d',enemy:{name:'Wisp',hp:55,atk:8,aspd:12}},{name:'Vex',hhp:60,col:'#d98a3c',fill:'#4a3820',enemy:{name:'Shade',hp:55,atk:8,aspd:12}}]; // RuneSurge reveal order: Bran (tutorial hero, carries runes) → Elara → Vex. Forgiving demo tuning; resists parked.
   var HEROCOL=['#cdd3da','#9b7bf0','#d98a3c']; // per-hero identity color: SVG hex outline + rail swatch (legibility — playtest-confirmed 2026-06-22)
   var HEROFILL=['#3e444d','#322a54','#4a3820']; // empty-hex interior = hero colour ~3 shades darker (solid tinted hexes)
-  var TRAY=['fire','water','storm','key_bar','key_vee','key_star','splitter'];
+  var BASETRAY=['fire','water','storm','key_bar','key_vee'], ALLTRAY=['fire','water','storm','key_bar','key_vee','key_star','splitter'];
+  var TRAY=BASETRAY.slice(); // stage 5 = base; stage 6 (full squad) swaps in ALLTRAY (adds Star + Splitter)
   var COST={fire:1,water:1,storm:1,splitter:2,key_bar:3,key_vee:3,key_star:5}; // shop cost per piece (starting values — retune in WFT-11)
-  var BUDGET=30; // generous forge budget for the forgiving FTUE demo — room to deck out all 3 heroes
+  var BUDGET=30; // generous forge budget for the forgiving FTUE demo — room to deck out all 3 heroes (esp. Vex at stage 6, after Bran+Elara carry over)
   var heroes=[], sel=null, running=false, started=false, result=null;
   var row=document.getElementById('h3row');
 
@@ -1279,7 +1283,7 @@
   HERODEF.forEach(function(hd,hi){
     var info=document.createElement('div'); info.className='h3info';
     info.innerHTML='<div class="h3half h3heroside">'
-      +'<div class="h3name"><span class="h3swatch" style="background:'+HEROCOL[hi]+'"></span>'+hd.name+'<span class="h3hpnum"></span></div>'
+      +'<div class="h3name"><span class="h3swatch" style="background:'+hd.col+'"></span>'+hd.name+'<span class="h3hpnum"></span></div>'
       +'<div class="h3hpbar"><i></i></div>'
       +'<div class="pymana h3mana"></div><div class="pymanalabel h3lbl">— place tiles —</div>'
       +'<div class="h3mix">—</div>'
@@ -1295,14 +1299,14 @@
     var cells=DEF.map(function(d){return {id:'H'+hi+d[0],x:d[1],y:d[2]+76*hi,val:null,tier:0};});
     cells.forEach(function(c){ c.nb=cells.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<52; }); }); // within-hero only
     cells.forEach(function(c){ c.dir={}; c.nb.forEach(function(n){ var dx=n.x-c.x,dy=n.y-c.y,d; if(Math.abs(dy)<10)d=(dx>0?'E':'W'); else if(dy>0)d=(dx>0?'SE':'SW'); else d=(dx>0?'NE':'NW'); c.dir[d]=n; }); });
-    var h={idx:hi,name:hd.name,cells:cells,card:info,
+    var h={idx:hi,name:hd.name,cells:cells,card:info,col:hd.col,doms:[],hidden:false,
       manaEl:info.querySelector('.h3mana'),lblEl:info.querySelector('.h3lbl'),
       fnameEl:info.querySelector('.h3fn'),foeBarEl:info.querySelector('.h3foebar>i'),foehpEl:info.querySelector('.h3foehp'),
       hpBarEl:info.querySelector('.h3hpbar>i'),hpNumEl:info.querySelector('.h3hpnum'),threatEl:info.querySelector('.h3threat'),atkEl:info.querySelector('.h3atk'),
       mixEl:info.querySelector('.h3mix'),
       enemy:{name:hd.enemy.name,hp:hd.enemy.hp,max:hd.enemy.hp,_hp0:hd.enemy.hp,atk:hd.enemy.atk,aspd:hd.enemy.aspd,resist:hd.enemy.resist||null,weak:hd.enemy.weak||null,_atkc:0},
       hp:hd.hhp,maxhp:hd.hhp,mana:0,charge:0,won:false,downed:false};
-    cells.forEach(function(c){ c.hero=h; var dv=document.createElement('div'); dv.className='pycell h3cell empty'; dv.style.left=c.x+'px'; dv.style.top=c.y+'px'; dv.style.setProperty('--hf',HEROFILL[hi]); dv.innerHTML='+'; c.dom=dv; dv.onclick=function(){onCell(h,c);}; board.appendChild(dv); });
+    cells.forEach(function(c){ c.hero=h; var dv=document.createElement('div'); dv.className='pycell h3cell empty'; dv.style.left=c.x+'px'; dv.style.top=c.y+'px'; dv.style.setProperty('--hf',hd.fill); dv.innerHTML='+'; c.dom=dv; h.doms.push(dv); dv.onclick=function(){onCell(h,c);}; board.appendChild(dv); });
     heroes.push(h);
   });
 
@@ -1318,12 +1322,12 @@
   function volleyAll(){
     // splitter doublers — within a hero's own board only
     var dbl={};
-    heroes.forEach(function(h){ h.cells.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&n.hero===h&&isElem(n.val))dbl[n.id]=1; }); }); });
+    heroes.forEach(function(h){ if(h.hidden)return; h.cells.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&n.hero===h&&isElem(n.val))dbl[n.id]=1; }); }); });
     function baseOut(c){ var m=6*(TIERMULT[c.tier||1]||1); if(dbl[c.id])m*=2; return m; }
     var keyed={}; // global: a tile consumed by a combo (own- or cross-hero) fires once
     var R=heroes.map(function(){ return {dmg:0,groups:[],links:[],keyset:{},crossOut:[],crossIn:[]}; });
     // pass 1: keys -> combos (cross-hero aware), iterated in hero order for deterministic borrowing
-    heroes.forEach(function(h){ var en=h.enemy;
+    heroes.forEach(function(h){ if(h.hidden)return; var en=h.enemy;
       h.cells.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; var picked=[],els={},cross=false;
         kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)&&!keyed[n.id]&&picked.indexOf(n)<0){picked.push(n);els[n.val]=1; if(n.hero!==h)cross=true;} });
         var de=Object.keys(els);
@@ -1336,7 +1340,7 @@
       });
     });
     // pass 2: raw element groups — clustering within a hero's own board, skipping keyed tiles
-    heroes.forEach(function(h){ var en=h.enemy,seen={};
+    heroes.forEach(function(h){ if(h.hidden)return; var en=h.enemy,seen={};
       h.cells.forEach(function(s){ if(seen[s.id]||!isElem(s.val)||keyed[s.id])return; var v=s.val,comp=[],st=[s];
         while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v&&!keyed[x.id]){seen[x.id]=1;comp.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v&&!keyed[n.id])st.push(n);});}}
         var o=0; comp.forEach(function(x){ var b=baseOut(x); if(en&&(en.resist===v||en.resist==='ALL'))b*=0.25; o+=b; }); R[h.idx].dmg+=o;
@@ -1361,7 +1365,7 @@
   function renderTray(){ if(!window.RSseen)window.RSseen={}; var t=document.getElementById('h3tray'); t.innerHTML=''; var rem=remaining(); TRAY.forEach(function(k){ var b=document.createElement('div'); var cost=COST[k]||0; b.className='pypiece'+(sel===k?' sel':'')+(cost>rem?' unafford':''); b.dataset.cost=cost; var label=(isKey(k)?(KEYDEF[k].name+' '+KEYDEF[k].glyph):(k==='splitter'?'Splitter ◄2►':ELEMENTS[k]))+'<b class="pcost">'+cost+'</b>'; var nb=window.RSseen[k]?'':'<span class="pynew-badge">new</span>'; b.innerHTML=(isMod(k)?'<span class="pydot mod"></span>'+label:'<span class="pydot '+k+'"></span>'+label)+nb; b.onclick=function(){sel=(sel===k?null:k);renderTray();markAll();}; t.appendChild(b); }); }
   function markAll(){ var anyM=false; heroes.forEach(function(h){ h.cells.forEach(function(c){ c.dom.classList.toggle('placeable',!!sel&&!c.val&&(COST[sel]||0)<=remaining()); var m=mergeableAt(c); c.dom.classList.toggle('mergeready',m); if(m)anyM=true; }); }); updBudget(); var rem=remaining(),tp=document.querySelectorAll('#h3tray .pypiece'); for(var i=0;i<tp.length;i++){ tp[i].classList.toggle('unafford',(+tp[i].dataset.cost)>rem); } document.getElementById('h3hint').textContent=anyM?'⚡ A glowing group of 3 is ready — tap it to merge.':''; }
   function hexPts(cx,cy){ return cx+','+(cy-25.5)+' '+(cx+23)+','+(cy-12.75)+' '+(cx+23)+','+(cy+12.75)+' '+cx+','+(cy+25.5)+' '+(cx-23)+','+(cy+12.75)+' '+(cx-23)+','+(cy-12.75); }
-  function hexOutlines(){ var s=''; heroes.forEach(function(h){ var col=HEROCOL[h.idx]; h.cells.forEach(function(c){ s+='<polygon points="'+hexPts(c.x,c.y)+'" fill="none" stroke="'+col+'" stroke-width="3" stroke-linejoin="round" opacity=".9"/>'; }); }); return s; }
+  function hexOutlines(){ var s=''; heroes.forEach(function(h){ if(h.hidden)return; var col=h.col; h.cells.forEach(function(c){ s+='<polygon points="'+hexPts(c.x,c.y)+'" fill="none" stroke="'+col+'" stroke-width="3" stroke-linejoin="round" opacity=".9"/>'; }); }); return s; }
   function drawSvg(VA){ var S=hexOutlines();
     heroes.forEach(function(h){ var v=VA[h.idx];
       v.links.forEach(function(l){ S+='<line x1="'+l[0].x+'" y1="'+l[0].y+'" x2="'+l[1].x+'" y2="'+l[1].y+'" stroke="'+l[2]+'" stroke-width="4" stroke-linecap="round" opacity=".9"/>'; });
@@ -1388,8 +1392,8 @@
   function drawHeroHp(h){ var r=h.hp/h.maxhp; h.hpBarEl.style.width=(100*Math.max(0,r))+'%'; h.hpBarEl.style.background=r>0.5?'#46b96a':(r>0.25?'#e8c63a':'#e0552e'); h.hpNumEl.textContent=Math.max(0,Math.round(h.hp))+'/'+h.maxhp; }
   function setResult(r,msg){ result=r; running=false; var el=document.getElementById('h3result'); el.className='h3result '+(r||''); el.textContent=msg||''; setBattleBtn(); }
   function resetFight(){ heroes.forEach(function(h){ h.hp=h.maxhp; h.won=false; h.downed=false; h.mana=0; h.charge=0; h.card.classList.remove('h3clear','h3down'); h.enemy.hp=h.enemy._hp0; h.enemy.max=h.enemy._hp0; h.enemy._atkc=0; drawFoe(h); drawHeroHp(h); }); result=null; var el=document.getElementById('h3result'); el.className='h3result'; el.textContent=''; }
-  function fire(h,v){ h.enemy.hp=Math.max(0,h.enemy.hp-v.dmg); drawFoe(h); if(h.enemy.hp<=0&&!h.won){ h.won=true; h.card.classList.add('h3clear'); } if(heroes.every(function(x){return x.won;})){ setResult('win','✓ Victory — all enemies cleared'); } }
-  function tick(){ if(!running||result)return; var VA=volleyAll(); heroes.forEach(function(h){ if(result||h.won||h.downed)return; var v=VA[h.idx],N=v.groups.length;
+  function fire(h,v){ h.enemy.hp=Math.max(0,h.enemy.hp-v.dmg); drawFoe(h); if(h.enemy.hp<=0&&!h.won){ h.won=true; h.card.classList.add('h3clear'); } if(heroes.every(function(x){return x.hidden||x.won;})){ setResult('win','✓ Victory — all enemies cleared'); } }
+  function tick(){ if(!running||result)return; var VA=volleyAll(); heroes.forEach(function(h){ if(h.hidden||result||h.won||h.downed)return; var v=VA[h.idx],N=v.groups.length;
     if(N>0){ h.mana+=20; if(h.mana>=100){h.mana=0;h.charge++; if(h.charge>=N){h.charge=0;fire(h,v);}} } else { h.mana=0; h.charge=0; }
     setMana(h,v);
     if(result||h.won)return;
@@ -1399,9 +1403,14 @@
   document.getElementById('h3battle').onclick=function(){ if(result){ resetFight(); started=true; running=true; } else if(running){ running=false; } else { if(!started){ resetFight(); started=true; } running=true; } setBattleBtn(); recomputeAll(); };
   document.getElementById('h3clear').onclick=function(){ running=false; started=false; heroes.forEach(function(h){ h.cells.forEach(function(c){c.val=null;c.tier=0;}); paintBoard(h); }); sel=null; resetFight(); renderTray(); recomputeAll(); markAll(); setBattleBtn(); };
   document.getElementById('h3replay').onclick=function(){ running=false; started=false; resetFight(); recomputeAll(); setBattleBtn(); };
+  function setActiveHeroes(n,keep,fullTray){ heroes.forEach(function(h){ if(!keep)h.cells.forEach(function(c){c.val=null;c.tier=0;}); h.hidden=h.idx>=n; h.doms.forEach(function(d){d.style.display=h.hidden?'none':'';}); h.card.style.display=h.hidden?'none':''; paintBoard(h); }); TRAY=fullTray?ALLTRAY:BASETRAY; resetFight(); sel=null; renderTray(); recomputeAll(); markAll(); setBattleBtn(); }
+  function carryBran(data){ var h=heroes[0]; h.cells.forEach(function(c,i){ var d=data&&data[i]; c.val=(d&&d[0])||null; c.tier=(d&&d[1])||0; }); paintBoard(h); recomputeAll(); markAll(); }
+  var h3section=document.querySelector('.h3root');
+  window.RSboard={ show:function(){ if(h3section)h3section.style.display=''; }, hide:function(){ if(h3section)h3section.style.display='none'; }, setHeroes:function(n,keep,full){ setActiveHeroes(n,keep,full); }, carryBran:function(d){ carryBran(d); } };
   heroes.forEach(function(h){ paintBoard(h); drawFoe(h); drawHeroHp(h); });
   renderTray(); recomputeAll(); markAll(); setBattleBtn();
   setInterval(tick,100);
+  window.RSboard.hide();
 })();
 </script>
 <script>

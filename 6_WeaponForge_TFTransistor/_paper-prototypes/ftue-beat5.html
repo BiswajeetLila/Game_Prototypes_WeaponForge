@@ -1061,30 +1061,36 @@
   function cmult(c){ if(!cur.unlock.cluster)return 1; var same=c.nb.filter(function(n){return n.val===c.val;}).reduce(function(s,n){return s+(n.tier||1);},0)+((c.tier||1)-1); return 1+0.3*Math.min(same,3); }
   function volley(){
     var en=cur.enemy, unl=cur.unlock;
-    var cls=clustersOf(), cell2cl={}; cls.forEach(function(cl,i){cl.cells.forEach(function(x){cell2cl[x.id]=i;});});
-    // Splitter: doubles (raw) every element cluster sitting in its W/E sockets.
+    // Splitter: doubles (raw) ONLY the tiles its W/E arrows point at (not their clusters).
     var dbl={};
-    CELLS.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)) cls[cell2cl[n.id]].cells.forEach(function(x){dbl[x.id]=1;}); }); });
+    CELLS.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)) dbl[n.id]=1; }); });
     function baseOut(c){ var m=6*(TIERMULT[c.tier||1]||1)*cmult(c); if(dbl[c.id])m*=2; return m; }
-    var keyed={}, combos=[], links=[], keyset={}, dmg=0, groups=[];
+    var keyedCells={}, combos=[], links=[], keyset={}, dmg=0, groups=[];
+    // A Key converts ONLY the exact tiles its arrows point at — one tile per socket, never the whole cluster.
     if(unl.bridge){
       CELLS.forEach(function(c){
         var kd=KEYDEF[c.val]; if(!kd)return;
         var picked=[], els={};
-        kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)){ var ci=cell2cl[n.id]; if(!keyed[ci] && picked.indexOf(ci)<0){ picked.push(ci); els[n.val]=1; } } });
+        kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)&&!keyedCells[n.id]&&picked.indexOf(n)<0){ picked.push(n); els[n.val]=1; } });
         var de=Object.keys(els);
         if(de.length>=2){
           var nm = de.length>=3 ? 'Tempest' : comboName(de[0],de[1]);
-          var bs=0; picked.forEach(function(ci){ cls[ci].cells.forEach(function(x){ bs+=baseOut(x); links.push([c,x,comboCol(nm)]); keyset[x.id]=1; }); keyed[ci]=1; });
+          var bs=0; picked.forEach(function(x){ bs+=baseOut(x); links.push([c,x,comboCol(nm)]); keyset[x.id]=1; keyedCells[x.id]=1; });
           var mult=(en&&en.weak===nm)?3:(kd.epic?1.5:1.3);
-          var sz=picked.reduce(function(s,ci){return s+cls[ci].cells.length;},0);
-          var gd=bs*mult; dmg+=gd; combos.push({nm:nm,size:sz,mega:!!(en&&en.weak===nm),epic:kd.epic});
+          var gd=bs*mult; dmg+=gd; combos.push({nm:nm,size:picked.length,mega:!!(en&&en.weak===nm),epic:kd.epic});
           groups.push({label:nm, dmg:Math.round(gd), col:comboCol(nm), mega:!!(en&&en.weak===nm), combo:true});
         }
       });
     }
-    cls.forEach(function(cl,i){ if(keyed[i])return; var o=0; cl.cells.forEach(function(x){ var b=baseOut(x); if(resisted(en,cl.el))b*=0.25; o+=b; }); dmg+=o;
-      groups.push({label:ELEMENTS[cl.el]+(cl.cells.length>1?' ×'+cl.cells.length:''), dmg:Math.round(o), col:elcol(cl.el), resisted:resisted(en,cl.el)}); });
+    // Raw groups = connected components of element tiles NOT taken by a Key (a clustermate of a keyed tile fires on its own).
+    var seen={};
+    CELLS.forEach(function(s){
+      if(seen[s.id]||!isElem(s.val)||keyedCells[s.id])return;
+      var v=s.val, comp=[], st=[s];
+      while(st.length){ var x=st.pop(); if(seen[x.id])continue; if(x.val===v&&!keyedCells[x.id]){ seen[x.id]=1; comp.push(x); x.nb.forEach(function(n){ if(!seen[n.id]&&n.val===v&&!keyedCells[n.id])st.push(n); }); } }
+      var o=0; comp.forEach(function(x){ var b=baseOut(x); if(resisted(en,v))b*=0.25; o+=b; }); dmg+=o;
+      groups.push({label:ELEMENTS[v]+(comp.length>1?' ×'+comp.length:''), dmg:Math.round(o), col:elcol(v), resisted:resisted(en,v)});
+    });
     return {dmg:Math.round(dmg), groups:groups, combos:combos, links:links, keyset:keyset};
   }
   window.__testPY=function(spec,stageN){ var save=CELLS.map(function(c){return [c.val,c.tier];}); var sc=cur, st=null;
@@ -1127,7 +1133,7 @@
   function clustersFor(c){ var v=c.val, seen={}, st=[c], out=[]; while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v){seen[x.id]=1;out.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v)st.push(n);});}} return out; }
   function tick(){ if(!running||won)return; var v=volley(), N=v.groups.length;
     if(N<=0){ mana=0; charge=0; setMana(); return; }
-    mana+=7;   // small steps @100ms = smooth fill sweeping across the segments
+    mana+=10;   // +10 @100ms = 1.0s per tick/segment, smooth fill sweeping across the segments
     if(mana>=100){ mana=0; charge++; if(charge>=N){ charge=0; fire(v); } }
     setMana(); }
   function setMana(){ var v=volley(), N=v.groups.length, bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');

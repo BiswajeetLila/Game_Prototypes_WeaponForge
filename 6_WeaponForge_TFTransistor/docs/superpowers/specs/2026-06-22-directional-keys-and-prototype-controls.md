@@ -62,3 +62,10 @@ No console errors across full interactive drive (place → Battle → auto-kill 
 - Re-tune enemy HP for ~4–6-volley optimal play once the budget exists (HP left at 340/520 placeholder — directional Keys produce similar burst to the old greedy Key on the typical 2-element solve, so HP was NOT changed this pass).
 - Decide whether Keys can **rotate** (cycle socket orientation) — would let any Key adapt to any cell, richer but more UI. Deferred; fixed-orientation Keys are enough for the FTUE.
 - Lock element + role lists + the Magicka pair table; design shop/refresh churn axis; promote Splitter to a stage if it earns it.
+
+## 8. Correction (2026-06-22, same day) — convert per-TILE, not per-cluster
+§1–§3 above say a Key "fuses the **clusters** its arrows point at" and the Splitter "doubles each pointed **cluster**." **That was a bug.** User-reported: a Vee Key (arrows SW+SE → bottom-left + bottom-right) also lit up the *top-left* Fire, because that tile was in the same cluster as the bottom-left Fire and the code converted each socketed tile's **whole cluster**.
+- **Corrected:** every modifier affects **only the exact tile each arrow points at** — never the rest of that tile's cluster. A clustermate that no arrow points at fires on its own (its own raw group / tick).
+- Combo base = sum of `baseOut(socketed tiles)`; cluster size no longer inflates the combo directly (but clustering still boosts each socketed tile via the `cmult` adjacency bonus, and the leftover tiles add raw damage + their own ticks).
+- **Verified:** Vee Key on {Fire A0 + Fire B0 (clustered) + Water B1} → keyed = {B0, B1} only (A0 *not* keyed); readout `Steam 18 ⚡ · Fire 8` = 2 ticks; links only to B0 & B1. Parity unchanged for the §6 table (those socketed tiles weren't clustered with extras); Splitter-on-a-pair is now 23 (doubles only the pointed tile), was 31.
+- **Also:** tick fill speed set to **1.0 s per tick/segment** (`mana += 10` @100ms) per user request.

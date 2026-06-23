@@ -1,6 +1,19 @@
 # HANDOFF — WeaponForge TFTransistor (forge/shop rebuild + live-bug fixes)
 
-**Updated:** 2026-06-22 · **Active work branch:** `weaponforge-tftransistor/post-slice-phase5`. · **Current focus: game renamed → RuneSurge. Primary demo = [`_paper-prototypes/RuneSurge-FTUE.html`](_paper-prototypes/RuneSurge-FTUE.html) — one guided flow: Bran solo (stages 1-4) → +Elara (5) → full squad (6), reusing the 3-hero board (reveal 1→2→3; Bran's runes carry over). [`ftue-beat5.html`](_paper-prototypes/ftue-beat5.html) = polished single-hero backup. Forge budget 30 (generous demo). Demo-ready — a foreground playtest of stages 1→6 is the one thing still pending. WFT-12/13/14 parked for the post-demo rebalance.** Live task list: [`docs/issues/2026-W26.md`](docs/issues/2026-W26.md). Shipped Godot build (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
+**Updated:** 2026-06-24 · **Active branch:** `main` (canonical trunk since the 2026-06-24 consolidation; `post-slice-phase5` == `main`) — see **REPO STATE** below. · **Current focus: game renamed → RuneSurge. Primary demo = [`_paper-prototypes/RuneSurge-FTUE.html`](_paper-prototypes/RuneSurge-FTUE.html) — one guided flow: Bran solo (stages 1-4) → +Elara (5) → full squad (6), reusing the 3-hero board (reveal 1→2→3; Bran's runes carry over). [`ftue-beat5.html`](_paper-prototypes/ftue-beat5.html) = polished single-hero backup. Forge budget 30 (generous demo). Demo-ready — a foreground playtest of stages 1→6 is the one thing still pending. WFT-12/13/14 parked for the post-demo rebalance.** Live task list: [`docs/issues/2026-W26.md`](docs/issues/2026-W26.md). Shipped Godot build (slice + Phase-5 Q1–Q6) is the working baseline. · post-compaction resume doc.
+
+## 🔧 REPO STATE — consolidated to `main` (2026-06-24)
+
+Cross-machine migration (D: → C:, via `runesurge-20260623.bundle`) is **complete** and the repo is consolidated:
+- **`main` is the canonical trunk** @ `45b168a` (local == `origin/main`, reached by clean fast-forward, no force). Contains all RuneSurge work + the in-flight prototype/diagrams + the grafted **`Marketing-Reels/`** pipeline + root governance docs (`CLAUDE.md`/`AGENTS.md`/`LESSONS.md`).
+- **Rollback artifact:** `../Game_Prototypes-preconsolidation-20260624.bundle` (520 MB, `--all`, verified) + backup tags `backup/origin-post-slice-9c1eaf0`, `backup/main-preFF-132df4f`.
+- Auto-memory restored (RuneSurge rename, hex-board lock, weekly issue log, dated-docs-immutable, excalidraw).
+
+**Deferred (holding until the other-conversation findings land + explicit go):**
+1. **`docs/research` graft** from `origin/post-slice` (`9c1eaf0`) — surgical `--diff-filter=A`, respect `.gitignore`, **KEEP** the local Gap-#16 gear-defenders spec. `origin/post-slice` retains the gitignored raw research (Transistor frames, etc.) meanwhile.
+2. **Branch cleanup** — delete the 8 origin + 8 local stale branches (all contained in `main` + the bundle), leaving only `main`.
+
+> New work: branch fresh off `main` as `weaponforge-tftransistor/<keywords>`.
 
 ## 🎨 DESIGN REDESIGN brainstorm — DIRECTION CHOSEN + REFINED 2026-06-22 (← RESUME HERE)
 
@@ -72,17 +85,18 @@ Built unattended on `post-slice-phase5`, each TDD'd (RED→GREEN), committed per
 - Project path: `6_WeaponForge_TFTransistor/Prototype/godot`.
 - Main scene = `res://scenes/Main_v2.tscn` (F5 boots the slice).
 - Approved art SSOT (the look we build toward): `_art-build/screens/In_Battle.png` + `Forge_State.jpeg` + `keyart_01.jpeg`.
-- Rebuild tracker: [`REBUILD_PLAN.md`](REBUILD_PLAN.md) (all C1–C11 done).
+- Rebuild tracker: [`_archive/session-logs/REBUILD_PLAN.md`](_archive/session-logs/REBUILD_PLAN.md) (all C1–C11 done; archived 2026-06-24).
 
-## Branch state
+## Branch state (2026-06-24 — consolidated; see REPO STATE up top)
 
-| Branch | What |
+| Branch | State |
 |---|---|
-| `weaponforge-tftransistor/real-asset-pass` | **CANON.** Functional slice + real chibi assets + forge/shop rebuild + live-bug fixes. All work below is here. |
-| `weaponforge-tftransistor/vertical-slice` | Older placeholder-art snapshot; strict ancestor of real-asset-pass. Can be fast-forwarded or retired. |
-| `main` | untouched. |
+| `main` | **CANONICAL TRUNK** @ `45b168a` (local == `origin/main`). Consolidated 2026-06-24; holds all work + `Marketing-Reels/` + root governance docs. |
+| `weaponforge-tftransistor/post-slice-phase5` | == `main` (redundant; slated for deletion). |
+| `origin/weaponforge-tftransistor/post-slice-phase5` | old lineage @ `9c1eaf0`; retains the gitignored raw research until the deferred `docs/research` graft. |
+| 7 stale ancestors + `2_WC`/`weaponcraft-godot` branches | contained in `main` + the bundle; deletion held. |
 
-User confirmed art version is canon. No merge to vertical-slice/main done yet (their call).
+History: the slice below was built on the former `real-asset-pass` branch, now folded into `main`'s history.
 
 ## How to run / test / capture
 

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponCraft / WeaponForge — Six-Variant Prototype Retrospective</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-display: "Jost", "Futura", "Century Gothic", "Helvetica Neue", sans-serif;
+  --font-body: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --paper:    #C9CDD0;
+  --card:     #D5D9DC;
+  --paper-2:  #B3B7BC;
+  --ink:      #182030;
+  --ink-mut:  #3C4655;
+  --rule:     #9CA1A9;
+  --rule-2:   #888F98;
+  --accent:   #16407A;
+  --accent-2: #0E2E5C;
+  --accent-wash: rgba(22, 64, 122, 0.11);
+  --ok:       #246B38;
+  --warn:     #8A5E10;
+  --toggle:      #7E4D1C;
+  --toggle-wash: rgba(126, 77, 28, 0.13);
+  --measure: 70ch;
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --radius: 5px;
+}
+:root.dark {
+  --paper:    #0E1116; --card: #161A20; --paper-2: #1B212A;
+  --ink: #E3E8EF; --ink-mut: #98A3B3; --rule: #262D38; --rule-2: #353E4B;
+  --accent: #5C97DB; --accent-2: #82B2EC; --accent-wash: rgba(92, 151, 219, 0.13);
+  --ok: #6FBE7F; --warn: #D6A848; --toggle: #D6A06A; --toggle-wash: rgba(214, 160, 106, 0.16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    --paper: #0E1116; --card: #161A20; --paper-2: #1B212A;
+    --ink: #E3E8EF; --ink-mut: #98A3B3; --rule: #262D38; --rule-2: #353E4B;
+    --accent: #5C97DB; --accent-2: #82B2EC; --accent-wash: rgba(92, 151, 219, 0.13);
+    --ok: #6FBE7F; --warn: #D6A848; --toggle: #D6A06A; --toggle-wash: rgba(214, 160, 106, 0.16);
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--font-body);
+  font-size: clamp(1.1rem, 1.01rem + 0.4vw, 1.23rem);
+  line-height: 1.7; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0.6;
+  background-image: radial-gradient(circle at 1px 1px, var(--rule-2) 1px, transparent 0);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(transparent, black 25%, black 75%, transparent);
+}
+.progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: var(--accent); z-index: 50; transition: width 0.1s linear; }
+.theme-toggle {
+  position: fixed; top: 1rem; right: 1rem; z-index: 60;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--toggle); background: var(--card);
+  border: 1.5px solid var(--toggle); border-radius: 999px;
+  padding: 0.45rem 0.85rem; cursor: pointer;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.12);
+  transition: color 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.theme-toggle:hover { background: var(--toggle-wash); box-shadow: 0 2px 9px rgba(0,0,0,0.16); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+.theme-toggle .moon { display: none; }
+.theme-toggle .label::after { content: "Light"; }
+:root.dark .theme-toggle .sun { display: none; }
+:root.dark .theme-toggle .moon { display: block; }
+:root.dark .theme-toggle .label::after { content: "Dark"; }
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) .theme-toggle .sun { display: none; }
+  :root:not(.light):not(.dark) .theme-toggle .moon { display: block; }
+  :root:not(.light):not(.dark) .theme-toggle .label::after { content: "Dark"; }
+}
+@media print { .theme-toggle, .progress { display: none; } }
+
+.doc {
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(var(--gutter), 1fr)
+    [wide-start] minmax(0, 8rem)
+    [content-start] min(var(--measure), 100% - (var(--gutter) * 2)) [content-end]
+    minmax(0, 8rem) [wide-end]
+    minmax(var(--gutter), 1fr) [full-end];
+  padding: clamp(2rem, 6vw, 6rem) 0 6rem;
+}
+.doc > * { grid-column: content; }
+.doc > .wide { grid-column: wide; }
+.doc > .full { grid-column: full; }
+
+.cover { margin-bottom: clamp(3rem, 7vw, 5.5rem); }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.79rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); display: flex; align-items: center; gap: 0.75rem; margin: 0 0 1.4rem;
+}
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--rule-2); }
+.cover h1 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(2.4rem, 1.4rem + 4.6vw, 4.6rem);
+  line-height: 1.02; letter-spacing: -0.02em; margin: 0 0 1rem;
+}
+.cover .lede {
+  font-family: var(--font-display);
+  font-size: clamp(1.32rem, 1.15rem + 0.66vw, 1.7rem);
+  line-height: 1.4; color: var(--ink-mut); font-weight: 400;
+  max-width: 52ch; margin: 0 0 2rem;
+}
+.meta {
+  font-family: var(--font-mono); font-size: 0.88rem; color: var(--ink-mut);
+  display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem;
+  padding-top: 1.4rem; border-top: 2px solid var(--ink);
+}
+.meta b { color: var(--ink); font-weight: 600; }
+
+.toc {
+  background: var(--card); border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent); border-radius: var(--radius);
+  padding: 1.5rem 1.75rem; margin: 2.5rem 0;
+}
+.toc h2 {
+  font-family: var(--font-mono);
+  font-size: 0.79rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-mut); margin: 0 0 1rem; padding: 0; border: 0;
+}
+.toc h2::before { content: none; }
+.toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+.toc li { counter-increment: toc; margin: 0.35rem 0; }
+.toc a {
+  font-family: var(--font-mono); font-size: 0.99rem;
+  text-decoration: none; color: var(--ink);
+  display: flex; gap: 0.85rem; align-items: baseline;
+  padding: 0.15rem 0; border: 0;
+}
+.toc a::before { content: counter(toc, decimal-leading-zero); color: var(--accent); font-weight: 600; }
+.toc a:hover { color: var(--accent); background: none; }
+
+.doc { counter-reset: h2; }
+h2 {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(1.76rem, 1.38rem + 1.65vw, 2.48rem);
+  line-height: 1.12; letter-spacing: -0.01em;
+  margin: 3.5rem 0 1.2rem; padding-top: 1.4rem;
+  border-top: 1px solid var(--rule);
+  counter-increment: h2; scroll-margin-top: 2rem;
+}
+h2::before {
+  content: counter(h2, decimal-leading-zero); display: block;
+  font-family: var(--font-mono); font-size: 0.86rem; font-weight: 500;
+  letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.45rem;
+}
+h3 {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(1.32rem, 1.15rem + 0.66vw, 1.65rem);
+  line-height: 1.2; margin: 2.4rem 0 0.8rem; scroll-margin-top: 2rem;
+}
+h4 {
+  font-family: var(--font-mono); font-weight: 600; font-size: 0.88rem;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-mut); margin: 2rem 0 0.6rem;
+}
+p { margin: 0 0 1.3rem; }
+a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--rule-2); transition: border-color 0.2s, color 0.2s; }
+a:hover { color: var(--accent-2); border-color: var(--accent); }
+strong { font-weight: 600; }
+em { font-style: italic; }
+mark { background: var(--accent-wash); color: inherit; padding: 0.05em 0.3em; border-radius: 3px; box-decoration-break: clone; }
+
+ul, ol { margin: 0 0 1.3rem; padding-left: 1.4rem; }
+li { margin: 0.4rem 0; padding-left: 0.3rem; }
+ul li::marker { color: var(--accent); }
+ol li::marker { color: var(--accent); font-family: var(--font-mono); font-size: 0.9em; }
+
+blockquote {
+  margin: 2rem 0; padding: 1.3rem 1.6rem;
+  background: var(--card); border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent); border-radius: var(--radius);
+  font-family: var(--font-display); font-size: 1.32rem; font-weight: 500; font-style: normal;
+  line-height: 1.4; color: var(--ink);
+}
+blockquote cite { display: block; margin-top: 0.7rem; font-family: var(--font-mono); font-size: 0.84rem; font-style: normal; letter-spacing: 0.08em; color: var(--ink-mut); }
+blockquote cite::before { content: "— "; }
+
+.callout {
+  margin: 2rem 0; padding: 1.2rem 1.4rem;
+  background: var(--card); border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent); border-radius: var(--radius);
+  font-size: 1.07rem; line-height: 1.6;
+}
+.callout > :last-child { margin-bottom: 0; }
+.callout .label {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: 0.77rem; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 0.5rem;
+}
+.callout.tip  { border-left-color: var(--ok); }
+.callout.tip  .label { color: var(--ok); }
+.callout.warn { border-left-color: var(--warn); }
+.callout.warn .label { color: var(--warn); }
+
+.table-wrap { overflow-x: auto; margin: 2rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: 1.02rem; line-height: 1.5; }
+caption { font-family: var(--font-mono); font-size: 0.81rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mut); text-align: left; padding-bottom: 0.7rem; }
+th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th { font-family: var(--font-mono); font-size: 0.79rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-mut); font-weight: 600; border-bottom: 2px solid var(--ink); }
+tbody tr:hover { background: var(--accent-wash); }
+tbody tr:last-child td { border-bottom: 0; }
+
+code { font-family: var(--font-mono); font-size: 0.85em; background: var(--paper-2); border: 1px solid var(--rule); padding: 0.1em 0.4em; border-radius: 3px; }
+pre { margin: 2rem 0; background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius); padding: 1.2rem 1.4rem; overflow-x: auto; font-size: 0.95rem; line-height: 1.6; }
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+
+hr { border: 0; height: 1px; background: var(--rule); margin: 3rem 0; }
+.dinkus { border: 0; text-align: center; margin: 3rem 0; height: auto; background: none; color: var(--accent); font-family: var(--font-mono); font-size: 0.77rem; letter-spacing: 0.4em; }
+.dinkus::before { content: "▪ ▪ ▪"; }
+
+.doc-footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); font-family: var(--font-mono); font-size: 0.86rem; color: var(--ink-mut); display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; justify-content: space-between; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal { opacity: 0; transform: translateY(12px); animation: rise 0.6s cubic-bezier(0.2,0.7,0.2,1) forwards; }
+  .reveal:nth-child(1) { animation-delay: 0.05s; }
+  .reveal:nth-child(2) { animation-delay: 0.12s; }
+  .reveal:nth-child(3) { animation-delay: 0.19s; }
+  .reveal:nth-child(4) { animation-delay: 0.26s; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+}
+::selection { background: var(--accent); color: #fff; }
+</style>
+<script>
+  try { var t = localStorage.getItem('reportTheme'); if (t === 'light' || t === 'dark') document.documentElement.classList.add(t); } catch (e) {}
+</script>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<button class="theme-toggle" id="themeBtn" type="button" aria-label="Toggle light or dark theme">
+  <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></svg>
+  <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+  <span class="label"></span>
+</button>
+
+<article class="doc">
+
+  <header class="cover reveal">
+    <p class="eyebrow">Retrospective · WeaponCraft / WeaponForge prototype family</p>
+    <h1>Six variants, one game in search of itself.</h1>
+    <p class="lede">A working postmortem of the WeaponCraft / WeaponForge prototype monorepo — what we tried, what bit us, what stuck, and what any prototyper inheriting this work should not have to relearn from scratch.</p>
+    <div class="meta">
+      <span><b>Author</b> Biswajeet (with Claude)</span>
+      <span><b>Date</b> 18 Jun 2026</span>
+      <span><b>Status</b> Living retro</span>
+      <span><b>Read</b> ~18 min</span>
+    </div>
+  </header>
+
+  <nav class="toc reveal" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#tldr">Executive summary</a></li>
+      <li><a href="#journey">The journey at a glance</a></li>
+      <li><a href="#variants">Variant-by-variant retrospective</a></li>
+      <li><a href="#wins">What worked — patterns to keep</a></li>
+      <li><a href="#losses">What failed — antipatterns to avoid</a></li>
+      <li><a href="#gotchas">Engineering gotchas — the unknown bites</a></li>
+      <li><a href="#fundamentals">Game-design fundamentals — adhered vs missed</a></li>
+      <li><a href="#process">Process discipline — wins, drift, repair</a></li>
+      <li><a href="#personal">For the next prototyper on this team</a></li>
+      <li><a href="#road">Open questions and the road ahead</a></li>
+    </ol>
+  </nav>
+
+  <!-- ===================== CONTENT START ===================== -->
+
+  <h2 id="tldr">Executive summary</h2>
+
+  <p>Between roughly May and mid-June 2026 the WeaponCraft idea cycled through <strong>six numbered variants</strong> across two engines (HTML/JS prototypes → Godot 4.6 Mono), one explicit post-mortem, two live forks, one pivot, and one autonomous overnight build. Today, only one variant is forward-active (<code>6_WeaponForge_TFTransistor</code>); two are frozen reference builds (<code>2_Weaponcraft_Godot</code>, <code>5_WeaponForge_Honkai_Godot</code>); one is archived as a learning artifact (<code>4_WeaponCraft_ForgeLoop</code>); and two early variants survive as design-history reference.</p>
+
+  <p>The throughline: <mark>we kept trying to find the moment that makes a craft <em>feel</em> like a craft</mark> — and we kept discovering that the answer was upstream of whatever we were currently polishing. Anatomical part-slot crafting (Head + Hilt + Rune) felt mechanical; modal minigames felt like four games glued together; weapon-gacha-on-locked-roster felt mathematically clean but lacked the "do something with your hands" beat; the current Transistor-style Function Matrix is the closest yet but is still being grilled on its power-gating layer.</p>
+
+  <p>Three durable lessons sit underneath all of it. First, <strong>sensory polish is not an engagement fix</strong>: variants 2 and 4 both proved that a tight per-tap feedback layer can ship green and still bounce playtesters when the underlying loop is wrong. Second, <strong>tests that assert data shape do not test the game</strong> — they assert that the rows in your config file are spelled correctly while the combat code never reads them. Third, <strong>discipline beats velocity</strong>: the variant that survives (variant 6) is the one with TDD + RED→GREEN + adversarial-review workflows enforced; the variants that died with the most code shipped per day did not have those guardrails.</p>
+
+  <div class="callout">
+    <span class="label">For the new prototyper</span>
+    <p>If you read one section after this summary, read <a href="#losses">§5 "What failed"</a> and then <a href="#gotchas">§6 "Engineering gotchas"</a>. The wins are reproducible from the docs; the losses are not, and the gotchas will eat a day of your life if you have to rediscover them.</p>
+  </div>
+
+  <h2 id="journey">The journey at a glance</h2>
+
+  <p>The repo's <code>_COMPARISON.md</code> stopped tracking variants after #1 — the table below is the true index. Reading order follows folder number, but the <em>causal</em> order is variant 1 → 2-HTML → 2-Godot → 3 → 4 → (5 ⊕ 6 in parallel from a common 2-Godot ancestor).</p>
+
+  <div class="table-wrap"><table><caption>Table 1 · Variants in chronological order of decision</caption>
+    <thead><tr><th>#</th><th>Folder</th><th>Core bet</th><th>Engine</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>1_Robotek_WeaponCraft</code></td><td>Robotek-cadence turn-based auto-battler with a TFT-shop crafting layer; "randomized dice roll moves out of combat and into craft"</td><td>(GDD only)</td><td>Canonical base GDD; <strong>Locked</strong> as reference</td></tr>
+      <tr><td>2a</td><td><code>2_WeaponCraft_Base</code></td><td>First playable HTML/JS implementation of variant 1: BASE-A1 build, anatomical Head + Hilt + Rune, TFT shop, recipe codex, 3-hero squad</td><td>HTML/JS</td><td>Built to v0.1.9; superseded by the Godot port</td></tr>
+      <tr><td>2b</td><td><code>2_Weaponcraft_Godot</code></td><td>Godot port of 2a; added persistent hero-squad gacha meta, scripted Vex pull, scout intel, Hero Level dual-track</td><td>Godot 4.6 Mono</td><td>Reached P0 vertical slice (210/210 tests, 12 Jun); <strong>FROZEN</strong> on pivot</td></tr>
+      <tr><td>3</td><td><code>3_WeaponCraft_RealTime</code></td><td>Same crafting hook on a continuous real-time stream — Wittle Defenders × Potion Craft × Brotato; 5-tile carousel shop scrolling at 5s/tick</td><td>(GDD only, partial proto)</td><td>Design-only fork; never went past spec</td></tr>
+      <tr><td>4</td><td><code>4_WeaponCraft_ForgeLoop</code></td><td>Loop-Hero-style 8-cell circular forge ring with 4 modal minigames (Bellows / Anvil / Quench / Engraver) per craft</td><td>HTML/JS</td><td><strong>Abandoned 25 May</strong>; explicit post-mortem; thesis "minigames as juice" rejected by playtesters</td></tr>
+      <tr><td>5</td><td><code>5_WeaponForge_Honkai_Godot</code></td><td>Fork of 2b: Wittle-inversion (pull <em>weapons</em>, not heroes), locked 7-hero anime roster, Catalyst element-pair compounds, scripted-pacing rework with Hot Paladin Stage-3 reveal</td><td>Godot 4.6 Mono</td><td><strong>Active fork-alt</strong> (paused); ~640 tests; CPI / D1 / FM-8 exit gates set</td></tr>
+      <tr><td>6</td><td><code>6_WeaponForge_TFTransistor</code></td><td>Pivot from 2b: Transistor-style Function Matrix (Active / Modifier / Passive sockets) + 3-lane auto-runner + Magicka cross-hero elemental reactions</td><td>Godot 4.6 Mono</td><td><strong>Current canon.</strong> Vertical slice shipped (799/799 tests after Q6 adversarial fix). Now in design-redesign brainstorm phase</td></tr>
+      <tr><td>—</td><td><code>Marketing-Reels</code></td><td>Cross-cutting infrastructure: ad-creative pipeline for whichever variant ships</td><td>(skill / runbook)</td><td>Design-only; demand-validation not done</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Pivot points (the inflection moments)</h3>
+  <ol>
+    <li><strong>2 May (approx):</strong> Variant 1 GDD locked. The Robotek-cadence + TFT-shop + 3-hero formula becomes the gravitational center every later variant orbits.</li>
+    <li><strong>22 May:</strong> Variant 2 BASE-A1 ships in HTML (<code>BASE-A1_0.1.9.html</code>). First time the loop is actually playable.</li>
+    <li><strong>24 May:</strong> ForgeLoop spec frozen and approved; bet: menu-based crafting is the boredom source, modal minigames will fix it.</li>
+    <li><strong>25 May:</strong> ForgeLoop abandoned. Post-mortem written. First explicit "the thesis was wrong" event in the project's history.</li>
+    <li><strong>1 Jun:</strong> Variant 2b forked to variant 5 (Honkai/Wittle-inversion) so the playtester build could stay stable while combat got reworked elsewhere.</li>
+    <li><strong>12 Jun (morning):</strong> Variant 2b reaches P0 vertical slice (autonomous overnight run, 210/210 tests). The build is shippable.</li>
+    <li><strong>12 Jun (afternoon):</strong> Variant 2b frozen on the same day. The pivot addendum is written: anatomical crafting + single-lane combat had <em>structural</em> agency problems no amount of polish would fix. Variant 6 (TFTransistor) is born from a bulk copy.</li>
+    <li><strong>14 Jun:</strong> Variant 6 vertical slice rebuilt overnight (autonomous; 329/329 tests; ~$0.46 image-gen spend).</li>
+    <li><strong>15 Jun:</strong> Phase-5 content batch Q1–Q6 lands. <mark>Adversarial-review workflow catches 5 spec-fidelity gaps that the green test sweep had hidden.</mark> Q6 effect-level tests close them.</li>
+    <li><strong>16–17 Jun:</strong> Design-redesign brainstorm begins, currently paused on the power-gating sub-problem. Today: the prototyper is asking what they've learned across all six variants.</li>
+  </ol>
+
+  <h2 id="variants">Variant-by-variant retrospective</h2>
+
+  <h3>1 — Robotek_WeaponCraft (canonical base)</h3>
+
+  <p><strong>The bet.</strong> A casual-mobile fantasy auto-battler in the Wittle Defender / AFK Journey / Hero Wars audience pocket. Take Robotek's turn-based send-my-unit-out cadence and bolt a TFT-style shop of weapon parts onto it. Move the "randomized dice" out of combat into craft. Three heroes, side-view single lane, boss every 5–6 waves, run ≈ 3–4 minutes.</p>
+
+  <p><strong>What stuck.</strong> The skeleton from this GDD never died. Every later variant inherited: 3-hero party, ult-on-tap, side-view single-lane combat (until variant 3 / 6 broke that), TFT-shop parts feed, boss-affinity counter-build, persistent weapons across waves, ~3–4 min stages.</p>
+
+  <p><strong>What was structurally wrong (in hindsight, only visible from variant 6's pivot addendum).</strong> The Head + Hilt + Rune anatomy means a player needs <em>specific part types</em> to assemble a weapon — and that puts them at the mercy of shop RNG. Worse, side-view single-lane combat gives the player no real-time agency, so the crafting layer has to carry 100% of the cognitive load — and an anatomical crafting layer is too restrictive to do that. We did not see this problem in variant 1 because variant 1 was a GDD, not a build.</p>
+
+  <h3>2a — WeaponCraft_Base (HTML/JS)</h3>
+
+  <p><strong>The bet.</strong> Ship variant 1 fast in HTML/JS. Get it in front of a playtester. Don't over-engineer.</p>
+
+  <p><strong>What worked.</strong> First real playable. The parchment-brass theme, hero card, ult gauge, affinity telegraph, console event schema (<code>window.__forgeLoopStats()</code>-style snapshot in the later sibling), and the BASE-A1 <code>.html</code> as a single self-contained fork target all became downstream-reusable. The reveal climax (the 4-second anvil-RING that variant 4 borrowed) was first prototyped here.</p>
+
+  <p><strong>What didn't.</strong> Menu-based crafting got boring after ~2 minutes. The playtester signal was unambiguous; the diagnosis was less so. We initially read it as a <em>juice</em> problem (→ variant 4) when it was a <em>structural agency</em> problem (→ variant 6 finally got it).</p>
+
+  <h3>2b — Weaponcraft_Godot (port + meta layer)</h3>
+
+  <p><strong>The bet.</strong> Port BASE-A1 to Godot 4.6 Mono so the project has a real engine substrate. Add a persistent hero-squad gacha meta layer (HOME → squad-select → run → result → scripted pull). Get to P0.</p>
+
+  <p><strong>What worked.</strong> This is the variant where the engineering discipline crystallized. TDD per task, RED→GREEN per checkpoint, commit + push per green task, headless test sweeps (exit code = failure count). The autonomous overnight run on the night of 11→12 Jun produced 210/210 tests across 7 suites and a playable build — and crucially, captured the running judgment calls into a <code>NIGHT-LOG.md</code> rather than burning them on resume. Save-schema versioning (v1 → v2 with explicit migration test) was established here. The "art = layout/palette truth" decision (don't pixel-cut UI chrome from AI screens; build from existing portraits + theme matching) is good guidance.</p>
+
+  <p><strong>What didn't.</strong> The structural problem from 2a was inherited unchanged. Polish on the meta layer (rich victory screen, scripted Vex pull, scout intel strip, level-up rows) raised the floor of how the game <em>looked</em> without raising the ceiling of how it <em>played</em>. Within hours of shipping P0 we were writing the pivot addendum.</p>
+
+  <div class="callout warn">
+    <span class="label">Smell</span>
+    <p>If you find yourself polishing the meta layer ahead of a feel-gate playtest of the core loop, the meta-layer work is probably procrastination on a core-loop problem you already know exists. Variant 2b shipped P0 and the pivot was decided the same day.</p>
+  </div>
+
+  <h3>3 — WeaponCraft_RealTime (design-only)</h3>
+
+  <p><strong>The bet.</strong> What if the combat layer became continuous real-time (Wittle / Brotato cadence) and the shop became a scrolling carousel (5 tiles, oldest expires every 5s)? Real-time would give the player attention bandwidth back; the carousel would force "watch what's coming" decisions.</p>
+
+  <p><strong>Why it died at spec.</strong> The variant never got a build. Looking back: the GDD is thoughtful — pulse-rhythm difficulty (15s quiet / 10s spike), revive-on-potion-click, 0:00→Bran 1:00→Elara 2:00→Vex hero unlock ramp. But it doesn't solve the structural anatomical-crafting problem from variant 2, it just changes the combat container. The Wittle-inversion fork (variant 5) took a more disruptive bet (locked roster + weapon gacha + Catalyst element pairs) and that crowded variant 3 out.</p>
+
+  <p><strong>Survivors.</strong> The carousel-shop idea is still latent in variant 6's "slow-populate 2/3/2" shop drip. The pulse-rhythm difficulty curve is the kind of thing variant 6 will need when it starts tuning feel.</p>
+
+  <h3>4 — WeaponCraft_ForgeLoop (the explicit failure)</h3>
+
+  <p>The most important variant in this retrospective is the one that died. ForgeLoop has the only formal <code>POST_MORTEM.md</code> in the repo. The five-point breakdown is verbatim-worth-quoting:</p>
+
+  <blockquote>"We don't want minigames inside a game. It's too much effort, and people churn out fast. We need things to flow cohesively in one game."<cite>Playtester verdict, ForgeLoop POST_MORTEM.md (25 May 2026)</cite></blockquote>
+
+  <p><strong>The bet.</strong> Menu-based crafting from variants 2a/2b got boring → minigames-as-juice will re-engage players. Build a Loop-Hero-style 8-cell hex ring; 6 customizable cells; player drags station tiles (Bellows / Anvil / Quench / Engraver); a glowing ingot laps the ring; each station triggers a 3–7 s modal minigame; lap completes → 4-second anvil-RING reveal climax → weapon snaps onto hero. Forge Again? (5🪙) re-enters the loop and stacks stats.</p>
+
+  <p><strong>What shipped.</strong> 14 commits, ~1900 lines in a single self-contained HTML, four working minigames, ring geometry + drag-drop placement, ingot travel animation, the reveal climax, hero card weapon mount with per-strike pulse and ★ crit markers. The Anvil minigame got a 5-layer feedback pass (banner / zone flash / sparks / hammer pulse / shake on miss).</p>
+
+  <p><strong>Why it failed (the five-point breakdown).</strong></p>
+  <ol>
+    <li><strong>Minigames are micro-games, not gameplay.</strong> Four chained minigames per craft = 20+ s of being yanked into mode-switched sub-experiences. Players described it as <em>playing four games in series</em>.</li>
+    <li><strong>Modal pause kills momentum.</strong> A craft should feel like one continuous gesture; ForgeLoop's craft was a sequence of disconnected discrete tasks.</li>
+    <li><strong>Mastery cost too high for too little payoff.</strong> Each minigame had its own muscle memory; the interesting decision (which station, what order) sat behind a layer of execution skill that didn't reward growth — once you can hit 5/5 Anvil, it becomes a tax.</li>
+    <li><strong>Churn risk.</strong> ~25–35 s first forge + 4-s reveal + combat. Three of those seconds are spent on a modal minigame <em>before</em> the player has seen combat happen. Mobile players have ~10–15 s to decide if a session is worth continuing.</li>
+    <li><strong>Polish wasn't the bottleneck.</strong> The 5-layer Anvil feedback pass felt sharp and still bounced testers. <mark>"Polish-is-not-fun-fix" was discovered the hard way here.</mark></li>
+  </ol>
+
+  <p><strong>What lives on.</strong> The post-mortem explicitly carries forward: the 4-second reveal climax pattern (every variant should have a payoff moment of similar shape), the weapon-name generator (Crude/Honed/Tempered/Masterwork × Element × Base), the SVG sprite composite (layered blade + tint + glyph), the spatial-combo seed (Bellows-before-Anvil = +30% Hot Strike was the most interesting decision the build offered), and the principle of depth-per-weapon over breadth-of-weapons.</p>
+
+  <h3>5 — WeaponForge_Honkai_Godot (the Wittle-inversion fork)</h3>
+
+  <p><strong>The bet.</strong> Pull weapons, not heroes. Lock the roster at 7 (Bran / Elara / Vex + Hot Paladin via Stage-3 cinematic + 2nd Rogue + 2nd Mage + Hot Assassin; 3 deploy per stage). The moat is the combination of equipment-gacha (precedented; Archero $263M) with a story-locked roster (unprecedented). Add Catalyst element-pair compounds (renamed from Resonance because Habby owns that term via Archero 2). Stages = 5 waves with W5 boss (compressed from the design's 15-wave shape).</p>
+
+  <p><strong>What shipped.</strong> A surprisingly complete prototype. By 10 Jun: Catalyst v1 with 10 element-pair compounds (Firestorm, Wildfire, Plasma, Blizzard, Glacial Storm, Stormfront, + 4 Earth-gated at S10); Ember pull currency separated from gems; Scripted Pacing Rework with the Hot Paladin Stage-3 scripted-defeat cinematic, Helios Cleaver scripted-grant, 4 new light Catalyst pairs (Solar Flare / Halo Bloom / Plasma Arc / Auroral Veil); a teammate pitch deck (HTML, Bran 5-tier portrait scrubber as the unforgettable hook); ~640 tests baseline; <strong>save schema reached v6</strong> with explicit migrations at each bump.</p>
+
+  <p><strong>What worked.</strong> The structural process discipline is the cleanest of any variant. The <code>5_/CLAUDE.md</code> codifies it: brainstorm → spec → plan → TDD → execute. Save schema policy: every bump = new <code>_migrate_vN_to_vN+1()</code> + a TestAccountState case that loads an old-format dict and asserts the v+1 defaults. Numbers policy: numbers in code = starting values, tune via playtest. No magic numbers; <code>## Why N</code> comments when a value deviates from the spec. Stage-1 combat is a frozen contract — any combat-math change must keep stage-1 green or explicitly rebaseline.</p>
+
+  <p><strong>What didn't.</strong> The variant is the longest design-doc-to-build ratio of any variant; the prototype has not yet hit its exit gates (D1 ≥ 35% / FM-8 hero-bond probe ≥ 6/10 / ad CPI ≤ $2.80). The pre-flight gates (Bran 5-tier portrait eval with 20 Honkai players, USPTO trademark check on "Catalyst") were still open at the freeze. <em>This is the variant that came closest to being a real game and the variant most in danger of becoming over-specified before it has been play-tested at the moats that matter.</em></p>
+
+  <h3>6 — WeaponForge_TFTransistor (current canon)</h3>
+
+  <p><strong>The bet.</strong> Take the pivot addendum's three pillars: (a) <em>Universal Function Sockets</em> — a Transistor-inspired matrix where every drafted Function is multi-purpose, behaving differently as Active / Modifier / Passive (no more anatomical part-type RNG bottleneck); (b) <em>spatial 3-lane auto-runner combat</em> — geometry restores tactical decisions like range, targeting, AoE shape; (c) <em>Magicka cross-hero elemental reactions</em> — the Mage paints a zone Wet+Chilled, the Warrior steps into it with a SLAM, the game detonates a Shatter Reaction for 300% splash. Three pillars × TFT shop drafting × 3-hero squad × ~4-minute stage.</p>
+
+  <p><strong>What shipped.</strong> A working vertical slice as of 14 Jun (real chibi assets, 329/329 tests). The Phase-5 content batch on 15 Jun added 15-reaction Magicka matrix + 12-Function catalog + tier scaling T1–T5 + hero Ults firing real effects + wave telegraph (Q1–Q5). An <strong>adversarial-review workflow</strong> (6 readers + per-finding verifiers, 27 agents) then caught 5 spec-fidelity gaps the green sweep had hidden — tests had asserted data shape, not combat effect. Q6 closed those with effect-level tests; final sweep <strong>799/799 across 17 suites</strong>. Real-asset-pass branch is canon, build playable end-to-end (Home → F0 forge → 5 stages of 3 auto-battle waves with per-stage forge break → VICTORY or DEFEAT).</p>
+
+  <p><strong>What's open right now.</strong> Since 16 Jun the work has paused on a <em>design redesign brainstorm</em>: a from-the-research rethink of the core craft. The shipped build is the baseline, not the target. Craft model was resolved 17 Jun (3-layer FORGE → LINEUP → COMBAT; 5 locks including reaction cross-hero, adjacency = Modifier-warp, per-hero frame shapes, role-by-emitter-distance, part vocab = Functions + Modifiers). Open: <strong>power-gating</strong> — what meters output and times the cascade (Expedition-33 mana/AP-style, casual-blend with hyper-casual research). After that: board specifics + LINEUP detail + legibility → part vocab → Items / Synergies / Catalysts → Wittle-meta lift → balance → spec → plans → TDD build.</p>
+
+  <h2 id="wins">What worked — patterns to keep</h2>
+
+  <h3>Design patterns</h3>
+  <ul>
+    <li><strong>The reveal climax as a payoff invariant.</strong> Every variant that had a "you forged something" moment with the 4-second anvil-RING + name banner + arc-to-hero animation produced visible dopamine in playtesters. Variant 4's post-mortem promotes this from a feature to a <em>pattern</em>: every future variant should preserve a payoff moment of similar shape, even if the build-up changes completely.</li>
+    <li><strong>Depth-per-weapon &gt; breadth-of-weapons.</strong> Persistent weapons that grow across waves felt good; rotating a new weapon every wave did not. The mechanism can change (re-laps in 4, merge-bumps in 6) but the principle holds.</li>
+    <li><strong>Boss-affinity counter-build telegraph.</strong> Every variant uses this and every variant survives it. Pre-stage briefing telegraphs <em>weak: ☀ light · resist: 🪨 earth</em>; the loadout phase is where the player solves the puzzle. This is mechanically cheap and tactically rich.</li>
+    <li><strong>Locked roster + dual-track hero progression.</strong> Variant 5's Slot Level 1→200 (inherits) + Hero Mastery 1→100 (per-hero, narrative) is a clean way to separate "the hero gets stronger" from "I get to know this hero." It is also the thing that gives "story-locked roster" — the moat candidate — a mechanical home.</li>
+    <li><strong>The pivot addendum format.</strong> When variant 2b pivoted to variant 6, the prototyper wrote a single-doc rationale that explained the three pillars and why the prior architecture was structurally wrong (not just unpolished). That document is what made the pivot reviewable and reversible. Compare with variant 4, whose abandonment was reviewable only because of the post-mortem.</li>
+  </ul>
+
+  <h3>Engineering patterns</h3>
+  <ul>
+    <li><strong>Self-quitting <code>Test*.tscn</code> headless harnesses</strong> with exit code = failure count. Makes "did the whole thing go green?" a single command. Variant 5 has ~640 across 14 suites; variant 6 reached 799 after Q6.</li>
+    <li><strong>RED → GREEN per checkpoint, commit per green</strong>. The autonomous overnight runs in 2b and 6 only worked because each task had a clean test boundary. Drift from this rule (variant 4's polish pass) corresponds tightly with drift from playable.</li>
+    <li><strong>Save-schema versioning with explicit migrations + a TestAccountState case per bump.</strong> Variant 5 is at v6; variant 6 is at v3. None of those bumps has been silent.</li>
+    <li><strong>Numbers Policy.</strong> Numbers in code are <em>starting values</em>, tuned via playtest data. <code>const</code> + <code>## Why N</code> comment when a value deviates from spec. Prevents the "magic-number drift" failure where someone bumps a constant six weeks later because "it felt better" and now nothing reproduces.</li>
+    <li><strong>AUTOSHOT screenshot helper.</strong> The <code>WC_AUTOSHOT</code> env-var pattern lets a windowed Godot scene capture itself to PNG and quit. Made visual QC reproducible — every Mockup PNG has a deterministic "this is what we actually shipped" twin.</li>
+    <li><strong>Adversarial-review workflow.</strong> The single best engineering decision in the whole project was running a 27-agent adversarial review against the Phase-5 batch on 15 Jun. It surfaced exactly the gaps a green-sweep was hiding. Make this a default for every non-trivial content batch, not a one-off.</li>
+  </ul>
+
+  <h3>Process patterns</h3>
+  <ul>
+    <li><strong>NIGHT-LOG / MORNING_REPORT pattern</strong>. Autonomous runs write a structured decision log as they go and a stand-alone morning report when they finish. Result: a new chat can resume with full causal context. This is the cheapest single piece of session-continuity insurance in the repo.</li>
+    <li><strong>HANDOFF.md per branch.</strong> Every variant that survived a session boundary has one. The variant 6 <code>HANDOFF.md</code> is the canonical example — it has a "Read these to resume, in order" section, a resume sequence, and a paused-vs-active flag.</li>
+    <li><strong>SSOT + ROADMAP + ARCHIVE separation.</strong> Each variant's <code>CLAUDE.md</code> explicitly names which files are SSOT, which are forward-work-ok, and which are <code>_archive/</code>-only. Variant 6 even segments <code>_archive/docs-pre-pivot-2026-06-12/</code> with a HISTORICAL banner on every file.</li>
+    <li><strong>Image-gen cost policy (nano-banana default; nano-banana-pro only on explicit per-call ask).</strong> Variant 6's overnight asset pass spent ~$0.46 of the $5 budget on 12 images. The policy is in every project <code>CLAUDE.md</code> and one global; the global enforces it cross-project.</li>
+    <li><strong>Branch naming policy.</strong> <code>&lt;sub-project-slug&gt;/&lt;descriptive-keywords&gt;</code>. The variant 5 branches (<code>forgeloop/teammate-deck</code>, <code>forgeloop/catalyst-element-pairs</code>) and the variant 6 branches (<code>weaponforge-tftransistor/post-slice-phase5</code>) are immediately readable six months later. Random-slug branches die in the discoverability bucket.</li>
+  </ul>
+
+  <h2 id="losses">What failed — antipatterns to avoid</h2>
+
+  <h3>Design antipatterns</h3>
+  <ul>
+    <li><strong>Polish as substitute for diagnosis.</strong> Variant 4 added five layers of Anvil feedback and the playtester signal didn't move. Variant 2b shipped a rich result screen and pivoted the same day. <mark>If the loop is wrong, polishing the loop's frame makes the wrong loop sharper.</mark> The diagnostic question is "is the core gesture interesting?", not "does the per-tap feedback feel good?"</li>
+    <li><strong>Mode-switched mini-experiences inside a 4-minute session.</strong> Modal minigames per craft. Don't. Hearthstone has zero minigames inside Hearthstone. If you do use a minigame, make it <em>the</em> craft, not part of it.</li>
+    <li><strong>Anatomical part-type slots when the combat layer doesn't carry the agency load.</strong> The original Head + Hilt + Rune design forced shop RNG to control player progress. Variant 6's Universal Function Sockets fix this by making every rolled Function multi-purpose — there is no "missing hilt" trap.</li>
+    <li><strong>Side-view single-lane combat as the only spatial vocabulary.</strong> Range, targeting, AoE shape can't matter on a single lane. Variant 6 moved to 3-lane (and the brainstorm is now considering richer board shapes) precisely because spatial decisions are where item Functions stop being numbers and start being plays.</li>
+    <li><strong>Designing the meta before the moat is felt.</strong> Variant 5 has the cleanest meta layer (Catalyst codex, Ember economy, Stage-3 paladin cinematic, prestige skins, battle-pass roadmap) and the least confidence on its core feel. Meta wraps a working core; it cannot substitute for one. Always feel-gate the core <em>before</em> building meta.</li>
+    <li><strong>Treating "the playtester loves the reveal" as "the playtester loves the game."</strong> The reveal climax always lands. It is a local maximum of dopamine; it is not the same signal as session-to-session retention. Don't conflate.</li>
+  </ul>
+
+  <h3>Engineering antipatterns</h3>
+  <ul>
+    <li><strong>The data-vs-effect test gap.</strong> The single most expensive engineering lesson in the project. Tests asserted that <code>.tres</code> files had the right fields with the right values; combat never read those fields. Sweep was green; the game was wrong. <mark>Always assert the combat effect, not just the data shape.</mark> The Q6 fix path is the model: when a Function has an <code>active_max_hits</code> field, the test must spawn enemies, run the tick, and assert hits landed.</li>
+    <li><strong>Parse errors masking the entire suite.</strong> A renamed function leaves a stale <code>_ready</code> call → Godot exits 255 with zero test output → looks like a pass. <code>grep -E 'SCRIPT ERROR|Parse Error'</code> on the output before trusting the sweep number.</li>
+    <li><strong>PowerShell <code>*&gt;</code> UTF-16 stdout vs Godot UTF-8 logs.</strong> Will silently garble your grep targets. Use Bash <code>&gt; file 2&gt;&amp;1</code> and Read the file.</li>
+    <li><strong>Godot processes going zombie under contention.</strong> Multiple headless runs in parallel from the same project will deadlock on the <code>.godot/imported</code> cache. <code>Stop-Process -Name Godot_v4.6.2-stable_mono_win64_console -Force</code> between runs.</li>
+    <li><strong>Committing <code>.import</code> churn.</strong> Godot autosaves <code>.import</code> files on every open and the diff is noise. <code>git add -A</code> sweeps it up by accident. Stage individual files; never <code>-A</code>.</li>
+    <li><strong><code>class_name</code> resolution races at parse time.</strong> Godot 4 cannot reliably resolve <code>class_name MyResource</code> in headless runs unless something has preloaded the script. Workaround: <code>const _MyScript: Script = preload("res://path.gd")</code> and compare <code>res.get_script() == _MyScript</code>.</li>
+    <li><strong><code>const</code> arrays/dicts are read-only.</strong> Tests that hand combat heroes from a <code>const</code> array crash on the first write. <code>.duplicate(true)</code>.</li>
+    <li><strong>New PNGs need an <code>--import</code> pass.</strong> Drop a <code>.png</code> in <code>assets/</code> and then <code>load()</code> it in code without importing first → silent null → icons fall back to dots.</li>
+    <li><strong>Writing <code>user://account.json</code> from headless test code.</strong> Pollutes the real save. Use in-memory state or temp paths.</li>
+  </ul>
+
+  <h3>Process antipatterns</h3>
+  <ul>
+    <li><strong>Random branch names.</strong> <code>claude/vigorous-chaum-fc300f</code> — no project hint, no scope hint, dies in <code>git branch</code> the moment you have three. The global branch-naming policy now blocks this.</li>
+    <li><strong>Skipping the brainstorm step on "trivial" features.</strong> Several mid-project additions to variant 5 went straight to plan without a brainstorm and produced specs that had to be reworked. The 4-step discipline (brainstorm → spec → plan → TDD execute) costs ~30 minutes up front and saves ~3 hours in spec-rework.</li>
+    <li><strong>Holding active design debate in chat instead of <code>docs/superpowers/specs/</code>.</strong> Inevitably gets lost on a context boundary. Variant 6's "design redesign brainstorm" survived its pause precisely because it was written down at every step (see the chronologically-named specs <code>2026-06-15-prototype-direction-design.md</code>, <code>2026-06-16-craft-mechanic-options-ranked.md</code>, <code>2026-06-17-craft-model-resolved-and-gating.md</code>).</li>
+    <li><strong>Letting <code>_COMPARISON.md</code> rot.</strong> The repo-root variant index hasn't been updated since variant 1. A reader landing in the repo cold has no map. Either keep the index alive or replace it with a "see <code>N_*/CLAUDE.md</code>" pointer.</li>
+  </ul>
+
+  <h2 id="gotchas">Engineering gotchas — the unknown bites</h2>
+
+  <p>These are the bugs whose existence wasn't predictable from the docs and which took real time to diagnose. Each one belongs in a future <code>CLAUDE.md</code> so the next prototyper doesn't have to rediscover it.</p>
+
+  <div class="table-wrap"><table><caption>Table 2 · Gotchas worth pinning</caption>
+    <thead><tr><th>Symptom</th><th>Root cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Green test sweep, broken combat</td><td>Tests asserted <code>.tres</code> data shape, never the combat effect</td><td>Q6 pattern: spawn enemies, run the tick, assert hits / status / reaction / damage actually landed</td></tr>
+      <tr><td>Exit 255, zero test output, looks like pass</td><td>Parse error in renamed function / stale <code>_ready</code> call</td><td>Grep <code>SCRIPT ERROR|Parse Error</code> before trusting the count</td></tr>
+      <tr><td>Garbled grep targets on test output</td><td>PowerShell <code>*&gt;</code> writes UTF-16; Godot logs are UTF-8</td><td>Use Bash <code>&gt; file 2&gt;&amp;1</code>; Read the file plain</td></tr>
+      <tr><td>Headless run hangs forever</td><td>Godot process went zombie under contention</td><td>Stop-Process Godot console between runs</td></tr>
+      <tr><td>Icons render as dots</td><td>New <code>.png</code> not imported; <code>ResourceLoader.exists/load</code> returns null</td><td>Run <code>--headless --import</code> once after dropping a PNG</td></tr>
+      <tr><td>Icons render as white squares over enemies</td><td>nano-banana returned opaque PNG; needed cutout-from-edges</td><td><code>cut_status_bg.gd</code> / <code>cut_icon_bg.gd</code> flood-fill from edges</td></tr>
+      <tr><td>Tests crash on hero write</td><td><code>const</code> arrays/dicts are read-only in Godot 4</td><td><code>hero.duplicate(true)</code> in the test setup</td></tr>
+      <tr><td><code>:=</code> type inference parse error</td><td>Inferred return type from <code>get_node("/root/X").method()</code> is <code>Node</code></td><td>Use explicit annotation: <code>var x: bool = autoload.method()</code></td></tr>
+      <tr><td>Headless test pollutes real save</td><td>Test code wrote <code>user://account.json</code></td><td>In-memory state or temp paths; never the real save from tests</td></tr>
+      <tr><td>Permadeath full-run test wrong</td><td>All-heroes-dead = DEFEAT fires in <code>_tick_once</code>; 15-wave full-run can't reach VICTORY without buffs</td><td><code>_buff_heroes</code> in the long-run test setup</td></tr>
+      <tr><td>Real-time clicks eaten</td><td><code>ChainHUD</code> intercepted clicks; pause trap froze input</td><td><code>mouse_filter = IGNORE</code> on overlay layers; clear the pause flag in the state-machine exit</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="fundamentals">Game-design fundamentals — adhered vs missed</h2>
+
+  <h3>Adhered to (mostly)</h3>
+  <ul>
+    <li><strong>Identify the audience first.</strong> The Wittle Defender ∩ AFK Journey ∩ Hero Wars cohort was named in variant 1 and never wobbled. Every variant could explain who it was for.</li>
+    <li><strong>Pick one moat candidate per variant.</strong> Variant 5: equipment-gacha × locked anime roster. Variant 6: Universal Function Sockets × Magicka cross-hero reactions. The moat is the testable claim.</li>
+    <li><strong>Casual-mobile constraints respected.</strong> ~3–4 minute stages. Single-tap ultimate. Auto-combat by default. No keyboard. No drag-everywhere; mobile-friendly tap-to-equip with optional drag.</li>
+    <li><strong>Payoff moments at predictable rhythm.</strong> Boss every 5 waves; reveal climax on every craft; stage clear → meta beat.</li>
+    <li><strong>Counter-build telegraph as the cognitive hook.</strong> Pre-stage briefing always shows boss weak/resist tags. The loadout phase is the puzzle.</li>
+  </ul>
+
+  <h3>Missed or under-played</h3>
+  <ul>
+    <li><strong>Feel-gate the core loop before building meta.</strong> Variant 5 has a battle-pass roadmap before its core-loop CPI is known. The exit gates are written (D1 ≥ 35%, FM-8 ≥ 6/10, ad CPI ≤ $2.80 — 80% of Wittle benchmark) but not measured.</li>
+    <li><strong>Demand validation cross-cuts.</strong> The Marketing-Reels pipeline is designed but no ad-test has run. No CPI signal feeds back into design before the build is far down the cost curve.</li>
+    <li><strong>Player-skill ladder design.</strong> Several variants ship with a flat skill ceiling — once you know the combo, the minigame / merge / draft becomes a tax (variant 4's Anvil was the worst offender; variant 6's merge is at risk).</li>
+    <li><strong>The first-15-second rule.</strong> Mobile players decide in 10–15s. Variant 4 spent the first 3s of those on a modal minigame for the first craft. Variant 6 currently spends them on a forge break. Neither variant has measured what happens after the first 15s of a cold-start session with a real player.</li>
+    <li><strong>Designing for "I want to come back tomorrow."</strong> Stage layout, ult drama, reveal climaxes all hit "fun right now." Variant 5's locked-roster bond + Hero Mastery + scripted cinematics are the only sustained attempt at "I want to come back to this character." That's still unproven.</li>
+    <li><strong>Failure-state design.</strong> Variant 6 has permadeath VICTORY/DEFEAT. Variant 5 has boss-retry-with-reforge. These are different bets and we haven't compared them at playtest.</li>
+  </ul>
+
+  <h2 id="process">Process discipline — wins, drift, repair</h2>
+
+  <h3>The pattern that actually held</h3>
+  <ol>
+    <li><strong>Brainstorm</strong> (<code>superpowers:brainstorming</code>) — clarify intent + 2–3 approaches + design + owner approval.</li>
+    <li><strong>Spec</strong> → <code>docs/superpowers/specs/YYYY-MM-DD-&lt;topic&gt;-design.md</code>; commit; owner reviews the file.</li>
+    <li><strong>Plan</strong> (<code>superpowers:writing-plans</code>) → impl plan with ordered tickets; owner approval.</li>
+    <li><strong>Execute</strong> (<code>superpowers:test-driven-development</code> + <code>superpowers:executing-plans</code> or <code>subagent-driven-development</code>) → RED → GREEN → commit per task.</li>
+  </ol>
+
+  <p>Skip steps only on (a) trivial single-file mechanical work or (b) explicit owner waiver. When the project drifted from this discipline, the next session paid the spec-rework tax. When it held, the project's velocity was the velocity of <em>shipping</em>, not of <em>changing minds</em>.</p>
+
+  <h3>What broke under load</h3>
+  <ul>
+    <li><strong>SSOT drift between specs and the build.</strong> Repeatedly. Resolved each time with a "the build wins; update the doc" rule baked into each <code>CLAUDE.md</code>.</li>
+    <li><strong>Active vs frozen folder ambiguity.</strong> Multiple variants are alive on disk at the same time and a fresh session can't tell which is current. Resolved by aggressive freeze banners + explicit "do NOT extend in this branch" lists in <code>CLAUDE.md</code>.</li>
+    <li><strong>Test-pass false confidence.</strong> The data-vs-effect gap. Resolved by Q6 effect-level tests and by adopting an adversarial-review pass for batch landings.</li>
+    <li><strong>Image-gen cost creep.</strong> Resolved by a global cost-policy memory and a per-project repeat in <code>CLAUDE.md</code>.</li>
+  </ul>
+
+  <h2 id="personal">For the next prototyper on this team</h2>
+
+  <p>If you're inheriting this work — whether to continue variant 6, revive variant 5, or fork a variant 7 — here is the load-bearing condensation.</p>
+
+  <div class="callout tip">
+    <span class="label">Pin to your wall</span>
+    <ol>
+      <li><strong>Polish is not a fix.</strong> If you're polishing and the playtester signal hasn't moved, stop. Diagnose upstream.</li>
+      <li><strong>Test the effect, not the data.</strong> If your <code>.tres</code> has a field, write a test that proves combat reads it and acts on it.</li>
+      <li><strong>Preserve the reveal climax.</strong> Whatever else changes, keep a payoff moment of the 4-second anvil-RING shape.</li>
+      <li><strong>Depth-per-weapon &gt; breadth-of-weapons.</strong> Persistent + growing beats fresh + disposable.</li>
+      <li><strong>Spatial agency is non-negotiable.</strong> If combat has no positions, the craft has to be insanely deep; if combat has positions, the craft can be cleaner. Pick a lane.</li>
+      <li><strong>No modal minigames inside the session.</strong> Use minigames sparingly, ideally as the <em>whole</em> craft, never as one of N.</li>
+      <li><strong>Feel-gate the core loop before building meta.</strong> Don't write the battle-pass spec until the core CPI is in the ad-test target.</li>
+      <li><strong>RED → GREEN → commit, per task.</strong> Discipline drift = velocity drift, in that order.</li>
+      <li><strong>Run an adversarial review on every content batch.</strong> Green sweeps lie; 27 agents arguing about it don't.</li>
+      <li><strong>Write the NIGHT-LOG / HANDOFF / pivot-addendum.</strong> Future-you and Future-Claude will not remember what current-you decided unless you write it down where the next session can find it.</li>
+    </ol>
+  </div>
+
+  <h3>Wins from variant 5 you can lift wholesale</h3>
+  <ul>
+    <li>Save-schema migration discipline (<code>_migrate_vN_to_vN+1()</code> + a TestAccountState case per bump).</li>
+    <li>Stage-1 neutrality contract — frozen test asserts shipped balance; rebaselines flagged explicitly in commit body.</li>
+    <li>The 4-step process discipline above.</li>
+    <li>The HOME → run → result → scripted-pull cinematic shape.</li>
+  </ul>
+
+  <h3>Wins from variant 6 you can lift wholesale</h3>
+  <ul>
+    <li>The Q6-style effect-level test pattern.</li>
+    <li>The adversarial-review workflow architecture.</li>
+    <li>AUTOSHOT for visual QC.</li>
+    <li>The Function × slot 36-cell matrix as a clean source of truth for "every drafted item is multi-purpose."</li>
+    <li>The brainstorm artifacts pattern (<code>.superpowers/brainstorm/*/content/*.html</code>) — visual brainstorm pages versioned in git.</li>
+  </ul>
+
+  <h3>Mistakes you don't have to repeat</h3>
+  <ul>
+    <li>Variant 1 → 4 chain: don't assume juice fixes boredom without diagnosing the structural cause.</li>
+    <li>Variant 2b: shipping P0 the same day you write the pivot addendum is a signal that you saw the problem too late. Watch for that smell earlier.</li>
+    <li>Variant 6 Q1–Q5: green sweep without effect-level tests = "spec-fidelity gap masked by green-test theater." Adversarial review or the next prototyper will find it.</li>
+    <li>Variant 3: a spec without a build is barely a variant. If a fork is worth design ink, give it a 1-day spike to learn whether the bet survives contact with code.</li>
+  </ul>
+
+  <h2 id="road">Open questions and the road ahead</h2>
+
+  <p>As of 18 Jun, variant 6 is the only forward branch. It is paused mid-brainstorm on the <em>power-gating</em> question — what meters output, what times the cascade, how does the casual + Magicka cocktail not become Expedition-33 in terms of mental load? The resume sequence is in <code>6_/HANDOFF.md</code> and tomorrow's session picks up there. The shipped build is the baseline; the redesign is the target.</p>
+
+  <p>Three meta-questions that haven't been answered in any variant and that the next 30 days should answer:</p>
+  <ol>
+    <li><strong>Does the moat candidate work?</strong> For variant 5: is "weapon gacha × locked anime roster" really a moat, or just a novel combination of two known things? FM-8 hero-bond probe must run.</li>
+    <li><strong>Does the core loop CPI come in under Wittle?</strong> The Marketing-Reels pipeline is designed and idle. Until an ad-test runs, the exit gate "CPI ≤ $2.80" is an aspiration.</li>
+    <li><strong>What does day 7 feel like?</strong> Every variant is tuned for the first session. None has been tuned for the seventh.</li>
+  </ol>
+
+  <hr class="dinkus">
+
+  <p>The repo is full of buried wins and a few buried failures, and most of the lessons here are in tension with each other (move fast / be disciplined; ship the slice / pivot before sunk cost; polish the climax / feel-gate the core). Hold them in tension; don't resolve them prematurely. The next variant will be better than this one if you read the variant-4 post-mortem in full and the variant-6 HANDOFF in full before you write a line of new design.</p>
+
+  <!-- ====================== CONTENT END ====================== -->
+
+  <footer class="doc-footer">
+    <span>Game_Prototypes · WeaponCraft / WeaponForge · 6 variants</span>
+    <span>Compiled from repo docs, 18 Jun 2026</span>
+  </footer>
+
+</article>
+
+<script>
+  var bar = document.getElementById('progress');
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  }
+  document.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  var root = document.documentElement;
+  function isDarkNow() {
+    if (root.classList.contains('dark')) return true;
+    if (root.classList.contains('light')) return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var next = isDarkNow() ? 'light' : 'dark';
+    root.classList.remove('light', 'dark');
+    root.classList.add(next);
+    try { localStorage.setItem('reportTheme', next); } catch (e) {}
+  });
+</script>
+</body>
+</html>

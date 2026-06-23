@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponForge — FTUE beat-5 throwaway</title>
+<style>
+  :root{
+    --bg:#11151c; --panel:#1a2029; --panel2:#222b36; --ink:#e6ebf2; --mut:#8a97a8;
+    --fire:#e0552e; --water:#2a8fe0; --steam:#cfd8df; --mod:#8a6bff; --gold:#e0a020;
+    --ok:#46c46a; --line:#2c3744;
+    --hex-w:62px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Helvetica,Arial,sans-serif;}
+  body{max-width:920px;margin:0 auto;padding:14px 16px 40px;}
+  h1{font-size:18px;font-weight:600;margin:0 0 2px;}
+  .sub{color:var(--mut);font-size:12.5px;margin:0 0 12px;}
+  .beat{background:linear-gradient(0deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:4px solid var(--gold);
+    border-radius:10px;padding:11px 14px;margin:0 0 14px;min-height:54px;}
+  .beat .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+  .beat .msg{font-size:15px;margin-top:3px;line-height:1.4;}
+  .beat.win{border-left-color:var(--ok);} .beat.win .tag{color:var(--ok);}
+  .grid{display:grid;grid-template-columns:1fr 300px;gap:14px;}
+  @media(max-width:780px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;}
+  .card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 10px;font-weight:700;}
+  .boardwrap{position:relative;width:300px;height:196px;margin:4px auto 6px;}
+  .boardwrap svg{position:absolute;inset:0;pointer-events:none;}
+  .hexem{position:absolute;left:8px;top:80px;width:34px;height:34px;border-radius:50%;background:#3a4554;border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--gold);font-weight:700;text-align:center;line-height:1.05;}
+  .cell{position:absolute;width:var(--hex-w);height:70px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+    background:#28323f;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:filter .12s, transform .1s;
+    font-size:12px;font-weight:700;color:#0c0f14;text-align:center;line-height:1.05;}
+  .cell:hover{filter:brightness(1.18);}
+  .cell.empty{background:#222b36;color:#3f4b59;font-weight:500;font-size:10px;}
+  .cell.fire{background:var(--fire);} .cell.water{background:var(--water);}
+  .cell.mod{background:#2a2440;border:0;color:var(--mod);}
+  .cell.mod .mglyph{font-size:18px;color:#cdbcff;}
+  .cell.placeable{outline:2px dashed var(--gold);outline-offset:-4px;}
+  .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+  .piece{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 11px;cursor:pointer;font-size:12.5px;font-weight:600;
+    display:flex;align-items:center;gap:7px;transition:transform .08s;}
+  .piece:hover{transform:translateY(-1px);} .piece.sel{outline:2px solid var(--gold);}
+  .piece[disabled]{opacity:.32;pointer-events:none;}
+  .dot{width:14px;height:14px;border-radius:4px;display:inline-block;}
+  .dot.fire{background:var(--fire);} .dot.water{background:var(--water);} .dot.mod{background:var(--mod);}
+  .mana{height:14px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px;}
+  .mana > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .15s linear;}
+  .manalabel{font-size:11px;color:var(--mut);text-align:center;}
+  .enemy .ehead{display:flex;justify-content:space-between;align-items:baseline;}
+  .enemy .ename{font-weight:600;font-size:15px;}
+  .tags{margin:7px 0;display:flex;gap:6px;flex-wrap:wrap;}
+  .t{font-size:10.5px;padding:3px 7px;border-radius:6px;font-weight:700;}
+  .t.res{background:#3a2420;color:#f0a48a;} .t.weak{background:#1f3a22;color:#8fe0a0;} .t.mega{background:#2a2440;color:#cdbcff;}
+  .hp{height:18px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;margin-top:4px;}
+  .hp > i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#c43a3a,#e06a6a);transition:width .25s;}
+  .hp > span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+  .mix{font-size:12.5px;margin-top:10px;min-height:20px;}
+  .mix b{color:var(--ink);}
+  .log{margin-top:8px;font-size:11.5px;color:var(--mut);height:96px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;line-height:1.5;}
+  .log .big{color:var(--steam);font-weight:700;}
+  .btns{margin-top:12px;display:flex;gap:8px;}
+  button.act{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;}
+  button.act:hover{border-color:var(--gold);}
+  .float{position:absolute;font-weight:800;font-size:15px;pointer-events:none;animation:fl 0.9s ease-out forwards;}
+  @keyframes fl{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-28px);}}
+  .note{color:var(--mut);font-size:11px;margin-top:10px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div style="background:#231d33;border:1px solid #3a3155;border-left:4px solid #b39bff;border-radius:8px;padding:8px 12px;margin:0 0 12px;font:13px 'Segoe UI',sans-serif;color:#cdbcff;line-height:1.5;">⚠️ <b>This file stacks the design history.</b> The CURRENT / live build is the <b>"Path Y" section at the very bottom</b> — scroll all the way down. The sections above (FTUE v1, the sketch, Options A/B/C, the old staged mode) are earlier iterations, kept for reference.</div>
+<h1>WeaponForge — FTUE beat-5 <span style="color:var(--mut);font-weight:400;font-size:13px;">· throwaway prototype (history — live build at bottom)</span></h1>
+<p class="sub">Click a piece, then a hex to place it. Click a filled hex to pick it up. Mana fills on its own → fires your current mix. Goal: break the wall that resists fire.</p>
+
+<div class="beat" id="beat"><span class="tag" id="btag">Beat 1</span><div class="msg" id="bmsg">Click <b>Fire</b> below, then drop it on any hex.</div></div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Forge — the weapon board</h2>
+    <div class="boardwrap" id="boardwrap">
+      <svg id="links"></svg>
+      <div class="hexem" id="emitter">muzzle</div>
+    </div>
+    <div class="tray" id="tray"></div>
+    <div class="mana"><i id="manafill"></i></div>
+    <div class="manalabel" id="manalabel">mana 0%</div>
+    <div class="mix" id="mix">Mix: <b>empty</b></div>
+    <div class="note">Same element touching = linked. A <b style="color:#cdbcff">modifier</b> touching a Fire <em>and</em> a Water bridges them → that shot becomes <b style="color:var(--steam)">Steam</b>.</div>
+  </div>
+
+  <div class="card enemy">
+    <h2>Combat (auto)</h2>
+    <div class="ehead"><span class="ename" id="ename">— no enemy yet —</span></div>
+    <div class="tags" id="etags"></div>
+    <div class="hp"><i id="hpfill"></i><span id="hptext"></span></div>
+    <div class="log" id="log"></div>
+    <div class="btns"><button class="act" id="reset">Reset</button><button class="act" id="free">Free play</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var EM={fire:'Fire',water:'Water',steam:'Steam'};
+  var DMG={fire:2,water:5,steam:25}; // vs Ironclad: resists fire, mega-weak steam
+  var board=document.getElementById('boardwrap'),svg=document.getElementById('links'),trayEl=document.getElementById('tray');
+  var cells=[], sel=null, beat=1, fireVolleys=0, enemy=null, mana=0, freePlay=false;
+
+  // build hex grid (3 rows x 4 cols, offset honeycomb)
+  var R=3,C=4;
+  for(var r=0;r<R;r++)for(var c=0;c<C;c++){
+    var cx=46+c*52+(r%2)*26, cy=45+r*46;
+    var d=document.createElement('div'); d.className='cell empty'; d.textContent='+';
+    d.style.left=(cx-31)+'px'; d.style.top=(cy-35)+'px';
+    var cell={id:r*C+c,cx:cx,cy:cy,el:null,dom:d};
+    (function(cc){ d.onclick=function(){ onCell(cc); }; })(cell);
+    cells.push(cell); board.appendChild(d);
+  }
+  // adjacency by distance
+  cells.forEach(function(a){ a.nb=cells.filter(function(b){ if(b===a)return false; var dx=a.cx-b.cx,dy=a.cy-b.cy; return Math.sqrt(dx*dx+dy*dy)<60; }); });
+  svg.setAttribute('viewBox','0 0 300 196'); svg.setAttribute('width','300'); svg.setAttribute('height','196');
+
+  var PIECES=[{k:'fire',label:'Fire'},{k:'water',label:'Water'},{k:'mod',label:'Modifier'}];
+  function renderTray(){
+    trayEl.innerHTML='';
+    PIECES.forEach(function(p){
+      var unlocked = (p.k==='fire') || (beat>=5) || freePlay;
+      var b=document.createElement('div'); b.className='piece'+(sel===p.k?' sel':''); if(!unlocked)b.setAttribute('disabled','');
+      b.innerHTML='<span class="dot '+p.k+'"></span>'+p.label;
+      b.onclick=function(){ sel=(sel===p.k?null:p.k); renderTray(); markPlaceable(); };
+      trayEl.appendChild(b);
+    });
+  }
+  function markPlaceable(){ cells.forEach(function(c){ c.dom.classList.toggle('placeable', !!sel && !c.el); }); }
+
+  function onCell(cell){
+    if(cell.el){ // pick up / clear
+      cell.el=null; paint(cell); recompute(); markPlaceable(); checkBeats(); return;
+    }
+    if(!sel) return;
+    cell.el=sel; paint(cell); recompute(); markPlaceable(); checkBeats();
+  }
+  function paint(cell){
+    var d=cell.dom; d.className='cell '+(cell.el||'empty');
+    if(!cell.el){ d.textContent='+'; }
+    else if(cell.el==='mod'){ d.innerHTML='<span class="mglyph">✦</span>'; }
+    else { d.textContent=cell.el==='fire'?'Fire':'Water'; }
+  }
+
+  // synergy + mix
+  function compute(){
+    var fires=cells.filter(function(c){return c.el==='fire';});
+    var waters=cells.filter(function(c){return c.el==='water';});
+    var mods=cells.filter(function(c){return c.el==='mod';});
+    var usedF={}, usedW={}, links=[], steam=0;
+    // modifier bridges an adjacent fire + adjacent water -> steam
+    mods.forEach(function(m){
+      var f=m.nb.find(function(n){return n.el==='fire' && !usedF[n.id];});
+      var w=m.nb.find(function(n){return n.el==='water' && !usedW[n.id];});
+      if(f&&w){ usedF[f.id]=1; usedW[w.id]=1; steam++; links.push([m,f,'#cdbcff']); links.push([m,w,'#cdbcff']); }
+    });
+    // same-element adjacency links (visual + count)
+    var seen={};
+    fires.forEach(function(a){ a.nb.forEach(function(b){ if(b.el==='fire'){ var key=Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); if(!seen[key]){seen[key]=1; links.push([a,b,'#e0552e']);} } }); });
+    waters.forEach(function(a){ a.nb.forEach(function(b){ if(b.el==='water'){ var key='w'+Math.min(a.id,b.id)+'-'+Math.max(a.id,b.id); if(!seen[key]){seen[key]=1; links.push([a,b,'#2a8fe0']);} } }); });
+    var fireShots=fires.length-Object.keys(usedF).length;
+    var waterShots=waters.length-Object.keys(usedW).length;
+    return {fire:fireShots,steam:steam,water:waterShots,links:links};
+  }
+  var MIX={fire:0,steam:0,water:0,links:[]};
+  function recompute(){
+    MIX=compute();
+    // draw links
+    svg.innerHTML='';
+    MIX.links.forEach(function(l){
+      var ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+      ln.setAttribute('x1',l[0].cx); ln.setAttribute('y1',l[0].cy); ln.setAttribute('x2',l[1].cx); ln.setAttribute('y2',l[1].cy);
+      ln.setAttribute('stroke',l[2]); ln.setAttribute('stroke-width','5'); ln.setAttribute('stroke-linecap','round'); ln.setAttribute('opacity','0.85');
+      svg.appendChild(ln);
+    });
+    var parts=[];
+    if(MIX.fire)parts.push('<b style="color:#e0552e">'+MIX.fire+'×Fire</b>');
+    if(MIX.steam)parts.push('<b style="color:#cfd8df">'+MIX.steam+'×Steam</b>');
+    if(MIX.water)parts.push('<b style="color:#2a8fe0">'+MIX.water+'×Water</b>');
+    document.getElementById('mix').innerHTML='Mix: '+(parts.length?parts.join(' + '):'<b>empty</b>');
+  }
+
+  // mana + firing
+  function tick(){
+    if((MIX.fire+MIX.steam+MIX.water)===0){ setMana(0); return; }
+    mana+=28; if(mana>=100){ mana=0; fire(); } setMana(mana);
+  }
+  function setMana(v){ document.getElementById('manafill').style.width=v+'%'; document.getElementById('manalabel').textContent='mana '+Math.round(v)+'%'; }
+
+  function fire(){
+    if(!enemy){ log('Weapon fires '+mixText()+' — (no enemy yet)'); return; }
+    var dmg=MIX.fire*DMG.fire + MIX.steam*DMG.steam + MIX.water*DMG.water;
+    enemy.hp=Math.max(0,enemy.hp-dmg); drawEnemy();
+    var big=MIX.steam>0;
+    log((big?'<span class="big">':'')+'FIRE → '+mixText()+' = '+dmg+' dmg'+(big?' 💥':'')+(big?'</span>':''));
+    floatDmg(dmg,big);
+    if(MIX.steam>0 && beat===5 && !beat5done){ beat5done=true; winBeat(); }
+    if(enemy.hp<=0){ enemy.dead=true; log('<span class="big">IRONCLAD DOWN.</span>'); }
+  }
+  function mixText(){ var p=[]; if(MIX.fire)p.push(MIX.fire+'×Fire'); if(MIX.steam)p.push(MIX.steam+'×Steam'); if(MIX.water)p.push(MIX.water+'×Water'); return p.join(' + ')||'nothing'; }
+  function floatDmg(d,big){
+    var f=document.createElement('div'); f.className='float'; f.textContent='-'+d; f.style.color=big?'#cfd8df':'#f0a48a';
+    f.style.left='150px'; f.style.top='40px'; document.querySelector('.enemy .hp').parentNode.appendChild(f);
+    setTimeout(function(){ if(f.parentNode)f.parentNode.removeChild(f); },900);
+  }
+  function log(s){ var l=document.getElementById('log'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
+
+  // enemy
+  function spawnIronclad(){
+    enemy={name:'Ironclad',hp:120,max:120,dead:false};
+    document.getElementById('ename').textContent='Ironclad (armoured)';
+    document.getElementById('etags').innerHTML='<span class="t res">resists Fire</span><span class="t weak">weak: Storm</span><span class="t mega">MEGA-weak: Steam</span>';
+    drawEnemy();
+  }
+  function drawEnemy(){
+    if(!enemy)return; var pct=100*enemy.hp/enemy.max;
+    document.getElementById('hpfill').style.width=pct+'%';
+    document.getElementById('hptext').textContent=enemy.hp+' / '+enemy.max;
+  }
+
+  // beats
+  var beat5done=false;
+  function setBeat(n,tag,msg,win){ beat=n; document.getElementById('btag').textContent=tag; document.getElementById('bmsg').innerHTML=msg;
+    document.getElementById('beat').className='beat'+(win?' win':''); renderTray(); }
+  function checkBeats(){
+    var fires=cells.filter(function(c){return c.el==='fire';}).length;
+    var firePair=cells.some(function(c){return c.el==='fire' && c.nb.some(function(n){return n.el==='fire';});});
+    if(beat===1 && fires>=1){ setBeat(2,'Beat 2','Good. Your weapon auto-attacks, fills <b>mana</b>, and fires the mix when full. Watch it shoot.'); }
+    if(beat===2 && firstVolley){ setBeat(3,'Beat 3','Place a <b>second Fire</b> next to the first — same element touching links into a bigger volley.'); }
+    if(beat===3 && firePair){ setBeat(4,'Beat 4','Nice — 2×Fire. Now an <b>Ironclad</b> marches in. It <b style="color:#f0a48a">resists Fire</b> — watch your volleys barely scratch it.'); if(!enemy)spawnIronclad(); }
+    // beat 4 -> 5 handled after volleys
+  }
+  var firstVolley=false;
+  var origFire=fire;
+  fire=function(){ origFire(); if(!firstVolley){ firstVolley=true; checkBeats(); }
+    if(beat===4 && enemy && !enemy.dead){ fireVolleys++; if(fireVolleys>=2){ setBeat(5,'Beat 5 — the aha','Fire alone can\'t crack it. Unlock <b style="color:#2a8fe0">Water</b> + <b style="color:#cdbcff">Modifier</b>: drop a Water, then a Modifier touching a Fire <em>and</em> the Water → it bridges into <b style="color:var(--steam)">Steam</b>. Ironclad is MEGA-weak to Steam.'); } }
+  };
+  function winBeat(){ setBeat(5,'Beat 5 — cracked it!','💥 <b>Steam in the mix.</b> The Ironclad melts. That\'s the whole game in one move: a wall you can\'t brute-force, a craft move that breaks it. (Beats 6–7 — cross-lane + forge break — come next.)',true); }
+
+  document.getElementById('reset').onclick=function(){ location.reload(); };
+  document.getElementById('free').onclick=function(){ freePlay=true; if(!enemy)spawnIronclad(); renderTray();
+    document.getElementById('btag').textContent='Free play'; document.getElementById('bmsg').innerHTML='All pieces unlocked. Rearrange and watch the mix change. Reset to replay the FTUE.'; };
+
+  renderTray(); recompute(); setMana(0);
+  setInterval(tick,650);
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- VERSION 2 — Biswa's sketch: 3 hero hex-boards + seam modifiers -->
+<!-- ============================================================ -->
+<style>
+  :root{--v2storm:#e8c63a;--v2power:#46c46a;--v2other:#b39bff;}
+  .v2sep{margin:40px 0 0;border-top:2px dashed var(--line);padding-top:20px;}
+  .v2tag{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--v2other);font-weight:700;border:1px solid var(--v2other);border-radius:6px;padding:2px 8px;}
+  .v2 h1{font-size:18px;margin:10px 0 2px;}
+  .v2grid{display:grid;grid-template-columns:270px 1fr;gap:18px;align-items:start;}
+  @media(max-width:820px){.v2grid{grid-template-columns:1fr;}}
+  .v2boardcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;}
+  .v2board{position:relative;width:256px;height:276px;margin:2px auto 4px;}
+  .v2board svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
+  .v2cell{position:absolute;width:58px;height:64px;transform:translate(-50%,-50%);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+    background:#28323f;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;
+    font-size:11px;font-weight:700;color:#0c0f14;transition:filter .1s;}
+  .v2cell:hover{filter:brightness(1.22);}
+  .v2cell.empty{color:#46546580;font-weight:600;}
+  .v2cell.el.empty{background:#1e2630;}
+  .v2cell.mod.empty{background:#231d33;color:#5a4d7a;}
+  .v2cell.fire{background:var(--fire);} .v2cell.water{background:var(--water);} .v2cell.storm{background:var(--v2storm);color:#231a00;}
+  .v2cell.modf{background:#2a2440;color:#cdbcff;font-size:10px;letter-spacing:.04em;}
+  .v2cell.placeable{outline:3px dashed var(--gold);outline-offset:-5px;}
+  .v2herolab{position:absolute;left:0;font-size:10px;color:var(--mut);font-weight:700;transform:translateY(-50%);}
+  .v2group{margin:0 0 11px;}
+  .v2group h3{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 6px;font-weight:700;}
+  .v2tray{display:flex;gap:7px;flex-wrap:wrap;}
+  .v2piece{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:5px 9px 5px 7px;cursor:pointer;font-size:12px;font-weight:600;
+    display:flex;align-items:center;gap:6px;transition:transform .08s;}
+  .v2piece:hover{transform:translateY(-1px);} .v2piece.sel{outline:2px solid var(--gold);}
+  .v2sw{width:15px;height:15px;border-radius:4px;display:inline-block;}
+  .v2piece small{color:var(--mut);font-weight:600;font-size:10px;}
+  .v2card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:14px;}
+  .v2card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 9px;font-weight:700;}
+  .v2row{font-size:12.5px;margin:4px 0;line-height:1.4;}
+  .v2row .hl{color:var(--mut);font-weight:700;margin-right:5px;}
+  .v2row em{font-style:normal;color:var(--gold);font-size:11px;}
+  .v2conn{font-size:12px;margin:4px 0;display:flex;gap:7px;align-items:flex-start;line-height:1.35;}
+  .v2cdot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex:none;}
+  .v2legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;}
+  .v2leg{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.3;}
+  .v2leg b{display:block;}.v2leg small{color:var(--mut);}
+  .v2btns{margin-top:6px;display:flex;gap:8px;}
+  .v2crit{background:#231d33;border:1px solid #3a3155;border-left:4px solid var(--v2other);border-radius:10px;padding:12px 14px;margin-top:16px;font-size:12.5px;line-height:1.5;}
+  .v2crit h3{margin:0 0 7px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--v2other);}
+  .v2crit b{color:var(--ink);}
+  .v2note{color:var(--mut);font-size:11px;margin-top:9px;line-height:1.5;}
+</style>
+
+<section class="v2 v2sep">
+  <span class="v2tag">Version 2 · from your sketch</span>
+  <h1>3 hero hex-boards + seam modifiers <span style="color:var(--mut);font-weight:400;font-size:13px;">· connector-logic prototype</span></h1>
+  <p class="sub">Each hero (1/2/3) owns a row of <b>3 element hexes</b>. Between heroes sit <b>2 modifier hexes</b> nestled in the valleys — so a modifier physically touches tiles of <em>both</em> neighbouring heroes. Each of the 6 modifiers has a <b>different connector-logic</b> (which edges it bridges). Click a piece, then a matching hex.</p>
+
+  <div class="v2grid">
+    <div class="v2boardcard">
+      <div class="v2board" id="v2board"><svg id="v2svg" viewBox="0 0 256 276"></svg></div>
+      <div class="v2btns"><button class="act" id="v2clear">Clear board</button><button class="act" id="v2demo">Load a combo</button></div>
+      <p class="v2note">Edge marks on a modifier = its active connector edges (<span style="color:var(--v2power)">green=power/speed</span>, <span style="color:var(--v2other)">purple=other</span>). They glow + draw a link when they actually touch a tile.</p>
+    </div>
+
+    <div>
+      <div class="v2card">
+        <h2>Pieces</h2>
+        <div class="v2group"><h3>Elements (place in hero rows)</h3><div class="v2tray" id="v2trayEl"></div></div>
+        <div class="v2group"><h3>Power / Speed modifiers (seam slots)</h3><div class="v2tray" id="v2trayPow"></div></div>
+        <div class="v2group"><h3>Other modifiers (seam slots)</h3><div class="v2tray" id="v2trayOth"></div></div>
+      </div>
+
+      <div class="v2card">
+        <h2>What each weapon fires</h2>
+        <div id="v2heroes"></div>
+        <h2 style="margin-top:12px;">Active connectors</h2>
+        <div id="v2conns"><div class="v2note">No modifiers placed yet.</div></div>
+      </div>
+
+      <div class="v2card">
+        <h2>The 6 connector-logics</h2>
+        <div class="v2legend" id="v2legend"></div>
+        <p class="v2note" style="margin-top:9px;">Combo table — <b style="color:#cfd8df">Fire+Water=Steam</b> · <b style="color:#5fb0ee">Water+Storm=Conduct</b> · <b style="color:#e08ad0">Fire+Storm=Plasma</b> · same+same = amplified.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="v2crit">
+    <h3>Designer's critique — read before you fall in love with it</h3>
+    <b>1. The seam puts power-mods in the wrong place.</b> A haste/power booster wants to live <em>inside one hero's</em> board. Parked in the seam it's forced to straddle two heroes — geometrically confused. Only <em>combine</em>-type modifiers truly belong on a seam.<br>
+    <b>2. Hero 2 is overpowered; Hero 3 is starved.</b> H2's centre tile touches all 4 modifiers; H3 has no seam below it, so it can only ever be bridged <em>into</em> by H2. The board isn't symmetric — three heroes are not equal citizens.<br>
+    <b>3. Only 4 bridge points for 9 elements.</b> Most tiles just fire raw; the interesting combos are rare. The "craft puzzle" is thinner than it looks.<br>
+    <b>4. Fixed connector-shapes + 4 slots ≈ solve-once.</b> Without rotation or churn there are few meaningful arrangements. Depth needs either rotatable modifiers or per-wave matchup pressure. (Full critique in chat.)
+  </div>
+</section>
+
+<script>
+(function(){
+  var ELEMENTS={fire:'Fire',water:'Water',storm:'Storm'};
+  var ELCOL={fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'};
+  var ABBR={bellows:'BEL',flywheel:'FLY',governor:'GOV',conduit:'CON',splitter:'SPL',prism:'PRI'};
+  var MODS={
+    bellows :{name:'Bellows', cls:'Speed',  cat:'power',edges:['NW','NE'],      desc:'Hastes the 2 tiles above (faster fire).'},
+    flywheel:{name:'Flywheel',cls:'Power',  cat:'power',edges:['SW','SE'],      desc:'+Damage to the 2 tiles below.'},
+    governor:{name:'Governor',cls:'Mult',   cat:'power',edges:['NW','SW'],      desc:'×Mult the left column (up-left + down-left).'},
+    conduit :{name:'Conduit', cls:'Combine',cat:'other',edges:['NW','SE'],      desc:'Bridges up-left ↘ down-right → a COMBO.'},
+    splitter:{name:'Splitter',cls:'Split',  cat:'other',edges:['NE','SW'],      desc:'Up-right + down-left tiles fire split (×2).'},
+    prism   :{name:'Prism',   cls:'Tri',    cat:'other',edges:['NW','NE','SE'], desc:'Blends up to 3 tiles (both above + down-right).'}
+  };
+  var DIR={
+    MA0:{NW:'E0',NE:'E1',SW:'E3',SE:'E4'}, MA1:{NW:'E1',NE:'E2',SW:'E4',SE:'E5'},
+    MB0:{NW:'E3',NE:'E4',SW:'E6',SE:'E7'}, MB1:{NW:'E4',NE:'E5',SW:'E7',SE:'E8'}
+  };
+  var CELLS=[
+    {id:'E0',kind:'el',hero:1,x:70,y:40},{id:'E1',kind:'el',hero:1,x:128,y:40},{id:'E2',kind:'el',hero:1,x:186,y:40},
+    {id:'MA0',kind:'mod',x:99,y:88},{id:'MA1',kind:'mod',x:157,y:88},
+    {id:'E3',kind:'el',hero:2,x:70,y:136},{id:'E4',kind:'el',hero:2,x:128,y:136},{id:'E5',kind:'el',hero:2,x:186,y:136},
+    {id:'MB0',kind:'mod',x:99,y:184},{id:'MB1',kind:'mod',x:157,y:184},
+    {id:'E6',kind:'el',hero:3,x:70,y:232},{id:'E7',kind:'el',hero:3,x:128,y:232},{id:'E8',kind:'el',hero:3,x:186,y:232}
+  ];
+  var byId={}; CELLS.forEach(function(c){byId[c.id]=c;});
+  var EDGE={NE:['T','UR'],E:['UR','LR'],SE:['LR','B'],SW:['B','LL'],W:['LL','UL'],NW:['UL','T']};
+  function verts(c){var x=c.x,y=c.y;return {T:[x,y-32],UR:[x+29,y-16],LR:[x+29,y+16],B:[x,y+32],LL:[x-29,y+16],UL:[x-29,y-16]};}
+  function colOf(c){return c.x<100?0:(c.x<160?1:2);}
+  function slot(c){return 'H'+c.hero+'·'+['L','M','R'][colOf(c)];}
+  function comboName(a,b){ if(a===b)return 'Amp '+ELEMENTS[a]; var k=[a,b].sort().join('+'); return ({'fire+water':'Steam','storm+water':'Conduct','fire+storm':'Plasma'})[k]||'Mix'; }
+  function comboCol(n){ return ({Steam:'#cfd8df',Conduct:'#5fb0ee',Plasma:'#e08ad0'})[n]|| (n.indexOf('Amp')===0?'#ffd27f':'#cdbcff'); }
+
+  var board=document.getElementById('v2board'),svg=document.getElementById('v2svg'),sel=null;
+
+  // build hero labels + cells
+  [[1,40],[2,136],[3,232]].forEach(function(h){
+    var l=document.createElement('div'); l.className='v2herolab'; l.textContent=h[0]; l.style.top=h[1]+'px'; board.appendChild(l);
+  });
+  CELLS.forEach(function(c){
+    var d=document.createElement('div'); d.style.left=c.x+'px'; d.style.top=c.y+'px';
+    c.dom=d; c.val=null; paint(c);
+    d.onclick=function(){ onCell(c); };
+    board.appendChild(d);
+  });
+
+  function paint(c){
+    var d=c.dom;
+    if(c.kind==='el'){ if(!c.val){d.className='v2cell el empty';d.textContent='+';} else {d.className='v2cell el '+c.val;d.textContent=ELEMENTS[c.val];} }
+    else { if(!c.val){d.className='v2cell mod empty';d.textContent='mod';} else {d.className='v2cell mod modf';d.textContent=ABBR[c.val];} }
+  }
+  function onCell(c){
+    if(c.val){ c.val=null; paint(c); recompute(); mark(); return; }
+    if(!sel) return;
+    var isMod=!!MODS[sel];
+    if(isMod && c.kind!=='mod') return;
+    if(!isMod && c.kind!=='el') return;
+    c.val=sel; paint(c); recompute(); mark();
+  }
+  function mark(){ CELLS.forEach(function(c){ var ok=sel && !c.val && ((!!MODS[sel])===(c.kind==='mod')); c.dom.classList.toggle('placeable',!!ok); }); }
+
+  // trays
+  function miniHex(edges,color){
+    var P={T:[12,1.5],UR:[22.5,8],LR:[22.5,20],B:[12,26.5],LL:[1.5,20],UL:[1.5,8]};
+    var s='<svg width="22" height="26" viewBox="0 0 24 28" style="flex:none"><polygon points="12,1.5 22.5,8 22.5,20 12,26.5 1.5,20 1.5,8" fill="#1c232d" stroke="#4a5666" stroke-width="1"/>';
+    edges.forEach(function(e){var a=P[EDGE[e][0]],b=P[EDGE[e][1]];s+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+color+'" stroke-width="3.2" stroke-linecap="round"/>';});
+    return s+'</svg>';
+  }
+  function elPiece(k){ return '<span class="v2sw" style="background:'+ELCOL[k]+'"></span>'+ELEMENTS[k]; }
+  function renderTrays(){
+    var te=document.getElementById('v2trayEl'); te.innerHTML='';
+    Object.keys(ELEMENTS).forEach(function(k){ te.appendChild(piece(k,elPiece(k))); });
+    var tp=document.getElementById('v2trayPow'),to=document.getElementById('v2trayOth'); tp.innerHTML='';to.innerHTML='';
+    Object.keys(MODS).forEach(function(k){ var m=MODS[k];
+      var html=miniHex(m.edges, m.cat==='power'?'#46c46a':'#b39bff')+m.name+' <small>'+m.cls+'</small>';
+      (m.cat==='power'?tp:to).appendChild(piece(k,html));
+    });
+  }
+  function piece(k,html){ var b=document.createElement('div'); b.className='v2piece'+(sel===k?' sel':''); b.innerHTML=html;
+    b.onclick=function(){ sel=(sel===k?null:k); renderTrays(); mark(); }; return b; }
+
+  // legend
+  (function(){ var L=document.getElementById('v2legend');
+    Object.keys(MODS).forEach(function(k){ var m=MODS[k];
+      var el=document.createElement('div'); el.className='v2leg';
+      el.innerHTML=miniHex(m.edges,m.cat==='power'?'#46c46a':'#b39bff')+'<span><b>'+m.name+' <small>('+m.cls+')</small></b><small>'+m.desc+'</small></span>';
+      L.appendChild(el);
+    });
+  })();
+
+  // compute + render
+  function recompute(){
+    var S='', conns=[], eff={};
+    function tag(id,t){ (eff[id]=eff[id]||[]); if(eff[id].indexOf(t)<0) eff[id].push(t); }
+    ['MA0','MA1','MB0','MB1'].forEach(function(mid){
+      var m=byId[mid]; if(!m.val) return;
+      var def=MODS[m.val], col=def.cat==='power'?'#46c46a':'#b39bff';
+      var touched=[];
+      def.edges.forEach(function(e){ var nb=byId[DIR[mid][e]]; if(nb&&nb.val) touched.push(nb); });
+      // edge markers (dim if active-but-empty, bright if touching)
+      def.edges.forEach(function(e){ var nb=byId[DIR[mid][e]]; var live=nb&&nb.val; var v=verts(m),a=v[EDGE[e][0]],b=v[EDGE[e][1]];
+        S+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+col+'" stroke-width="'+(live?5:3)+'" stroke-linecap="round" opacity="'+(live?1:.4)+'"/>'; });
+      var txt, dot=col;
+      if(def.cat==='power'){
+        var badge={bellows:'hasted',flywheel:'+dmg',governor:'×mult'}[m.val];
+        touched.forEach(function(t){ tag(t.id,badge); S+=link(m,t,col,3,.55); });
+        txt='<b>'+def.name+'</b> '+slot2(m)+' — '+(touched.length?'boosts '+touched.map(lab).join(' + '):'<span style="color:var(--mut)">no tile on its edges</span>');
+      } else if(m.val==='conduit'){
+        if(touched.length>=2){ var a=touched[0],b=touched[1],n=comboName(a.val,b.val),cc=comboCol(n); dot=cc;
+          tag(a.id,'→'+n); tag(b.id,'→'+n); S+=link(m,a,cc,5,.95)+link(m,b,cc,5,.95);
+          txt='<b>Conduit</b> → <b style="color:'+cc+'">'+n+'</b>: '+lab(a)+' ↘ '+lab(b)+(a.hero!==b.hero?' <em>cross-hero</em>':'');
+        } else txt='<b>Conduit</b> '+slot2(m)+' — <span style="color:var(--mut)">needs 2 tiles on its ╲ edges</span>';
+      } else if(m.val==='splitter'){
+        touched.forEach(function(t){ tag(t.id,'split×2'); S+=link(m,t,col,3.5,.8); });
+        txt='<b>Splitter</b> '+slot2(m)+' — '+(touched.length?touched.map(lab).join(' + ')+' fire split':'<span style="color:var(--mut)">no tile on its ╱ edges</span>');
+      } else { // prism
+        if(touched.length>=2){ var names=touched.map(function(t){return t.val;}); var uniq=names.filter(function(v,i){return names.indexOf(v)===i;});
+          var pn=uniq.length>1?'Prismatic blend':('Amp '+ELEMENTS[uniq[0]]); var pc=uniq.length>1?'#cdbcff':'#ffd27f'; dot=pc;
+          touched.forEach(function(t){ tag(t.id,'→'+pn); S+=link(m,t,pc,4,.9); });
+          txt='<b>Prism</b> → <b style="color:'+pc+'">'+pn+'</b>: '+touched.map(lab).join(' + ');
+        } else txt='<b>Prism</b> '+slot2(m)+' — <span style="color:var(--mut)">needs ≥2 tiles on its 3 edges</span>';
+      }
+      conns.push({dot:dot,txt:txt});
+    });
+    svg.innerHTML=S;
+
+    // per-hero fires
+    var H=document.getElementById('v2heroes'); H.innerHTML='';
+    [1,2,3].forEach(function(h){
+      var slots=CELLS.filter(function(c){return c.kind==='el'&&c.hero===h&&c.val;});
+      var parts=slots.map(function(s){ var t=eff[s.id]||[]; return '<span style="color:'+ELCOL[s.val]+'">'+ELEMENTS[s.val]+'</span>'+(t.length?' <em>'+t.join(',')+'</em>':''); });
+      var r=document.createElement('div'); r.className='v2row'; r.innerHTML='<span class="hl">H'+h+'</span>'+(parts.length?parts.join(' + '):'<span style="color:var(--mut)">empty</span>'); H.appendChild(r);
+    });
+    var C=document.getElementById('v2conns'); C.innerHTML='';
+    if(!conns.length){ C.innerHTML='<div class="v2note">No modifiers placed yet.</div>'; }
+    else conns.forEach(function(o){ var d=document.createElement('div'); d.className='v2conn'; d.innerHTML='<span class="v2cdot" style="background:'+o.dot+'"></span><span>'+o.txt+'</span>'; C.appendChild(d); });
+  }
+  function lab(c){ return '<span style="color:'+ELCOL[c.val]+'">'+ELEMENTS[c.val]+'</span> ('+slot(c)+')'; }
+  function slot2(m){ return '<span style="color:var(--mut);font-size:11px">'+m.id+'</span>'; }
+  function link(c1,c2,color,w,op){ return '<line x1="'+c1.x+'" y1="'+c1.y+'" x2="'+c2.x+'" y2="'+c2.y+'" stroke="'+color+'" stroke-width="'+w+'" stroke-linecap="round" opacity="'+op+'"/>'; }
+
+  document.getElementById('v2clear').onclick=function(){ CELLS.forEach(function(c){c.val=null;paint(c);}); sel=null; renderTrays(); recompute(); mark(); };
+  document.getElementById('v2demo').onclick=function(){
+    var set={E1:'fire',E4:'water',MA1:'conduit',E3:'storm',E5:'storm',MB0:'bellows',E0:'fire'};
+    CELLS.forEach(function(c){ c.val=set[c.id]||null; paint(c); }); sel=null; renderTrays(); recompute(); mark();
+  };
+
+  renderTrays(); recompute();
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- OPTIONS A / B / C — pick the slot model before locking         -->
+<!-- ============================================================ -->
+<style>
+  .optsec{margin:40px 0 0;border-top:2px dashed var(--line);padding-top:20px;}
+  .opthd{display:flex;align-items:center;gap:10px;margin:26px 0 4px;}
+  .optbadge{font-size:12px;font-weight:800;color:#0c0f14;background:var(--gold);border-radius:6px;padding:2px 9px;}
+  .optbadge.b{background:#5fb0ee;} .optbadge.c{background:var(--v2other);}
+  .opthd h2{font-size:16px;margin:0;font-weight:700;}
+  .optdesc{font-size:12.5px;color:var(--mut);margin:2px 0 10px;line-height:1.5;}
+  .tugbox{background:#231d33;border:1px solid #3a3155;border-left:4px solid var(--v2other);border-radius:10px;padding:13px 15px;margin:14px 0;font-size:13px;line-height:1.55;}
+  .tugbox h3{margin:0 0 7px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--v2other);}
+  .tugbox b{color:var(--ink);}
+  .clusterline{font-size:13px;font-weight:700;margin:2px 0 8px;}
+  .clusterline .cl{color:#6fe09a;} .clusterline .cm{color:#cdbcff;}
+</style>
+
+<section class="optsec">
+  <span class="v2tag">Decide before you lock</span>
+  <h1>Three slot models — A / B / C, side by side</h1>
+  <p class="sub">Same elements + the same 6 connector-logics. What changes is <b>where modifiers are allowed to live</b> — and that single choice decides whether your <b>tug-of-war</b> (cluster for buffs vs. insert a modifier) exists at all.</p>
+
+  <div class="tugbox">
+    <h3>Your tug-of-war question, answered up front</h3>
+    The tension you want — <b>keep same elements adjacent for a cluster buff, OR spend that space on a modifier that transforms them</b> — only exists if <b>elements and modifiers compete for the same cells</b>. In A and B they don't (dedicated rows vs. dedicated seams), so there's <b>no tug-of-war</b> — you just fill each slot type. Only <b>C (unified grid)</b> creates it. So this question and the A/B/C choice are the <em>same decision</em>: dedicated slots (legible, no tension) vs. unified grid (tense, deeper, busier).
+  </div>
+
+  <div class="opthd"><span class="optbadge">A</span><h2>Combiner-only seams</h2></div>
+  <p class="optdesc">Board modifiers are <b>combiners only</b> (Conduit/Splitter/Prism) and live in the seams. Power/speed is <b>off the board</b> (hero leveling). Cleanest, most casual — keeps "a modifier = it combines what it touches." Cluster buff = same element adjacent in a row.</p>
+  <div id="optA"></div>
+
+  <div class="opthd"><span class="optbadge b">B</span><h2>Combiner seams + a per-hero power slot</h2></div>
+  <p class="optdesc">Each hero gets its <b>own power slot</b> (buffs that whole hero — the GD speed-gear, unambiguously owned). Seams stay combiner-only. Both classes get a coherent home; costs one extra slot + a second slot type to teach.</p>
+  <div id="optB"></div>
+
+  <div class="opthd"><span class="optbadge c">C</span><h2>Unified grid — the tug-of-war</h2></div>
+  <p class="optdesc">One hex board, <b>any cell = element OR modifier</b>. Cluster same elements for buffs, but every modifier you drop <b>costs a cell and can break a cluster</b>. Use the two preset buttons to feel it: <b>Cluster</b> (3 buffs, 0 combos) vs. <b>Bridge</b> (0 buffs, 1 combo). This is the deepest and the busiest.</p>
+  <div id="optC"></div>
+</section>
+
+<script>
+(function(){
+  var ELEMENTS={fire:'Fire',water:'Water',storm:'Storm'};
+  var ELCOL={fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'};
+  var ABBR={bellows:'BEL',flywheel:'FLY',governor:'GOV',conduit:'CON',splitter:'SPL',prism:'PRI'};
+  var MODS={
+    bellows :{name:'Bellows', cls:'Speed',  cat:'power',edges:['NW','NE']},
+    flywheel:{name:'Flywheel',cls:'Power',  cat:'power',edges:['SW','SE']},
+    governor:{name:'Governor',cls:'Mult',   cat:'power',edges:['NW','SW']},
+    conduit :{name:'Conduit', cls:'Combine',cat:'combiner',edges:['NW','SE']},
+    splitter:{name:'Splitter',cls:'Split',  cat:'combiner',edges:['NE','SW']},
+    prism   :{name:'Prism',   cls:'Tri',    cat:'combiner',edges:['NW','NE','SE']}
+  };
+  var EDGE={NE:['T','UR'],E:['UR','LR'],SE:['LR','B'],SW:['B','LL'],W:['LL','UL'],NW:['UL','T']};
+  function verts(c){var x=c.x,y=c.y;return {T:[x,y-32],UR:[x+29,y-16],LR:[x+29,y+16],B:[x,y+32],LL:[x-29,y+16],UL:[x-29,y-16]};}
+  function comboName(a,b){ if(a===b)return 'Amp '+ELEMENTS[a]; var k=[a,b].sort().join('+'); return ({'fire+water':'Steam','storm+water':'Conduct','fire+storm':'Plasma'})[k]||'Mix'; }
+  function comboCol(n){ return ({Steam:'#cfd8df',Conduct:'#5fb0ee',Plasma:'#e08ad0'})[n]||(n.indexOf('Amp')===0?'#ffd27f':'#cdbcff'); }
+  function catOf(p){ return MODS[p]?MODS[p].cat:'el'; }
+  function dirOf(a,b){ var ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    if(ang>=-30&&ang<30)return 'E'; if(ang>=30&&ang<90)return 'SE'; if(ang>=90&&ang<150)return 'SW';
+    if(ang>=150||ang<-150)return 'W'; if(ang>=-150&&ang<-90)return 'NW'; return 'NE'; }
+  function miniHex(edges,color){
+    var P={T:[12,1.5],UR:[22.5,8],LR:[22.5,20],B:[12,26.5],LL:[1.5,20],UL:[1.5,8]};
+    var s='<svg width="22" height="26" viewBox="0 0 24 28" style="flex:none"><polygon points="12,1.5 22.5,8 22.5,20 12,26.5 1.5,20 1.5,8" fill="#1c232d" stroke="#4a5666" stroke-width="1"/>';
+    edges.forEach(function(e){var a=P[EDGE[e][0]],b=P[EDGE[e][1]];s+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+color+'" stroke-width="3.2" stroke-linecap="round"/>';});
+    return s+'</svg>';
+  }
+
+  function mkBoard(cfg){
+    var mount=document.getElementById(cfg.mount); var sel=null;
+    var cells=cfg.cells.map(function(c){ return {id:c.id,x:c.x,y:c.y,accept:c.accept,hero:c.hero,val:null}; });
+    var byId={}; cells.forEach(function(c){byId[c.id]=c;});
+    cells.forEach(function(c){ c.nb=cells.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<66; }); });
+
+    // layout
+    var grid=document.createElement('div'); grid.className='v2grid'; grid.style.gridTemplateColumns=(cfg.vw+14)+'px 1fr';
+    var bc=document.createElement('div'); bc.className='v2boardcard';
+    var bd=document.createElement('div'); bd.className='v2board'; bd.style.width=cfg.vw+'px'; bd.style.height=cfg.vh+'px';
+    var svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('viewBox','0 0 '+cfg.vw+' '+cfg.vh); svg.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible';
+    bd.appendChild(svg);
+    (cfg.heroLabels||[]).forEach(function(h){ var l=document.createElement('div'); l.className='v2herolab'; l.textContent=h.n; l.style.top=h.y+'px'; l.style.left='2px'; bd.appendChild(l); });
+    cells.forEach(function(c){ var d=document.createElement('div'); d.style.left=c.x+'px'; d.style.top=c.y+'px'; c.dom=d; d.onclick=function(){ onCell(c); }; bd.appendChild(d); paint(c); });
+    bc.appendChild(bd);
+    var btns=document.createElement('div'); btns.className='v2btns';
+    (cfg.buttons||[]).forEach(function(b){ var x=document.createElement('button'); x.className='act'; x.textContent=b.label; x.onclick=function(){ b.fn(); }; btns.appendChild(x); });
+    bc.appendChild(btns);
+    if(cfg.note){ var n=document.createElement('p'); n.className='v2note'; n.innerHTML=cfg.note; bc.appendChild(n); }
+
+    var right=document.createElement('div');
+    var pcard=document.createElement('div'); pcard.className='v2card'; pcard.innerHTML='<h2>Pieces</h2>';
+    var trays={};
+    cfg.trayGroups.forEach(function(g){ var gd=document.createElement('div'); gd.className='v2group'; gd.innerHTML='<h3>'+g.title+'</h3>'; var t=document.createElement('div'); t.className='v2tray'; trays[g.key]=t; gd.appendChild(t); pcard.appendChild(gd); });
+    var ocard=document.createElement('div'); ocard.className='v2card';
+    ocard.innerHTML=(cfg.heroLabels?'<h2>What each weapon fires</h2><div class="ohero"></div>':'<h2>Output</h2><div class="clusterline"></div><div class="ohero"></div>')+'<h2 style="margin-top:12px">Active connectors</h2><div class="oconn"></div>';
+    right.appendChild(pcard); right.appendChild(ocard);
+    grid.appendChild(bc); grid.appendChild(right); mount.appendChild(grid);
+    var heroOut=ocard.querySelector('.ohero'), connOut=ocard.querySelector('.oconn'), clOut=ocard.querySelector('.clusterline');
+
+    function paint(c){ var d=c.dom;
+      if(!c.val){ d.className='v2cell '+(MODS[c.accept]?'mod':(c.accept==='power'?'mod':'el'))+' empty'; d.className='v2cell '+( (c.accept==='el')?'el':'mod' )+' empty'; d.textContent=(c.accept==='el'?'+':(c.accept==='power'?'pwr':'mod')); if(c.accept==='any'){d.className='v2cell el empty';d.textContent='+';} }
+      else if(MODS[c.val]){ d.className='v2cell mod modf'; d.textContent=ABBR[c.val]; }
+      else { d.className='v2cell el '+c.val; d.textContent=ELEMENTS[c.val]; }
+    }
+    function canPlace(c,p){ var a=c.accept,k=catOf(p); return a==='any'||a===k||(a==='mod'&&(k==='combiner'||k==='power')); }
+    function onCell(c){ if(c.val){ c.val=null; paint(c); recompute(); mark(); return; } if(!sel||!canPlace(c,sel))return; c.val=sel; paint(c); recompute(); mark(); }
+    function mark(){ cells.forEach(function(c){ c.dom.classList.toggle('placeable', !!sel && !c.val && canPlace(c,sel)); }); }
+
+    function elPieceHtml(k){ return '<span class="v2sw" style="background:'+ELCOL[k]+'"></span>'+ELEMENTS[k]; }
+    function renderTrays(){
+      cfg.trayGroups.forEach(function(g){ var t=trays[g.key]; t.innerHTML='';
+        g.items.forEach(function(k){ var b=document.createElement('div'); b.className='v2piece'+(sel===k?' sel':'');
+          b.innerHTML = MODS[k] ? (miniHex(MODS[k].edges,MODS[k].cat==='power'?'#46c46a':'#b39bff')+MODS[k].name+' <small>'+MODS[k].cls+'</small>') : elPieceHtml(k);
+          b.onclick=function(){ sel=(sel===k?null:k); renderTrays(); mark(); }; t.appendChild(b);
+        });
+      });
+    }
+    function link(c1,c2,col,w,op){ return '<line x1="'+c1.x+'" y1="'+c1.y+'" x2="'+c2.x+'" y2="'+c2.y+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" opacity="'+op+'"/>'; }
+    function edgeMark(m,e,col,live){ var v=verts(m),a=v[EDGE[e][0]],b=v[EDGE[e][1]]; return '<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+col+'" stroke-width="'+(live?5:3)+'" stroke-linecap="round" opacity="'+(live?1:.4)+'"/>'; }
+    function lab(c){ return '<span style="color:'+ELCOL[c.val]+'">'+ELEMENTS[c.val]+'</span>'; }
+    function nbInDir(m,e){ var want=e; var hit=null; m.nb.forEach(function(o){ if(dirOf(m,o)===want) hit=o; }); return hit; }
+
+    function recompute(){
+      var S='', conns=[], eff={}, clusterTiles=0, comboCount=0;
+      function tag(id,t){ (eff[id]=eff[id]||[]); if(eff[id].indexOf(t)<0)eff[id].push(t); }
+      // cluster (same-element adjacency)
+      cells.forEach(function(c){ if(c.val&&!MODS[c.val]){ var same=c.nb.filter(function(o){return o.val===c.val;}); if(same.length){ clusterTiles++; tag(c.id,'+link'); } } });
+      // modifiers
+      cells.forEach(function(m){ if(!m.val||!MODS[m.val])return; var def=MODS[m.val], col=def.cat==='power'?'#46c46a':'#b39bff';
+        if(def.cat==='power' && cfg.powerMode==='herowide' && m.hero){
+          var hs=cells.filter(function(o){return o.hero===m.hero && o.val && !MODS[o.val];});
+          var badge={bellows:'hasted',flywheel:'+dmg',governor:'×mult'}[m.val];
+          hs.forEach(function(t){ tag(t.id,badge); S+=link(m,t,col,2.5,.5); });
+          conns.push({dot:col,txt:'<b>'+def.name+'</b> → H'+m.hero+' (whole hero): '+(hs.length?hs.map(lab).join(' + '):'<span style="color:var(--mut)">no tiles</span>')});
+          return;
+        }
+        var touched=[]; def.edges.forEach(function(e){ var nb=nbInDir(m,e); S+=edgeMark(m,e,col,nb&&nb.val&&!MODS[nb.val]); if(nb&&nb.val&&!MODS[nb.val])touched.push(nb); });
+        if(def.cat==='power'){ var bd2={bellows:'hasted',flywheel:'+dmg',governor:'×mult'}[m.val];
+          touched.forEach(function(t){ tag(t.id,bd2); S+=link(m,t,col,3,.55); });
+          conns.push({dot:col,txt:'<b>'+def.name+'</b>: '+(touched.length?'boosts '+touched.map(lab).join(' + '):'<span style="color:var(--mut)">no tile on its edges</span>')});
+        } else if(m.val==='conduit'){ if(touched.length>=2){ var a=touched[0],b=touched[1],nm=comboName(a.val,b.val),cc=comboCol(nm); comboCount++; tag(a.id,'→'+nm);tag(b.id,'→'+nm); S+=link(m,a,cc,5,.95)+link(m,b,cc,5,.95);
+            conns.push({dot:cc,txt:'<b>Conduit</b> → <b style="color:'+cc+'">'+nm+'</b>: '+lab(a)+' ↘ '+lab(b)}); } else conns.push({dot:col,txt:'<b>Conduit</b> — <span style="color:var(--mut)">needs 2 tiles on ╲</span>'});
+        } else if(m.val==='splitter'){ touched.forEach(function(t){ tag(t.id,'split×2'); S+=link(m,t,col,3.5,.8); }); if(touched.length)comboCount++;
+            conns.push({dot:col,txt:'<b>Splitter</b>: '+(touched.length?touched.map(lab).join(' + ')+' split':'<span style="color:var(--mut)">no tile on ╱</span>')});
+        } else { if(touched.length>=2){ var nms=touched.map(function(t){return t.val;}),uq=nms.filter(function(v,i){return nms.indexOf(v)===i;}); var pn=uq.length>1?'Prism blend':('Amp '+ELEMENTS[uq[0]]),pc=uq.length>1?'#cdbcff':'#ffd27f'; comboCount++; touched.forEach(function(t){tag(t.id,'→'+pn);S+=link(m,t,pc,4,.9);});
+            conns.push({dot:pc,txt:'<b>Prism</b> → <b style="color:'+pc+'">'+pn+'</b>: '+touched.map(lab).join(' + ')}); } else conns.push({dot:col,txt:'<b>Prism</b> — <span style="color:var(--mut)">needs ≥2 tiles</span>'}); }
+      });
+      svg.innerHTML=S;
+      if(clOut) clOut.innerHTML='<span class="cl">Cluster buffs: '+clusterTiles+'</span> &nbsp;·&nbsp; <span class="cm">Combos: '+comboCount+'</span>';
+      heroOut.innerHTML='';
+      if(cfg.heroLabels){ cfg.heroLabels.forEach(function(h){ var slots=cells.filter(function(c){return c.hero===h.n&&c.val&&!MODS[c.val];});
+          var parts=slots.map(function(s){ var t=eff[s.id]||[]; return '<span style="color:'+ELCOL[s.val]+'">'+ELEMENTS[s.val]+'</span>'+(t.length?' <em>'+t.join(',')+'</em>':''); });
+          var r=document.createElement('div'); r.className='v2row'; r.innerHTML='<span class="hl">H'+h.n+'</span>'+(parts.length?parts.join(' + '):'<span style="color:var(--mut)">empty</span>'); heroOut.appendChild(r); });
+      } else { var slots=cells.filter(function(c){return c.val&&!MODS[c.val];});
+          var parts=slots.map(function(s){ var t=eff[s.id]||[]; return '<span style="color:'+ELCOL[s.val]+'">'+ELEMENTS[s.val]+'</span>'+(t.length?' <em>'+t.join(',')+'</em>':''); });
+          var r=document.createElement('div'); r.className='v2row'; r.innerHTML='<span class="hl">Fires</span>'+(parts.length?parts.join(' + '):'<span style="color:var(--mut)">empty</span>'); heroOut.appendChild(r); }
+      connOut.innerHTML=''; if(!conns.length)connOut.innerHTML='<div class="v2note">No modifiers placed.</div>';
+      else conns.forEach(function(o){ var d=document.createElement('div'); d.className='v2conn'; d.innerHTML='<span class="v2cdot" style="background:'+o.dot+'"></span><span>'+o.txt+'</span>'; connOut.appendChild(d); });
+    }
+    cfg._load=function(set){ cells.forEach(function(c){ c.val=set[c.id]||null; paint(c); }); sel=null; renderTrays(); recompute(); mark(); };
+    cfg._clear=function(){ cells.forEach(function(c){c.val=null;paint(c);}); sel=null; renderTrays(); recompute(); mark(); };
+    renderTrays(); recompute();
+  }
+
+  // ---- shared cell builders ----
+  function heroRows(withPower){ var els=[],h=[1,2,3],ys=[40,136,232],out=[];
+    h.forEach(function(hn,i){ [70,128,186].forEach(function(x,c){ out.push({id:'E'+hn+c,x:x,y:ys[i],accept:'el',hero:hn}); }); if(withPower) out.push({id:'P'+hn,x:244,y:ys[i],accept:'power',hero:hn}); });
+    return out; }
+  function seams(){ return [{id:'MA0',x:99,y:88,accept:'combiner'},{id:'MA1',x:157,y:88,accept:'combiner'},{id:'MB0',x:99,y:184,accept:'combiner'},{id:'MB1',x:157,y:184,accept:'combiner'}]; }
+
+  // OPTION A
+  var cfgA={mount:'optA',vw:256,vh:276,powerMode:'off',heroLabels:[{n:1,y:40},{n:2,y:136},{n:3,y:232}],
+    cells:heroRows(false).concat(seams()),
+    trayGroups:[{key:'el',title:'Elements (hero rows)',items:['fire','water','storm']},{key:'co',title:'Combiner modifiers (seams)',items:['conduit','splitter','prism']}],
+    note:'Power/speed lives on the <b>hero level</b>, not the board. Seams take combiners only.',
+    buttons:[{label:'Clear',fn:function(){cfgA._clear();}}]};
+  mkBoard(cfgA);
+
+  // OPTION B
+  var cfgB={mount:'optB',vw:300,vh:276,powerMode:'herowide',heroLabels:[{n:1,y:40},{n:2,y:136},{n:3,y:232}],
+    cells:heroRows(true).concat(seams()),
+    trayGroups:[{key:'el',title:'Elements (hero rows)',items:['fire','water','storm']},{key:'po',title:'Power mods (the right-hand hero slot)',items:['bellows','flywheel','governor']},{key:'co',title:'Combiner modifiers (seams)',items:['conduit','splitter','prism']}],
+    note:'Right column = each hero’s <b>own power slot</b> (buffs that whole hero). Seams = combiners.',
+    buttons:[{label:'Clear',fn:function(){cfgB._clear();}}]};
+  mkBoard(cfgB);
+
+  // OPTION C — unified grid
+  var cCells=[];
+  [70,128,186,244].forEach(function(x){cCells.push({id:'A'+x,x:x,y:40,accept:'any'});});
+  [99,157,215].forEach(function(x){cCells.push({id:'B'+x,x:x,y:88,accept:'any'});});
+  [70,128,186,244].forEach(function(x){cCells.push({id:'C'+x,x:x,y:136,accept:'any'});});
+  var cfgC={mount:'optC',vw:314,vh:180,powerMode:'spatial',heroLabels:null,
+    cells:cCells,
+    trayGroups:[{key:'el',title:'Elements',items:['fire','water','storm']},{key:'mo',title:'Modifiers (any cell)',items:['conduit','splitter','prism','bellows','flywheel','governor']}],
+    note:'Every cell can hold an element <em>or</em> a modifier. Watch <b>Cluster buffs vs. Combos</b> as you place.',
+    buttons:[
+      {label:'Clear',fn:function(){cfgC._clear();}},
+      {label:'Show: Cluster',fn:function(){cfgC._load({A70:'fire',A128:'fire',A186:'fire',A244:'water'});}},
+      {label:'Show: Bridge',fn:function(){cfgC._load({A70:'fire',B99:'conduit',C128:'water'});}}
+    ]};
+  mkBoard(cfgC);
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- STAGED GAME MODE — unified grid + clusters + merge + bridges  -->
+<!-- ============================================================ -->
+<style>
+  .stsec{margin:40px 0 0;border-top:2px dashed var(--line);padding-top:20px;}
+  .stagesel{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 14px;}
+  .stagesel button{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;font-weight:600;}
+  .stagesel button:hover{border-color:var(--gold);}
+  .stagesel button.on{background:var(--gold);color:#0c0f14;border-color:var(--gold);}
+  .stagesel button.clear{background:#1f3a22;color:#8fe0a0;border-color:#2a5a30;}
+  .stagecard{background:linear-gradient(0deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:11px 14px;margin:0 0 14px;}
+  .stagecard .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+  .stagecard.win{border-left-color:var(--ok);} .stagecard.win .tag{color:var(--ok);}
+  .stagecard .new{font-size:14.5px;margin-top:3px;line-height:1.4;}
+  .stagecard .goal{font-size:12.5px;color:var(--mut);margin-top:4px;}
+  .stboard{position:relative;width:302px;height:128px;margin:4px auto 8px;}
+  .stboard svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
+  .stcell{position:absolute;width:58px;height:64px;transform:translate(-50%,-50%);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);
+    background:#28323f;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:1;font-size:11px;font-weight:700;color:#0c0f14;transition:filter .1s;}
+  .stcell:hover{filter:brightness(1.2);}
+  .stcell.empty{background:#1e2630;color:#46546580;font-size:12px;}
+  .stcell.fire{background:var(--fire);} .stcell.water{background:var(--water);} .stcell.storm{background:var(--v2storm);color:#231a00;}
+  .stcell.modf{background:#2a2440;color:#cdbcff;font-size:10px;}
+  .stcell .tier{font-size:9px;font-weight:800;opacity:.85;letter-spacing:.05em;}
+  .stcell.placeable{outline:3px dashed var(--gold);outline-offset:-5px;}
+  .stcell.mergeready{outline:3px solid var(--gold);outline-offset:-4px;animation:mpulse .85s infinite;}
+  @keyframes mpulse{0%,100%{outline-color:#e0a020;}50%{outline-color:#fff0c0;}}
+  .stmini{font-size:9px;color:var(--gold);text-align:center;margin:-2px 0 6px;height:11px;}
+  .smix{font-size:12.5px;margin:8px 0 2px;} .smix b{color:var(--ink);}
+  .scl{font-size:12px;color:var(--mut);margin:2px 0;}
+  .scl .cl{color:#6fe09a;} .scl .cm{color:#cdbcff;}
+</style>
+
+<section class="stsec">
+  <span class="v2tag">Playable · staged reveal</span>
+  <h1>Staged game mode <span style="color:var(--mut);font-weight:400;font-size:13px;">· play each stage as a fresh user</span></h1>
+  <p class="sub">Pick a stage — the board resets to a brand-new player's state for that stage (only the mechanics learned so far are available). Click a piece, then a cell. <b>Mana fills on its own → fires your mix.</b> From stage 3, a <b style="color:var(--gold)">glowing</b> group of 3 = tap it to <b>merge</b>.</p>
+
+  <div class="stagesel" id="stagesel"></div>
+  <div class="stagecard" id="stagecard"><span class="tag" id="sttag">Stage 1</span><div class="new" id="stnew"></div><div class="goal" id="stgoal"></div></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Weapon board (unified grid)</h2>
+      <div class="stboard" id="stboard"><svg id="stsvg" viewBox="0 0 302 128"></svg></div>
+      <div class="mana"><i id="stmana"></i></div>
+      <div class="manalabel" id="stmanalabel">mana 0%</div>
+      <div class="tray" id="sttray"></div>
+      <div class="btns"><button class="act" id="stclear">Clear board</button></div>
+      <div class="stmini" id="stmergehint"></div>
+    </div>
+    <div class="card enemy">
+      <h2>Combat (auto)</h2>
+      <div class="ehead"><span class="ename" id="stename">—</span></div>
+      <div class="tags" id="stetags"></div>
+      <div class="hp"><i id="sthpfill"></i><span id="sthptext"></span></div>
+      <div class="smix" id="stmixout">Next volley: <b>—</b></div>
+      <div class="scl" id="stclout"></div>
+      <div class="log" id="stlog"></div>
+    </div>
+  </div>
+  <p class="note">Numbers are placeholder. Stage 5 is the thesis: the Warden shrugs off raw fire, so you must spend scarce cells on a Steam bridge — and merging your fire cluster is how you free the cells to do it.</p>
+</section>
+
+<script>
+(function(){
+  var ELEMENTS={fire:'Fire',water:'Water',storm:'Storm'};
+  var ELCOL={fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'};
+  var ABBR={conduit:'CON',splitter:'SPL'};
+  var ROMAN={1:'',2:'II',3:'III'};
+  function isMod(k){return k==='conduit'||k==='splitter';}
+  function comboName(a,b){ if(a===b)return 'Amp '+ELEMENTS[a]; var k=[a,b].sort().join('+'); return ({'fire+water':'Steam','storm+water':'Conduct','fire+storm':'Plasma'})[k]||'Mix'; }
+  function comboCol(n){ return ({Steam:'#cfd8df',Conduct:'#5fb0ee',Plasma:'#e08ad0'})[n]||'#cdbcff'; }
+
+  var CELLDEF=[['A0',64,40],['A1',122,40],['A2',180,40],['A3',238,40],['B0',93,88],['B1',151,88],['B2',209,88]];
+  var cells=CELLDEF.map(function(d){return {id:d[0],x:d[1],y:d[2],val:null,tier:0};});
+  var byId={}; cells.forEach(function(c){byId[c.id]=c;});
+  cells.forEach(function(c){ c.nb=cells.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<64; }); });
+
+  var STAGES=[
+    {n:1,title:'Place & Fire',tray:['fire'],unlock:{},enemy:{name:'Straw Dummy',hp:30},
+      nw:'The basics. Drop a <b style="color:#e0552e">Fire</b> rune. Your weapon auto-attacks, fills <b>mana</b>, and on full <b>fires your mix</b>.',
+      goal:'Goal: chip the dummy to 0. Try placing 2–3 fire and watch the volley grow.'},
+    {n:2,title:'Clusters',tray:['fire','water'],unlock:{cluster:true},enemy:{name:'Bandit',hp:80},
+      nw:'<b>Placement matters now.</b> Same element in <b>adjacent</b> cells forms a <b style="color:#6fe09a">cluster</b> — a TFT-style trait buff (2 = +, 3 = ++).',
+      goal:'Goal: beat the Bandit. Pack your fire tiles together for the cluster bonus.'},
+    {n:3,title:'Merge',tray:['fire','water'],unlock:{cluster:true,merge:true},enemy:{name:'Brute',hp:120},
+      nw:'<b>Merge.</b> 3 identical runes touching turn <b style="color:var(--gold)">gold</b> — tap one to <b>fuse</b> them into a single higher-tier rune, <b>freeing 2 cells</b>.',
+      goal:'Goal: beat the Brute. Make a 3-cluster, merge it to tier II, then use the freed cells.'},
+    {n:4,title:'Bridges',tray:['fire','water','storm','conduit'],unlock:{cluster:true,merge:true,bridge:true},enemy:{name:'Ironclad',hp:150,resist:'fire',weakCombo:'Steam'},
+      nw:'<b>Modifiers combine.</b> A <b style="color:#cdbcff">Conduit</b> next to a Fire <em>and</em> a Water bridges them into a <b style="color:#cfd8df">Steam</b> shot — but it costs a cell.',
+      goal:'Goal: the Ironclad <b style="color:#f0a48a">resists fire</b>. Bridge Fire+Water → Steam to crack it.'},
+    {n:5,title:'The Tug-of-War',tray:['fire','water','storm','conduit','splitter'],unlock:{cluster:true,merge:true,bridge:true,scarce:true},enemy:{name:'Warden',hp:200,resist:'fire',weakCombo:'Steam'},
+      nw:'<b>Everything at once, cells are tight.</b> Each cell can be an element (cluster), feed a bridge (combo), or be merged for space. You can\'t do all three — <b>choose</b>.',
+      goal:'Goal: the Warden resists fire but is <b style="color:#cdbcff">MEGA-weak to Steam</b>. Merge fire for space, then build the Steam bridge.'},
+    {n:0,title:'Sandbox',tray:['fire','water','storm','conduit','splitter'],unlock:{cluster:true,merge:true,bridge:true,sandbox:true},enemy:null,
+      nw:'<b>Sandbox.</b> Everything unlocked, no enemy. Mess with clusters, merges and bridges; watch the volley readout.',
+      goal:'No enemy — free play. Reset to any stage from the buttons above.'}
+  ];
+  var cur=STAGES[0], sel=null, mana=0, won=false;
+
+  var board=document.getElementById('stboard'),svg=document.getElementById('stsvg'),trayEl=document.getElementById('sttray');
+  cells.forEach(function(c){ var d=document.createElement('div'); d.style.left=c.x+'px'; d.style.top=c.y+'px'; c.dom=d; d.onclick=function(){onCell(c);}; board.appendChild(d); });
+
+  function isElem(c){ return c.val && !isMod(c.val); }
+  function floodSame(start){ var key=start.val+'@'+start.tier, seen={}, stack=[start], out=[];
+    while(stack.length){ var x=stack.pop(); if(seen[x.id])continue; seen[x.id]=1; if(isElem(x)&&(x.val+'@'+x.tier)===key){ out.push(x); x.nb.forEach(function(n){if(!seen[n.id])stack.push(n);}); } }
+    return out; }
+  function mergeableAt(c){ return cur.unlock.merge && isElem(c) && floodSame(c).length>=3; }
+
+  function paint(c){ var d=c.dom;
+    if(!c.val){ d.className='stcell empty'; d.innerHTML='+'; }
+    else if(isMod(c.val)){ d.className='stcell modf'; d.innerHTML=ABBR[c.val]; }
+    else { d.className='stcell '+c.val; d.innerHTML=ELEMENTS[c.val]+(c.tier>1?'<span class="tier">'+ROMAN[c.tier]+'</span>':''); }
+  }
+  function paintAll(){ cells.forEach(paint); markReady(); }
+  function markReady(){ cells.forEach(function(c){ c.dom.classList.toggle('mergeready', mergeableAt(c)); }); }
+
+  function canPlace(p){ return cur.tray.indexOf(p)>=0; }
+  function onCell(c){
+    if(c.val){ if(mergeableAt(c)){ doMerge(c); return; } c.val=null; c.tier=0; paint(c); recompute(); return; }
+    if(!sel||!canPlace(sel)) return;
+    c.val=sel; c.tier=1; paint(c); recompute();
+  }
+  function doMerge(c){ var grp=floodSame(c).filter(function(x){return x!==c;}).slice(0,2);
+    c.tier=Math.min(3,c.tier+1); grp.forEach(function(x){x.val=null;x.tier=0;});
+    flash('Merged → '+ELEMENTS[c.val]+' '+ROMAN[c.tier]+' (2 cells freed)'); paintAll(); recompute(); }
+
+  function renderTray(){ trayEl.innerHTML='';
+    cur.tray.forEach(function(k){ var b=document.createElement('div'); b.className='piece'+(sel===k?' sel':'');
+      b.innerHTML = isMod(k) ? '<span class="dot mod"></span>'+(k==='conduit'?'Conduit':'Splitter') : '<span class="dot '+k+'"></span>'+ELEMENTS[k];
+      b.onclick=function(){ sel=(sel===k?null:k); renderTray(); markPlaceable(); }; trayEl.appendChild(b); });
+  }
+  function markPlaceable(){ cells.forEach(function(c){ c.dom.classList.toggle('placeable', !!sel && !c.val); }); }
+
+  function clusterMult(c){ if(!cur.unlock.cluster)return 1; var same=c.nb.filter(function(o){return o.val===c.val;}).length; return 1+0.3*Math.min(same,3); }
+  function unlikeNb(c){ var s={}; c.nb.forEach(function(o){ if(isElem(o))s[o.val]=o; }); return Object.keys(s).map(function(k){return s[k];}); }
+
+  function volley(){ var dmg=0, combos=[], dbl={};
+    cells.forEach(function(c){ if(c.val==='splitter'){ var en=c.nb.filter(isElem); if(en[0])dbl[en[0].id]=1; } });
+    cells.forEach(function(c){ if(!isElem(c))return; var base=6*c.tier*clusterMult(c); if(dbl[c.id])base*=2; if(cur.enemy&&cur.enemy.resist===c.val)base*=0.25; dmg+=base; });
+    if(cur.unlock.bridge) cells.forEach(function(c){ if(c.val!=='conduit')return; var u=unlikeNb(c); if(u.length>=2){ var nm=comboName(u[0].val,u[1].val); var b=14*(cur.enemy&&cur.enemy.weakCombo===nm?3:1); dmg+=b; combos.push({nm:nm,a:u[0],b:u[1],c:c}); } });
+    return {dmg:Math.round(dmg),combos:combos};
+  }
+
+  function recompute(){
+    var v=volley();
+    // links for combos
+    var S=''; v.combos.forEach(function(cb){ var cc=comboCol(cb.nm); S+=ln(cb.c,cb.a,cc)+ln(cb.c,cb.b,cc); });
+    cells.forEach(function(c){ if(c.val==='splitter'){ var en=c.nb.filter(isElem); if(en[0])S+=ln(c,en[0],'#b39bff'); } });
+    svg.innerHTML=S; markReady();
+    var mix=document.getElementById('stmixout');
+    mix.innerHTML='Next volley: <b>~'+v.dmg+' dmg</b>'+(v.combos.length?' · '+v.combos.map(function(cb){return '<b style="color:'+comboCol(cb.nm)+'">'+cb.nm+'</b>';}).join(' + '):'');
+    // cluster/combo readout
+    var cl=0; var seen={}; cells.forEach(function(c){ if(isElem(c)&&!seen[c.id]){ var g=floodSame(c); if(g.length>=2){ cl++; g.forEach(function(x){seen[x.id]=1;}); } } });
+    document.getElementById('stclout').innerHTML=(cur.unlock.cluster?'<span class="cl">Clusters: '+cl+'</span>':'')+(cur.unlock.bridge?' &nbsp; <span class="cm">Combos: '+v.combos.length+'</span>':'');
+    document.getElementById('stmergehint').textContent = (cur.unlock.merge && cells.some(mergeableAt))?'⚡ A glowing group is ready — tap it to merge.':'';
+  }
+  function ln(a,b,col){ return '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="'+col+'" stroke-width="5" stroke-linecap="round" opacity=".9"/>'; }
+
+  // combat
+  function tick(){ if(won){ return; } var v=volley(); if(v.dmg<=0){ setMana(0); return; }
+    mana+=34; if(mana>=100){ mana=0; fire(v); } setMana(mana); }
+  function setMana(x){ document.getElementById('stmana').style.width=x+'%'; document.getElementById('stmanalabel').textContent='mana '+Math.round(x)+'%'; }
+  function fire(v){
+    if(!cur.enemy){ flash('Fires ~'+v.dmg+(v.combos.length?' ('+v.combos.map(function(c){return c.nm;}).join('+')+')':'')); return; }
+    cur.enemy.hp=Math.max(0,cur.enemy.hp-v.dmg); drawEnemy();
+    var big=v.combos.some(function(c){return cur.enemy.weakCombo===c.nm;});
+    flash((big?'<span class="big">':'')+'FIRE → '+v.dmg+' dmg'+(big?' 💥 '+v.combos.map(function(c){return c.nm;}).join('+'):'')+(big?'</span>':''));
+    if(cur.enemy.hp<=0 && !won){ won=true; document.getElementById('stagecard').className='stagecard win'; document.getElementById('sttag').textContent='Stage '+(cur.n||'Sandbox')+' — CLEAR!'; flash('<span class="big">'+cur.enemy.name.toUpperCase()+' DOWN. Stage clear.</span>'); }
+  }
+  function drawEnemy(){ if(!cur.enemy){return;} var p=100*cur.enemy.hp/cur.enemy.max; document.getElementById('sthpfill').style.width=p+'%'; document.getElementById('sthptext').textContent=cur.enemy.hp+' / '+cur.enemy.max; }
+  function flash(s){ var l=document.getElementById('stlog'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
+
+  function loadStage(st){ cur=st; sel=null; mana=0; won=false;
+    cells.forEach(function(c){c.val=null;c.tier=0;});
+    if(cur.enemy){ cur.enemy=Object.assign({max:cur.enemy.hp},cur.enemy); }
+    document.getElementById('stagecard').className='stagecard';
+    document.getElementById('sttag').textContent = cur.n?('Stage '+cur.n+' · '+cur.title):'Sandbox';
+    document.getElementById('stnew').innerHTML=cur.nw; document.getElementById('stgoal').textContent=cur.goal;
+    document.getElementById('stlog').innerHTML='';
+    var ec=document.querySelector('.stsec .enemy');
+    if(cur.enemy){ ec.style.opacity=1; document.getElementById('stename').textContent=cur.enemy.name;
+      var tg=''; if(cur.enemy.resist)tg+='<span class="t res">resists '+ELEMENTS[cur.enemy.resist]+'</span>'; if(cur.enemy.weakCombo)tg+='<span class="t mega">MEGA-weak: '+cur.enemy.weakCombo+'</span>';
+      document.getElementById('stetags').innerHTML=tg; drawEnemy();
+    } else { document.getElementById('stename').textContent='— no enemy (sandbox) —'; document.getElementById('stetags').innerHTML=''; document.getElementById('sthpfill').style.width='0%'; document.getElementById('sthptext').textContent=''; }
+    paintAll(); renderTray(); recompute(); setMana(0); renderSel();
+  }
+  function renderSel(){ var bs=document.querySelectorAll('#stagesel button'); bs.forEach(function(b){ b.classList.toggle('on', b.dataset.k===String(cur.n)); }); }
+
+  // stage selector
+  var ss=document.getElementById('stagesel');
+  STAGES.forEach(function(st){ var b=document.createElement('button'); b.dataset.k=String(st.n); b.textContent= st.n?(st.n+' · '+st.title):'Sandbox'; if(!st.n)b.className='clear'; b.onclick=function(){ loadStage(st); }; ss.appendChild(b); });
+  document.getElementById('stclear').onclick=function(){ cells.forEach(function(c){c.val=null;c.tier=0;}); sel=null; paintAll(); renderTray(); recompute(); };
+
+  loadStage(STAGES[0]);
+  setInterval(tick,620);
+})();
+</script>
+
+<!-- ============================================================ -->
+<!-- PATH Y — the FIXED model (modifier converts its cluster) · 5-cell scarce -->
+<!-- ============================================================ -->
+<style>
+.pysep{margin:40px 0 0;border-top:2px dashed #2c3744;padding-top:20px;}
+.pyroot{--bg:#11151c;--panel:#1a2029;--panel2:#222b36;--ink:#e6ebf2;--mut:#8a97a8;--fire:#e0552e;--water:#2a8fe0;--storm:#e8c63a;--steam:#cfd8df;--mod:#b39bff;--gold:#e0a020;--ok:#46c46a;--line:#2c3744;color:var(--ink);}
+.pyroot h1{font-size:19px;font-weight:600;margin:10px 0 2px;}
+.pyroot .pysub{color:var(--mut);font-size:12.5px;margin:0 0 12px;line-height:1.5;}
+.pyroot .pysub b{color:var(--ink);}
+.pyroot .pystagesel{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 14px;}
+.pyroot .pystagesel button{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;font-weight:600;}
+.pyroot .pystagesel button:hover{border-color:var(--gold);}
+.pyroot .pystagesel button.on{background:var(--gold);color:#0c0f14;border-color:var(--gold);}
+.pyroot .pystagesel button.sand{background:#231d33;color:#cdbcff;border-color:#3a3155;}
+.pyroot .pystagecard{background:linear-gradient(0deg,var(--panel2),var(--panel));border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:11px 14px;margin:0 0 14px;}
+.pyroot .pystagecard .pytag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+.pyroot .pystagecard.pywin{border-left-color:var(--ok);}
+.pyroot .pystagecard.pywin .pytag{color:var(--ok);}
+.pyroot .pystagecard .pynew{font-size:14.5px;margin-top:3px;line-height:1.42;}
+.pyroot .pystagecard .pygoal{font-size:12.5px;color:var(--mut);margin-top:4px;}
+.pyroot .pygrid{display:grid;grid-template-columns:1fr 320px;gap:16px;}
+@media(max-width:800px){.pyroot .pygrid{grid-template-columns:1fr;}}
+.pyroot .pycard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;}
+.pyroot .pycard h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 9px;font-weight:700;}
+.pyroot .pyboard{position:relative;width:244px;height:130px;margin:6px auto 8px;}
+.pyroot .pyboard svg{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:visible;}
+.pyroot .pycell{position:absolute;width:58px;height:64px;transform:translate(-50%,-50%);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#28323f;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;z-index:1;font-size:11px;font-weight:700;color:#0c0f14;transition:filter .1s;}
+.pyroot .pycell:hover{filter:brightness(1.2);}
+.pyroot .pycell.empty{background:#1e2630;color:#46546580;font-size:13px;}
+.pyroot .pycell.fire{background:var(--fire);}
+.pyroot .pycell.water{background:var(--water);}
+.pyroot .pycell.storm{background:var(--storm);color:#231a00;}
+.pyroot .pycell.modf{background:#2a2440;color:#cdbcff;font-size:10px;letter-spacing:.04em;}
+.pyroot .pycell .tier{font-size:9px;font-weight:800;opacity:.85;}
+.pyroot .pycell.placeable{outline:3px dashed var(--gold);outline-offset:-5px;}
+.pyroot .pycell.keyed{filter:brightness(1.15) saturate(1.3);}
+.pyroot .pycell.epic{outline:2px solid #d9a441;outline-offset:-4px;box-shadow:0 0 9px #d9a44188;}
+.pyroot .pycell.mergeready{outline:3px solid var(--gold);outline-offset:-4px;animation:pympulse .85s infinite;}
+@keyframes pympulse{0%,100%{outline-color:#e0a020;}50%{outline-color:#fff0c0;}}
+.pyroot .pytray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px;}
+.pyroot .pypiece{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:7px;transition:transform .08s;}
+.pyroot .pypiece:hover{transform:translateY(-1px);}
+.pyroot .pypiece.sel{outline:2px solid var(--gold);}
+.pyroot .pydot{width:14px;height:14px;border-radius:4px;display:inline-block;}
+.pyroot .pydot.fire{background:var(--fire);}.pyroot .pydot.water{background:var(--water);}.pyroot .pydot.storm{background:var(--storm);}.pyroot .pydot.mod{background:var(--mod);}
+.pyroot .pymana{height:15px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 2px;}
+.pyroot .pymana>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2a8fe0,#7fd0ff);transition:width .1s linear;}
+.pyroot .pymana.charged>i{background:linear-gradient(90deg,#e0a020,#ffd76a);}
+.pyroot .pymanalabel{font-size:11px;color:var(--mut);text-align:center;}
+.pyroot .pybtns{margin-top:10px;display:flex;gap:8px;justify-content:center;}
+.pyroot button.pyact{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12.5px;}
+.pyroot button.pyact:hover{border-color:var(--gold);}
+.pyroot button.pyact.prim{background:var(--gold);color:#0c0f14;border-color:var(--gold);font-weight:700;}
+.pyroot button.pyact.prim.live{background:#c43a3a;border-color:#c43a3a;color:#fff;}
+.pyroot button.pyact:disabled{opacity:.5;cursor:default;}
+.pyroot .pymergehint{font-size:11px;color:var(--gold);text-align:center;margin-top:7px;height:13px;}
+.pyroot .pyehead{display:flex;justify-content:space-between;align-items:baseline;}
+.pyroot .pyename{font-weight:600;font-size:15px;}
+.pyroot .pytags{margin:7px 0;display:flex;gap:6px;flex-wrap:wrap;}
+.pyroot .pyt{font-size:10.5px;padding:3px 7px;border-radius:6px;font-weight:700;}
+.pyroot .pyt.pyres{background:#3a2420;color:#f0a48a;}
+.pyroot .pyt.pymega{background:#2a2440;color:#cdbcff;}
+.pyroot .pyhp{height:18px;background:#0c1118;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;margin-top:4px;}
+.pyroot .pyhp>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#c43a3a,#e06a6a);transition:width .25s;}
+.pyroot .pyhp>span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.pyroot .pymixout{font-size:13px;margin:10px 0 4px;}
+.pyroot .pymixout b{color:var(--ink);}
+.pyroot .pyclout{font-size:12px;color:var(--mut);margin-bottom:6px;}
+.pyroot .pyclout .cl{color:#6fe09a;}.pyroot .pyclout .cm{color:#cdbcff;}
+.pyroot .pylog{margin-top:8px;font-size:11.5px;color:var(--mut);height:118px;overflow:auto;border-top:1px solid var(--line);padding-top:6px;line-height:1.5;}
+.pyroot .pylog .big{color:var(--steam);font-weight:700;}
+.pyroot .pynote{color:var(--mut);font-size:11px;margin-top:12px;line-height:1.55;}
+</style>
+<section class="pyroot pysep">
+  <span class="v2tag">Playable · the FIXED model</span>
+  <h1>Path Y — modifier converts its cluster <span style="color:var(--mut);font-weight:400;font-size:13px;">· 5-cell scarce board · sim-verified</span></h1>
+  <p class="pysub">Cells are scarce. <b>Cluster</b> same elements for power · <b>merge</b> 3 alike (tap the glow) to densify + free cells · place a <b>directional Key</b> so its <b>arrows</b> point at two different elements and it <b>fuses them into a combo</b> that bypasses resists (the epic Star fuses three). The mana bar <b>charges one tick</b> per cluster / combo / lone tile, then the hero attacks — so <b>fewer groups attack faster</b> (a cluster or combo = one tick). Press <b>⚔ Battle</b> — combat is automatic.</p>
+  <div class="pystagesel" id="pystagesel"></div>
+  <div class="pystagecard" id="pystagecard"><span class="pytag" id="pytag">Stage 1</span><div class="pynew" id="pynew"></div><div class="pygoal" id="pygoal"></div></div>
+  <div class="pygrid">
+    <div class="pycard">
+      <h2>Weapon board</h2>
+      <div class="pyboard" id="pyboard"><svg id="pysvg" viewBox="0 0 244 130"></svg></div>
+      <div class="pymana" id="pymanabar"><i id="pymanafill"></i></div>
+      <div class="pymanalabel" id="pymanalabel">— place tiles to attack —</div>
+      <div class="pytray" id="pytray"></div>
+      <div class="pybtns"><button class="pyact prim" id="pybattle">⚔ Battle!</button><button class="pyact" id="pyclear">Clear board</button><button class="pyact" id="pyreplay">Replay stage</button></div>
+      <div class="pymergehint" id="pymergehint"></div>
+    </div>
+    <div class="pycard">
+      <h2>Combat (auto)</h2>
+      <div class="pyehead"><span class="pyename" id="pyename">—</span></div>
+      <div class="pytags" id="pyetags"></div>
+      <div class="pyhp"><i id="pyhpfill"></i><span id="pyhptext"></span></div>
+      <div class="pymixout" id="pymixout">Next volley: <b>—</b></div>
+      <div class="pyclout" id="pyclout"></div>
+      <div class="pylog" id="pylog"></div>
+    </div>
+  </div>
+  <p class="pynote"><b>Model (Path Y):</b> a Key doesn't fire its own shot — it <b>converts the element clusters its arrows point at into combo-type damage</b> (scales with cluster size, bypasses resist, ×3 vs a mega-weak enemy). Keys are <b>directional</b>: a 2-arrow Key fuses 2 tiles, the epic Star fuses 3 — a tile no arrow points at is left raw, so there is <b>no hidden priority</b>. A cluster is keyed <b>once</b>. The <b>Splitter</b> instead doubles its pointed tiles as raw damage (no combo, no resist-bypass). <b>Mana = ticks:</b> the bar charges <b>one tick per cluster, combo, or lone tile</b>, then the hero attacks. A cluster or combo counts as ONE tick no matter how many tiles, so <b>fewer ticks = faster attacks</b> (a combo turns 2 ticks into 1). Combat runs only after you press <b>⚔ Battle</b>. Numbers placeholder.</p>
+</section>
+<script>
+(function(){
+  var ELEMENTS={fire:'Fire',water:'Water',storm:'Storm'};
+  var ROMAN={1:'',2:'II',3:'III'};
+  // Directional Keys: each fuses ONLY the element clusters its arrows (sockets) point at — no hidden priority.
+  var KEYDEF={
+    key_bar :{name:'Bar Key',  glyph:'◄►',  socket:['W','E'],      epic:false},
+    key_vee :{name:'Vee Key',  glyph:'◣◢',  socket:['SW','SE'],    epic:false},
+    key_star:{name:'Star Key', glyph:'★3',  socket:['W','E','SE'], epic:true}
+  };
+  var DIRVEC={W:[-1,0],E:[1,0],NW:[-0.55,-0.92],NE:[0.55,-0.92],SW:[-0.55,0.92],SE:[0.55,0.92]};
+  function isKey(v){ return !!KEYDEF[v]; }
+  function isElem(v){return v==='fire'||v==='water'||v==='storm';}
+  function isMod(v){return isKey(v)||v==='splitter';}
+  function comboName(a,b){ if(a===b)return 'Amp '+ELEMENTS[a]; var k=[a,b].sort().join('+'); return ({'fire+water':'Steam','storm+water':'Conduct','fire+storm':'Plasma'})[k]||'Mix'; }
+  function comboCol(n){ return ({Steam:'#cfd8df',Conduct:'#5fb0ee',Plasma:'#e08ad0',Tempest:'#ffd76a'})[n]||'#cdbcff'; }
+  function elcol(e){ return ({fire:'#e0552e',water:'#2a8fe0',storm:'#e8c63a'})[e]||'#9aa'; }
+  function resisted(en,el){ return en && (en.resist===el || en.resist==='ALL'); }
+  var DEF=[['A0',64,42],['A1',122,42],['A2',180,42],['B0',93,90],['B1',151,90]];
+  var CELLS=DEF.map(function(d){return {id:d[0],x:d[1],y:d[2],val:null,tier:0};});
+  CELLS.forEach(function(c){ c.nb=CELLS.filter(function(o){ if(o===c)return false; var dx=o.x-c.x,dy=o.y-c.y; return Math.sqrt(dx*dx+dy*dy)<64; }); });
+  CELLS.forEach(function(c){ c.dir={}; c.nb.forEach(function(n){ var dx=n.x-c.x,dy=n.y-c.y,d; if(Math.abs(dy)<12)d=(dx>0?'E':'W'); else if(dy>0)d=(dx>0?'SE':'SW'); else d=(dx>0?'NE':'NW'); c.dir[d]=n; }); });
+  var STAGES=[
+   {n:1,title:'Place & Fire',tray:['fire'],unlock:{},enemy:{name:'Straw Dummy',hp:30},
+     nw:'The basics. Drop a <b style="color:#e0552e">Fire</b> rune — your weapon auto-attacks, fills <b>mana</b>, and on full fires your build.',
+     goal:'Goal: chip the dummy down. Place a couple of fire and watch the volley grow.'},
+   {n:2,title:'Clusters',tray:['fire','water'],unlock:{cluster:1},enemy:{name:'Bandit',hp:140},
+     nw:'<b>Placement matters.</b> Same element in <b>adjacent</b> cells forms a <b style="color:#6fe09a">cluster</b> — your damage engine. A cluster also counts as <b>one tick</b> (not one per tile), so clustering attacks <b>faster</b>, not just harder. Pack them together.',
+     goal:'Goal: beat the Bandit. A tight cluster hits far harder than scattered tiles.'},
+   {n:3,title:'Merge',tray:['fire','water'],unlock:{cluster:1,merge:1},enemy:{name:'Brute',hp:230},
+     nw:'<b>Merge.</b> 3 identical runes touching glow <b style="color:var(--gold)">gold</b> — tap to fuse into one higher-tier rune, <b>freeing 2 cells</b>. Denser cluster = more power.',
+     goal:'Goal: beat the Brute. Build a cluster, merge to densify it, refill the freed cells.'},
+   {n:4,title:'The Key',tray:['fire','water','key_bar','key_vee','key_star'],unlock:{cluster:1,bridge:1},enemy:{name:'Ironclad',hp:340,resist:'ALL',weak:'Steam'},
+     nw:'<b>Keys are directional.</b> A Key only fuses the tiles its <b>arrows</b> point at — a tile no arrow touches is left raw, so there is no guessing. The Ironclad shrugs off <b style="color:#f0a48a">every raw element</b>; the answer is a Key that fuses a Fire and a Water into <b style="color:#cdbcff">Steam</b> (it is mega-weak to Steam). Pick the Key whose arrows match your layout — <b>Bar</b> ◄► fuses left+right, <b>Vee</b> ◣◢ fuses the two below, <b>Star</b> ★ is epic and fuses THREE.',
+     goal:'Goal: raw bounces off. Put a Fire and a Water on two sides of the centre cell, then drop the Key whose arrows point at BOTH so they fire as Steam.'},
+   {n:5,title:'The Wall',tray:['fire','water','storm','key_bar','key_vee','key_star'],unlock:{cluster:1,merge:1,bridge:1},enemy:{name:'Warden',hp:520,resist:'ALL',weak:'Conduct'},
+     nw:'<b>The Wall.</b> Same armour as the Ironclad — but READ THE TAG: the Warden is mega-weak to <b style="color:#5fb0ee">Conduct</b> (Water + Storm), NOT Steam. Aim a Key at a Water and a Storm; merge to densify the clusters first. The epic <b>Star</b> fuses three tiles for a bigger hit if you can line them up.',
+     goal:'Goal: Steam barely dents this one — it wants Conduct. Aim a Key at Water + Storm. Adapt the combo to the enemy you are facing.'},
+   {n:0,title:'Sandbox',tray:['fire','water','storm','key_bar','key_vee','key_star','splitter'],unlock:{cluster:1,merge:1,bridge:1,sandbox:1},enemy:null,
+     nw:'<b>Sandbox.</b> Everything unlocked, no enemy. Keys fuse the tiles their arrows point at (Bar ◄►, Vee ◣◢, Star ★×3). The <b>Splitter</b> ◄2► doubles its left & right tiles as RAW damage — no combo, does not bypass resist: raw muscle vs a Key’s armour-piercing combo.',
+     goal:'Free play. Compare a Star combo against a Splitter-doubled raw cluster. Reset to any stage with the buttons above.'}
+  ];
+  STAGES.forEach(function(s){ if(s.enemy) s.enemy._hp0=s.enemy.hp; });
+  var cur=STAGES[0], sel=null, mana=0, won=false, running=false, charge=0;
+  var board=document.getElementById('pyboard'), svg=document.getElementById('pysvg'), trayEl=document.getElementById('pytray');
+  CELLS.forEach(function(c){ var d=document.createElement('div'); d.style.left=c.x+'px'; d.style.top=c.y+'px'; c.dom=d; d.onclick=function(){onCell(c);}; board.appendChild(d); });
+
+  function floodSame(start){ var key=start.val+'@'+start.tier, seen={}, st=[start], out=[];
+    while(st.length){ var x=st.pop(); if(seen[x.id])continue; if(isElem(x.val)&&(x.val+'@'+x.tier)===key){ seen[x.id]=1; out.push(x); x.nb.forEach(function(n){if(!seen[n.id])st.push(n);}); } }
+    return out; }
+  function mergeableAt(c){ return cur.unlock.merge && isElem(c.val) && floodSame(c).length>=3; }
+  function clustersOf(){ var seen={}, out=[];
+    CELLS.forEach(function(c){ if(seen[c.id]||!isElem(c.val))return; var v=c.val, comp=[], st=[c];
+      while(st.length){ var x=st.pop(); if(seen[x.id])continue; if(x.val===v){ seen[x.id]=1; comp.push(x); x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v)st.push(n);}); } }
+      out.push({el:v,cells:comp}); });
+    return out; }
+  var TIERMULT={1:1,2:4,3:9};
+  function cmult(c){ if(!cur.unlock.cluster)return 1; var same=c.nb.filter(function(n){return n.val===c.val;}).reduce(function(s,n){return s+(n.tier||1);},0)+((c.tier||1)-1); return 1+0.3*Math.min(same,3); }
+  function volley(){
+    var en=cur.enemy, unl=cur.unlock;
+    var cls=clustersOf(), cell2cl={}; cls.forEach(function(cl,i){cl.cells.forEach(function(x){cell2cl[x.id]=i;});});
+    // Splitter: doubles (raw) every element cluster sitting in its W/E sockets.
+    var dbl={};
+    CELLS.forEach(function(c){ if(c.val!=='splitter')return; ['W','E'].forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)) cls[cell2cl[n.id]].cells.forEach(function(x){dbl[x.id]=1;}); }); });
+    function baseOut(c){ var m=6*(TIERMULT[c.tier||1]||1)*cmult(c); if(dbl[c.id])m*=2; return m; }
+    var keyed={}, combos=[], links=[], keyset={}, dmg=0, groups=[];
+    if(unl.bridge){
+      CELLS.forEach(function(c){
+        var kd=KEYDEF[c.val]; if(!kd)return;
+        var picked=[], els={};
+        kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val)){ var ci=cell2cl[n.id]; if(!keyed[ci] && picked.indexOf(ci)<0){ picked.push(ci); els[n.val]=1; } } });
+        var de=Object.keys(els);
+        if(de.length>=2){
+          var nm = de.length>=3 ? 'Tempest' : comboName(de[0],de[1]);
+          var bs=0; picked.forEach(function(ci){ cls[ci].cells.forEach(function(x){ bs+=baseOut(x); links.push([c,x,comboCol(nm)]); keyset[x.id]=1; }); keyed[ci]=1; });
+          var mult=(en&&en.weak===nm)?3:(kd.epic?1.5:1.3);
+          var sz=picked.reduce(function(s,ci){return s+cls[ci].cells.length;},0);
+          var gd=bs*mult; dmg+=gd; combos.push({nm:nm,size:sz,mega:!!(en&&en.weak===nm),epic:kd.epic});
+          groups.push({label:nm, dmg:Math.round(gd), col:comboCol(nm), mega:!!(en&&en.weak===nm), combo:true});
+        }
+      });
+    }
+    cls.forEach(function(cl,i){ if(keyed[i])return; var o=0; cl.cells.forEach(function(x){ var b=baseOut(x); if(resisted(en,cl.el))b*=0.25; o+=b; }); dmg+=o;
+      groups.push({label:ELEMENTS[cl.el]+(cl.cells.length>1?' ×'+cl.cells.length:''), dmg:Math.round(o), col:elcol(cl.el), resisted:resisted(en,cl.el)}); });
+    return {dmg:Math.round(dmg), groups:groups, combos:combos, links:links, keyset:keyset};
+  }
+  window.__testPY=function(spec,stageN){ var save=CELLS.map(function(c){return [c.val,c.tier];}); var sc=cur, st=null;
+    STAGES.forEach(function(s){if(s.n===stageN)st=s;}); if(st)cur=st;
+    CELLS.forEach(function(c){ var s=spec[c.id]; if(!s){c.val=null;c.tier=0;} else if(s.push){c.val=s[0];c.tier=s[1];} else {c.val=s;c.tier=1;} });
+    var d=volley().dmg; cur=sc; CELLS.forEach(function(c,i){c.val=save[i][0];c.tier=save[i][1];}); return d; };
+
+  function paint(c){ var d=c.dom;
+    if(!c.val){ d.className='pycell empty'; d.innerHTML='+'; }
+    else if(isKey(c.val)){ var kd=KEYDEF[c.val]; d.className='pycell modf'+(kd.epic?' epic':''); d.innerHTML=kd.glyph; }
+    else if(c.val==='splitter'){ d.className='pycell modf'; d.innerHTML='SPLIT'; }
+    else { d.className='pycell '+c.val; d.innerHTML=ELEMENTS[c.val]+(c.tier>1?'<span class="tier">'+ROMAN[c.tier]+'</span>':''); } }
+  function paintAll(){ CELLS.forEach(paint); }
+  function onCell(c){
+    if(c.val){ if(mergeableAt(c)){ doMerge(c); return; } c.val=null; c.tier=0; paint(c); recompute(); markPlaceable(); return; }
+    if(!sel || cur.tray.indexOf(sel)<0) return;
+    c.val=sel; c.tier=1; paint(c); recompute(); markPlaceable(); }
+  function doMerge(c){ var grp=floodSame(c).filter(function(x){return x!==c;}).slice(0,2);
+    c.tier=Math.min(3,c.tier+1); grp.forEach(function(x){x.val=null;x.tier=0;}); flash('Merged → '+ELEMENTS[c.val]+' '+ROMAN[c.tier]+' · 2 cells freed'); paintAll(); recompute(); markPlaceable(); }
+  function renderTray(){ trayEl.innerHTML='';
+    cur.tray.forEach(function(k){ var b=document.createElement('div'); b.className='pypiece'+(sel===k?' sel':'');
+      var label = isKey(k)?(KEYDEF[k].name+' '+KEYDEF[k].glyph):(k==='splitter'?'Splitter ◄2►':ELEMENTS[k]);
+      b.innerHTML = isMod(k) ? '<span class="pydot mod"></span>'+label : '<span class="pydot '+k+'"></span>'+label;
+      b.onclick=function(){ sel=(sel===k?null:k); renderTray(); markPlaceable(); }; trayEl.appendChild(b); }); }
+  function markPlaceable(){ CELLS.forEach(function(c){ c.dom.classList.toggle('placeable', !!sel && !c.val && cur.tray.indexOf(sel)>=0); c.dom.classList.toggle('mergeready', mergeableAt(c)); }); }
+  function recompute(){
+    var v=volley();
+    var S=''; v.links.forEach(function(l){ S+='<line x1="'+l[0].x+'" y1="'+l[0].y+'" x2="'+l[1].x+'" y2="'+l[1].y+'" stroke="'+l[2]+'" stroke-width="5" stroke-linecap="round" opacity=".9"/>'; });
+    // socket telegraph: a stub for every Key arm — bright if it points at an element, faint-dashed if empty
+    if(cur.unlock.bridge) CELLS.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; kd.socket.forEach(function(D){ var vec=DIRVEC[D]; if(!vec)return; var n=c.dir[D], lit=n&&isElem(n.val); var ex=c.x+vec[0]*27, ey=c.y+vec[1]*27; S+='<line x1="'+c.x+'" y1="'+c.y+'" x2="'+ex+'" y2="'+ey+'" stroke="'+(lit?'#cdbcff':'#5a4f7a')+'" stroke-width="'+(lit?4:2.5)+'" stroke-linecap="round" stroke-dasharray="'+(lit?'':'3 3')+'" opacity="'+(lit?'.85':'.6')+'"/>'; }); });
+    svg.innerHTML=S;
+    CELLS.forEach(function(c){ c.dom.classList.toggle('keyed', !!v.keyset[c.id]); });
+    var gtxt=v.groups.map(function(g){ return '<span style="color:'+g.col+'">'+g.label+'</span> '+g.dmg+(g.combo?(g.mega?' 💥':' ⚡'):'')+(g.resisted?' <span style="color:#f0a48a">(resisted)</span>':''); });
+    document.getElementById('pymixout').innerHTML=(v.groups.length?'<b>'+v.groups.length+' tick'+(v.groups.length>1?'s':'')+'</b> to charge → ~'+v.dmg+' dmg attack':'Build a weapon to attack')+(gtxt.length?'<br><span style="font-size:12px">groups: '+gtxt.join(' &nbsp;·&nbsp; ')+'</span>':'');
+    var cl=0, seen={}; CELLS.forEach(function(c){ if(isElem(c.val)&&!seen[c.id]){ var g=clustersFor(c); if(g.length>=2){cl++; g.forEach(function(x){seen[x.id]=1;});} } });
+    document.getElementById('pyclout').innerHTML=(cur.unlock.cluster?'<span class="cl">Clusters: '+cl+'</span>':'')+(cur.unlock.bridge?' &nbsp; <span class="cm">Combos live: '+v.combos.length+'</span>':'');
+    var mh=(cur.unlock.merge && CELLS.some(mergeableAt))?'⚡ A glowing group of 3 is ready — tap it to merge.':'';
+    var deadKey=false; CELLS.forEach(function(c){ var kd=KEYDEF[c.val]; if(!kd)return; var es={}; kd.socket.forEach(function(D){ var n=c.dir[D]; if(n&&isElem(n.val))es[n.val]=1; }); if(Object.keys(es).length<2) deadKey=true; });
+    document.getElementById('pymergehint').innerHTML = mh || (deadKey?'<span style="color:#f0a48a">⚠ This Key’s arrows don’t hit 2 different elements — move it or your tiles so each arrow points at a different element.</span>':''); setMana(); }
+  function clustersFor(c){ var v=c.val, seen={}, st=[c], out=[]; while(st.length){var x=st.pop(); if(seen[x.id])continue; if(x.val===v){seen[x.id]=1;out.push(x);x.nb.forEach(function(n){if(!seen[n.id]&&n.val===v)st.push(n);});}} return out; }
+  function tick(){ if(!running||won)return; var v=volley(), N=v.groups.length;
+    if(N<=0){ mana=0; charge=0; setMana(); return; }
+    mana+=7;   // small steps @100ms = ONE smooth fill per tick (was +34 @640ms = 3 chunky jumps, misread as 3 ticks)
+    if(mana>=100){ mana=0; charge++; if(charge>=N){ charge=0; fire(v); } else if(cur.enemy){ flash('<span style="color:var(--mut)">· tick '+charge+'/'+N+' charged</span>'); } }
+    setMana(); }
+  function setMana(){ var v=volley(), N=v.groups.length, fill=document.getElementById('pymanafill'), bar=document.getElementById('pymanabar'), lbl=document.getElementById('pymanalabel');
+    fill.style.width=(N<=0?0:Math.round(mana))+'%';
+    bar.classList.toggle('charged', running && N>0 && charge>=N-1);
+    lbl.textContent = (N<=0) ? '— place tiles to attack —' : (running ? ('charging tick '+Math.min(charge+1,N)+' / '+N+' → fire') : (N+' tick'+(N>1?'s':'')+' → attack · press Battle')); }
+  function fire(v){
+    if(!cur.enemy){ flash('⚔ ATTACK → ~'+v.dmg+(v.combos.length?' ('+v.combos.map(function(c){return c.nm;}).join('+')+')':'')); return; }
+    cur.enemy.hp=Math.max(0,cur.enemy.hp-v.dmg); drawEnemy();
+    var big=v.combos.some(function(c){return c.mega;});
+    flash((big?'<span class="big">':'')+'⚔ ATTACK → '+v.dmg+' dmg'+(big?' 💥 '+v.combos.map(function(c){return c.nm;}).join('+'):'')+(big?'</span>':''));
+    if(cur.enemy.hp<=0 && !won){ won=true; running=false; setBattleBtn(); document.getElementById('pystagecard').className='pystagecard pywin';
+      document.getElementById('pytag').textContent=(cur.n?('Stage '+cur.n):'Sandbox')+' — CLEAR!'; flash('<span class="big">'+cur.enemy.name.toUpperCase()+' DOWN. Stage clear.</span>'); } }
+  function drawEnemy(){ if(!cur.enemy)return; var p=100*cur.enemy.hp/cur.enemy.max; document.getElementById('pyhpfill').style.width=p+'%'; document.getElementById('pyhptext').textContent=cur.enemy.hp+' / '+cur.enemy.max; }
+  function flash(s){ var l=document.getElementById('pylog'); l.innerHTML='<div>'+s+'</div>'+l.innerHTML; }
+  function loadStage(st){ cur=st; sel=null; mana=0; charge=0; won=false; running=false;
+    CELLS.forEach(function(c){c.val=null;c.tier=0;});
+    if(cur.enemy){ cur.enemy.hp=cur.enemy._hp0; cur.enemy.max=cur.enemy._hp0; }
+    document.getElementById('pystagecard').className='pystagecard';
+    document.getElementById('pytag').textContent=cur.n?('Stage '+cur.n+' · '+cur.title):'Sandbox';
+    document.getElementById('pynew').innerHTML=cur.nw; document.getElementById('pygoal').textContent=cur.goal;
+    document.getElementById('pylog').innerHTML='';
+    if(cur.enemy){ document.getElementById('pyename').textContent=cur.enemy.name;
+      var tg=''; if(cur.enemy.resist)tg+='<span class="pyt pyres">resists '+(cur.enemy.resist==='ALL'?'ALL raw':ELEMENTS[cur.enemy.resist])+'</span>'; if(cur.enemy.weak)tg+='<span class="pyt pymega">MEGA-weak: '+cur.enemy.weak+'</span>';
+      document.getElementById('pyetags').innerHTML=tg; drawEnemy();
+    } else { document.getElementById('pyename').textContent='— no enemy (sandbox) —'; document.getElementById('pyetags').innerHTML=''; document.getElementById('pyhpfill').style.width='0%'; document.getElementById('pyhptext').textContent=''; }
+    paintAll(); renderTray(); recompute(); markPlaceable(); setMana(0); renderSel(); setBattleBtn(); }
+  function renderSel(){ document.querySelectorAll('#pystagesel button').forEach(function(b){ b.classList.toggle('on', b.dataset.k===String(cur.n)); }); }
+  var ss=document.getElementById('pystagesel');
+  STAGES.forEach(function(st){ var b=document.createElement('button'); b.dataset.k=String(st.n); b.textContent=st.n?(st.n+' · '+st.title):'Sandbox'; if(!st.n)b.className='sand'; b.onclick=function(){loadStage(st);}; ss.appendChild(b); });
+  function setBattleBtn(){ var b=document.getElementById('pybattle'); if(won){ b.textContent='✓ Cleared'; b.disabled=true; b.classList.remove('live'); return; } b.disabled=false; b.textContent=running?'⏸ Pause':'⚔ Battle!'; b.classList.toggle('live',running); }
+  document.getElementById('pybattle').onclick=function(){ if(won)return; running=!running; if(running){charge=0;mana=0;} setBattleBtn(); setMana(); };
+  document.getElementById('pyclear').onclick=function(){ CELLS.forEach(function(c){c.val=null;c.tier=0;}); sel=null; running=false; mana=0; charge=0; paintAll(); renderTray(); recompute(); markPlaceable(); setBattleBtn(); };
+  document.getElementById('pyreplay').onclick=function(){ loadStage(cur); };
+  loadStage(STAGES[0]);
+  setInterval(tick,100);
+})();
+</script>
+</body>
+</html>

@@ -54,6 +54,7 @@ const COMPACT_MIN_H: int = 96
 const FULL_MIN_H: int = 200
 
 func set_forge_compact(compact: bool) -> void:
+	_compact = compact
 	if compact:
 		custom_minimum_size = Vector2(0, COMPACT_MIN_H)
 		size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -64,6 +65,9 @@ func set_forge_compact(compact: bool) -> void:
 		size_flags_vertical = Control.SIZE_EXPAND_FILL
 		if _combat_log_panel != null:
 			_combat_log_panel.visible = true
+	## Rebuild lanes with the mode-appropriate sprite height (halves the arena
+	## footprint in forge preview).
+	_build_lanes()
 
 ## Vertical-UI reskin: all heroes shown as lanes in the arena's left column.
 const ROSTER: Array = [&"bran", &"elara", &"vex"]
@@ -78,6 +82,13 @@ const BAR_BG   := Color(0.141, 0.090, 0.063, 1)
 
 ## hero_id -> { sprite: TextureRect, hp: ProgressBar, ult: ProgressBar }
 var _lanes: Dictionary = {}
+
+## Full-body sprite height in battle; halved in the forge-moment preview so the
+## arena panel shrinks ~50% and never pushes the forge/shop/START WAVE off-screen.
+const LANE_SPRITE_W: int = 52
+const LANE_SPRITE_H_FULL: int = 80
+const LANE_SPRITE_H_COMPACT: int = 40
+var _compact: bool = false
 
 func _ready() -> void:
 	GameState.enemies_spawned.connect(_rebuild_enemy_row)
@@ -119,7 +130,8 @@ func _build_lanes() -> void:
 		lane.add_child(pwrap)
 
 		var sprite := TextureRect.new()
-		sprite.custom_minimum_size = Vector2(52, 80)   ## taller: full-body display
+		var sprite_h: int = LANE_SPRITE_H_COMPACT if _compact else LANE_SPRITE_H_FULL
+		sprite.custom_minimum_size = Vector2(LANE_SPRITE_W, sprite_h)  ## full-body; halved in forge preview
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		pwrap.add_child(sprite)

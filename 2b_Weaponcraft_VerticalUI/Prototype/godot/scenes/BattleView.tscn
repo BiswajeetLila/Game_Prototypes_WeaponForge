@@ -60,27 +60,12 @@ theme_override_styles/panel = SubResource("arena_inner_style")
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HeroAnchor" type="Control" parent="VBox/Arena/ArenaHBox"]
+[node name="HeroLanes" type="VBoxContainer" parent="VBox/Arena/ArenaHBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 76)
+custom_minimum_size = Vector2(66, 0)
 layout_mode = 2
-size_flags_vertical = 8
-
-[node name="HeroPortrait" type="TextureRect" parent="VBox/Arena/ArenaHBox/HeroAnchor"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(54, 54)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -27.0
-offset_top = -27.0
-offset_right = 27.0
-offset_bottom = 27.0
-expand_mode = 1
-stretch_mode = 5
+size_flags_vertical = 3
+theme_override_constants/separation = 6
 
 [node name="EnemyRow" type="HBoxContainer" parent="VBox/Arena/ArenaHBox"]
 unique_name_in_owner = true

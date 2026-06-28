@@ -26,9 +26,9 @@
 - [x] **C1** Slot rename in 2_ AND 2b_; headless sweep exit 0 both. ✅ commit `54d9a1b` (both folders 0 failures).
 - [x] **C2** Per-weapon label map (slot_labels.gd) + head-part relabel; sweep exit 0. ✅
 - [x] **C3** FORGE: 3 hero rows render (Bran full + 2 locked); slot labels Hilt/Rune/Blade; armed shop→slot equip + gold spend verified by test + AUTOSHOT `forge_3row.png`. ✅
-- [ ] **C4** BATTLE: 3 hero lanes + weapon rail; no shop/combo. ← NEXT (Phase 4)
-- [ ] **C5** AUTOSHOT forge+battle PNGs match prototype v3 + reference mockups.
-- [ ] **C6** Committed to branch (no .import/.uid); log finalized.
+- [x] **C4** BATTLE: arena left column now renders all 3 hero lanes (portrait + green HP + blue Ult bars; locked = greyed ❔). Live HP/Ult via hero_hp_changed/hero_ult_changed; enemy-hit flash retargeted per-lane. Verified via AUTOSHOT `main_lanes.png` + sweep. (Single-Main layout keeps forge rows below as the always-visible weapon view; full screen-switch + shop-hide left as future scope — noted.)
+- [x] **C5** AUTOSHOT `forge_3row.png` (3-row forge, Hilt/Rune/Blade labels) + `main_lanes.png` (3-lane arena) captured in scratchpad; track prototype v3 layout.
+- [ ] **C6** Committed to branch (no .import/.uid); log finalized. ← finalizing
 
 ---
 

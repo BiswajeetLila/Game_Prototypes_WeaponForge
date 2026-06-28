@@ -39,26 +39,123 @@ static func cap_pop_layer(layer: Control, max_pops: int) -> void:
 	for i in range(maxi(0, excess)):
 		layer.get_child(i).queue_free()
 
-@onready var _hero_portrait: TextureRect = %HeroPortrait
 @onready var _enemy_row: HBoxContainer = %EnemyRow
 @onready var _pops_layer: Control = %DamagePops
 @onready var _log_label: RichTextLabel = %CombatLog
-@onready var _hero_anchor: Control = %HeroAnchor
+@onready var _hero_lanes: VBoxContainer = %HeroLanes
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
 
+## Vertical-UI reskin: all heroes shown as lanes in the arena's left column.
+const ROSTER: Array = [&"bran", &"elara", &"vex"]
+const ACCENT: Dictionary = {
+	&"bran": Color(0.878, 0.635, 0.235, 1),
+	&"elara": Color(0.345, 0.773, 0.910, 1),
+	&"vex": Color(0.608, 0.424, 0.941, 1),
+}
+const HP_FILL  := Color(0.373, 0.761, 0.290, 1)
+const ULT_FILL := Color(0.184, 0.608, 0.878, 1)
+const BAR_BG   := Color(0.141, 0.090, 0.063, 1)
+
+## hero_id -> { sprite: TextureRect, hp: ProgressBar, ult: ProgressBar }
+var _lanes: Dictionary = {}
+
 func _ready() -> void:
-	if GameState.hero != null and GameState.hero.data != null:
-		_hero_portrait.texture = GameState.hero.data.portrait
 	GameState.enemies_spawned.connect(_rebuild_enemy_row)
 	GameState.enemy_hp_changed.connect(_on_enemy_hp_changed)
 	GameState.enemy_status_changed.connect(_on_enemy_status_changed)
 	GameState.combat_log_appended.connect(_on_log_appended)
 	GameState.weapon_changed.connect(_rebuild_recipe_chips)
+	GameState.hero_hp_changed.connect(_on_hero_hp_changed)
+	GameState.hero_ult_changed.connect(_on_hero_ult_changed)
+	GameState.hero_unlocked.connect(func(_hid): _build_lanes())
 	Combat.hero_hit_enemy.connect(_on_hero_hit_enemy)
 	Combat.enemy_hit_hero.connect(_on_enemy_hit_hero)
 	Combat.ult_fired.connect(_on_ult_fired)
+	_build_lanes()
 	_rebuild_enemy_row()
 	_rebuild_recipe_chips(&"bran")
+
+## ---------- Hero lanes (left column) ----------
+
+func _build_lanes() -> void:
+	_lanes.clear()
+	for child in _hero_lanes.get_children():
+		child.queue_free()
+	for hid in ROSTER:
+		var hero = GameState.get_hero(hid)
+		var accent: Color = ACCENT.get(hid, Color(0.85, 0.85, 0.85))
+		var lane := VBoxContainer.new()
+		lane.add_theme_constant_override(&"separation", 2)
+		lane.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_hero_lanes.add_child(lane)
+
+		var pwrap := PanelContainer.new()
+		var psb := StyleBoxFlat.new()
+		psb.bg_color = Color(0.082, 0.063, 0.047, 1)
+		psb.border_color = accent
+		psb.set_border_width_all(3)
+		psb.set_corner_radius_all(24)
+		pwrap.add_theme_stylebox_override(&"panel", psb)
+		lane.add_child(pwrap)
+
+		var sprite := TextureRect.new()
+		sprite.custom_minimum_size = Vector2(46, 46)
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		pwrap.add_child(sprite)
+
+		if hero == null:
+			# Locked / not-yet-recruited hero: greyed placeholder, no bars.
+			var q := Label.new()
+			q.text = "❔"
+			q.add_theme_font_size_override(&"font_size", 24)
+			q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			pwrap.add_child(q)
+			lane.modulate = Color(1, 1, 1, 0.4)
+			continue
+
+		if hero.data != null:
+			sprite.texture = hero.data.portrait
+		var hp_ratio: float = (float(hero.hp) / float(hero.max_hp)) if hero.max_hp > 0 else 0.0
+		var ult_ratio: float = clampf(float(hero.ult_gauge) / 100.0, 0.0, 1.0)
+		var hp_bar := _make_lane_bar(hp_ratio, HP_FILL)
+		var ult_bar := _make_lane_bar(ult_ratio, ULT_FILL)
+		lane.add_child(hp_bar)
+		lane.add_child(ult_bar)
+		_lanes[hid] = {"sprite": sprite, "hp": hp_bar, "ult": ult_bar}
+
+func _make_lane_bar(ratio: float, fill: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(52, 6)
+	bar.show_percentage = false
+	bar.min_value = 0.0
+	bar.max_value = 1.0
+	bar.value = clampf(ratio, 0.0, 1.0)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = BAR_BG
+	bg.set_corner_radius_all(3)
+	var fg := StyleBoxFlat.new()
+	fg.bg_color = fill
+	fg.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override(&"background", bg)
+	bar.add_theme_stylebox_override(&"fill", fg)
+	return bar
+
+func _on_hero_hp_changed(hero_id: StringName) -> void:
+	if not _lanes.has(hero_id):
+		return
+	var hero = GameState.get_hero(hero_id)
+	if hero == null or hero.max_hp <= 0:
+		return
+	_lanes[hero_id].hp.value = clampf(float(hero.hp) / float(hero.max_hp), 0.0, 1.0)
+
+func _on_hero_ult_changed(hero_id: StringName) -> void:
+	if not _lanes.has(hero_id):
+		return
+	var hero = GameState.get_hero(hero_id)
+	if hero == null:
+		return
+	_lanes[hero_id].ult.value = clampf(float(hero.ult_gauge) / 100.0, 0.0, 1.0)
 
 func _rebuild_recipe_chips(_hero_id: StringName) -> void:
 	for child in _recipe_chips.get_children():
@@ -300,13 +397,12 @@ func _on_enemy_hit_hero(_enemy_idx: int, hero_id: StringName, dmg: int) -> void:
 	if JuiceConfigT.JUICE_ENABLED:
 		ScreenShake.kick(float(profile.shake_amp), float(profile.shake_dur))
 		HitPause.freeze(float(profile.pause))
-	## Only flash + pop the BattleView portrait when the hit hero is the one
-	## currently displayed (Bran in ultra-MVP). Per-card flash on every hero
-	## lives in SquadBar, which dispatches by hero_id.
-	if hero_id == &"bran":
+	## Flash + pop the hit hero's lane (every hero now has a lane in the arena).
+	if _lanes.has(hero_id):
+		var sprite: TextureRect = _lanes[hero_id].sprite
 		if JuiceConfigT.JUICE_ENABLED:
-			_flash_sprite_in(_hero_anchor, float(profile.flash_dur))
-		var origin: Vector2 = _hero_anchor.global_position + Vector2(_hero_anchor.size.x * 0.5, 0)
+			_flash_sprite_in(sprite, float(profile.flash_dur))
+		var origin: Vector2 = sprite.global_position + Vector2(sprite.size.x * 0.5, 0)
 		_spawn_pop(origin, "%s%d" % [String(profile.prefix), dmg],
 			profile.color, int(profile.font_pt) + clampi(dmg / 4, 0, 12))
 

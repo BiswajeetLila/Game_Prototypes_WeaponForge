@@ -7,8 +7,8 @@
 script = ExtResource("1")
 id = &"h_pyro_visor"
 slot = &"head"
-name = "Pyro Visor"
-desc = "Universal head smoldering with FIRE. Stacks with fire runes for Inferno."
+name = "Pyro Haft"
+desc = "Universal weapon-head smoldering with FIRE. Stacks with fire runes for Inferno."
 icon = ExtResource("2")
 cost = 4
 atk = 6

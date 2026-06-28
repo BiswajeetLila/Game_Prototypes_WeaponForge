@@ -28,8 +28,9 @@ func _ready() -> void:
 	AccountState.save_path = "user://account_test.json"
 	AccountState.reset()
 	_log("=== UI tests ===")
-	_test_anvil_labels_exist()
-	_test_anvil_labels_visible()
+	_test_slot_labels_per_class()
+	_test_forge_builds_three_hero_rows()
+	_test_forge_armed_equip_flow()
 	_test_partcard_rim_l1_bronze()
 	_test_partcard_rim_l2_silver()
 	_test_partcard_rim_l3_emerald()
@@ -56,40 +57,60 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		get_tree().quit(_failed)
 
-## ---------- Slot label cases ----------
+## ---------- Slot label cases (vertical-UI reskin) ----------
 
-func _test_anvil_labels_exist() -> void:
+const SlotLabelsT = preload("res://scripts/ui/slot_labels.gd")
+
+func _test_slot_labels_per_class() -> void:
+	## Weapon-anatomy labels vary by class; only "Rune" is constant.
+	var ok = (
+		SlotLabelsT.label(&"warrior", &"head") == "Hilt"
+		and SlotLabelsT.label(&"warrior", &"body") == "Blade"
+		and SlotLabelsT.label(&"mage", &"head") == "Shaft"
+		and SlotLabelsT.label(&"mage", &"body") == "Orb"
+		and SlotLabelsT.label(&"rogue", &"head") == "Grip"
+		and SlotLabelsT.label(&"rogue", &"body") == "Fang"
+		and SlotLabelsT.label(&"warrior", &"rune") == "Rune"
+		and SlotLabelsT.label(&"mage", &"rune") == "Rune"
+		and SlotLabelsT.label(&"rogue", &"rune") == "Rune"
+	)
+	_check("SlotLabels: per-class head/body labels + constant Rune", ok,
+		"warrior=%s mage=%s rogue=%s" % [str(SlotLabelsT.ordered(&"warrior")),
+			str(SlotLabelsT.ordered(&"mage")), str(SlotLabelsT.ordered(&"rogue"))])
+
+func _test_forge_builds_three_hero_rows() -> void:
+	## ForgePanel now stacks one row per roster hero (unlocked → full row,
+	## others → locked shell). Bran starts unlocked; expect 3 rows total.
+	GameState.new_session()
 	var fp = ForgePanelScene.instantiate()
 	add_child(fp)
-	var labels_node = fp.find_child("AnvilLabels", true, false)
-	if labels_node == null:
-		_check("ForgePanel has AnvilLabels child", false, "node not found")
+	var rows_node = fp.find_child("HeroRows", true, false)
+	if rows_node == null:
+		_check("ForgePanel has HeroRows container", false, "node not found")
 		fp.queue_free()
 		return
-	var children = labels_node.get_children().filter(func(c): return c is Label)
-	var texts: Array = []
-	for c in children:
-		texts.append(c.text)
-	var ok = children.size() == 3 and texts == ["Head", "Hilt", "Rune"]
-	_check("AnvilLabels has 3 Labels: Head / Hilt / Rune",
-		ok,
-		"got %d labels = %s" % [children.size(), str(texts)])
+	var n = rows_node.get_child_count()
+	_check("ForgePanel builds 3 stacked hero rows (Bran + 2)", n == 3,
+		"got %d rows" % n)
 	fp.queue_free()
 
-func _test_anvil_labels_visible() -> void:
+func _test_forge_armed_equip_flow() -> void:
+	## Prototype shop→slot flow: arm a shop tile, then tap a compatible hero slot
+	## → part equips to THAT hero and gold is spent.
+	GameState.new_session()
+	GameState.shop_parts = [&"h_iron_edge", null, null, null, null]  ## head part
 	var fp = ForgePanelScene.instantiate()
 	add_child(fp)
-	var labels_node = fp.find_child("AnvilLabels", true, false)
-	if labels_node == null:
-		_check("AnvilLabels visible after _ready", false, "node not found")
-		fp.queue_free()
-		return
-	var all_visible = true
-	for c in labels_node.get_children():
-		if c is Label and not c.visible:
-			all_visible = false
-			break
-	_check("AnvilLabels Labels all visible", all_visible, "")
+	var gold_before: int = GameState.gold
+	fp._on_supply_clicked(null, &"shop", 0)              ## arm shop slot 0
+	fp._on_anvil_clicked(null, &"anvil", &"head", &"bran")  ## tap Bran's head slot
+	var equipped = GameState.get_hero(&"bran").weapon.get_slot(&"head")
+	var def = GameState.get_part_def(&"h_iron_edge")
+	_check("armed shop tile + slot tap equips to that hero, gold spent",
+		equipped != null and equipped.part_id == &"h_iron_edge"
+			and GameState.gold == gold_before - def.cost,
+		"equipped=%s gold %d->%d (cost %d)" % [
+			str(equipped.part_id) if equipped else "null", gold_before, GameState.gold, def.cost])
 	fp.queue_free()
 
 ## ---------- Tier rim cases ----------

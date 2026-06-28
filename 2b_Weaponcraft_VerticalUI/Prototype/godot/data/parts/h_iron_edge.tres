@@ -8,6 +8,6 @@ script = ExtResource("1")
 id = &"h_iron_edge"
 cls = &"warrior"
 name = "Iron Edge"
-desc = "Forged warrior head. Solid +ATK, no element."
+desc = "Forged warrior weapon-head. Solid +ATK, no element."
 icon = ExtResource("1_40sq5")
 atk = 8

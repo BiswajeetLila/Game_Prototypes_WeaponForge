@@ -39,7 +39,10 @@ func _ready() -> void:
 	GameState.squad_wiped.connect(_on_squad_wiped)
 	GameState.hero_died.connect(_on_hero_died)
 	Combat.boss_telegraph.connect(_on_boss_telegraph)
-	_squad_bar.hero_selected.connect(_forge.set_current_hero)
+	## Vertical-UI reskin: every hero now has its own always-visible forge row,
+	## so the standalone SquadBar hero-selector is redundant during the forge
+	## moment. Hide it (kept in the tree to avoid wider scene surgery).
+	_squad_bar.visible = false
 	ScreenShake.register_target(self)
 	_open_forge_moment()
 

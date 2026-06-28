@@ -23,10 +23,10 @@
 - 2b_ TestMerge on unmodified code = **22 passed / 0 failed, exit 0** (harness confirmed working).
 
 ## Success criteria
-- [ ] **C1** Slot rename in 2_ AND 2b_; headless sweep exit 0 both.
-- [ ] **C2** Per-weapon label map + head-part relabel; sweep exit 0.
-- [ ] **C3** FORGE: 3 hero rows render (Vex locked); armed shop→slot equip, ATK/gold update, sell-back.
-- [ ] **C4** BATTLE: 3 hero lanes + weapon rail; no shop/combo.
+- [x] **C1** Slot rename in 2_ AND 2b_; headless sweep exit 0 both. ✅ commit `54d9a1b` (both folders 0 failures).
+- [x] **C2** Per-weapon label map (slot_labels.gd) + head-part relabel; sweep exit 0. ✅
+- [x] **C3** FORGE: 3 hero rows render (Bran full + 2 locked); slot labels Hilt/Rune/Blade; armed shop→slot equip + gold spend verified by test + AUTOSHOT `forge_3row.png`. ✅
+- [ ] **C4** BATTLE: 3 hero lanes + weapon rail; no shop/combo. ← NEXT (Phase 4)
 - [ ] **C5** AUTOSHOT forge+battle PNGs match prototype v3 + reference mockups.
 - [ ] **C6** Committed to branch (no .import/.uid); log finalized.
 

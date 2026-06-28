@@ -34,60 +34,15 @@ theme_override_constants/margin_bottom = 2
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="AnvilHeader" type="Label" parent="MarginContainer/VBox"]
+[node name="ForgeHeader" type="Label" parent="MarginContainer/VBox"]
 layout_mode = 2
-text = "Anvil"
+text = "Forge"
 theme_override_font_sizes/font_size = 11
 
-[node name="AnvilRow" type="HBoxContainer" parent="MarginContainer/VBox"]
+[node name="HeroRows" type="VBoxContainer" parent="MarginContainer/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 6
-
-[node name="AnvilLabels" type="HBoxContainer" parent="MarginContainer/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 6
-
-[node name="HeadLabel" type="Label" parent="MarginContainer/VBox/AnvilLabels"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Head"
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.227, 0.102, 0.416, 1)
-theme_override_font_sizes/font_size = 10
-
-[node name="HiltLabel" type="Label" parent="MarginContainer/VBox/AnvilLabels"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Hilt"
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.227, 0.102, 0.416, 1)
-theme_override_font_sizes/font_size = 10
-
-[node name="RuneLabel" type="Label" parent="MarginContainer/VBox/AnvilLabels"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Rune"
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.227, 0.102, 0.416, 1)
-theme_override_font_sizes/font_size = 10
-
-[node name="RecipeChips" type="HBoxContainer" parent="MarginContainer/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 6
-
-[node name="RecipeDesc" type="Label" parent="MarginContainer/VBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = ""
-autowrap_mode = 3
-theme_override_colors/font_color = Color(0.227, 0.102, 0.416, 1)
-theme_override_font_sizes/font_size = 10
 
 [node name="StartWaveBtn" type="Button" parent="MarginContainer/VBox"]
 unique_name_in_owner = true

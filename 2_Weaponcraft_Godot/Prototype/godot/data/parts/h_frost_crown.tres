@@ -7,8 +7,8 @@
 script = ExtResource("1")
 id = &"h_frost_crown"
 slot = &"head"
-name = "Frost Crown"
-desc = "Universal head sheathed in ICE. +HP for tankier builds. Two ice sources trigger Permafrost."
+name = "Frost Haft"
+desc = "Universal weapon-head sheathed in ICE. +HP for tankier builds. Two ice sources trigger Permafrost."
 icon = ExtResource("2")
 cost = 4
 atk = 5

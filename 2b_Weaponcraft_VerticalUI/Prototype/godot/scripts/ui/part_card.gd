@@ -116,6 +116,15 @@ func setup_anvil(item, slot_name: StringName) -> void:
 	_current_uid = item.uid if item != null else -1
 	_refresh()
 
+## Override the slot-badge text with a weapon-anatomy label (Hilt/Shaft/Grip ·
+## Rune · Blade/Orb/Fang) from SlotLabels. Forces the badge visible even on an
+## empty slot so the player always sees what each slot is for.
+func set_slot_label_override(txt: String) -> void:
+	if txt == "":
+		return
+	_slot_label.text = txt
+	_slot_badge.visible = true
+
 ## ---------- Render ----------
 
 func _refresh() -> void:

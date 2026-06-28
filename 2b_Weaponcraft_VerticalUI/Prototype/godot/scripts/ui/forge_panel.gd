@@ -17,6 +17,7 @@ extends Control
 
 const PartCardScene = preload("res://scenes/PartCard.tscn")
 const SlotLabels = preload("res://scripts/ui/slot_labels.gd")
+const InventoryItemT = preload("res://scripts/data/inventory_item.gd")
 
 ## Fixed display roster (always 3 rows; unlocked → full, else locked shell).
 const ROSTER: Array = [&"bran", &"elara", &"vex"]
@@ -357,6 +358,13 @@ func _on_supply_clicked(_card, mode: StringName, payload) -> void:
 		part_id = payload.part_id
 	if part_id == null or part_id == &"":
 		return
+	# Affordability gate — shop tiles cost gold. If the player can't afford this
+	# part, don't arm it: flash the gold counter red + shake it instead.
+	if mode == &"shop":
+		var def = GameState.get_part_def(part_id)
+		if def != null and GameState.gold < def.cost:
+			_flash_gold_insufficient()
+			return
 	# Re-tapping the armed source disarms.
 	if _armed != null and _armed.source == mode and _armed.payload == payload:
 		_armed = null
@@ -365,41 +373,88 @@ func _on_supply_clicked(_card, mode: StringName, payload) -> void:
 	_rebuild_all()
 
 ## A hero anvil slot was tapped.
+##
+## Rules (per design): a part already equipped on a hero is NEVER deleted or
+## displaced by a click. The only thing that can happen to an occupied slot is a
+## MERGE — applying an armed tile of the EXACT same part bumps that slot's tier
+## by 1 (capped at L5). Empty slots equip the armed part. Everything else is a
+## no-op (the part stays put).
 func _on_anvil_clicked(_card, _mode: StringName, slot, hero_id: StringName) -> void:
 	var hero = GameState.get_hero(hero_id)
 	if hero == null:
 		return
-	if _armed != null:
-		# Only act when the slot type matches the armed part type.
-		if slot == _armed.slot:
-			if _armed.source == &"shop":
-				var armed_part_id = GameState.shop_parts[int(_armed.payload)]
-				var current = hero.weapon.get_slot(slot)
-				# Occupied by a DIFFERENT part → unequip it first so the shop item
-				# lands via acquire_part Step 2 (equip fresh) rather than landing in
-				# inventory. Same part → let acquire_part Step 1 merge.
-				if current != null and current.part_id != armed_part_id:
-					Merge.unequip_to_inventory(slot, hero_id)
-				Shop.buy(int(_armed.payload), hero_id)
-			else:
-				# equip_from_inventory already handles merge (same partId) and swap
-				# (different partId → old goes to inventory, new equips).
-				Merge.equip_from_inventory(_armed.payload, hero_id)
-			_armed = null
-			_rebuild_all()
-		# Incompatible slot type → keep armed so player can retarget.
+	if _armed == null:
+		# Plain click on an equipped tile → do nothing (don't sell / unequip).
 		return
-	# Nothing armed: tapping a filled slot sells it back to inventory.
-	if slot != &"" and hero.weapon.get_slot(slot) != null:
-		Merge.unequip_to_inventory(slot, hero_id)
+	# Slot type must match the armed part's slot type.
+	if slot != _armed.slot:
+		return
+	var current = hero.weapon.get_slot(slot)
+	var armed_pid: StringName = _armed_part_id()
+	if current == null:
+		# Empty slot → equip the armed part.
+		if _armed.source == &"shop":
+			Shop.buy(int(_armed.payload), hero_id)
+		else:
+			Merge.equip_from_inventory(_armed.payload, hero_id)
+		_armed = null
+		_rebuild_all()
+		return
+	# Occupied slot: ONLY a same-part merge is allowed, and only below the cap.
+	if current.part_id == armed_pid and current.level < InventoryItemT.LEVEL_CAP:
+		if _armed.source == &"shop":
+			Shop.buy(int(_armed.payload), hero_id)            ## acquire_part Step 1 → tier+1
+		else:
+			Merge.equip_from_inventory(_armed.payload, hero_id)  ## merges duplicate → tier+1
+		_armed = null
+		_rebuild_all()
+	# Different part, or same part at cap → no-op. Keep the equipped part intact
+	# and stay armed so the player can retarget.
 
-## Highlight an anvil card based on the current armed selection.
-## Any slot with a matching type glows (whether empty or already occupied —
-## occupied same-part will merge, occupied different-part will swap).
-func _apply_arm_highlight(card, slot: StringName, _item) -> void:
+## Highlight an anvil card based on the current armed selection. Only glow slots
+## the click would actually act on: empty matching slots (equip) and occupied
+## matching slots holding the SAME part below cap (merge → tier+1). Everything
+## else dims — occupied different-part slots never react to a click.
+func _apply_arm_highlight(card, slot: StringName, item) -> void:
 	if _armed == null:
 		return
+	var actionable := false
 	if slot == _armed.slot:
-		card.modulate = Color(1.35, 1.25, 0.7)   ## compatible slot → glow
+		if item == null:
+			actionable = true   ## empty → equippable
+		elif item.part_id == _armed_part_id() and item.level < InventoryItemT.LEVEL_CAP:
+			actionable = true   ## same part, below cap → mergeable
+	if actionable:
+		card.modulate = Color(1.35, 1.25, 0.7)       ## glow
 	else:
-		card.modulate = Color(0.6, 0.6, 0.6, 0.85)  ## incompatible type → dim
+		card.modulate = Color(0.6, 0.6, 0.6, 0.85)   ## dim
+
+## The part_id of the currently armed supply tile (shop slot or inventory item).
+func _armed_part_id() -> StringName:
+	if _armed == null:
+		return &""
+	if _armed.source == &"shop":
+		return GameState.shop_parts[int(_armed.payload)]
+	return _armed.payload.part_id
+
+## Insufficient-gold feedback: flash the gold counter red a few times and shake
+## the gold pill. Called when the player taps a shop tile they can't afford.
+func _flash_gold_insufficient() -> void:
+	var gold_col := Color(0.984, 0.788, 0.235)   ## normal gold text
+	var red := Color(1.0, 0.235, 0.235)
+	var flash := create_tween()
+	for i in 3:
+		flash.tween_callback(func(): _gold_label.add_theme_color_override(&"font_color", red))
+		flash.tween_interval(0.09)
+		flash.tween_callback(func(): _gold_label.add_theme_color_override(&"font_color", gold_col))
+		flash.tween_interval(0.09)
+	## Shake the pill (the GoldLabel's PanelContainer parent) horizontally.
+	var pill := _gold_label.get_parent() as Control
+	if pill != null:
+		var base: Vector2 = pill.position
+		var amp := 5.0
+		var shake := create_tween()
+		for i in 6:
+			var dx: float = -amp if (i % 2 == 0) else amp
+			shake.tween_property(pill, "position", base + Vector2(dx, 0), 0.035)
+		shake.tween_property(pill, "position", base, 0.035)

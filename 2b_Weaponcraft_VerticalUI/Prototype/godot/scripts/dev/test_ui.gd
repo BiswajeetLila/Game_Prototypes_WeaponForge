@@ -31,6 +31,10 @@ func _ready() -> void:
 	_test_slot_labels_per_class()
 	_test_forge_builds_three_hero_rows()
 	_test_forge_armed_equip_flow()
+	_test_equipped_tile_plain_click_no_delete()
+	_test_armed_same_part_merges_tier_up()
+	_test_armed_different_part_no_op()
+	_test_insufficient_gold_refuses_arm()
 	_test_partcard_rim_l1_bronze()
 	_test_partcard_rim_l2_silver()
 	_test_partcard_rim_l3_emerald()
@@ -111,6 +115,70 @@ func _test_forge_armed_equip_flow() -> void:
 			and GameState.gold == gold_before - def.cost,
 		"equipped=%s gold %d->%d (cost %d)" % [
 			str(equipped.part_id) if equipped else "null", gold_before, GameState.gold, def.cost])
+	fp.queue_free()
+
+func _test_equipped_tile_plain_click_no_delete() -> void:
+	## A plain click (nothing armed) on an equipped slot must NOT remove the part.
+	GameState.new_session()
+	var fp = ForgePanelScene.instantiate()
+	add_child(fp)
+	var bran = GameState.get_hero(&"bran")
+	bran.weapon.set_slot(&"head", InventoryItemT.new(GameState.next_uid(), &"h_iron_edge", 1))
+	fp._armed = null
+	fp._on_anvil_clicked(null, &"anvil", &"head", &"bran")
+	var still = bran.weapon.get_slot(&"head")
+	_check("plain click on equipped tile does not delete it",
+		still != null and still.part_id == &"h_iron_edge",
+		"slot=%s" % [str(still.part_id) if still else "null"])
+	fp.queue_free()
+
+func _test_armed_same_part_merges_tier_up() -> void:
+	## Arm a shop tile of the SAME part already equipped → target tier +1.
+	GameState.new_session()
+	GameState.shop_parts = [&"h_iron_edge", null, null, null, null]
+	var fp = ForgePanelScene.instantiate()
+	add_child(fp)
+	var bran = GameState.get_hero(&"bran")
+	bran.weapon.set_slot(&"head", InventoryItemT.new(GameState.next_uid(), &"h_iron_edge", 1))
+	var gold_before: int = GameState.gold
+	var cost: int = GameState.get_part_def(&"h_iron_edge").cost
+	fp._on_supply_clicked(null, &"shop", 0)               ## arm same part
+	fp._on_anvil_clicked(null, &"anvil", &"head", &"bran")   ## click equipped same part
+	var slot = bran.weapon.get_slot(&"head")
+	_check("armed same-part click bumps equipped tier by 1 (and spends gold)",
+		slot != null and slot.part_id == &"h_iron_edge" and slot.level == 2
+			and GameState.gold == gold_before - cost,
+		"level=%d gold %d->%d" % [slot.level if slot else -1, gold_before, GameState.gold])
+	fp.queue_free()
+
+func _test_armed_different_part_no_op() -> void:
+	## Arm a DIFFERENT part for an occupied slot → no-op (equipped part untouched).
+	GameState.new_session()
+	GameState.shop_parts = [&"h_thorn_spike", null, null, null, null]  ## also a head part
+	var fp = ForgePanelScene.instantiate()
+	add_child(fp)
+	var bran = GameState.get_hero(&"bran")
+	bran.weapon.set_slot(&"head", InventoryItemT.new(GameState.next_uid(), &"h_iron_edge", 1))
+	var gold_before: int = GameState.gold
+	fp._on_supply_clicked(null, &"shop", 0)               ## arm different head part
+	fp._on_anvil_clicked(null, &"anvil", &"head", &"bran")   ## click occupied slot
+	var slot = bran.weapon.get_slot(&"head")
+	_check("armed different-part click on occupied slot is a no-op (part kept, no spend)",
+		slot != null and slot.part_id == &"h_iron_edge" and slot.level == 1
+			and GameState.gold == gold_before,
+		"slot=%s gold %d->%d" % [str(slot.part_id) if slot else "null", gold_before, GameState.gold])
+	fp.queue_free()
+
+func _test_insufficient_gold_refuses_arm() -> void:
+	## Tapping a shop tile you can't afford must not arm it (gold-flash feedback).
+	GameState.new_session()
+	GameState.gold = 0
+	GameState.shop_parts = [&"h_iron_edge", null, null, null, null]
+	var fp = ForgePanelScene.instantiate()
+	add_child(fp)
+	fp._on_supply_clicked(null, &"shop", 0)
+	_check("insufficient gold → shop tile does not arm",
+		fp._armed == null, "armed=%s" % str(fp._armed))
 	fp.queue_free()
 
 ## ---------- Tier rim cases ----------

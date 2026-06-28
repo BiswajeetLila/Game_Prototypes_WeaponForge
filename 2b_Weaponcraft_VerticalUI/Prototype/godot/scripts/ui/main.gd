@@ -18,6 +18,7 @@
 extends Control
 
 @onready var _forge: Control = %ForgePanel
+@onready var _battle: Control = $VBox/BattleView
 @onready var _squad_bar: Control = %SquadBar
 @onready var _reset_btn: Button = %ResetBtn
 @onready var _hud: Control = %Hud
@@ -47,10 +48,15 @@ func _ready() -> void:
 	_open_forge_moment()
 
 func _open_forge_moment() -> void:
+	## Forge moment: shrink the battle preview so the 3 hero rows + shop +
+	## START WAVE all fit on screen and stay clickable.
+	_battle.set_forge_compact(true)
 	Shop.refresh(true)
 	_forge.refresh_forge_moment()
 
 func _on_wave_start_requested() -> void:
+	## Entering battle: expand the arena back to full height.
+	_battle.set_forge_compact(false)
 	_notifications.show_banner("⚔ WAVE %d" % GameState.wave, Color(1, 0.9, 0.6), 1.0)
 	Combat.start_wave(GameState.wave)
 

@@ -22,6 +22,13 @@ const SlotLabels = preload("res://scripts/ui/slot_labels.gd")
 const ROSTER: Array = [&"bran", &"elara", &"vex"]
 const SLOT_ORDER: Array = [&"head", &"rune", &"body"]
 
+## Compacted card footprints (default PartCard is 78x108 — too tall to fit 3
+## hero rows + shop + START WAVE on a phone screen). Anvil cards skip the cost
+## label so they shrink further; shop cards keep a little more height for cost.
+const ANVIL_CARD_SIZE := Vector2(66, 80)
+const SHOP_CARD_SIZE  := Vector2(66, 90)
+const PORTRAIT_SIZE   := Vector2(44, 44)
+
 ## Per-class accent ring colour for the portrait.
 const ACCENT: Dictionary = {
 	&"bran": Color(0.878, 0.635, 0.235, 1),   ## warrior gold
@@ -131,7 +138,7 @@ func _build_hero_row(hid: StringName, hero) -> void:
 	row.add_child(col)
 
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(50, 50)
+	portrait.custom_minimum_size = PORTRAIT_SIZE
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	if hero.data.portrait != null:
@@ -165,6 +172,7 @@ func _build_hero_row(hid: StringName, hero) -> void:
 	for slot in SLOT_ORDER:
 		var item = hero.weapon.get_slot(slot)
 		var card = PartCardScene.instantiate()
+		card.custom_minimum_size = ANVIL_CARD_SIZE
 		slots.add_child(card)
 		card.setup_anvil(item, slot)
 		card.set_slot_label_override(SlotLabels.label(cls, slot))
@@ -185,7 +193,7 @@ func _build_locked_row(hid: StringName) -> void:
 
 	var q := Label.new()
 	q.text = "❔"
-	q.custom_minimum_size = Vector2(78, 50)
+	q.custom_minimum_size = Vector2(66, 40)
 	q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	q.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	q.add_theme_font_size_override(&"font_size", 30)
@@ -305,6 +313,7 @@ func _rebuild_shop() -> void:
 	for i in range(GameState.shop_parts.size()):
 		var part_id = GameState.shop_parts[i]
 		var card = PartCardScene.instantiate()
+		card.custom_minimum_size = SHOP_CARD_SIZE
 		_shop_grid.add_child(card)
 		if part_id == null or part_id == &"":
 			card.setup_anvil(null, &"")

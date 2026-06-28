@@ -44,6 +44,26 @@ static func cap_pop_layer(layer: Control, max_pops: int) -> void:
 @onready var _log_label: RichTextLabel = %CombatLog
 @onready var _hero_lanes: VBoxContainer = %HeroLanes
 @onready var _recipe_chips: HBoxContainer = %RecipeChips
+@onready var _combat_log_panel: PanelContainer = $VBox/CombatLogPanel
+
+## Compact (forge) vs full (battle) footprint. During the forge moment the arena
+## is just a small status preview, so it shrinks to a thin strip and the combat
+## log hides — this frees vertical space so the forge rows + shop + START WAVE
+## all fit on screen. In battle it expands to fill and shows the log.
+const COMPACT_MIN_H: int = 96
+const FULL_MIN_H: int = 200
+
+func set_forge_compact(compact: bool) -> void:
+	if compact:
+		custom_minimum_size = Vector2(0, COMPACT_MIN_H)
+		size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		if _combat_log_panel != null:
+			_combat_log_panel.visible = false
+	else:
+		custom_minimum_size = Vector2(0, FULL_MIN_H)
+		size_flags_vertical = Control.SIZE_EXPAND_FILL
+		if _combat_log_panel != null:
+			_combat_log_panel.visible = true
 
 ## Vertical-UI reskin: all heroes shown as lanes in the arena's left column.
 const ROSTER: Array = [&"bran", &"elara", &"vex"]

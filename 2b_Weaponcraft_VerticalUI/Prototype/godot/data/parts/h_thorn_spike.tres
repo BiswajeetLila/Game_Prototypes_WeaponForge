@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/h_thorn_spike.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"h_thorn_spike"
+slot = &"head"
+name = "Thorn Spike"
+desc = "Universal head bristling with PIERCE. Two pierce sources trigger Skewer multi-hit."
+icon = ExtResource("2")
+cost = 4
+atk = 7
+tag = &"pierce"

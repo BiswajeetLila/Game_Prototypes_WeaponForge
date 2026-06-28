@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/h_pyro_visor.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"h_pyro_visor"
+slot = &"head"
+name = "Pyro Visor"
+desc = "Universal head smoldering with FIRE. Stacks with fire runes for Inferno."
+icon = ExtResource("2")
+cost = 4
+atk = 6
+tag = &"fire"

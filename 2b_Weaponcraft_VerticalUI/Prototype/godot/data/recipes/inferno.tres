@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/vfx/fire_puff.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"inferno"
+name = "Inferno"
+desc = "Consecutive hits on the same target stack +12% damage, capped at 3 stacks (+36%). Switching targets resets the stack."
+icon = ExtResource("2")
+patterns = [[&"fire", &"fire"]]
+bonus = {
+"stack_burn": 0.12,
+"stack_cap": 3
+}

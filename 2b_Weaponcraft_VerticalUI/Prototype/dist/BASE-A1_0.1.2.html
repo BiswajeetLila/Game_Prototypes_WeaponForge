@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeaponCraft BASE-A1 v0.1.2 — Inventory + Ramp</title>
+    <style>
+        :root {
+            --bg-parchment: #f0e1cf;
+            --panel-bg: #c9b9a6;
+            --ornate-frame: #59402a;
+            --ornate-accent: #8e6d4c;
+            --text-dark: #3a2a1b;
+            --hp-red: #c0392b;
+            --warrior-color: #e74c3c;
+            --rogue-color: #2ecc71;
+            --mage-color: #3498db;
+            --gold-color: #f1c40f;
+            --ult-purple: #9b59b6;
+        }
+
+        @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.05); } }
+        @keyframes ultGlow { 0%,100% { box-shadow: 0 0 5px var(--ult-purple); } 50% { box-shadow: 0 0 18px var(--ult-purple); } }
+
+        body {
+            margin: 0; background-color: #222; font-family: 'Times New Roman', Times, serif;
+            display: flex; justify-content: center; color: var(--text-dark); user-select: none;
+        }
+
+        #mobile-container {
+            width: 100%; max-width: 420px; height: 100vh; max-height: 900px;
+            background: linear-gradient(180deg, #f0e1cf 0%, #dabda8 100%);
+            display: flex; flex-direction: column;
+            border-left: 3px solid var(--ornate-frame); border-right: 3px solid var(--ornate-frame);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); border-radius: 15px; overflow: hidden; position: relative;
+        }
+        .header-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 8px solid var(--ornate-frame); border-radius: 12px; pointer-events: none; z-index: 10; box-sizing: border-box; }
+
+        /* TOP HUD */
+        #top-hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 20; display: flex; justify-content: space-between; pointer-events: none; }
+        #gold-ui { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 15px; border: 2px solid var(--gold-color); color: white; font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        #wave-pill { background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 15px; border: 2px solid var(--ornate-frame); color: white; font-weight: bold; font-size: 12px; }
+
+        /* COMBAT */
+        #combat-zone {
+            flex: 1; display: flex; flex-direction: column; padding: 5px 10px; padding-top: 40px;
+            background: radial-gradient(circle at top, #dad5ca 0%, #f0e1cf 100%);
+            border-bottom: 3px solid var(--ornate-frame);
+        }
+        #affinity-banner {
+            background: linear-gradient(90deg, #c0392b 0%, #8e6d4c 100%); color: white; text-align: center;
+            padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-bottom: 3px;
+            border: 2px solid var(--ornate-frame); display: none;
+        }
+        #affinity-banner.visible { display: block; animation: pulse 2s infinite; }
+        #turn-display { text-align: center; font-size: 13px; font-weight: bold; color: #d35400; }
+
+        #battle-view {
+            flex: 1; margin: 5px 0; padding: 5px; border: 4px solid var(--ornate-frame); border-radius: 10px;
+            background-color: #f7ebdb; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); display: flex; flex-direction: column; position: relative;
+        }
+        .entities-area { flex: 1; display: flex; justify-content: center; gap: 15px; align-items: center; min-height: 80px; padding: 5px; }
+        .entity {
+            background: rgba(0,0,0,0.05); border: 2px solid var(--ornate-frame); border-radius: 8px;
+            width: 60px; padding: 4px; text-align: center; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .hp-container { background: #333; border-radius: 4px; border: 1px solid var(--ornate-frame); margin: 1px 0; position: relative; height: 12px; overflow: hidden; }
+        .hp-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--hp-red); transition: width 0.3s ease; }
+        .hp-bar-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 9px; z-index: 2; text-shadow: 1px 1px 1px #000; }
+        .entity-name { color: var(--ornate-frame); font-weight: bold; font-size: 10px; margin-top: 2px; }
+        .enemy-tag { font-size: 8px; color: var(--ornate-accent); }
+
+        #combat-log-container { height: 45px; background-color: rgba(0,0,0,0.05); border-radius: 6px; border: 1px solid var(--ornate-frame); margin-top: 4px; padding: 4px; font-size: 10px; overflow-y: auto; color: var(--text-dark); }
+
+        /* DEPLOYMENT BAR — heroes + ult gauge */
+        #deployment-zone { padding: 5px 8px; display: flex; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.04); border-top: 1px solid var(--ornate-frame); border-bottom: 1px solid var(--ornate-frame); }
+        .squad-bar { display: flex; justify-content: space-around; gap: 6px; }
+        .hero-card {
+            background: #f7ebdb; border: 2px solid var(--ornate-frame); border-radius: 6px;
+            width: 90px; padding: 3px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .hero-card.active.warrior { border-color: var(--warrior-color); box-shadow: 0 0 10px var(--warrior-color); transform: translateY(-3px); }
+        .hero-card.active.rogue { border-color: var(--rogue-color); box-shadow: 0 0 10px var(--rogue-color); transform: translateY(-3px); }
+        .hero-card.active.mage { border-color: var(--mage-color); box-shadow: 0 0 10px var(--mage-color); transform: translateY(-3px); }
+        .hero-card.dead { filter: grayscale(100%); opacity: 0.6; }
+        .hero-icon { font-size: 18px; }
+        .hero-role { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .weapon-mini { font-size: 9px; color: var(--text-dark); font-weight: bold; line-height: 1.1; min-height: 22px; }
+        .ult-gauge { background: #333; border-radius: 3px; height: 10px; position: relative; overflow: hidden; border: 1px solid var(--ornate-frame); cursor: pointer; }
+        .ult-fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--ult-purple) 0%, #d2a6e0 100%); transition: width 0.3s; }
+        .ult-text { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 8px; z-index: 2; text-shadow: 1px 1px 1px #000; }
+        .ult-gauge.ready { animation: ultGlow 1.2s infinite; }
+        .ult-gauge.ready .ult-fill { background: linear-gradient(90deg, var(--gold-color) 0%, #ffd76b 100%); }
+
+        /* CRAFTING / FORGE */
+        #crafting-zone { flex: 1.4; display: flex; flex-direction: column; background-color: #c9b9a6; border-top: 3px solid var(--ornate-frame); position: relative; overflow: hidden; padding: 5px; gap: 4px; }
+
+        .forge-header { display: flex; justify-content: space-between; align-items: center; padding: 0 5px; }
+        .forge-label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--ornate-frame); letter-spacing: 1px; }
+
+        /* Anvil 3-slot */
+        #anvil-panel { background-color: var(--ornate-accent); border: 3px solid var(--ornate-frame); border-radius: 8px; padding: 4px 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .anvil-target { text-align: center; font-size: 10px; color: #f2e0c9; font-weight: bold; }
+        .anvil-stats { text-align: center; font-size: 10px; color: var(--gold-color); font-weight: bold; min-height: 12px; }
+        .anvil-grid { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 4px 0; }
+        .anvil-slot {
+            width: 50px; height: 50px; background: rgba(0,0,0,0.25); border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px;
+            position: relative; cursor: pointer;
+        }
+        .anvil-slot.filled { background: rgba(0,0,0,0.4); border-style: solid; border-color: var(--gold-color); }
+        .anvil-slot-label { position: absolute; bottom: 1px; left: 0; width: 100%; text-align: center; font-size: 7px; color: #f2e0c9; letter-spacing: 0.5px; text-transform: uppercase; pointer-events: none; }
+        .anvil-slot-plus { font-weight: bold; color: var(--ornate-frame); font-size: 16px; }
+
+        /* Shop */
+        #shop-panel { background: rgba(0,0,0,0.05); border: 2px solid var(--ornate-frame); border-radius: 6px; padding: 5px; }
+        .shop-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .shop-part {
+            background: linear-gradient(180deg, #f7dfa7 0%, #dbbf80 100%); border: 2px solid #a68f63;
+            border-radius: 5px; padding: 3px; cursor: pointer; text-align: center; position: relative;
+            min-height: 60px; display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        .shop-part.sold { opacity: 0.3; cursor: not-allowed; }
+        .shop-part.rare { border-color: var(--mage-color); box-shadow: 0 0 6px rgba(52,152,219,0.5); }
+        .shop-part-icon { font-size: 18px; }
+        .shop-part-name { font-size: 8px; font-weight: bold; line-height: 1; color: #59402a; }
+        .shop-part-cost { font-size: 9px; font-weight: bold; color: #d35400; }
+        .class-badge { position: absolute; top: -3px; right: -3px; font-size: 7px; padding: 1px 3px; border-radius: 3px; color: white; font-weight: bold; }
+        .class-badge.warrior { background: var(--warrior-color); }
+        .class-badge.mage { background: var(--mage-color); }
+        .class-badge.rogue { background: var(--rogue-color); }
+        .class-badge.universal { background: #7f8c8d; }
+
+        /* Tag (element/keyword) badge on shop parts so testers can see Fire/Ice/Pierce while shopping (P5/P6 hook). */
+        .tag-badge {
+            position: absolute; top: -3px; left: -3px; font-size: 8px; padding: 1px 4px;
+            border-radius: 3px; color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .tag-badge.fire   { background: #c0392b; }
+        .tag-badge.ice    { background: #3498db; }
+        .tag-badge.pierce { background: #7f8c8d; }
+        .tag-badge.bleed  { background: #8e44ad; }
+        .tag-badge.poison { background: #27ae60; }
+        .tag-badge.holy   { background: #f39c12; }
+        .tag-badge.shadow { background: #34495e; }
+        .tag-badge.lightning { background: #f1c40f; color: #333; }
+
+        /* Inventory strip — owned-but-not-yet-equipped parts */
+        #inventory-panel {
+            background: rgba(0,0,0,0.08); border: 2px solid var(--ornate-frame);
+            border-radius: 6px; padding: 4px;
+        }
+        #inventory-strip {
+            display: flex; gap: 4px; overflow-x: auto; padding: 2px;
+            min-height: 56px;
+        }
+        #inventory-strip::-webkit-scrollbar { height: 4px; }
+        #inventory-strip::-webkit-scrollbar-thumb { background: var(--ornate-frame); border-radius: 2px; }
+        .inv-part {
+            min-width: 50px; max-width: 50px;
+            background: linear-gradient(180deg, #e8d4a8 0%, #c9b083 100%);
+            border: 2px solid #a68f63; border-radius: 5px;
+            padding: 2px; cursor: pointer; text-align: center; position: relative;
+            display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+        .inv-part:hover { transform: translateY(-2px); border-color: #fff; }
+        .inv-part-icon { font-size: 16px; }
+        .inv-part-slot { font-size: 7px; text-transform: uppercase; color: #59402a; letter-spacing: 0.5px; }
+        .inv-empty { color: #7f8c8d; font-size: 10px; text-align: center; padding: 18px 8px; font-style: italic; }
+
+        /* Lock overlay for un-unlocked heroes */
+        .hero-card.locked { filter: grayscale(80%); opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+        .hero-lock-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #f1c40f; font-weight: bold; font-size: 10px; text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+
+        /* Part info modal — used by shop/inventory/anvil clicks */
+        #info-modal { z-index: 110; }
+        #info-modal .info-card {
+            background: linear-gradient(180deg, #f7ebdb 0%, #dabda8 100%);
+            border: 4px solid var(--ornate-frame); border-radius: 10px;
+            padding: 20px; max-width: 320px; width: 100%; color: var(--text-dark);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        #info-modal .info-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        #info-modal .info-icon { font-size: 40px; }
+        #info-modal .info-name { font-size: 18px; font-weight: bold; color: var(--ornate-frame); }
+        #info-modal .info-subline { font-size: 11px; color: var(--ornate-accent); text-transform: uppercase; letter-spacing: 1px; }
+        #info-modal .info-stats { background: rgba(0,0,0,0.08); border-radius: 6px; padding: 8px; font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+        #info-modal .info-stat-row { display: flex; justify-content: space-between; }
+        #info-modal .info-stat-val { font-weight: bold; color: #d35400; }
+        #info-modal .info-tag { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; color: white; text-transform: uppercase; }
+        #info-modal .info-action-row { display: flex; gap: 8px; }
+        #info-modal .info-action-row .action-button { flex: 1; padding: 10px; font-size: 11px; }
+        #info-modal .info-close { background: #7f8c8d; box-shadow: 0 4px 0 #555; border-color: #555; }
+        #info-modal .info-equip { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); box-shadow: 0 4px 0 #1d8348; border-color: #1d8348; }
+        #info-modal .info-buy { background: linear-gradient(180deg, #5dade2 0%, #2e86c1 100%); box-shadow: 0 4px 0 #1b4f72; border-color: #1b4f72; }
+        #info-modal .info-unequip { background: linear-gradient(180deg, #e67e22 0%, #d35400 100%); box-shadow: 0 4px 0 #a04000; border-color: #a04000; }
+        #info-modal .info-warning { font-size: 10px; color: #c0392b; text-align: center; margin-bottom: 8px; font-style: italic; }
+
+        .action-button {
+            border: 2px solid #1f618d; color: white; text-transform: uppercase; letter-spacing: 1px;
+            font-weight: bold; font-size: 11px; padding: 8px; border-radius: 5px; cursor: pointer;
+            transition: all 0.1s; background: #7f8c8d; box-shadow: 0 4px 0 #2c3e50;
+        }
+        .action-button.primary { background: linear-gradient(180deg, #5dade2 0%, #2e86c1 100%); box-shadow: 0 4px 0 #1b4f72; }
+        .action-button.reroll { background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); box-shadow: 0 4px 0 #a04000; border-color: #a04000; padding: 4px 8px; font-size: 10px; }
+        .action-button.battle { background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); box-shadow: 0 4px 0 #78281f; border-color: #78281f; }
+        .action-button:active { transform: translateY(3px); box-shadow: 0 1px 0 #1b4f72; }
+        .action-button:disabled, .action-button.disabled { background: #95a5a6; box-shadow: 0 4px 0 #555; cursor: not-allowed; border-color: #555; }
+
+        .bottom-actions { display: flex; gap: 6px; padding: 0 5px; }
+        .bottom-actions .action-button { flex: 1; }
+
+        /* Modals */
+        .modal-overlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 100; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-title { color: var(--gold-color); font-size: 24px; text-shadow: 0 0 10px #c0392b; margin: 0 0 10px 0; }
+        .modal-subtitle { color: #bdc3c7; font-size: 13px; margin-bottom: 20px; }
+        .modal-button { width: 240px; padding: 14px; margin: 8px 0; font-size: 13px; }
+
+        /* (Universal placement modal removed in 0.1.2 — replaced by inventory→info-modal→equip flow.) */
+    </style>
+</head>
+<body>
+
+<div id="mobile-container">
+    <div class="header-bg"></div>
+
+    <!-- HUD -->
+    <div id="top-hud">
+        <div id="gold-ui">🪙 <span id="gold-count">15</span></div>
+        <div id="wave-pill">WAVE <span id="wave-num">1</span> / 6</div>
+    </div>
+
+    <!-- Boss-retry modal -->
+    <div id="retry-modal" class="modal-overlay">
+        <h2 class="modal-title">⚔️ BOSS WON ⚔️</h2>
+        <div class="modal-subtitle">Your squad fell. Parts inventory preserved.</div>
+        <button class="action-button modal-button primary" onclick="bossRetry()">🔧 Reforge & Retry</button>
+        <button class="action-button modal-button" onclick="restartStage()">↻ Restart Stage</button>
+    </div>
+
+    <!-- Wipe modal (non-boss): triggered when all unlocked-alive heroes die mid-stage -->
+    <div id="wipe-modal" class="modal-overlay">
+        <h2 class="modal-title" style="color:#e74c3c;">☠️ SQUAD WIPED ☠️</h2>
+        <div class="modal-subtitle">The horde was too strong.</div>
+        <button class="action-button modal-button primary" onclick="restartStage()">↻ Restart Stage</button>
+    </div>
+
+    <!-- Stage clear modal -->
+    <div id="clear-modal" class="modal-overlay">
+        <h2 class="modal-title" style="color:#2ecc71;">🏆 STAGE CLEAR 🏆</h2>
+        <div class="modal-subtitle" id="clear-stats"></div>
+        <button class="action-button modal-button primary" onclick="restartStage()">↻ Play Again</button>
+    </div>
+
+    <!-- Part info modal: shop click / inventory click / equipped-slot click all open this -->
+    <div id="info-modal" class="modal-overlay">
+        <div class="info-card" id="info-card-body"></div>
+    </div>
+
+    <!-- Combat zone -->
+    <div id="combat-zone">
+        <div id="affinity-banner"></div>
+        <div id="turn-display">PREPARATION PHASE</div>
+
+        <div id="battle-view">
+            <div class="entities-area">
+                <div id="enemy-view"></div>
+                <div style="color: var(--ornate-accent); font-size: 22px; font-weight: bold;">VS</div>
+                <div id="hero-view"></div>
+            </div>
+            <div id="combat-log-container">
+                <div id="combat-log">Welcome to WeaponCraft BASE-A1. Buy parts → forge a 3-piece weapon → fight!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deployment / hero cards + ult gauges -->
+    <div id="deployment-zone">
+        <div class="forge-header" style="padding: 0;">
+            <div class="forge-label">Squad</div>
+            <div class="forge-label" style="color: var(--ult-purple);">Tap ⚡ to Ult</div>
+        </div>
+        <div class="squad-bar" id="hero-cards"></div>
+    </div>
+
+    <!-- Crafting zone -->
+    <div id="crafting-zone">
+        <div class="forge-header">
+            <div class="forge-label">Active: <span id="active-hero-name" style="color: var(--text-dark);">—</span></div>
+            <div class="forge-label" id="forge-phase-label">Forge Phase</div>
+        </div>
+
+        <!-- Anvil -->
+        <div id="anvil-panel">
+            <div class="anvil-target" id="anvil-target">Tap a hero, then buy parts</div>
+            <div class="anvil-grid">
+                <div class="anvil-slot" id="slot-head" onclick="clickAnvilSlot('head')">
+                    <span class="anvil-slot-label">Head</span>
+                </div>
+                <span class="anvil-slot-plus">+</span>
+                <div class="anvil-slot" id="slot-hilt" onclick="clickAnvilSlot('hilt')">
+                    <span class="anvil-slot-label">Hilt</span>
+                </div>
+                <span class="anvil-slot-plus">+</span>
+                <div class="anvil-slot" id="slot-rune" onclick="clickAnvilSlot('rune')">
+                    <span class="anvil-slot-label">Rune</span>
+                </div>
+            </div>
+            <div class="anvil-stats" id="anvil-stats"></div>
+        </div>
+
+        <!-- Shop -->
+        <div id="shop-panel">
+            <div class="shop-row">
+                <div class="forge-label" style="font-size:10px;">Shop · 5 parts</div>
+                <button class="action-button reroll" id="reroll-btn" onclick="rerollShop()">🔄 Reroll (2🪙)</button>
+            </div>
+            <div class="shop-grid" id="shop-grid"></div>
+        </div>
+
+        <!-- Inventory strip — owned parts, click to inspect + equip -->
+        <div id="inventory-panel">
+            <div class="forge-header" style="padding: 0;">
+                <div class="forge-label" style="font-size:10px;">Inventory</div>
+                <div class="forge-label" style="font-size:9px; color: var(--ornate-accent);">tap part → equip / drop</div>
+            </div>
+            <div id="inventory-strip"></div>
+        </div>
+
+        <!-- Bottom actions -->
+        <div class="bottom-actions">
+            <button class="action-button battle" id="battle-btn" onclick="startBattle()">⚔️ Start Wave</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// =============================================================================
+// BASE-A1 v0.1.2 — Inventory + Roster Ramp (Direction A from 01_GDD.md)
+// Changes from 0.1.1: shared inventory, click-to-inspect modal, roster ramp
+// (Bran w1, Elara w3, Vex w5), wave-1 shop guaranteed slot coverage.
+// =============================================================================
+
+// --- INSTRUMENTATION ---
+const SESSION_ID = 'sess_' + Date.now();
+function emit(evt, payload) {
+    const e = { t: Date.now(), sid: SESSION_ID, evt, payload: payload || {} };
+    console.log('[A1-EVT]', JSON.stringify(e));
+}
+
+// --- CONSTANTS ---
+const STAGE_LENGTH = 6; // 5 normal + 1 boss
+const BOSS_WAVE = 6;
+const ULT_TIME_CAP_MS = 30000;
+const TICK_MS = 1100;
+
+// Roster ramp: when each class unlocks (by wave number, inclusive).
+const HERO_UNLOCK_WAVE = { warrior: 1, mage: 3, rogue: 5 };
+
+// Unique ID counter for inventory part instances (so duplicates stack-safe).
+let _uidSeq = 0;
+function nextUid() { return 'iv_' + (++_uidSeq); }
+
+// --- PARTS CATALOGUE (per spec) ---
+const PARTS = {
+    // Heads
+    h_iron_edge:     { id:'h_iron_edge', slot:'head', cls:'warrior', name:'Iron Edge',     icon:'⚔️', tag:null,    atk:8,  hp:0, crit:0, ultRate:0, rarity:'common', cost:3 },
+    h_crystal_orb:   { id:'h_crystal_orb', slot:'head', cls:'mage', name:'Crystal Orb',   icon:'🔮', tag:null,    atk:6,  hp:0, crit:0, ultRate:0, rarity:'common', cost:3 },
+    h_curved_dagger: { id:'h_curved_dagger', slot:'head', cls:'rogue', name:'Curved Dagger', icon:'🗡️', tag:'pierce', atk:5, hp:0, crit:10, ultRate:0, rarity:'common', cost:3 },
+    h_twin_strike:   { id:'h_twin_strike', slot:'head', cls:'universal', name:'Twin Strike', icon:'🌀', tag:null,  atk:4,  hp:0, crit:5,  ultRate:5, rarity:'rare', cost:5 },
+    // Hilts
+    p_iron_hilt:     { id:'p_iron_hilt', slot:'hilt', cls:'universal', name:'Iron Hilt',   icon:'🛡️', tag:null,  atk:0,  hp:10, crit:0, ultRate:0, rarity:'common', cost:3 },
+    p_steel_grip:    { id:'p_steel_grip', slot:'hilt', cls:'warrior', name:'Steel Grip',   icon:'💪', tag:null,  atk:4,  hp:0,  crit:0, ultRate:0, rarity:'common', cost:3 },
+    p_leather_grip:  { id:'p_leather_grip', slot:'hilt', cls:'rogue', name:'Leather Grip', icon:'🪢', tag:null,  atk:0,  hp:0,  crit:15, ultRate:0, rarity:'common', cost:3 },
+    // Runes
+    r_fire:          { id:'r_fire', slot:'rune', cls:'universal', name:'Fire Rune',         icon:'🔥', tag:'fire', atk:3, hp:0, crit:0, ultRate:0, rarity:'common', cost:3 },
+    r_ice:           { id:'r_ice',  slot:'rune', cls:'universal', name:'Ice Rune',          icon:'❄️', tag:'ice',  atk:3, hp:0, crit:0, ultRate:0, rarity:'common', cost:3 },
+    r_charge:        { id:'r_charge',slot:'rune', cls:'universal', name:'Charge Rune',     icon:'⚡', tag:null,   atk:1, hp:0, crit:0, ultRate:25, rarity:'rare', cost:5 },
+};
+const PART_IDS = Object.keys(PARTS);
+const CLASS_COLORS = { warrior: 'var(--warrior-color)', mage: 'var(--mage-color)', rogue: 'var(--rogue-color)', universal: '#7f8c8d' };
+
+// --- ENEMY POOLS ---
+const NORMAL_ENEMIES = [
+    {name:'Slime', icon:'🦠'}, {name:'Goblin', icon:'👺'}, {name:'Skeleton', icon:'💀'},
+    {name:'Zombie', icon:'🧟'}, {name:'Wolf', icon:'🐺'},
+];
+const BOSS_OPTIONS = [
+    {name:'Frost Dragon', icon:'🐉', resist:'fire',  weak:'pierce'},
+    {name:'Flame Titan',  icon:'🔥', resist:'fire',  weak:'ice'},
+    {name:'Stone Golem',  icon:'🗿', resist:'pierce',weak:'fire'},
+];
+
+// --- STATE ---
+let G = null; // game state singleton
+function freshState() {
+    return {
+        gold: 20,
+        wave: 1,
+        isBattling: false,
+        activeHeroId: 0,
+        heroes: [
+            { id:0, name:'Bran',  cls:'warrior', icon:'🛡️', hp:80, maxHp:80, baseAtk:6, color:'var(--warrior-color)', weapon:{head:null,hilt:null,rune:null}, isDead:false, ultGauge:0, ultUsed:false, ultName:'Whirlwind' },
+            { id:1, name:'Elara', cls:'mage',    icon:'🧙‍♀️', hp:55, maxHp:55, baseAtk:8, color:'var(--mage-color)',    weapon:{head:null,hilt:null,rune:null}, isDead:false, ultGauge:0, ultUsed:false, ultName:'Meteor' },
+            { id:2, name:'Vex',   cls:'rogue',   icon:'🥷',  hp:50, maxHp:50, baseAtk:7, color:'var(--rogue-color)',   weapon:{head:null,hilt:null,rune:null}, isDead:false, ultGauge:0, ultUsed:false, ultName:'Shadowstep' },
+        ],
+        enemies: [],
+        shop: [],
+        inventory: [], // [{uid, partId}] — owned-but-unequipped parts.
+        boss: null,
+        battleStart: 0,
+        battleTick: null,
+        stageStartTime: Date.now(),
+        retryCount: 0,
+    };
+}
+
+// Hero is unlocked iff current wave >= class unlock wave.
+function isHeroAvailable(h, wave) {
+    return wave >= (HERO_UNLOCK_WAVE[h.cls] || 1);
+}
+function availableClasses(wave) {
+    return Object.keys(HERO_UNLOCK_WAVE).filter(cls => wave >= HERO_UNLOCK_WAVE[cls]);
+}
+function availableHeroes() {
+    return G.heroes.filter(h => isHeroAvailable(h, G.wave));
+}
+
+// --- INIT ---
+function initGame() {
+    G = freshState();
+    emit('session_start', { stageStartTime: G.stageStartTime, unlockSchedule: HERO_UNLOCK_WAVE });
+    // Wave 1 starts with only the warrior unlocked — make sure activeHeroId points to an unlocked hero.
+    G.activeHeroId = G.heroes.find(h => isHeroAvailable(h, G.wave)).id;
+    refreshShop(true);
+    spawnWave();
+    log(`<b style="color:#f1c40f;">⭐ ${G.heroes[G.activeHeroId].name} (WARRIOR) ready. Other heroes unlock at waves 3 & 5.</b>`);
+    updateAll();
+}
+
+// --- SHOP ---
+// Eligible parts at the current wave: universal + parts whose class is unlocked.
+function eligiblePartIds() {
+    const classes = availableClasses(G.wave); // e.g. ['warrior'] at wave 1
+    return PART_IDS.filter(id => {
+        const p = PARTS[id];
+        return p.cls === 'universal' || classes.includes(p.cls);
+    });
+}
+
+// Wave 1 gets a guaranteed coverage: at least 1 Head + 1 Hilt + 1 Rune for the unlocked class set.
+// This avoids the wave-1 starvation bug where shop had no Head.
+function refreshShop(free) {
+    G.shop = [];
+    const eligible = eligiblePartIds();
+
+    if (G.wave === 1) {
+        // Build wave-1 starter with guaranteed slot coverage.
+        const slots = ['head', 'hilt', 'rune'];
+        slots.forEach(slot => {
+            const candidates = eligible.filter(id => PARTS[id].slot === slot);
+            const pick = candidates[Math.floor(Math.random() * candidates.length)];
+            G.shop.push({ partId: pick, sold: false });
+        });
+        // Add 2 random extras.
+        for (let i = 0; i < 2; i++) {
+            const pick = eligible[Math.floor(Math.random() * eligible.length)];
+            G.shop.push({ partId: pick, sold: false });
+        }
+    } else {
+        for (let i = 0; i < 5; i++) {
+            const id = eligible[Math.floor(Math.random() * eligible.length)];
+            G.shop.push({ partId: id, sold: false });
+        }
+    }
+    emit('shop_refresh', { wave: G.wave, parts: G.shop.map(s => s.partId) });
+}
+
+function rerollShop() {
+    if (G.isBattling) return;
+    if (G.gold < 2) { log('🪙 Not enough gold to reroll!'); return; }
+    G.gold -= 2;
+    emit('reroll', { wave: G.wave, costG: 2 });
+    refreshShop(false);
+    updateAll();
+}
+
+// Click on shop part → open info modal w/ BUY action. Purchase moves part into inventory only.
+function executeBuy(shopIdx) {
+    if (G.isBattling) return;
+    const slot = G.shop[shopIdx];
+    if (!slot || slot.sold) return;
+    const part = PARTS[slot.partId];
+    if (G.gold < part.cost) { log('🪙 Not enough gold for ' + part.name); return; }
+    G.gold -= part.cost;
+    slot.sold = true;
+    const uid = nextUid();
+    G.inventory.push({ uid, partId: part.id });
+    emit('shop_buy', { wave: G.wave, partId: part.id, slotType: part.slot, costG: part.cost, uid });
+    log(`🛒 Bought ${part.icon} ${part.name} → inventory`);
+    closePartInfo();
+    updateAll();
+}
+
+// Equip an owned inventory part onto a hero's matching slot.
+// If a part was already equipped in that slot, swap it back to inventory.
+function equipFromInventory(uid, heroId) {
+    if (G.isBattling) return;
+    const invIdx = G.inventory.findIndex(it => it.uid === uid);
+    if (invIdx < 0) return;
+    const item = G.inventory[invIdx];
+    const part = PARTS[item.partId];
+    const hero = G.heroes.find(h => h.id === heroId);
+    if (!hero) return;
+    if (!isHeroAvailable(hero, G.wave)) { log(`${hero.name} not unlocked yet (wave ${HERO_UNLOCK_WAVE[hero.cls]}).`); return; }
+    if (hero.isDead) { log(`${hero.name} is dead — cannot equip.`); return; }
+    if (part.cls !== 'universal' && part.cls !== hero.cls) {
+        log(`${part.name} is ${part.cls.toUpperCase()}-only. ${hero.name} is ${hero.cls.toUpperCase()}.`);
+        return;
+    }
+
+    // Swap: if slot is occupied, push the old equipped part back to inventory with a fresh uid.
+    const oldPart = hero.weapon[part.slot];
+    if (oldPart) {
+        G.inventory.push({ uid: nextUid(), partId: oldPart.id });
+    }
+
+    // Equip new part.
+    hero.weapon[part.slot] = part;
+    clampHp(hero);
+    G.inventory.splice(invIdx, 1);
+    emit('forge_swap', { heroId, slotType: part.slot, oldPartId: oldPart ? oldPart.id : null, newPartId: part.id, fromInventory: true });
+    log(`⚒️ ${part.icon} ${part.name} → ${hero.name}'s ${part.slot}`);
+
+    closePartInfo();
+
+    // Auto-advance to next needy hero once this one is fully kitted (P3 QoL test).
+    if (hasFullWeapon(hero)) {
+        const before = G.activeHeroId;
+        selectNextNeedyHero();
+        if (G.activeHeroId !== before) log(`→ Active hero: ${G.heroes[G.activeHeroId].name}`);
+    }
+    updateAll();
+}
+
+// Unequip a part from a hero's slot back into the inventory (no destroy).
+function unequipToInventory(heroId, slot) {
+    if (G.isBattling) return;
+    const hero = G.heroes.find(h => h.id === heroId);
+    if (!hero) return;
+    const p = hero.weapon[slot];
+    if (!p) return;
+    G.inventory.push({ uid: nextUid(), partId: p.id });
+    hero.weapon[slot] = null;
+    clampHp(hero);
+    emit('forge_swap', { heroId, slotType: slot, oldPartId: p.id, newPartId: null, toInventory: true });
+    log(`↩️ Unequipped ${p.icon} ${p.name} from ${hero.name} → inventory`);
+    closePartInfo();
+    updateAll();
+}
+
+// Discard a part from the inventory permanently (refund a tiny portion).
+function discardFromInventory(uid) {
+    if (G.isBattling) return;
+    const idx = G.inventory.findIndex(it => it.uid === uid);
+    if (idx < 0) return;
+    const part = PARTS[G.inventory[idx].partId];
+    const refund = Math.floor(part.cost / 3);
+    G.inventory.splice(idx, 1);
+    G.gold += refund;
+    emit('forge_swap', { heroId: null, slotType: part.slot, oldPartId: part.id, newPartId: null, discarded: true, refund });
+    log(`🗑️ Discarded ${part.icon} ${part.name} (+${refund}🪙)`);
+    closePartInfo();
+    updateAll();
+}
+
+// --- Part info modal — central popup for shop/inventory/anvil clicks. ---
+// source = 'shop' | 'inventory' | 'anvil'
+// ref    = shopIdx (number) | inventory uid (string) | {heroId, slot} (object)
+function openPartInfo(source, ref) {
+    if (G.isBattling) return;
+    let part, ctx = { source, ref };
+    if (source === 'shop') {
+        const slot = G.shop[ref];
+        if (!slot || slot.sold) return;
+        part = PARTS[slot.partId];
+    } else if (source === 'inventory') {
+        const item = G.inventory.find(it => it.uid === ref);
+        if (!item) return;
+        part = PARTS[item.partId];
+    } else if (source === 'anvil') {
+        const hero = G.heroes.find(h => h.id === ref.heroId);
+        if (!hero) return;
+        part = hero.weapon[ref.slot];
+        if (!part) return;
+    } else return;
+
+    const body = document.getElementById('info-card-body');
+    const tagHTML = part.tag ? `<span class="info-tag tag-badge ${part.tag}">${part.tag}</span>` : '';
+    const classLabel = part.cls === 'universal' ? 'Universal' : `${part.cls[0].toUpperCase()}${part.cls.slice(1)}-only`;
+
+    const stats = [];
+    if (part.atk) stats.push(['ATK', '+' + part.atk]);
+    if (part.hp) stats.push(['HP', '+' + part.hp]);
+    if (part.crit) stats.push(['Crit %', '+' + part.crit]);
+    if (part.ultRate) stats.push(['Ult Fill', '+' + part.ultRate + '%']);
+    const statsHTML = stats.map(s => `<div class="info-stat-row"><span>${s[0]}</span><span class="info-stat-val">${s[1]}</span></div>`).join('');
+
+    // Build action buttons based on context.
+    let actions = '';
+    let warn = '';
+    if (source === 'shop') {
+        const canAfford = G.gold >= part.cost;
+        if (!canAfford) warn = `<div class="info-warning">Need ${part.cost - G.gold} more 🪙</div>`;
+        actions = `
+            <button class="action-button info-buy ${canAfford ? '' : 'disabled'}" ${canAfford ? `onclick="executeBuy(${ref})"` : ''}>
+                Buy (${part.cost}🪙)
+            </button>
+            <button class="action-button info-close" onclick="closePartInfo()">Close</button>
+        `;
+    } else if (source === 'inventory') {
+        // Show equip buttons per eligible hero.
+        const eligible = availableHeroes().filter(h => !h.isDead && (part.cls === 'universal' || part.cls === h.cls));
+        const equipBtns = eligible.map(h => `
+            <button class="action-button info-equip" onclick="equipFromInventory('${ref}', ${h.id})" style="border-color:${h.color}; border-width:2px;">
+                ${h.icon} ${h.name}
+            </button>`).join('');
+        const equipRow = eligible.length
+            ? `<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">${equipBtns}</div>`
+            : `<div class="info-warning">No eligible hero available.</div>`;
+        actions = equipRow + `
+            <div class="info-action-row">
+                <button class="action-button info-unequip" onclick="discardFromInventory('${ref}')">🗑️ Discard (+${Math.floor(part.cost/3)}🪙)</button>
+                <button class="action-button info-close" onclick="closePartInfo()">Close</button>
+            </div>`;
+    } else if (source === 'anvil') {
+        actions = `
+            <button class="action-button info-unequip" onclick="unequipToInventory(${ref.heroId}, '${ref.slot}')">↩️ Unequip → Inventory</button>
+            <button class="action-button info-close" onclick="closePartInfo()">Close</button>
+        `;
+    }
+
+    body.innerHTML = `
+        <div class="info-header">
+            <div class="info-icon">${part.icon}</div>
+            <div>
+                <div class="info-name">${part.name}</div>
+                <div class="info-subline">${classLabel} · ${part.slot.toUpperCase()} ${tagHTML}</div>
+            </div>
+        </div>
+        <div class="info-stats">${statsHTML || '<i>No stat bonuses</i>'}</div>
+        ${warn}
+        ${actions}
+    `;
+    document.getElementById('info-modal').classList.add('visible');
+}
+
+function closePartInfo() {
+    document.getElementById('info-modal').classList.remove('visible');
+}
+
+// --- HERO SELECTION ---
+function selectHero(id) {
+    if (G.isBattling) return;
+    const h = G.heroes.find(x => x.id === id);
+    if (!h || h.isDead) return;
+    if (!isHeroAvailable(h, G.wave)) {
+        log(`${h.name} unlocks at wave ${HERO_UNLOCK_WAVE[h.cls]}.`);
+        return;
+    }
+    G.activeHeroId = id;
+    updateAll();
+}
+
+// Find next unlocked-alive hero who still needs at least one part.
+function selectNextNeedyHero() {
+    for (const h of G.heroes) {
+        if (h.isDead) continue;
+        if (!isHeroAvailable(h, G.wave)) continue;
+        if (!h.weapon.head || !h.weapon.hilt || !h.weapon.rune) {
+            G.activeHeroId = h.id;
+            return;
+        }
+    }
+    // No needy hero — keep current active unchanged.
+}
+
+// Anvil slot click: if filled, open info modal (which has Unequip button).
+// If empty: no-op (parts go in via inventory → equip flow).
+function clickAnvilSlot(slot) {
+    if (G.isBattling) return;
+    const h = G.heroes.find(x => x.id === G.activeHeroId);
+    if (!h) return;
+    if (h.weapon[slot]) {
+        openPartInfo('anvil', { heroId: h.id, slot });
+    } else {
+        log(`📥 To equip ${slot}: buy from shop → click in inventory → pick hero.`);
+    }
+}
+
+// --- WEAPON STATS ---
+function weaponStats(hero) {
+    let atk = hero.baseAtk;
+    let hpBonus = 0;
+    let crit = 0;
+    let ultRate = 0;
+    let tags = [];
+    ['head', 'hilt', 'rune'].forEach(s => {
+        const p = hero.weapon[s];
+        if (p) {
+            atk += p.atk; hpBonus += p.hp; crit += p.crit; ultRate += p.ultRate;
+            if (p.tag) tags.push(p.tag);
+        }
+    });
+    return { atk, hpBonus, crit, ultRate, tags };
+}
+
+function hasFullWeapon(hero) {
+    return hero.weapon.head && hero.weapon.hilt && hero.weapon.rune;
+}
+
+// Effective max HP = base maxHp + sum of hpBonus from equipped parts.
+// Heroes always carry hero.maxHp as their unmodified base; weapon hpBonus stacks on top.
+function getMaxHp(hero) {
+    return hero.maxHp + weaponStats(hero).hpBonus;
+}
+
+// Call after any equip/unequip to clamp current hp into the new effective max range.
+function clampHp(hero) {
+    const max = getMaxHp(hero);
+    if (hero.hp > max) hero.hp = max;
+}
+
+function anyHeroArmed() {
+    return G.heroes.some(h => !h.isDead && isHeroAvailable(h, G.wave) && hasFullWeapon(h));
+}
+
+// --- WAVE / COMBAT ---
+function spawnWave() {
+    const isBoss = G.wave === BOSS_WAVE;
+    G.enemies = [];
+    if (isBoss) {
+        if (!G.boss) {
+            G.boss = BOSS_OPTIONS[Math.floor(Math.random() * BOSS_OPTIONS.length)];
+        }
+        const hp = 45 + G.wave * 19; // boss tougher (-25% vs 0.1.0 baseline for playtest comfort)
+        G.enemies.push({ id:0, name: G.boss.name, icon: G.boss.icon, hp, maxHp: hp, isBoss:true, weak: G.boss.weak, resist: G.boss.resist });
+        showAffinityBanner();
+        emit('wave_start', { wave: G.wave, isBoss: true, bossAffinity: { weak: G.boss.weak, resist: G.boss.resist } });
+    } else {
+        const count = G.wave < 3 ? 2 : 3;
+        for (let i = 0; i < count; i++) {
+            const e = NORMAL_ENEMIES[Math.floor(Math.random() * NORMAL_ENEMIES.length)];
+            const hp = 15 + G.wave * 8;
+            G.enemies.push({ id: i, name: e.name, icon: e.icon, hp, maxHp: hp, isBoss: false });
+        }
+        hideAffinityBanner();
+        emit('wave_start', { wave: G.wave, isBoss: false });
+    }
+    document.getElementById('turn-display').innerText = isBoss ? '⚠️ BOSS WAVE — PREPARATION' : 'PREPARATION PHASE';
+    document.getElementById('turn-display').style.color = isBoss ? '#c0392b' : '#d35400';
+}
+
+function showAffinityBanner() {
+    const b = document.getElementById('affinity-banner');
+    b.innerHTML = `BOSS: ${G.boss.name} — Resists: ${G.boss.resist.toUpperCase()} · Weak to: ${G.boss.weak.toUpperCase()}`;
+    b.classList.add('visible');
+}
+function hideAffinityBanner() { document.getElementById('affinity-banner').classList.remove('visible'); }
+
+function startBattle() {
+    if (G.isBattling) return;
+    if (!anyHeroArmed()) { log('⚠️ At least one hero needs a full weapon!'); return; }
+    G.isBattling = true;
+    G.battleStart = Date.now();
+    G.heroes.forEach(h => { h.ultGauge = 0; h.ultUsed = false; });
+    const loadouts = G.heroes
+        .filter(h => isHeroAvailable(h, G.wave))
+        .map(h => ({ heroId: h.id, parts: ['head','hilt','rune'].map(s => h.weapon[s]?.id || null) }));
+    emit('wave_start_battle', { wave: G.wave, loadouts });
+    document.getElementById('turn-display').innerText = '⚔️ BATTLE PHASE ⚔️';
+    document.getElementById('turn-display').style.color = '#c0392b';
+    log(`<br><b style="color:var(--hp-red);">— WAVE ${G.wave} START —</b>`);
+    updateAll();
+    G.battleTick = setInterval(battleStep, TICK_MS);
+}
+
+function battleStep() {
+    // Only unlocked-alive heroes participate in combat.
+    const alive = G.heroes.filter(h => !h.isDead && isHeroAvailable(h, G.wave));
+    if (alive.length === 0 || G.enemies.length === 0) { endBattle(); return; }
+    const elapsed = Date.now() - G.battleStart;
+
+    // Hero attacks
+    alive.forEach(hero => {
+        if (G.enemies.length === 0 || !hasFullWeapon(hero)) return;
+        const stats = weaponStats(hero);
+        const targetIdx = Math.floor(Math.random() * G.enemies.length);
+        const target = G.enemies[targetIdx];
+        let dmg = stats.atk;
+        const isCrit = Math.random() * 100 < stats.crit;
+        if (isCrit) dmg = Math.floor(dmg * 1.6);
+        let mult = 1.0;
+        if (target.isBoss) {
+            stats.tags.forEach(t => {
+                if (t === target.weak) mult *= 1.8;
+                if (t === target.resist) mult *= 0.5;
+            });
+        }
+        dmg = Math.floor(dmg * mult);
+        target.hp -= dmg;
+        // Ult gauge fill: 8 base + 0.25/dmg + ultRate scaling
+        const gaugeGain = 6 + Math.floor(dmg * 0.2) + (stats.ultRate / 4);
+        if (!hero.ultUsed) hero.ultGauge = Math.min(100, hero.ultGauge + gaugeGain);
+        const fx = isCrit ? ' <b style="color:#f1c40f">CRIT!</b>' : '';
+        const mfx = mult > 1.0 ? ' <b style="color:#2ecc71">Weakness!</b>' : (mult < 1.0 ? ' <span style="color:#7f8c8d">resisted</span>' : '');
+        log(`${hero.icon} hit ${target.icon} for <b>${dmg}</b>${fx}${mfx}`);
+        if (target.hp <= 0) {
+            log(`💀 ${target.name} defeated!`);
+            G.enemies.splice(targetIdx, 1);
+        }
+    });
+
+    // Enemy attacks — locked heroes are not on the field; only unlocked-alive are targets.
+    if (G.enemies.length > 0) {
+        const baseDmg = 4 + Math.floor(G.wave * 1.4) + (G.wave === BOSS_WAVE ? 6 : 0);
+        G.enemies.forEach(e => {
+            const stillAlive = G.heroes.filter(h => !h.isDead && isHeroAvailable(h, G.wave));
+            if (stillAlive.length === 0) return;
+            const t = stillAlive[Math.floor(Math.random() * stillAlive.length)];
+            t.hp -= baseDmg;
+            log(`${e.icon} hit ${t.icon} for ${baseDmg}`);
+            if (t.hp <= 0) { t.hp = 0; t.isDead = true; log(`💀 <b style="color:#e74c3c">${t.name} fell!</b>`); }
+        });
+    }
+
+    // Time-cap ult backstop (only unlocked heroes get the backstop ult charge).
+    if (elapsed > ULT_TIME_CAP_MS) {
+        G.heroes.forEach(h => { if (!h.isDead && isHeroAvailable(h, G.wave) && !h.ultUsed && h.ultGauge < 100) h.ultGauge = 100; });
+    }
+
+    updateAll();
+}
+
+function tapUlt(heroId) {
+    if (!G.isBattling) return;
+    const h = G.heroes.find(x => x.id === heroId);
+    if (!h || h.isDead || h.ultUsed) return;
+    if (h.ultGauge < 100) { log('⚡ Ultimate not ready'); return; }
+    emit('ult_tapped', { heroId, wave: G.wave, gaugeAtTap: h.ultGauge });
+    h.ultUsed = true; h.ultGauge = 0;
+    const stats = weaponStats(h);
+    let dmg = Math.floor(stats.atk * 3.5);
+    log(`<b style="color:var(--ult-purple);">⚡ ${h.name} unleashes ${h.ultName}!</b>`);
+
+    if (h.cls === 'warrior') {
+        // AoE all enemies
+        G.enemies.forEach(e => { e.hp -= dmg; log(`💥 ${h.ultName} → ${e.icon} for ${dmg} AoE`); });
+        G.enemies = G.enemies.filter(e => e.hp > 0);
+    } else if (h.cls === 'mage') {
+        // Delayed AoE — for prototype, instant big damage to random 2
+        const targets = G.enemies.slice(0, 2);
+        targets.forEach(e => { e.hp -= dmg; log(`☄️ ${h.ultName} → ${e.icon} for ${dmg}`); });
+        G.enemies = G.enemies.filter(e => e.hp > 0);
+    } else if (h.cls === 'rogue') {
+        // Guaranteed crit single target
+        if (G.enemies.length > 0) {
+            const big = Math.floor(dmg * 1.4);
+            G.enemies[0].hp -= big;
+            log(`🌀 ${h.ultName} → ${G.enemies[0].icon} for ${big} (guaranteed crit)`);
+            if (G.enemies[0].hp <= 0) G.enemies.shift();
+        }
+    }
+    updateAll();
+}
+
+function endBattle() {
+    clearInterval(G.battleTick);
+    G.battleTick = null;
+    G.isBattling = false;
+    // Only count unlocked-alive for wipe detection; locked heroes don't count as alive on the field.
+    const alive = G.heroes.filter(h => !h.isDead && isHeroAvailable(h, G.wave));
+    const battleTime = Date.now() - G.battleStart;
+
+    if (alive.length === 0) {
+        const wasBoss = G.wave === BOSS_WAVE;
+        emit('wipe', { wave: G.wave, isBoss: wasBoss });
+        if (wasBoss) {
+            document.getElementById('retry-modal').classList.add('visible');
+        } else {
+            document.getElementById('wipe-modal').classList.add('visible');
+        }
+        emit('session_end', { reason: wasBoss ? 'boss_wipe' : 'normal_wipe', lastWave: G.wave });
+        return;
+    }
+
+    // Wave clear
+    emit('wave_clear', { wave: G.wave, timeMs: battleTime, heroHpRemaining: G.heroes.map(h => ({ id: h.id, hp: h.hp, alive: !h.isDead })) });
+    log(`<b style="color:#2ecc71;">🌊 WAVE ${G.wave} CLEARED!</b>`);
+
+    if (G.wave === BOSS_WAVE) {
+        // Stage clear!
+        const totalTime = Date.now() - G.stageStartTime;
+        document.getElementById('clear-stats').innerHTML = `Time: ${(totalTime/1000).toFixed(1)}s · Retries: ${G.retryCount} · Heroes alive: ${alive.length}/3`;
+        document.getElementById('clear-modal').classList.add('visible');
+        emit('session_end', { reason: 'stage_clear', lastWave: G.wave, totalTimeMs: totalTime, retries: G.retryCount });
+        return;
+    }
+
+    // Award gold + advance wave
+    const goldEarned = 5 + G.wave * 2;
+    G.gold += goldEarned;
+    log(`+${goldEarned}🪙 reward.`);
+    G.wave++;
+
+    // Roster ramp: announce any hero that just unlocked at this wave.
+    G.heroes.forEach(h => {
+        if (HERO_UNLOCK_WAVE[h.cls] === G.wave) {
+            log(`<b style="color:#f1c40f;">⭐ ${h.name} (${h.cls.toUpperCase()}) unlocked!</b>`);
+            emit('hero_unlocked', { heroId: h.id, wave: G.wave });
+        }
+    });
+
+    refreshShop(true);
+    spawnWave();
+    selectNextNeedyHero();
+    updateAll();
+}
+
+// --- BOSS RETRY ---
+function bossRetry() {
+    document.getElementById('retry-modal').classList.remove('visible');
+    G.retryCount++;
+    emit('boss_retry', { partsKept: 'all_equipped' });
+    // Resurrect all unlocked heroes at full effective max HP; parts kept on weapons.
+    G.heroes.forEach(h => {
+        if (!isHeroAvailable(h, G.wave)) return;
+        h.isDead = false; h.hp = getMaxHp(h); h.ultGauge = 0; h.ultUsed = false;
+    });
+    // Re-spawn boss
+    G.enemies = [];
+    spawnWave();
+    refreshShop(true); // fresh shop for re-tooling
+    log(`<b style="color:var(--gold-color);">🔧 Reforge & Retry — boss reset.</b>`);
+    updateAll();
+}
+
+function restartStage() {
+    document.getElementById('retry-modal').classList.remove('visible');
+    document.getElementById('wipe-modal').classList.remove('visible');
+    document.getElementById('clear-modal').classList.remove('visible');
+    emit('session_end', { reason: 'restart', lastWave: G.wave });
+    initGame();
+}
+
+// --- LOG ---
+function log(msg) {
+    const ld = document.getElementById('combat-log');
+    ld.innerHTML += `<div>${msg}</div>`;
+    ld.scrollTop = ld.scrollHeight;
+}
+
+// --- RENDER ---
+function updateAll() {
+    document.getElementById('gold-count').innerText = G.gold;
+    document.getElementById('wave-num').innerText = G.wave;
+    renderHeroes();
+    renderEnemies();
+    renderAnvil();
+    renderShop();
+    renderInventory();
+    renderBottomActions();
+}
+
+function renderHeroes() {
+    // Squad bar — locked heroes show lock overlay; only unlocked heroes are selectable + visible in battle view.
+    const sq = document.getElementById('hero-cards');
+    sq.innerHTML = '';
+    G.heroes.forEach(h => {
+        const unlocked = isHeroAvailable(h, G.wave);
+        const active = (unlocked && h.id === G.activeHeroId) ? `active ${h.cls}` : '';
+        const dead = h.isDead ? 'dead' : '';
+        const locked = !unlocked ? 'locked' : '';
+        const stats = weaponStats(h);
+        const full = hasFullWeapon(h);
+        const weaponLine = full
+            ? `${stats.atk}atk${stats.crit?` · ${stats.crit}c`:''}${stats.tags.length?` · ${stats.tags.join('+')}`:''}`
+            : `${['head','hilt','rune'].map(s => h.weapon[s] ? '✓' : '·').join(' ')}`;
+        const gaugePct = h.ultGauge;
+        const gaugeReady = unlocked && gaugePct >= 100 && !h.ultUsed && G.isBattling;
+        const lockOverlay = !unlocked
+            ? `<div class="hero-lock-overlay">🔒<div style="font-size:8px; margin-top:2px;">Wave ${HERO_UNLOCK_WAVE[h.cls]}</div></div>`
+            : '';
+        sq.innerHTML += `
+            <div class="hero-card ${active} ${dead} ${locked}" onclick="selectHero(${h.id})">
+                <div class="hero-icon">${h.icon}</div>
+                <div class="entity-name" style="color:${h.color}; font-size:10px;">${h.name}</div>
+                ${hpBarHTML(h)}
+                <div class="hero-role" style="color:${h.color};">${h.cls}</div>
+                <div class="weapon-mini">${h.isDead ? '<span style="color:#888;">DEAD</span>' : weaponLine}</div>
+                <div class="ult-gauge ${gaugeReady ? 'ready' : ''}" onclick="event.stopPropagation(); tapUlt(${h.id});">
+                    <div class="ult-fill" style="width:${gaugePct}%;"></div>
+                    <div class="ult-text">${h.ultUsed ? 'USED' : (gaugeReady ? '⚡ TAP ' + h.ultName : Math.floor(gaugePct) + '%')}</div>
+                </div>
+                ${lockOverlay}
+            </div>`;
+    });
+
+    // Battle hero view — only unlocked heroes appear in combat.
+    const hv = document.getElementById('hero-view');
+    hv.innerHTML = '';
+    G.heroes.forEach(h => {
+        if (!isHeroAvailable(h, G.wave)) return;
+        const dead = h.isDead ? 'filter: grayscale(100%); opacity: 0.5;' : '';
+        hv.innerHTML += `
+            <div class="entity" style="${dead}">
+                <div style="font-size:20px;">${h.icon}</div>
+                ${hpBarHTML(h)}
+                <div class="entity-name" style="color:${h.color};">${h.name}</div>
+            </div>`;
+    });
+
+    const active = G.heroes[G.activeHeroId];
+    document.getElementById('active-hero-name').innerText = active ? `${active.name} (${active.cls})` : '—';
+}
+
+function renderEnemies() {
+    const ev = document.getElementById('enemy-view');
+    ev.innerHTML = '';
+    G.enemies.forEach(e => {
+        const tagInfo = e.isBoss ? `<div class="enemy-tag">W:${e.weak.toUpperCase()} R:${e.resist.toUpperCase()}</div>` : '';
+        ev.innerHTML += `
+            <div class="entity" ${e.isBoss ? 'style="border-color:#c0392b; box-shadow:0 0 8px #c0392b;"' : ''}>
+                <div style="font-size:22px;">${e.icon}</div>
+                ${hpBarHTML(e)}
+                <div class="entity-name">${e.name}</div>
+                ${tagInfo}
+            </div>`;
+    });
+    if (G.enemies.length === 0) ev.innerHTML = '<div style="color: var(--ornate-accent); font-weight:bold;">(Cleared)</div>';
+}
+
+function hpBarHTML(ent) {
+    // For heroes (have `cls` field), use effective max HP including weapon hpBonus.
+    // Enemies have a fixed maxHp.
+    const max = ent.cls ? getMaxHp(ent) : ent.maxHp;
+    const pct = Math.max(0, (ent.hp / max) * 100);
+    return `<div class="hp-container">
+        <div class="hp-fill" style="width:${pct}%;"></div>
+        <div class="hp-bar-text">${Math.ceil(ent.hp)}/${Math.ceil(max)}</div>
+    </div>`;
+}
+
+function renderAnvil() {
+    const h = G.heroes[G.activeHeroId];
+    if (!h) return;
+    const stats = weaponStats(h);
+    const tgtTxt = h.isDead ? `${h.name} is DEAD — pick another hero` : `Forging for ${h.name} (${h.cls.toUpperCase()})`;
+    document.getElementById('anvil-target').innerText = tgtTxt;
+    const stx = hasFullWeapon(h)
+        ? `ATK ${stats.atk} · HP +${stats.hpBonus} · Crit ${stats.crit}% · Ult+${stats.ultRate}% ${stats.tags.length ? ' · ' + stats.tags.join('+') : ''}`
+        : 'Need: ' + ['head','hilt','rune'].filter(s => !h.weapon[s]).join(' + ');
+    document.getElementById('anvil-stats').innerText = stx;
+
+    ['head','hilt','rune'].forEach(slot => {
+        const el = document.getElementById('slot-' + slot);
+        const p = h.weapon[slot];
+        if (p) {
+            el.classList.add('filled');
+            el.innerHTML = `<div title="${p.name}">${p.icon}</div><span class="anvil-slot-label">${slot}</span>`;
+        } else {
+            el.classList.remove('filled');
+            el.innerHTML = `<span class="anvil-slot-label">${slot}</span>`;
+        }
+    });
+}
+
+function renderShop() {
+    const grid = document.getElementById('shop-grid');
+    grid.innerHTML = '';
+    G.shop.forEach((slot, i) => {
+        const p = PARTS[slot.partId];
+        const sold = slot.sold ? 'sold' : '';
+        const rare = p.rarity === 'rare' ? 'rare' : '';
+        const clickable = !slot.sold && !G.isBattling;
+        const tagBadge = p.tag ? `<span class="tag-badge ${p.tag}" title="Element/keyword tag">${p.tag}</span>` : '';
+        grid.innerHTML += `
+            <div class="shop-part ${sold} ${rare}" onclick="${clickable ? `openPartInfo('shop', ${i})` : ''}" style="${clickable ? '' : 'opacity:0.5;'}">
+                ${tagBadge}
+                <span class="class-badge ${p.cls}">${p.cls === 'universal' ? 'U' : p.cls[0].toUpperCase()}</span>
+                <div class="shop-part-icon">${p.icon}</div>
+                <div class="shop-part-name">${p.name}</div>
+                <div class="shop-part-cost">${slot.sold ? 'SOLD' : p.cost + '🪙'}</div>
+            </div>`;
+    });
+
+    // Reroll button enable/disable
+    const rb = document.getElementById('reroll-btn');
+    if (G.gold < 2 || G.isBattling) rb.classList.add('disabled'); else rb.classList.remove('disabled');
+}
+
+// Inventory strip — owned parts. Click → info modal (with Equip / Discard).
+function renderInventory() {
+    const strip = document.getElementById('inventory-strip');
+    if (G.inventory.length === 0) {
+        strip.innerHTML = '<div class="inv-empty">Empty — buy parts from shop above.</div>';
+        return;
+    }
+    strip.innerHTML = '';
+    G.inventory.forEach(item => {
+        const p = PARTS[item.partId];
+        const tagBadge = p.tag ? `<span class="tag-badge ${p.tag}">${p.tag}</span>` : '';
+        const classBadge = `<span class="class-badge ${p.cls}">${p.cls === 'universal' ? 'U' : p.cls[0].toUpperCase()}</span>`;
+        strip.innerHTML += `
+            <div class="inv-part" onclick="openPartInfo('inventory', '${item.uid}')" title="${p.name}">
+                ${tagBadge}
+                ${classBadge}
+                <div class="inv-part-icon">${p.icon}</div>
+                <div class="inv-part-slot">${p.slot}</div>
+            </div>`;
+    });
+}
+
+function renderBottomActions() {
+    const bb = document.getElementById('battle-btn');
+    if (G.isBattling) {
+        bb.classList.add('disabled');
+        bb.innerText = '⚔️ Battling…';
+    } else if (!anyHeroArmed()) {
+        bb.classList.add('disabled');
+        bb.innerText = 'Equip ≥1 hero';
+    } else {
+        bb.classList.remove('disabled');
+        bb.innerText = G.wave === BOSS_WAVE ? '⚠️ Fight Boss' : '⚔️ Start Wave ' + G.wave;
+    }
+}
+
+// --- BOOT ---
+window.addEventListener('DOMContentLoaded', initGame);
+</script>
+</body>
+</html>

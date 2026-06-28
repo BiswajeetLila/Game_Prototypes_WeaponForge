@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/r_ice.png" id="1_cp3sr"]
+
+[resource]
+script = ExtResource("1")
+id = &"r_ice"
+slot = &"rune"
+name = "Ice Rune"
+desc = "Adds ICE tag and +3 ATK. Pair with a fire source for Steamburst splash."
+icon = ExtResource("1_cp3sr")
+atk = 3
+tag = &"ice"

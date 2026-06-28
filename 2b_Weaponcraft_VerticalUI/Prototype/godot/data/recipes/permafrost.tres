@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/recipe_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/vfx/ice_shard.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"permafrost"
+name = "Permafrost"
+desc = "15% chance per hit to freeze the target for one tick. Frozen enemies skip their next attack."
+icon = ExtResource("2")
+patterns = [[&"ice", &"ice"]]
+bonus = {
+"freeze_chance": 0.15
+}

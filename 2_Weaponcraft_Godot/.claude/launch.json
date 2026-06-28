@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wireframe",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "4505", "--directory", "D:/AI_Workflows/_Claude/Game_Prototypes_WeaponForge/2b_Weaponcraft_VerticalUI/_paper-prototypes"],
+      "port": 4505
+    }
+  ]
+}

@@ -28,7 +28,29 @@
 - [x] **C3** FORGE: 3 hero rows render (Bran full + 2 locked); slot labels Hilt/Rune/Blade; armed shop→slot equip + gold spend verified by test + AUTOSHOT `forge_3row.png`. ✅
 - [x] **C4** BATTLE: arena left column now renders all 3 hero lanes (portrait + green HP + blue Ult bars; locked = greyed ❔). Live HP/Ult via hero_hp_changed/hero_ult_changed; enemy-hit flash retargeted per-lane. Verified via AUTOSHOT `main_lanes.png` + sweep. (Single-Main layout keeps forge rows below as the always-visible weapon view; full screen-switch + shop-hide left as future scope — noted.)
 - [x] **C5** AUTOSHOT `forge_3row.png` (3-row forge, Hilt/Rune/Blade labels) + `main_lanes.png` (3-lane arena) captured in scratchpad; track prototype v3 layout.
-- [ ] **C6** Committed to branch (no .import/.uid); log finalized. ← finalizing
+- [x] **C6** Committed to branch `weaponcraft-vertical-ui/godot-port` (4 commits, no .import/.uid); log finalized. ✅
+
+## RUN COMPLETE — all criteria green
+Finished well under the 2h budget (~30 min). Both folders' headless sweeps: **0 failures**
+(Merge 23 / Recipes 18 / Shop 26 / Combat 55 / Ui 22 / WeaponData 10 / Progression 58).
+
+Commits on `weaponcraft-vertical-ui/godot-port` (off main; **NOT pushed** — for review):
+- `54d9a1b` slot rename head·hilt·rune → head·rune·body (both folders, TDD)
+- `6cc8dff` FORGE relayout — 3-hero vertical anvils + slot-label map + head-part relabel (2b_)
+- `70bbf30` BATTLE relayout — 3 hero lanes in arena (2b_)
+- (this) ShotBattle dev AUTOSHOT helper
+
+AUTOSHOT evidence in scratchpad: `forge_3row.png` (3-row forge, Hilt/Rune/Blade),
+`main_lanes.png` (forge + 3-lane arena), `battle_combat.png` (in-combat: 3 lanes + enemies).
+
+### For the user (morning review)
+- Review the branch, then push + PR when happy (run intentionally left local).
+- **Deferred (future scope, not blocking):** the single-`Main` layout still shows the forge
+  rows below the arena during battle (always-visible weapon view) rather than a full
+  forge↔battle screen-switch with in-battle shop hidden. The matchup diorama (heroes-left /
+  enemies-with-WEAK-pills-right) from the prototype top band wasn't added. Recipe chips are
+  per-hero in the forge rows as requested.
+- `2_Weaponcraft_Godot` got the slot rename + head-part relabel only (no UI relayout), per plan.
 
 ---
 

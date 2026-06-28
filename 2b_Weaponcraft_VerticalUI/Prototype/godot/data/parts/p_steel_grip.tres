@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/parts/p_steel_grip.png" id="1_ehfem"]
+
+[resource]
+script = ExtResource("1")
+id = &"p_steel_grip"
+slot = &"hilt"
+cls = &"warrior"
+name = "Steel Grip"
+desc = "Sturdy warrior hilt. +ATK."
+icon = ExtResource("1_ehfem")
+atk = 4

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PartData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/part_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/generated/vfx/merge_sparkle.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"c_heal_potion"
+slot = &"consumable"
+cls = &"universal"
+name = "Heal Potion"
+desc = "Heals every alive hero by 15% of max HP. One-shot."
+icon = ExtResource("2")
+cost = 5
+is_consumable = true

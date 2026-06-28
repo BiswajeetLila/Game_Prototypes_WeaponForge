@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponCraft — 3-Hero Vertical UI (paper-proto v1)</title>
+<style>
+  :root{
+    --bg:#1b1410; --panel:#2a2018; --panel2:#352a20; --wood:#3a2c1f;
+    --ink:#f3e7d3; --ink-dim:#b9a888; --line:#5a4632;
+    --gold:#e7b53c; --gold-deep:#b9852a;
+    --bran:#d98a3c; --elara:#4fb6e0; --vex:#9b6cf0;
+    --fire:#e0552e; --ice:#2a8fe0; --earth:#6a9b3c; --poison:#7fbf3f; --crit:#e0517a;
+    --hp:#5bbf5b; --hp-bg:#3a2a22; --ult:#e7b53c; --enemy:#c43a3a;
+    --slot:#241b14;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0d0a08;color:var(--ink);
+    font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 10px 60px}
+  h1{font-size:16px;margin:4px 0 0;letter-spacing:.5px;color:var(--ink)}
+  .sub{font-size:12px;color:var(--ink-dim);margin:0 0 2px;text-align:center;max-width:560px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .controls button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:7px 13px;font-size:13px;cursor:pointer}
+  .controls button.on{background:var(--gold);color:#2a1d08;border-color:var(--gold-deep);font-weight:bold}
+
+  /* phone */
+  .phone{width:400px;max-width:96vw;height:840px;background:
+      radial-gradient(120% 80% at 50% 0%, #2c2016 0%, #1b1410 55%, #140f0b 100%);
+    border:3px solid #000;border-radius:26px;overflow:hidden;position:relative;
+    box-shadow:0 14px 40px rgba(0,0,0,.6), inset 0 0 0 2px #3a2c1f;display:flex;flex-direction:column}
+
+  .titlebar{flex:0 0 auto;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(#3a2c1f,#2a2018);border-bottom:1px solid var(--line);font-size:12px}
+  .titlebar b{color:var(--gold)}
+  .stage-pill{font-size:11px;color:var(--ink-dim)}
+
+  .scroll{flex:1 1 auto;overflow-y:auto;padding:8px 8px 4px;display:flex;flex-direction:column;gap:8px}
+  .scroll::-webkit-scrollbar{width:6px}.scroll::-webkit-scrollbar-thumb{background:#4a3826;border-radius:3px}
+
+  /* ---------- HERO BAND (shared shell) ---------- */
+  .band{position:relative;border:1px solid var(--line);border-radius:12px;
+    background:linear-gradient(180deg,#241b14,#1d160f);padding:7px 8px 8px;}
+  .band.locked{opacity:.5;filter:grayscale(.5)}
+  .band .rail{position:absolute;left:0;top:8px;bottom:8px;width:5px;border-radius:5px}
+  .band.bran .rail{background:var(--bran)} .band.elara .rail{background:var(--elara)} .band.vex .rail{background:var(--vex)}
+
+  .bandgrid{display:grid;grid-template-columns:82px 1fr 86px;gap:7px;align-items:stretch;margin-left:6px}
+
+  /* hero tag (left) */
+  .htag{display:flex;flex-direction:column;gap:3px;justify-content:center}
+  .hname{font-size:12px;font-weight:bold;display:flex;align-items:center;gap:4px}
+  .hname .dot{width:8px;height:8px;border-radius:50%}
+  .bran .hname .dot{background:var(--bran)} .elara .hname .dot{background:var(--elara)} .vex .hname .dot{background:var(--vex)}
+  .face{width:64px;height:50px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:30px;border:1px solid var(--line);background:#15100c}
+  .bar{height:7px;border-radius:4px;background:var(--hp-bg);overflow:hidden;position:relative}
+  .bar > i{display:block;height:100%}
+  .bar.hp > i{background:var(--hp)} .bar.ult > i{background:var(--ult)}
+  .barlbl{font-size:9px;color:var(--ink-dim);display:flex;justify-content:space-between}
+  .lv{font-size:9px;color:var(--gold)}
+
+  /* anvil (center) — 3 slots */
+  .anvil{display:flex;flex-direction:column;gap:4px}
+  .anvil-h{font-size:9px;letter-spacing:2px;color:var(--ink-dim);text-align:center;text-transform:uppercase}
+  .slots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+  .slot{background:var(--slot);border:1px solid var(--line);border-radius:8px;padding:4px 3px 5px;
+    text-align:center;cursor:pointer;min-height:62px;display:flex;flex-direction:column;gap:2px;justify-content:center;
+    transition:border-color .1s,transform .05s}
+  .slot:hover{border-color:var(--gold)} .slot:active{transform:scale(.97)}
+  .slot.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .slot.rune{border-color:#6a5a8a}
+  .slot .sicon{font-size:18px;line-height:1}
+  .slot .slabel{font-size:8.5px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.5px}
+  .slot.rune .slabel{color:#b59be8}
+  .slot .sname{font-size:9px;font-weight:bold;line-height:1.05}
+  .slot .sstat{font-size:8.5px;color:var(--gold)}
+  .slot.empty .sname,.slot.empty .sstat{color:#6b5946}
+  .slot.empty .sicon{opacity:.3}
+
+  /* foe telegraph (right) */
+  .foe{display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:center;
+    border-left:1px dashed #4a3826;padding-left:5px}
+  .foeface{width:46px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:24px;border:1px solid #5a2a2a;background:#1c1010}
+  .foename{font-size:9.5px;font-weight:bold}
+  .weak{font-size:8.5px;font-weight:bold;color:#ffd24a}
+  .resist{font-size:8px;color:var(--ink-dim)}
+
+  /* recipe chips row under anvil */
+  .recipes{grid-column:2 / 3;display:flex;gap:4px;flex-wrap:wrap;margin-top:1px}
+  .chip{font-size:8.5px;border-radius:10px;padding:2px 7px;border:1px solid #6a4fa0;background:#3a2a5a;color:#e8ddff}
+  .chip.steam{border-color:#9aa7b0;background:#39434a;color:#e7eef2}
+
+  /* ---------- BATTLE band variant ---------- */
+  .lane{display:grid;grid-template-columns:70px 1fr 60px;gap:6px;align-items:center;margin-left:6px}
+  .fighter{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .fighter .face{width:56px;height:54px;font-size:30px}
+  .vfx{position:relative;height:54px;display:flex;align-items:center;justify-content:center}
+  .vfx .swipe{font-size:13px;font-weight:bold;padding:3px 8px;border-radius:14px;background:#2a2018;border:1px solid var(--line)}
+  .vfx .dmg{position:absolute;top:-2px;right:8px;font-size:15px;font-weight:bold}
+  .mini{margin-top:6px;margin-left:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;opacity:.92}
+  .mini .slot{min-height:0;padding:3px 2px;cursor:default}
+  .mini .slot .sname{font-size:8px}.mini .slot .sstat{display:none}
+  .battlelog{font-size:10px;color:var(--ink-dim);background:#15100c;border:1px solid var(--line);
+    border-radius:8px;padding:5px 8px;margin:2px 2px 0}
+
+  /* ---------- shared bottom tray (forge) ---------- */
+  .tray{flex:0 0 auto;border-top:2px solid var(--line);background:linear-gradient(#241b14,#1a130d);
+    padding:7px 9px 9px;display:flex;flex-direction:column;gap:6px}
+  .tray-h{display:flex;justify-content:space-between;align-items:center;font-size:11px}
+  .gold{color:var(--gold);font-weight:bold;font-size:13px}
+  .reroll{background:#c67f3c;color:#241405;border:1px solid #6a3f12;border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;font-weight:bold}
+  .shoprow{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+  .shoptile{background:var(--slot);border:1px solid var(--line);border-radius:8px;padding:5px 2px;text-align:center;cursor:pointer}
+  .shoptile:hover{border-color:var(--gold)}
+  .shoptile .sicon{font-size:18px}.shoptile .sname{font-size:8px}.shoptile .cost{font-size:8.5px;color:var(--gold)}
+  .startwave{margin-top:1px;background:linear-gradient(#e7b53c,#c6902a);color:#241405;border:1px solid #6a3f12;
+    border-radius:10px;padding:11px;font-size:15px;font-weight:bold;letter-spacing:1px;cursor:pointer;width:100%}
+  .battlebar{flex:0 0 auto;border-top:2px solid var(--line);background:#1a130d;padding:8px;display:flex;gap:8px;justify-content:center}
+  .battlebar button{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer}
+
+  .hidden{display:none !important}
+
+  /* legend / notes under phone */
+  .notes{max-width:560px;font-size:12px;color:var(--ink-dim);line-height:1.5}
+  .notes h3{color:var(--ink);font-size:13px;margin:14px 0 4px}
+  .notes code{background:#241b14;padding:1px 5px;border-radius:4px;color:#e7c98a;font-size:11px}
+  .notes .q{color:#ffd24a}
+  .tag{display:inline-block;font-size:10px;border:1px solid var(--line);border-radius:10px;padding:1px 7px;margin:1px 2px;color:var(--ink-dim)}
+</style>
+</head>
+<body>
+
+  <h1>WeaponCraft — 3-Hero Vertical UI</h1>
+  <p class="sub">Paper-prototype v1 · all 3 heroes stacked vertically · each hero forges their own 3-slot anvil
+    (<code>head · rune · body</code>, labels per weapon) · shop/gold/inventory shared · logic unchanged.</p>
+  <div class="controls">
+    <button id="bForge" class="on" onclick="setView('forge')">⚒️ FORGE</button>
+    <button id="bBattle" onclick="setView('battle')">⚔️ BATTLE</button>
+  </div>
+
+  <div class="phone">
+    <div class="titlebar">
+      <span>⚒️ <b>WeaponCraft</b></span>
+      <span class="stage-pill" id="stagePill">Stage 1 · Wave 3 — forge up</span>
+    </div>
+
+    <!-- ============ FORGE VIEW ============ -->
+    <div class="scroll" id="forgeView"></div>
+
+    <!-- ============ BATTLE VIEW ============ -->
+    <div class="scroll hidden" id="battleView"></div>
+
+    <!-- shared tray (forge only) -->
+    <div class="tray" id="tray">
+      <div class="tray-h">
+        <span class="gold">🪙 1,450 G</span>
+        <button class="reroll">🔄 Reroll · 50G</button>
+      </div>
+      <div class="shoprow" id="shop"></div>
+      <button class="startwave" onclick="setView('battle')">⚔️ START WAVE</button>
+    </div>
+
+    <!-- battle controls (battle only) -->
+    <div class="battlebar hidden" id="battlebar">
+      <button onclick="setView('forge')">← Forge</button>
+      <button>⏩ Speed ×2</button>
+      <button>⏸ Pause</button>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h3>What this prototype is showing</h3>
+    <p>The same WeaponCraft run, re-laid-out so <b>Bran, Elara and Vex are all on screen at once</b>, stacked
+    vertically — the RuneSurge "3-board" rhythm, but each hero's board is the existing <b>3-slot anvil</b>
+    instead of a hex honeycomb.</p>
+
+    <h3>Per-band anatomy (FORGE)</h3>
+    <p><span class="tag">left</span> hero tag: portrait · name · HP · ULT · level &nbsp;
+       <span class="tag">center</span> the 3-slot anvil &nbsp;
+       <span class="tag">right</span> that hero's lane foe + weakness telegraph &nbsp;
+       <span class="tag">under anvil</span> active recipe chips.</p>
+
+    <h3>The slot rename (new, both 2_ &amp; 2b_)</h3>
+    <p>Backend ids are always <code>head</code> · <code>rune</code> · <code>body</code>. The visible labels for
+    <code>head</code> and <code>body</code> change with the hero's weapon type; <b>only "Rune" is constant</b>:</p>
+    <p>Bran (sword): <b>Hilt · Rune · Blade</b> &nbsp;·&nbsp; Elara (staff): <b>Shaft · Rune · Orb</b> &nbsp;·&nbsp;
+       Vex (daggers): <b>Grip · Rune · Fang</b>.</p>
+    <p>✓ <b>Confirmed:</b> <code>head</code> = handle end (Hilt/Grip), <code>body</code> = business end (Blade/Bow).
+       Helmet-type parts are gone — <b>all 3 slots are weapon-anatomy parts now.</b></p>
+
+    <h3>Locked heroes</h3>
+    <p>✓ <b>Confirmed:</b> all 3 boards are always present; an un-recruited hero (Vex here) is <b>greyed with no
+       hero/weapon info</b> — just a locked shell — until owned. See the bottom band.</p>
+
+    <h3>BATTLE view</h3>
+    <p>Same vertical stack: 3 hero lanes (hero ▸ attack ▸ foe) take the top ~60%; each anvil collapses to a
+    read-only mini-board beneath its lane so you still see what's firing. Battle log + speed controls at the bottom.</p>
+
+    <h3>Still to decide (after you see it on screen)</h3>
+    <p class="q">▸ Band density: at 3 bands the anvil slots are ~62px tall. Keeping as-is for now per your call —
+       flag if non-focused bands should collapse to a slimmer summary until tapped.</p>
+  </div>
+
+<script>
+const HEROES = [
+  { id:"bran", cls:"bran", name:"Bran", face:"🛡️", lv:3, hp:100, ult:50, weapon:"Sword",
+    labels:["Hilt","Rune","Blade"], runes:["⚙️","🔥","🗡️"],
+    parts:[["Iron Hilt","+30 ATK"],["Fire Rune","+25 ATK"],["Steel Blade","+40 ATK"]],
+    foe:{face:"🟢",name:"Slime",weak:"WEAK: Fire",resist:"resists Ice"},
+    recipes:[["Inferno","ATK +10%","r"],["Steamburst","CRIT +5%","steam"]],
+    atk:"320", move:"Arc Slash", dmg:"320 CRIT!", dmgcol:"var(--fire)" },
+  { id:"elara", cls:"elara", name:"Elara", face:"❄️", lv:2, hp:80, ult:70, weapon:"Staff",
+    labels:["Shaft","Rune","Orb"], runes:["🪵","❄️","🔮"],
+    parts:[["Oak Shaft","+20 ATK"],["Frost Rune","+25 ATK"],["Ice Orb","+35 ATK"]],
+    foe:{face:"💀",name:"Skeleton",weak:"WEAK: Ice",resist:"resists Fire"},
+    recipes:[["Frostbite","SLOW 3s","steam"]],
+    atk:"180", move:"Frostbolt", dmg:"180", dmgcol:"var(--ice)" },
+  { id:"vex", cls:"vex", name:"Vex", face:"🗡️", lv:1, hp:90, ult:40, weapon:"Daggers",
+    labels:["Grip","Rune","Fang"], runes:["✋","🟣","🦷"],
+    parts:[["Razor Grip","+28 ATK"],["Pierce Rune","+22 ATK"],["Venom Fang","+30 ATK"]],
+    foe:{face:"👺",name:"Goblin",weak:"WEAK: Pierce",resist:"resists none"},
+    recipes:[["Venom","DOT 4s","r"]],
+    atk:"240", move:"Backstab", dmg:"240", dmgcol:"var(--vex)", locked:true },
+];
+const SHOP = [["🪖","Fire Helm","60G"],["❄️","Ice Shard","45G"],["🛡️","Earth Shield","30G"],["🔥","Fire Rune","50G"],["💚","Potion","25G"]];
+
+let selSlot = null;
+
+function lockedForgeBand(){
+  const slots = [0,1,2].map(()=>`<div class="slot empty" style="cursor:default">
+      <div class="sicon">🔒</div><div class="slabel">—</div><div class="sname">&nbsp;</div></div>`).join("");
+  return `<div class="band locked">
+    <div class="bandgrid">
+      <div class="htag">
+        <div class="hname"><span class="dot" style="background:#5a4632"></span>???</div>
+        <div class="face">❔</div>
+        <div class="resist" style="font-size:9px">Locked</div>
+      </div>
+      <div class="anvil"><div class="anvil-h">— · anvil</div><div class="slots">${slots}</div></div>
+      <div class="foe"><div class="resist" style="text-align:center">Recruit at<br>Wave 5</div></div>
+    </div></div>`;
+}
+function forgeBand(h){
+  if(h.locked) return lockedForgeBand();
+  const slots = h.labels.map((lab,i)=>{
+    const isRune = i===1;
+    const [pn,ps] = h.parts[i];
+    const key = h.id+"-"+i;
+    return `<div class="slot ${isRune?'rune':''} ${selSlot===key?'sel':''}" onclick="pick('${key}')">
+      <div class="sicon">${h.runes[i]}</div>
+      <div class="slabel">${lab}</div>
+      <div class="sname">${pn}</div>
+      <div class="sstat">${ps}</div></div>`;
+  }).join("");
+  const chips = h.recipes.map(r=>`<span class="chip ${r[2]==='steam'?'steam':''}">${r[0]} · ${r[1]}</span>`).join("");
+  return `<div class="band ${h.cls} ${h.id==='vex'?'':''}">
+    <div class="rail"></div>
+    <div class="bandgrid">
+      <div class="htag">
+        <div class="hname"><span class="dot"></span>${h.name} <span class="lv">L${h.lv}</span></div>
+        <div class="face">${h.face}</div>
+        <div class="barlbl"><span>HP</span><span>${h.hp}%</span></div><div class="bar hp"><i style="width:${h.hp}%"></i></div>
+        <div class="barlbl"><span>ULT</span><span>${h.ult}%</span></div><div class="bar ult"><i style="width:${h.ult}%"></i></div>
+      </div>
+      <div class="anvil">
+        <div class="anvil-h">${h.weapon} · anvil</div>
+        <div class="slots">${slots}</div>
+      </div>
+      <div class="foe">
+        <div class="foeface">${h.foe.face}</div>
+        <div class="foename">${h.foe.name}</div>
+        <div class="weak">${h.foe.weak}</div>
+        <div class="resist">${h.foe.resist}</div>
+      </div>
+      <div class="recipes">${chips}</div>
+    </div></div>`;
+}
+
+function battleBand(h){
+  if(h.locked){
+    return `<div class="band locked"><div class="lane">
+      <div class="fighter"><div class="face">❔</div></div>
+      <div class="vfx"><span class="resist">Locked — recruit at Wave 5</span></div>
+      <div class="fighter"></div></div></div>`;
+  }
+  const mini = h.labels.map((lab,i)=>`<div class="slot ${i===1?'rune':''}">
+      <div class="sicon">${h.runes[i]}</div><div class="slabel">${lab}</div>
+      <div class="sname">${h.parts[i][0]}</div></div>`).join("");
+  return `<div class="band ${h.cls}">
+    <div class="rail"></div>
+    <div class="lane">
+      <div class="fighter">
+        <div class="face">${h.face}</div>
+        <div class="bar hp" style="width:56px"><i style="width:${h.hp}%"></i></div>
+        <div class="bar ult" style="width:56px"><i style="width:${h.ult}%"></i></div>
+      </div>
+      <div class="vfx">
+        <span class="swipe" style="color:${h.dmgcol}">${h.move} →</span>
+        <span class="dmg" style="color:${h.dmgcol}">${h.dmg}</span>
+      </div>
+      <div class="fighter">
+        <div class="foeface">${h.foe.face}</div>
+        <div class="bar hp" style="width:46px;--c:var(--enemy)"><i style="width:60%;background:var(--enemy)"></i></div>
+      </div>
+    </div>
+    <div class="mini">${mini}</div>
+  </div>`;
+}
+
+function render(){
+  document.getElementById("forgeView").innerHTML = HEROES.map(forgeBand).join("");
+  document.getElementById("battleView").innerHTML =
+    `<div class="battlelog">[LOG] Elara casts Frostbolt! Skeleton slowed (3s).</div>` +
+    HEROES.map(battleBand).join("");
+  document.getElementById("shop").innerHTML = SHOP.map(s=>
+    `<div class="shoptile"><div class="sicon">${s[0]}</div><div class="sname">${s[1]}</div><div class="cost">${s[2]}</div></div>`).join("");
+}
+function pick(k){ selSlot = (selSlot===k)?null:k; render(); }
+function setView(v){
+  const forge = v==='forge';
+  document.getElementById("forgeView").classList.toggle("hidden",!forge);
+  document.getElementById("battleView").classList.toggle("hidden",forge);
+  document.getElementById("tray").classList.toggle("hidden",!forge);
+  document.getElementById("battlebar").classList.toggle("hidden",forge);
+  document.getElementById("bForge").classList.toggle("on",forge);
+  document.getElementById("bBattle").classList.toggle("on",!forge);
+  document.getElementById("stagePill").textContent = forge ? "Stage 1 · Wave 3 — forge up" : "Stage 1 · Wave 3 — in battle";
+}
+render();
+</script>
+</body>
+</html>

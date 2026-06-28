@@ -33,6 +33,7 @@ This monorepo's branch-naming convention follows the global policy in `~/.claude
 | `1_Robotek_WeaponCraft/` | `robotek` |
 | `2_WeaponCraft_Base/` | `weaponcraft-base` |
 | `2_Weaponcraft_Godot/` | `weaponcraft-godot` |
+| `2b_Weaponcraft_VerticalUI/` | `weaponcraft-vertical-ui` |
 | `3_WeaponCraft_RealTime/` | `weaponcraft-realtime` |
 | `4_WeaponCraft_ForgeLoop/` | `forgeloop` |
 | `5_WeaponForge_Honkai_Godot/` | `weaponforge-honkai` |
@@ -54,7 +55,7 @@ The global TDD-on-exit-plan policy applies here. Specifically for Godot: adding 
 
 ## Sub-project rules
 
-Each sub-project owns its own `CLAUDE.md` for project-specific scope (SSOT pointers, active vs frozen status, dying-vs-surviving code lists, sub-project-specific engine notes). The current active project is **`6_WeaponForge_TFTransistor/`**; see [`6_WeaponForge_TFTransistor/CLAUDE.md`](6_WeaponForge_TFTransistor/CLAUDE.md) for its rules.
+Each sub-project owns its own `CLAUDE.md` for project-specific scope (SSOT pointers, active vs frozen status, dying-vs-surviving code lists, sub-project-specific engine notes). Active projects: **`6_WeaponForge_TFTransistor/`** (see [`6_WeaponForge_TFTransistor/CLAUDE.md`](6_WeaponForge_TFTransistor/CLAUDE.md)) and — **reactivated 2026-06-28** — **`2_Weaponcraft_Godot/`** (unfrozen for a 3-hero vertical-layout UI reskin; see [`2_Weaponcraft_Godot/CLAUDE.md`](2_Weaponcraft_Godot/CLAUDE.md)).
 
 ## Cross-variant prototype lessons
 

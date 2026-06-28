@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponCraft — Vertical UI v2 (Forge + Battle, ref-matched)</title>
+<style>
+  :root{
+    --bg:#140d07; --wood:#4a3220; --wood2:#2e1d10; --wood3:#241710;
+    --gold:#d9a93f; --gold-hi:#f0d27a; --gold-lo:#7a5418;
+    --ink:#f4e8d2; --ink-dim:#c2ab85; --ink-mute:#8a7256;
+    --grass:#6fa544; --grass2:#4a7a30; --gridline:#3f6328;
+    --bran:#e0a23c; --elara:#58c5e8; --vex:#9b6cf0;
+    --hp:#5fc24a; --ult:#e7b53c; --enemy:#d23a3a; --hp-bg:#241710;
+    --fire:#e8632e; --water:#2f9be0; --rock:#b08850; --ice:#8fd0e8; --bolt:#f0c63a; --light:#f5e9c0; --arcane:#a060d0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0c0905;color:var(--ink);
+    font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 10px 50px}
+  h1{font-size:15px;margin:2px 0 0} .sub{font-size:11.5px;color:var(--ink-dim);margin:0;text-align:center;max-width:560px}
+  .toggle{display:flex;gap:8px}
+  .toggle button{background:var(--wood2);color:var(--ink);border:1px solid var(--gold-lo);border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
+  .toggle button.on{background:linear-gradient(var(--gold-hi),var(--gold));color:#3a2408;border-color:var(--gold-lo);font-weight:bold}
+
+  .phone{width:404px;max-width:97vw;height:854px;position:relative;overflow:hidden;border-radius:30px;
+    border:3px solid #000;background:#140d07;box-shadow:0 16px 44px rgba(0,0,0,.65), inset 0 0 0 2px #2e1d10;
+    display:flex;flex-direction:column}
+
+  /* ---- generic framed gold panel ---- */
+  .panel{background:linear-gradient(180deg,var(--wood),var(--wood2));
+    border:2px solid var(--gold-lo);border-radius:12px;box-shadow:inset 0 0 0 1px rgba(240,210,122,.18)}
+
+  /* ===================== TOP BARS ===================== */
+  .topbar{flex:0 0 auto;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;
+    padding:8px 10px;background:linear-gradient(#2a1c10,#1c1208);border-bottom:2px solid var(--gold-lo)}
+  .badge{display:flex;flex-direction:column;align-items:center;justify-content:center;width:48px;height:46px;
+    background:radial-gradient(circle at 50% 35%,#5a86c0,#2a4f86);border:2px solid var(--gold);border-radius:10px;
+    font-size:9px;font-weight:bold;color:#fff;line-height:1}
+  .badge b{font-size:15px}
+  .ribbon{justify-self:center;text-align:center;font-weight:bold;letter-spacing:1px;color:var(--gold-hi);
+    text-shadow:0 1px 0 #000;font-size:17px;background:linear-gradient(#6a4a20,#3a2610);
+    border:2px solid var(--gold);border-radius:20px;padding:5px 20px;box-shadow:0 0 12px rgba(217,169,63,.3)}
+  .waveinfo{text-align:right;font-size:9.5px;color:var(--ink-dim);line-height:1.25}
+  .waveinfo b{color:#ff8a4a} .timer{color:var(--gold)}
+  .ctrls{display:flex;gap:4px}
+  .ctrls span{background:var(--wood2);border:1px solid var(--gold-lo);border-radius:6px;padding:3px 7px;font-size:11px}
+  .chain{justify-self:center;width:62px;height:62px;border-radius:50%;border:3px solid var(--gold);
+    background:radial-gradient(circle at 50% 35%,#3a6ab0,#1e2f5a);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:9px;font-weight:bold;color:#fff;box-shadow:0 0 16px rgba(90,140,255,.5)} .chain b{font-size:18px;color:var(--gold-hi)}
+
+  /* ===================== DIORAMA / BATTLE BOARD ===================== */
+  .board{position:relative;background:
+      repeating-linear-gradient(0deg,transparent 0 47px,rgba(0,0,0,.13) 47px 49px),
+      repeating-linear-gradient(90deg,transparent 0 47px,rgba(0,0,0,.13) 47px 49px),
+      linear-gradient(160deg,var(--grass),var(--grass2));
+    border-bottom:3px solid #2a1c10}
+  .diorama{flex:1 1 auto;min-height:178px}
+  .nametag{font-size:9px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:1px 7px}
+  .figbody{font-size:34px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+  .runestone{position:absolute;top:8px;font-size:15px;opacity:.5}
+  /* matchup: heroes left, enemies (with weakness) right */
+  .matchup{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:12px 22px}
+  .mside{display:flex;flex-direction:column;gap:14px}
+  .mhero{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .mfoe{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+  .efig{font-size:30px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+  .weakpill{font-size:9px;font-weight:bold;background:rgba(20,10,6,.7);border:1px solid #000;border-radius:9px;padding:2px 7px;color:#ffd24a;white-space:nowrap}
+
+  /* ===================== FORGE ROWS ===================== */
+  .scroll{flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column}
+  .scroll::-webkit-scrollbar{width:6px}.scroll::-webkit-scrollbar-thumb{background:#5a4226;border-radius:3px}
+  .forgewrap{padding:8px;display:flex;flex-direction:column;gap:7px}
+  .frow{display:grid;grid-template-columns:74px 1fr;gap:8px;align-items:center;padding:7px;}
+  .frow.locked{opacity:.45;filter:grayscale(.6)}
+  .pcol{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .portrait{width:54px;height:54px;border-radius:50%;border:3px solid var(--gold);background:#15100c;
+    display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 0 0 2px #2e1d10,0 2px 6px rgba(0,0,0,.5)}
+  .frow.bran .portrait{border-color:var(--bran)} .frow.elara .portrait{border-color:var(--elara)} .frow.vex .portrait{border-color:var(--vex)}
+  .bars{width:62px;display:flex;flex-direction:column;gap:2px}
+  .bar{height:6px;border-radius:4px;background:var(--hp-bg);overflow:hidden;border:1px solid #000}
+  .bar > i{display:block;height:100%}
+  .bar.hp > i{background:linear-gradient(#7de05f,var(--hp))} .bar.ult > i{background:linear-gradient(#7fd0f0,#2f9be0)}
+  .tagrow{display:flex;gap:4px;align-items:center}
+  .atkpill{font-size:10px;font-weight:bold;color:#2a1a08;background:linear-gradient(var(--gold-hi),var(--gold));
+    border-radius:9px;padding:1px 8px;border:1px solid var(--gold-lo)}
+  .atkpill .sw{font-size:9px}
+  .ultbtn{font-size:11px;font-weight:bold;color:#eaf6ff;background:linear-gradient(#5fc3ec,#2f9be0);
+    border:1px solid #1c6fa0;border-radius:9px;padding:1px 8px;cursor:pointer;box-shadow:0 0 8px rgba(79,182,224,.45)}
+
+  .slots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .slot{position:relative;aspect-ratio:1;border-radius:12px;cursor:pointer;
+    background:radial-gradient(circle at 50% 35%,#3a2a1a,#1d130b);border:2px solid var(--gold-lo);
+    display:flex;align-items:center;justify-content:center;font-size:30px;transition:transform .05s,border-color .1s}
+  .slot:hover{border-color:var(--gold)} .slot:active{transform:scale(.96)}
+  .slot.sel{border-color:var(--gold-hi);box-shadow:0 0 12px rgba(240,210,122,.5)}
+  .slot.rune{border-color:#7a5a9a;background:radial-gradient(circle at 50% 35%,#3a2a4a,#1d1326)}
+  .slot.empty{font-size:20px;color:#5a4630}
+  /* click-reveal stat caption under the rune */
+  .scap{position:absolute;left:-2px;right:-2px;top:calc(100% + 3px);z-index:5;
+    background:#120c07;border:1px solid var(--gold);border-radius:8px;padding:3px 4px;text-align:center;
+    font-size:8.5px;line-height:1.25;display:none;box-shadow:0 4px 10px rgba(0,0,0,.6)}
+  .slot.sel .scap{display:block}
+  .scap .nm{font-weight:bold;color:var(--gold-hi)} .scap .lb{color:var(--ink-mute);text-transform:uppercase;letter-spacing:.5px}
+  .scap .at{color:var(--hp)}
+
+  .lockcap{grid-column:1 / -1;text-align:center;font-size:10px;color:var(--ink-mute)}
+
+  /* ===================== SHOP RACK ===================== */
+  .shoprack{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:8px;margin:0 8px}
+  .stile{background:radial-gradient(circle at 50% 30%,#3a2a1a,#1d130b);border:1.5px solid var(--gold-lo);
+    border-radius:9px;padding:5px 2px 4px;text-align:center;cursor:pointer}
+  .stile:hover{border-color:var(--gold)}
+  .stile .ic{font-size:19px} .stile .nm{font-size:7px;color:var(--ink-dim);line-height:1.05;height:16px;overflow:hidden}
+  .stile .at{font-size:7.5px;color:var(--hp)} .stile .gp{font-size:8.5px;color:var(--gold);font-weight:bold}
+
+  /* ===================== BOTTOM BAR ===================== */
+  .botbar{flex:0 0 auto;display:grid;grid-template-columns:auto auto 1fr;gap:8px;align-items:center;
+    padding:9px 10px;background:linear-gradient(#2a1c10,#1c1208);border-top:2px solid var(--gold-lo)}
+  .goldtot{font-size:14px;font-weight:bold;color:var(--gold)}
+  .reroll{background:linear-gradient(#caa24a,#9a7424);border:1px solid var(--gold-lo);border-radius:8px;
+    padding:6px 10px;font-size:10px;color:#2a1a08;font-weight:bold;cursor:pointer;text-align:center;line-height:1.1}
+  .startwave{background:linear-gradient(var(--gold-hi),var(--gold));color:#341f06;border:2px solid var(--gold-lo);
+    border-radius:10px;padding:10px;font-size:14px;font-weight:bold;letter-spacing:.5px;cursor:pointer;text-align:center;
+    box-shadow:0 0 14px rgba(217,169,63,.35)}
+
+  /* ===================== BATTLE: rails ===================== */
+  .battlegrid{flex:1 1 auto;position:relative;min-height:320px}
+  .gbars{width:46px;display:flex;flex-direction:column;gap:2px;margin-top:2px}
+  .gcell{position:absolute;display:flex;flex-direction:column;align-items:center}
+  .enemy{font-size:26px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.5))}
+  .ehp{width:30px;height:4px;background:#3a1010;border:1px solid #000;border-radius:2px;overflow:hidden;margin-top:1px}
+  .ehp>i{display:block;height:100%;background:var(--enemy)}
+  .status{position:absolute;font-size:10px;font-weight:bold;text-shadow:0 1px 2px #000}
+  .vfxline{position:absolute;height:3px;border-radius:2px}
+
+  .raillabel{font-size:8px;letter-spacing:1.5px;color:#b48; text-align:center;background:#1c1208;
+    padding:2px;border-top:1px solid var(--gold-lo);border-bottom:1px solid var(--gold-lo);text-transform:uppercase}
+  .weaponrail{padding:5px 8px;display:flex;flex-direction:column;gap:5px;background:linear-gradient(#3a2616,#241710)}
+  .wrow{display:flex;gap:9px;align-items:center}
+  .wrow.locked{opacity:.4;filter:grayscale(.6)}
+  .wportrait{width:34px;height:34px;border-radius:50%;border:2px solid var(--gold);background:#15100c;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .wrow.bran .wportrait{border-color:var(--bran)} .wrow.elara .wportrait{border-color:var(--elara)} .wrow.vex .wportrait{border-color:var(--vex)}
+  .wslots{display:flex;gap:3px}
+  .wslot{width:26px;height:26px;border-radius:6px;background:#241710;border:1px solid var(--gold-lo);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .wslot.rune{border-color:#7a5a9a}
+  .whp{display:flex;flex-direction:column;gap:2px} .whp .bar{height:8px}
+  .ultpips{display:flex;gap:2px} .ultpips i{width:9px;height:14px;border-radius:2px;background:#2e1d10;border:1px solid var(--gold-lo)}
+  .ultpips i.on{background:var(--ult)}
+
+  .shoprail{display:flex;align-items:center;gap:5px;padding:7px 8px;background:linear-gradient(#2a1c10,#1c1208);border-top:2px solid var(--gold-lo)}
+  .shoprail .goldtot{font-size:11px}
+  .railtiles{display:flex;gap:4px;flex:1}
+  .railtile{width:30px;height:30px;border-radius:7px;background:#241710;border:1px solid var(--gold-lo);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .railtile.empty{opacity:.4}
+
+  .hidden{display:none !important}
+  .notes{max-width:560px;font-size:11.5px;color:var(--ink-dim);line-height:1.5}
+  .notes h3{color:var(--ink);font-size:13px;margin:13px 0 3px}
+  .notes code{background:#241710;padding:1px 5px;border-radius:4px;color:#e7c98a;font-size:11px}
+  .notes .q{color:#ffd24a}
+</style>
+</head>
+<body>
+  <h1>WeaponCraft — Vertical UI v2</h1>
+  <p class="sub">Layout matched to <code>Forge_State</code> + <code>In_Battle</code>. Bars only (no numbers) ·
+     cumulative ATK under each portrait · runes are icon-only, <b>click a rune</b> to reveal its stats ·
+     names/ATK/gold live in the shop.</p>
+  <div class="toggle">
+    <button id="bForge" class="on" onclick="setView('forge')">⚒️ FORGE</button>
+    <button id="bBattle" onclick="setView('battle')">⚔️ IN-BATTLE</button>
+  </div>
+
+  <!-- ================= FORGE ================= -->
+  <div class="phone" id="forgePhone">
+    <div class="topbar">
+      <div class="badge">STAGE<b>4</b></div>
+      <div class="ribbon">Forge</div>
+      <div class="waveinfo"><b>WAVE 5</b><br>INCOMING 👹<br><span class="timer">⏱ 00:45</span></div>
+    </div>
+    <div class="board diorama">
+      <div class="runestone" style="left:6px">ᚠ</div><div class="runestone" style="left:6px;top:60px">ᚱ</div>
+      <div class="runestone" style="right:6px">ᚷ</div><div class="runestone" style="right:6px;top:60px">ᛟ</div>
+      <div class="matchup">
+        <div class="mside heroes" id="dioHeroes"></div>
+        <div class="mside foes" id="dioFoes"></div>
+      </div>
+    </div>
+    <div class="forgewrap" id="forgeRows"></div>
+    <div class="shoprack" id="shopRack"></div>
+    <div class="botbar">
+      <div class="goldtot">🪙 1250G</div>
+      <div class="reroll">RE-ROLL<br>50G</div>
+      <div class="startwave">⚒️ START NEXT WAVE</div>
+    </div>
+  </div>
+
+  <!-- ================= IN-BATTLE ================= -->
+  <div class="phone hidden" id="battlePhone">
+    <div class="topbar">
+      <div class="waveinfo" style="text-align:left">WAVE<br><b style="color:var(--gold)">2 / 3</b></div>
+      <div></div>
+      <div class="ctrls"><span>STAGE 4</span><span>⏸</span><span>⏩2×</span></div>
+    </div>
+    <div class="board battlegrid" id="battleGrid"></div>
+    <div class="raillabel">Weapon Rail (collapsed forge)</div>
+    <div class="weaponrail" id="weaponRail"></div>
+  </div>
+
+  <div class="notes">
+    <h3>FORGE — matches <code>Forge_State.jpeg</code></h3>
+    <p>Top bar (Stage · FORGE BREAK · Wave incoming + timer) → hero diorama on the green board →
+       3 hero forge rows (circular portrait + HP/ULT bars + <b>cumulative ATK pill</b>, then 3 framed rune slots)
+       → 7-tile shop rack with gold costs → bottom bar (gold · RE-ROLL · START NEXT WAVE).</p>
+    <p class="q">▸ Rune slots are clean icons. Click one to reveal <b>anatomy label + name + ATK</b> under it.
+       Backend ids stay <code>head·rune·body</code>; the label is weapon-anatomy (Bran Hilt/Rune/Blade,
+       Elara Shaft/Rune/Orb, Vex Grip/Rune/Fang). Vex = locked greyed shell.</p>
+    <h3>IN-BATTLE — matches <code>In_Battle.png</code></h3>
+    <p>Top bar (Wave x/y · combo badge · Stage · pause/×2) → battle grid (~55%: heroes left column, enemies on
+       the board, status FX + attack VFX) → <b>Region 3 Weapon Rail</b> = collapsed forge (portrait + 3 mini
+       slots + HP bar + ULT pips per hero) → <b>Region 4 Shop Rail</b> (gold · tiles · re-roll).</p>
+    <p class="q">▸ Battle top-center badge = "COMBO ×3" placeholder (the ref's "CHAIN ×3" is a 6_TFT mechanic).
+       WeaponCraft equivalent TBD. ▸ HP "1200/1200" numbers from the ref are removed per your feedback — bars only.</p>
+  </div>
+
+<script>
+const HEROES = [
+  { id:"elara", cls:"elara", name:"Elara", face:"🧙‍♀️", hp:80, ult:70, ultpips:[1,1,0],
+    slots:[ {ic:"🪵",lb:"Shaft",nm:"Oak Shaft",at:20},{ic:"❄️",lb:"Rune",nm:"Frost Rune",at:25},{ic:"🔮",lb:"Orb",nm:"Ice Orb",at:35} ] },
+  { id:"bran", cls:"bran", name:"Bran", face:"🛡️", hp:100, ult:50, ultpips:[1,0,0],
+    slots:[ {ic:"🔩",lb:"Hilt",nm:"Iron Hilt",at:30},{ic:"🔥",lb:"Rune",nm:"Fire Rune",at:25},{ic:"⚔️",lb:"Blade",nm:"Steel Blade",at:40} ] },
+  { id:"vex", cls:"vex", name:"Vex", face:"🗡️", locked:true },
+];
+HEROES.forEach(h=>{ if(!h.locked) h.atk = h.slots.reduce((s,x)=>s+x.at,0); });
+
+const SHOP = [
+  {ic:"🔥",nm:"Fire Rune",at:25,g:150,c:"--fire"},{ic:"💧",nm:"Water Rune",at:20,g:200,c:"--water"},
+  {ic:"🪨",nm:"Stone Rune",at:15,g:120,c:"--rock"},{ic:"❄️",nm:"Frost Rune",at:22,g:150,c:"--ice"},
+  {ic:"⚡",nm:"Bolt Rune",at:28,g:130,c:"--bolt"},{ic:"✨",nm:"Light Rune",at:18,g:160,c:"--light"},
+  {ic:"🔮",nm:"Arcane Rune",at:35,g:250,c:"--arcane"},
+];
+
+const ENEMIES = [ // col,row (0-2), emoji, hp%, status
+  {x:1,y:0,e:"💀",hp:80,st:["Chilled","#8fd0e8"]},
+  {x:2,y:0,e:"💀",hp:60,st:["STEAM!","#dfe7ea"]},
+  {x:1,y:1,e:"👺",hp:70,st:["Burning","#ff8a4a"]},
+  {x:2,y:1,e:"👺",hp:90,st:["Wet","#2f9be0"]},
+  {x:1,y:2,e:"👺",hp:55,st:null},
+  {x:2,y:2,e:"🟢",hp:75,st:["Chilled","#8fd0e8"]},
+];
+
+let sel = null; // "heroid-slotidx"
+
+const FOES = [
+  {e:"💀",nm:"Skeleton",wk:"❄️ Ice"},
+  {e:"👹",nm:"Goblin",wk:"🔥 Fire"},
+  {e:"🟢",nm:"Slime",wk:"🗡️ Pierce"},
+];
+function dioramaHeroes(){
+  return HEROES.map(h=>`<div class="mhero">
+    <span class="nametag">${h.locked?'???':h.name}</span>
+    <span class="figbody" style="font-size:30px">${h.locked?'❔':h.face}</span></div>`).join("");
+}
+function dioramaFoes(){
+  return FOES.map(f=>`<div class="mfoe">
+    <span class="weakpill">WEAK ${f.wk}</span>
+    <span class="efig">${f.e}</span></div>`).join("");
+}
+function forgeRow(h){
+  if(h.locked){
+    const empt=[0,1,2].map(()=>`<div class="slot empty">🔒</div>`).join("");
+    return `<div class="frow panel locked">
+      <div class="pcol"><div class="portrait">❔</div></div>
+      <div class="slots">${empt}</div>
+      <div class="lockcap">Locked — recruit at Wave 5</div></div>`;
+  }
+  const slots=h.slots.map((s,i)=>{
+    const key=h.id+"-"+i, isR=i===1;
+    return `<div class="slot ${isR?'rune':''} ${sel===key?'sel':''}" onclick="pick('${key}')">
+      ${s.ic}
+      <div class="scap"><div class="lb">${s.lb}</div><div class="nm">${s.nm}</div><div class="at">+${s.at} ATK</div></div>
+    </div>`;}).join("");
+  return `<div class="frow panel ${h.cls}">
+    <div class="pcol">
+      <div class="portrait">${h.face}</div>
+      <div class="bars"><div class="bar hp"><i style="width:${h.hp}%"></i></div><div class="bar ult"><i style="width:${h.ult}%"></i></div></div>
+      <div class="tagrow">
+        <div class="atkpill"><span class="sw">⚔</span> ${h.atk}</div>
+        <div class="ultbtn" title="Ult (${h.ult}%)">⚡</div>
+      </div>
+    </div>
+    <div class="slots">${slots}</div></div>`;
+}
+function weaponRow(h){
+  if(h.locked) return `<div class="wrow locked"><div class="wportrait">❔</div>
+    <div class="wslots">${[0,1,2].map(()=>'<div class="wslot">🔒</div>').join("")}</div></div>`;
+  const ws=h.slots.map((s,i)=>`<div class="wslot ${i===1?'rune':''}">${s.ic}</div>`).join("");
+  return `<div class="wrow ${h.cls}">
+    <div class="wportrait">${h.face}</div>
+    <div class="wslots">${ws}</div></div>`;
+}
+function render(){
+  document.getElementById("dioHeroes").innerHTML = dioramaHeroes();
+  document.getElementById("dioFoes").innerHTML = dioramaFoes();
+  document.getElementById("forgeRows").innerHTML = HEROES.map(forgeRow).join("");
+  document.getElementById("shopRack").innerHTML = SHOP.map(s=>
+    `<div class="stile" style="border-color:var(${s.c})">
+      <div class="ic">${s.ic}</div><div class="nm">${s.nm}</div><div class="at">+${s.at}</div><div class="gp">${s.g}G</div></div>`).join("");
+  document.getElementById("weaponRail").innerHTML = HEROES.map(weaponRow).join("");
+  // battle grid (percentage-positioned so it fills the full height)
+  const heroesCol = HEROES.map((h,i)=>{
+    const top=7+i*31;
+    const bars = h.locked ? "" :
+      `<div class="gbars"><div class="bar hp"><i style="width:${h.hp}%"></i></div><div class="bar ult"><i style="width:${h.ult}%"></i></div></div>`;
+    return `<div class="gcell" style="left:5%;top:${top}%">
+      <span class="figbody" style="font-size:34px">${h.locked?'❔':h.face}</span>${bars}</div>`;
+  }).join("");
+  const en = ENEMIES.map(m=>{
+    const left=34+(m.x-1)*24, top=7+m.y*31;
+    const st = m.st?`<div class="status" style="left:${left}%;top:${top-4}%;color:${m.st[1]}">${m.st[0]}</div>`:"";
+    return `<div class="gcell" style="left:${left}%;top:${top}%"><span class="enemy">${m.e}</span>
+       <div class="ehp"><i style="width:${m.hp}%"></i></div></div>${st}`;
+  }).join("");
+  const vfx = `<div class="vfxline" style="left:16%;top:13%;width:18%;background:linear-gradient(90deg,transparent,#ff8a4a)"></div>
+               <div class="vfxline" style="left:14%;top:75%;width:22%;background:linear-gradient(90deg,transparent,#7fd0ff);height:4px"></div>`;
+  document.getElementById("battleGrid").innerHTML = heroesCol + en + vfx;
+}
+function pick(k){ sel = (sel===k)?null:k; render(); }
+function setView(v){
+  const f=v==='forge';
+  document.getElementById("forgePhone").classList.toggle("hidden",!f);
+  document.getElementById("battlePhone").classList.toggle("hidden",f);
+  document.getElementById("bForge").classList.toggle("on",f);
+  document.getElementById("bBattle").classList.toggle("on",!f);
+}
+render();
+</script>
+</body>
+</html>

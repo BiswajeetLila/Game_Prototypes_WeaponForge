@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeaponCraft — Vertical UI v3 (Interactive)</title>
+<style>
+:root{
+  --bg:#140d07; --wood:#4a3220; --wood2:#2e1d10; --wood3:#241710;
+  --gold:#d9a93f; --gold-hi:#f0d27a; --gold-lo:#7a5418;
+  --ink:#f4e8d2; --ink-dim:#c2ab85; --ink-mute:#8a7256;
+  --grass:#6fa544; --grass2:#4a7a30;
+  --bran:#e0a23c; --elara:#58c5e8; --vex:#9b6cf0;
+  --hp:#5fc24a; --ult:#2f9be0; --enemy:#d23a3a; --hp-bg:#241710;
+  --fire:#e8632e; --water:#2f9be0; --rock:#b08850; --ice:#8fd0e8; --bolt:#f0c63a; --light:#f5e9c0; --arcane:#a060d0;
+  --t-head:#d9a93f; --t-rune:#9b6cf0; --t-body:#5fc24a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0c0905;color:var(--ink);
+  font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;
+  display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 10px 60px}
+h1{font-size:15px;margin:2px 0 0}
+.sub{font-size:11px;color:var(--ink-dim);margin:0;text-align:center;max-width:520px;line-height:1.5}
+.sub b{color:var(--gold)}
+
+.toggle{display:flex;gap:8px}
+.toggle button{background:var(--wood2);color:var(--ink);border:1px solid var(--gold-lo);
+  border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
+.toggle button.on{background:linear-gradient(var(--gold-hi),var(--gold));color:#3a2408;
+  border-color:var(--gold-lo);font-weight:bold}
+.toggle button:hover:not(.on){border-color:var(--gold)}
+
+/* ====== PHONE FRAME ====== */
+.phone{width:404px;max-width:97vw;height:854px;overflow:hidden;border-radius:30px;
+  border:3px solid #000;background:#140d07;
+  box-shadow:0 16px 44px rgba(0,0,0,.65),inset 0 0 0 2px #2e1d10;
+  display:flex;flex-direction:column}
+
+.panel{background:linear-gradient(180deg,var(--wood),var(--wood2));
+  border:2px solid var(--gold-lo);border-radius:12px;
+  box-shadow:inset 0 0 0 1px rgba(240,210,122,.18)}
+
+/* ====== TOP BAR ====== */
+.topbar{flex:0 0 auto;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;
+  padding:8px 10px;background:linear-gradient(#2a1c10,#1c1208);border-bottom:2px solid var(--gold-lo)}
+.badge{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:48px;height:46px;background:radial-gradient(circle at 50% 35%,#5a86c0,#2a4f86);
+  border:2px solid var(--gold);border-radius:10px;font-size:9px;font-weight:bold;color:#fff;line-height:1}
+.badge b{font-size:15px}
+.ribbon{justify-self:center;text-align:center;font-weight:bold;letter-spacing:1px;color:var(--gold-hi);
+  text-shadow:0 1px 0 #000;font-size:17px;background:linear-gradient(#6a4a20,#3a2610);
+  border:2px solid var(--gold);border-radius:20px;padding:5px 20px;
+  box-shadow:0 0 12px rgba(217,169,63,.3)}
+.waveinfo{text-align:right;font-size:9.5px;color:var(--ink-dim);line-height:1.25}
+.waveinfo b{color:#ff8a4a} .timer{color:var(--gold)}
+.ctrls{display:flex;gap:4px}
+.ctrls span{background:var(--wood2);border:1px solid var(--gold-lo);border-radius:6px;padding:3px 7px;font-size:11px}
+
+/* ====== DIORAMA — absorbs vertical slack ====== */
+.board{position:relative;background:
+    repeating-linear-gradient(0deg,transparent 0 47px,rgba(0,0,0,.13) 47px 49px),
+    repeating-linear-gradient(90deg,transparent 0 47px,rgba(0,0,0,.13) 47px 49px),
+    linear-gradient(160deg,var(--grass),var(--grass2));
+  border-bottom:3px solid #2a1c10}
+.diorama{flex:1 1 auto;min-height:130px}
+.runestone{position:absolute;top:8px;font-size:15px;opacity:.5}
+.matchup{position:absolute;inset:0;display:flex;justify-content:space-between;
+  align-items:center;padding:12px 22px}
+.mside{display:flex;flex-direction:column;gap:10px}
+.mhero{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nametag{font-size:9px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px;padding:1px 7px}
+.mfoe{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+.efig{font-size:28px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+.weakpill{font-size:9px;font-weight:bold;background:rgba(20,10,6,.7);border:1px solid #000;
+  border-radius:9px;padding:2px 7px;color:#ffd24a;white-space:nowrap}
+
+/* ====== FORGE ROWS ====== */
+.forgewrap{flex:0 0 auto;padding:6px 8px;display:flex;flex-direction:column;gap:6px}
+.frow{display:grid;grid-template-columns:74px 1fr;gap:8px;align-items:center;padding:7px}
+.frow.locked{opacity:.45;filter:grayscale(.6)}
+.pcol{display:flex;flex-direction:column;align-items:center;gap:3px}
+.portrait{width:52px;height:52px;border-radius:50%;border:3px solid var(--gold);background:#15100c;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 0 0 2px #2e1d10,0 2px 6px rgba(0,0,0,.5)}
+.frow.bran  .portrait{border-color:var(--bran)}
+.frow.elara .portrait{border-color:var(--elara)}
+.frow.vex   .portrait{border-color:var(--vex)}
+.bars{width:60px;display:flex;flex-direction:column;gap:2px}
+.bar{height:6px;border-radius:4px;background:var(--hp-bg);overflow:hidden;border:1px solid #000}
+.bar>i{display:block;height:100%}
+.bar.hp>i{background:linear-gradient(#7de05f,var(--hp))}
+.bar.ult>i{background:linear-gradient(#7fd0f0,var(--ult))}
+.tagrow{display:flex;gap:4px;align-items:center}
+.atkpill{font-size:10px;font-weight:bold;color:#2a1a08;
+  background:linear-gradient(var(--gold-hi),var(--gold));
+  border-radius:9px;padding:1px 8px;border:1px solid var(--gold-lo)}
+.ultbtn{font-size:11px;font-weight:bold;color:#eaf6ff;
+  background:linear-gradient(#5fc3ec,#2f9be0);
+  border:1px solid #1c6fa0;border-radius:9px;padding:1px 8px;cursor:pointer;
+  box-shadow:0 0 8px rgba(79,182,224,.45)}
+
+/* ====== SLOTS ====== */
+.slots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.slot{position:relative;aspect-ratio:1;border-radius:12px;cursor:pointer;
+  background:radial-gradient(circle at 50% 35%,#3a2a1a,#1d130b);border:2px solid var(--gold-lo);
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  transition:transform .08s,border-color .12s,box-shadow .12s,opacity .12s;
+  user-select:none}
+.slot:active{transform:scale(.94)}
+.slot.rune{border-color:#7a5a9a;background:radial-gradient(circle at 50% 35%,#3a2a4a,#1d1326)}
+.slot.empty{color:#4a3828;font-size:18px}
+
+/* ---- shop-item-selected states ---- */
+/* compatible empty slot — pulses, ready to receive */
+.slot.recv{
+  border-color:var(--gold-hi) !important;
+  box-shadow:0 0 0 3px rgba(240,210,122,.35),inset 0 0 10px rgba(240,210,122,.08);
+  animation:recvpulse .75s ease-in-out infinite alternate}
+@keyframes recvpulse{to{box-shadow:0 0 0 7px rgba(240,210,122,.06),inset 0 0 10px rgba(240,210,122,.08)}}
+/* incompatible slot — dimmed */
+.slot.incompat{opacity:.3;cursor:not-allowed}
+
+/* ---- filled-slot stat card ---- */
+.slot.revealed{border-color:var(--gold-hi);box-shadow:0 0 14px rgba(240,210,122,.45)}
+.scap{position:absolute;left:-4px;right:-4px;top:calc(100% + 4px);z-index:10;
+  background:#120c07;border:1px solid var(--gold);border-radius:8px;
+  padding:4px 5px;text-align:center;font-size:8px;line-height:1.4;display:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.8)}
+.slot.revealed .scap{display:block}
+.scap .lb{color:var(--ink-mute);text-transform:uppercase;letter-spacing:.5px;font-size:7px}
+.scap .nm{font-weight:bold;color:var(--gold-hi);font-size:9px}
+.scap .at{color:var(--hp)}
+.scap .unsell{display:inline-block;margin-top:4px;font-size:8px;color:#ff8080;cursor:pointer;
+  background:rgba(255,60,60,.12);border:1px solid rgba(255,80,80,.4);border-radius:6px;padding:1px 7px}
+.scap .unsell:hover{background:rgba(255,60,60,.3)}
+
+.lockcap{grid-column:1/-1;text-align:center;font-size:10px;color:var(--ink-mute);padding-bottom:2px}
+
+/* ====== SHOP RACK ====== */
+.shopwrap{flex:0 0 auto;padding:0 8px 5px}
+.shoplabel{font-size:8px;letter-spacing:1.5px;color:var(--ink-mute);text-transform:uppercase;
+  padding:3px 0 4px;text-align:center}
+.shoprack{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.stile{background:radial-gradient(circle at 50% 30%,#3a2a1a,#1d130b);
+  border:1.5px solid var(--gold-lo);border-radius:9px;padding:5px 2px 4px;
+  text-align:center;cursor:pointer;
+  transition:border-color .1s,transform .08s,box-shadow .12s,opacity .12s}
+.stile:active{transform:scale(.93)}
+.stile .ic{font-size:18px}
+.stile .nm{font-size:6.5px;color:var(--ink-dim);line-height:1.1;height:15px;overflow:hidden}
+.stile .at{font-size:7px;color:var(--hp)}
+.stile .gp{font-size:8px;color:var(--gold);font-weight:bold}
+.stile .tpill{font-size:6px;letter-spacing:.3px;text-transform:uppercase;padding:0 4px;
+  border-radius:4px;display:inline-block;margin-top:1px}
+.tpill.head{background:#4a3610;color:var(--t-head)}
+.tpill.rune{background:#2a1a3a;color:var(--t-rune)}
+.tpill.body{background:#1a3a10;color:var(--t-body)}
+/* selected shop tile */
+.stile.sel{
+  border-color:var(--gold-hi);
+  box-shadow:0 0 12px rgba(240,210,122,.5);
+  animation:shoppulse .75s ease-in-out infinite alternate}
+@keyframes shoppulse{to{box-shadow:0 0 22px rgba(240,210,122,.25)}}
+/* can't afford */
+.stile.broke{opacity:.45;cursor:not-allowed}
+.stile:not(.sel):not(.broke):hover{border-color:var(--gold)}
+
+/* ====== BOTTOM BAR ====== */
+.botbar{flex:0 0 auto;display:grid;grid-template-columns:auto auto 1fr;gap:8px;align-items:center;
+  padding:9px 10px;background:linear-gradient(#2a1c10,#1c1208);border-top:2px solid var(--gold-lo)}
+.goldtot{font-size:14px;font-weight:bold;color:var(--gold)}
+.reroll{background:linear-gradient(#caa24a,#9a7424);border:1px solid var(--gold-lo);
+  border-radius:8px;padding:6px 10px;font-size:10px;color:#2a1a08;font-weight:bold;
+  cursor:pointer;text-align:center;line-height:1.1}
+.reroll:active{transform:scale(.95)}
+.reroll.broke{opacity:.45;cursor:not-allowed}
+.startwave{background:linear-gradient(var(--gold-hi),var(--gold));color:#341f06;
+  border:2px solid var(--gold-lo);border-radius:10px;padding:10px;font-size:13px;
+  font-weight:bold;letter-spacing:.5px;cursor:pointer;text-align:center;
+  box-shadow:0 0 14px rgba(217,169,63,.35)}
+.startwave:active{transform:scale(.97)}
+
+/* ====== BATTLE ====== */
+.battlegrid{flex:1 1 auto;position:relative;min-height:320px}
+.gbars{width:44px;display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.gcell{position:absolute;display:flex;flex-direction:column;align-items:center}
+.enemy{font-size:24px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.5))}
+.ehp{width:28px;height:4px;background:#3a1010;border:1px solid #000;
+  border-radius:2px;overflow:hidden;margin-top:1px}
+.ehp>i{display:block;height:100%;background:var(--enemy)}
+.status{position:absolute;font-size:9px;font-weight:bold;text-shadow:0 1px 2px #000}
+.vfxline{position:absolute;height:3px;border-radius:2px}
+.raillabel{font-size:8px;letter-spacing:1.5px;color:var(--ink-mute);text-align:center;
+  background:#1c1208;padding:2px;
+  border-top:1px solid var(--gold-lo);border-bottom:1px solid var(--gold-lo);text-transform:uppercase}
+.weaponrail{padding:5px 8px;display:flex;flex-direction:column;gap:4px;
+  background:linear-gradient(#3a2616,#241710)}
+.wrow{display:flex;gap:9px;align-items:center}
+.wrow.locked{opacity:.35;filter:grayscale(.6)}
+.wportrait{width:32px;height:32px;border-radius:50%;border:2px solid var(--gold);
+  background:#15100c;display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0}
+.wrow.bran  .wportrait{border-color:var(--bran)}
+.wrow.elara .wportrait{border-color:var(--elara)}
+.wrow.vex   .wportrait{border-color:var(--vex)}
+.wslots{display:flex;gap:3px}
+.wslot{width:26px;height:26px;border-radius:6px;background:#241710;
+  border:1px solid var(--gold-lo);display:flex;align-items:center;justify-content:center;font-size:13px}
+.wslot.rune{border-color:#7a5a9a}
+.wslot.empty{color:#3a2818;font-size:9px}
+.botbar-battle{flex:0 0 auto;padding:8px 10px;
+  background:linear-gradient(#2a1c10,#1c1208);border-top:2px solid var(--gold-lo)}
+.endwave{background:linear-gradient(var(--gold-hi),var(--gold));color:#341f06;
+  border:2px solid var(--gold-lo);border-radius:10px;padding:11px;font-size:13px;
+  font-weight:bold;cursor:pointer;text-align:center;
+  box-shadow:0 0 14px rgba(217,169,63,.35);width:100%;display:block}
+.endwave:disabled{background:linear-gradient(#6a6a6a,#3a3a3a);color:#999;
+  border-color:#555;box-shadow:none;cursor:default}
+.endwave:not(:disabled):active{transform:scale(.98)}
+
+/* ====== TOAST ====== */
+#toast{position:fixed;bottom:68px;left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:rgba(20,10,5,.96);border:1px solid var(--gold);color:var(--ink);
+  padding:8px 18px;border-radius:20px;font-size:12px;z-index:9999;
+  opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{border-color:#d23a3a;color:#ff8080}
+
+/* ====== NOTES ====== */
+.notes{max-width:520px;font-size:11px;color:var(--ink-dim);line-height:1.6;padding:0 4px}
+.notes h3{color:var(--ink);font-size:13px;margin:14px 0 3px}
+.notes code{background:#241710;padding:1px 5px;border-radius:4px;color:#e7c98a;font-size:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:4px 0}
+.legend span{font-size:10px;display:flex;align-items:center;gap:4px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<h1>WeaponCraft — Vertical UI <span style="color:var(--gold)">v3</span> <span style="color:var(--ink-mute);font-size:11px">Interactive</span></h1>
+<p class="sub">
+  <b>Click a shop tile</b> (it pulses gold) → <b>click a hero slot</b> to equip ·
+  <b>Click a filled slot</b> to see stats + sell back ·
+  <b>RE-ROLL</b> 50G · <b>START WAVE</b> → battle → reward → forge
+</p>
+<div class="toggle">
+  <button id="bForge" class="on" onclick="setView('forge')">⚒️ FORGE</button>
+  <button id="bBattle" onclick="setView('battle')">⚔️ IN-BATTLE</button>
+</div>
+
+<!-- ================= FORGE ================= -->
+<div class="phone" id="forgePhone">
+  <div class="topbar">
+    <div class="badge">STAGE<b>4</b></div>
+    <div class="ribbon">Forge</div>
+    <div class="waveinfo">
+      <b id="waveLabel">WAVE 1</b><br>
+      INCOMING 👹<br>
+      <span class="timer">⏱ 00:45</span>
+    </div>
+  </div>
+
+  <!-- diorama: flex:1 1 auto — absorbs all vertical slack -->
+  <div class="board diorama">
+    <div class="runestone" style="left:6px">ᚠ</div>
+    <div class="runestone" style="left:6px;top:58px">ᚱ</div>
+    <div class="runestone" style="right:6px">ᚷ</div>
+    <div class="runestone" style="right:6px;top:58px">ᛟ</div>
+    <div class="matchup">
+      <div class="mside heroes" id="dioHeroes"></div>
+      <div class="mside foes"   id="dioFoes"></div>
+    </div>
+  </div>
+
+  <!-- forge rows: fixed height, below diorama -->
+  <div class="forgewrap" id="forgeRows"></div>
+
+  <!-- shop: fixed height, just above bottom bar -->
+  <div class="shopwrap">
+    <div class="shoplabel">Tap a tile to select · then tap a slot above to equip</div>
+    <div class="shoprack" id="shopRack"></div>
+  </div>
+
+  <div class="botbar">
+    <div class="goldtot" id="goldDisplay">🪙 1250G</div>
+    <div class="reroll" id="rerollBtn" onclick="reroll()">RE-ROLL<br>50G</div>
+    <div class="startwave" onclick="startWave()">⚒️ START WAVE <span id="waveNumBtn">1</span></div>
+  </div>
+</div>
+
+<!-- ================= IN-BATTLE ================= -->
+<div class="phone hidden" id="battlePhone">
+  <div class="topbar">
+    <div class="waveinfo" style="text-align:left">WAVE<br>
+      <b id="battleWaveLabel" style="color:var(--gold)">1 / 5</b></div>
+    <div></div>
+    <div class="ctrls"><span>STAGE 4</span><span>⏸</span><span>⏩2×</span></div>
+  </div>
+  <div class="board battlegrid" id="battleGrid"></div>
+  <div class="raillabel">Weapon Rail</div>
+  <div class="weaponrail" id="weaponRail"></div>
+  <div class="botbar-battle">
+    <button class="endwave" id="endWaveBtn" onclick="endWave()" disabled>⚔️ Fighting…</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="notes">
+  <h3>Slot types</h3>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--t-head)"></i><code>head</code> Hilt / Shaft / Grip</span>
+    <span><i class="dot" style="background:var(--t-rune)"></i><code>rune</code> center, always "Rune"</span>
+    <span><i class="dot" style="background:var(--t-body)"></i><code>body</code> Blade / Orb / Fang</span>
+  </div>
+  <p>Click a <b>shop tile</b> first — compatible hero slots light up gold. Wrong-type slots dim. Click a gold slot to equip.
+     Click the same shop tile again to deselect. Sell back a fitted part for 50% refund.</p>
+  <p>Wave reward: <b>250G wave 1</b>, +50G per wave. <b>Vex joins at wave 5.</b> Re-roll costs 50G.</p>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let gold = 1250;
+let wave = 1;
+const MAX_WAVE = 5;
+const WAVE_BASE_REWARD = 200;
+const REROLL_COST = 50;
+
+// selected shop tile index (null = none selected)
+let selShop = null;
+// filled slot showing its stat card
+let revealSlot = null; // {hIdx, sIdx}
+
+const HEROES = [
+  { id:"elara", cls:"elara", name:"Elara", face:"🧙‍♀️", hp:80, ult:70,
+    labels:["Shaft","Rune","Orb"],   slots:[null,null,null] },
+  { id:"bran",  cls:"bran",  name:"Bran",  face:"🛡️",    hp:100,ult:50,
+    labels:["Hilt","Rune","Blade"],  slots:[null,null,null] },
+  { id:"vex",   cls:"vex",   name:"Vex",   face:"🗡️",    locked:true,
+    labels:["Grip","Rune","Fang"],   slots:[null,null,null] }
+];
+
+// slot index → required item type
+const SLOT_TYPE = ["head","rune","body"];
+
+// ---- shop pool: ~3 rune + 2 head + 2 body shown at a time ----
+const SHOP_POOL = [
+  {ic:"🔥",nm:"Fire Rune",   at:25,g:150,t:"rune"},
+  {ic:"💧",nm:"Water Rune",  at:20,g:200,t:"rune"},
+  {ic:"🪨",nm:"Stone Rune",  at:15,g:120,t:"rune"},
+  {ic:"❄️",nm:"Frost Rune",  at:22,g:150,t:"rune"},
+  {ic:"⚡",nm:"Bolt Rune",   at:28,g:130,t:"rune"},
+  {ic:"✨",nm:"Light Rune",  at:18,g:160,t:"rune"},
+  {ic:"🌀",nm:"Arcane Rune", at:35,g:250,t:"rune"},
+  {ic:"☄️",nm:"Comet Rune",  at:30,g:210,t:"rune"},
+  {ic:"🔩",nm:"Iron Hilt",   at:30,g:180,t:"head"},
+  {ic:"🪵",nm:"Oak Shaft",   at:20,g:140,t:"head"},
+  {ic:"🌿",nm:"Thorn Grip",  at:28,g:160,t:"head"},
+  {ic:"🏹",nm:"Yew Grip",    at:24,g:175,t:"head"},
+  {ic:"🧱",nm:"Stone Hilt",  at:26,g:165,t:"head"},
+  {ic:"⚔️",nm:"Steel Blade", at:40,g:220,t:"body"},
+  {ic:"🧊",nm:"Ice Orb",     at:35,g:250,t:"body"},
+  {ic:"🗡️",nm:"Shadow Fang", at:38,g:240,t:"body"},
+  {ic:"🎯",nm:"Recurve Tip", at:32,g:200,t:"body"},
+  {ic:"🌑",nm:"Dark Orb",    at:42,g:280,t:"body"},
+];
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function genShop(){
+  const r=shuffle(SHOP_POOL.filter(x=>x.t==="rune"));
+  const h=shuffle(SHOP_POOL.filter(x=>x.t==="head"));
+  const b=shuffle(SHOP_POOL.filter(x=>x.t==="body"));
+  return shuffle([...r.slice(0,3),...h.slice(0,2),...b.slice(0,2)]);
+}
+let shopSlots = genShop();
+
+const FOES = [
+  {e:"💀",nm:"Skeleton",wk:"❄️ Ice"},
+  {e:"👹",nm:"Goblin",  wk:"🔥 Fire"},
+  {e:"🟢",nm:"Slime",   wk:"🗡️ Pierce"},
+];
+const ENEMIES = [
+  {x:1,y:0,e:"💀",hp:80,st:["Chilled","#8fd0e8"]},
+  {x:2,y:0,e:"💀",hp:60,st:["STEAM!","#dfe7ea"]},
+  {x:1,y:1,e:"👺",hp:70,st:["Burning","#ff8a4a"]},
+  {x:2,y:1,e:"👺",hp:90,st:["Wet","#2f9be0"]},
+  {x:1,y:2,e:"👺",hp:55,st:null},
+  {x:2,y:2,e:"🟢",hp:75,st:["Chilled","#8fd0e8"]},
+];
+
+// ============================================================
+// HELPERS
+// ============================================================
+function heroAtk(h){ return h.slots.filter(Boolean).reduce((s,it)=>s+it.at,0); }
+
+let _toastTid=null;
+function toast(msg,isErr=false){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.className=isErr?"err show":"show";
+  clearTimeout(_toastTid); _toastTid=setTimeout(()=>el.className="",1900);
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+
+// 1. Click a SHOP tile → select it (pulses gold); compatible hero slots light up
+function clickShopTile(idx){
+  if(selShop===idx){ selShop=null; render(); return; }       // deselect same
+  const item=shopSlots[idx];
+  if(gold<item.g){ toast("Not enough gold! Need "+item.g+"G",true); return; }
+  selShop=idx;
+  revealSlot=null;  // close any open stat card
+  render();
+}
+
+// 2. Click a HERO SLOT
+function clickSlot(hIdx,sIdx){
+  const h=HEROES[hIdx];
+  if(h.locked){ toast("Locked — joins at wave 5!",true); return; }
+
+  const existing=h.slots[sIdx];
+
+  if(selShop!==null){
+    // --- shop item is pending ---
+    const shopItem=shopSlots[selShop];
+    if(existing){
+      // filled slot: open stat card, cancel shop selection
+      toast("Slot is full — sell it back first");
+      revealSlot={hIdx,sIdx}; selShop=null;
+      render(); return;
+    }
+    // empty slot — type check
+    const need=SLOT_TYPE[sIdx];
+    if(shopItem.t!==need){
+      const lbl=sIdx===0?"HEAD":sIdx===1?"RUNE":"BODY";
+      toast("Wrong type — this slot needs a "+lbl+" item",true);
+      return;  // keep selShop active so user can pick a correct slot
+    }
+    gold-=shopItem.g;
+    h.slots[sIdx]={...shopItem};
+    selShop=null;
+    toast("Equipped "+shopItem.nm+"!");
+    render(); return;
+  }
+
+  // --- no shop selection ---
+  if(!existing){
+    toast("Pick a shop tile below first!",true); return;
+  }
+  // toggle stat card on filled slot
+  if(revealSlot && revealSlot.hIdx===hIdx && revealSlot.sIdx===sIdx){
+    revealSlot=null;
+  } else {
+    revealSlot={hIdx,sIdx};
+  }
+  render();
+}
+
+function unequip(hIdx,sIdx,ev){
+  if(ev) ev.stopPropagation();
+  const h=HEROES[hIdx];
+  const item=h.slots[sIdx]; if(!item) return;
+  const refund=0|item.g*.5;
+  gold+=refund;
+  h.slots[sIdx]=null;
+  revealSlot=null;
+  toast("Sold for "+refund+"G");
+  render();
+}
+
+function reroll(){
+  if(gold<REROLL_COST){ toast("Need "+REROLL_COST+"G to re-roll!",true); return; }
+  gold-=REROLL_COST; shopSlots=genShop(); selShop=null;
+  toast("Shop refreshed!"); render();
+}
+
+// ============================================================
+// WAVE
+// ============================================================
+function startWave(){
+  if(wave>MAX_WAVE){ toast("All waves complete!"); return; }
+  setView('battle');
+  document.getElementById("battleWaveLabel").textContent=wave+" / "+MAX_WAVE;
+  renderBattle();
+  let count=3;
+  const btn=document.getElementById("endWaveBtn");
+  btn.disabled=true;
+  (function tick(){
+    if(count>0){ btn.textContent="⚔️ Fighting… "+count; count--; setTimeout(tick,1000); }
+    else { btn.disabled=false; btn.textContent="✅ Wave "+wave+" cleared — Back to Forge"; }
+  })();
+}
+
+function endWave(){
+  const reward=WAVE_BASE_REWARD+wave*50;
+  gold+=reward; wave++;
+  if(wave>=5 && HEROES[2].locked){
+    HEROES[2].locked=false; HEROES[2].hp=70; HEROES[2].ult=30;
+    setTimeout(()=>toast("🗡️ Vex has joined your squad!"),300);
+  } else if(wave>MAX_WAVE){
+    setTimeout(()=>toast("All "+MAX_WAVE+" waves cleared!"),300);
+  } else {
+    setTimeout(()=>toast("Wave cleared! +"+reward+"G"),300);
+  }
+  setView('forge'); render();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function dioramaHeroes(){
+  return HEROES.map(h=>`<div class="mhero">
+    <span class="nametag">${h.locked?'???':h.name}</span>
+    <span style="font-size:28px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))">${h.locked?'❔':h.face}</span>
+  </div>`).join("");
+}
+function dioramaFoes(){
+  return FOES.map(f=>`<div class="mfoe">
+    <span class="weakpill">WEAK ${f.wk}</span>
+    <span class="efig">${f.e}</span>
+  </div>`).join("");
+}
+
+function forgeRow(h,hIdx){
+  if(h.locked){
+    const ls=[0,1,2].map(()=>`<div class="slot empty" style="cursor:default">🔒</div>`).join("");
+    return `<div class="frow panel locked">
+      <div class="pcol"><div class="portrait">❔</div></div>
+      <div class="slots">${ls}</div>
+      <div class="lockcap">Locked — joins at Wave 5</div>
+    </div>`;
+  }
+
+  const atk=heroAtk(h);
+  const pendingType = selShop!==null ? shopSlots[selShop].t : null;
+
+  const slotHtml=h.slots.map((item,sIdx)=>{
+    const isCenter=sIdx===1;
+    let cls=`slot ${isCenter?"rune":""}`;
+
+    if(!item){
+      cls+=" empty";
+      if(pendingType!==null){
+        if(pendingType===SLOT_TYPE[sIdx]) cls+=" recv";
+        else                              cls+=" incompat";
+      }
+      return `<div class="${cls}" onclick="clickSlot(${hIdx},${sIdx})">+</div>`;
+    } else {
+      const isRev=revealSlot && revealSlot.hIdx===hIdx && revealSlot.sIdx===sIdx;
+      if(isRev) cls+=" revealed";
+      return `<div class="${cls}" onclick="clickSlot(${hIdx},${sIdx})">
+        ${item.ic}
+        <div class="scap">
+          <div class="lb">${h.labels[sIdx]}</div>
+          <div class="nm">${item.nm}</div>
+          <div class="at">+${item.at} ATK</div>
+          <div class="unsell" onclick="unequip(${hIdx},${sIdx},event)">✕ Sell 50% (${0|item.g*.5}G)</div>
+        </div>
+      </div>`;
+    }
+  }).join("");
+
+  return `<div class="frow panel ${h.cls}">
+    <div class="pcol">
+      <div class="portrait">${h.face}</div>
+      <div class="bars">
+        <div class="bar hp"><i style="width:${h.hp}%"></i></div>
+        <div class="bar ult"><i style="width:${h.ult}%"></i></div>
+      </div>
+      <div class="tagrow">
+        <div class="atkpill"><span class="sw">⚔</span> ${atk}</div>
+        <div class="ultbtn">⚡</div>
+      </div>
+    </div>
+    <div class="slots">${slotHtml}</div>
+  </div>`;
+}
+
+function shopTile(item,idx){
+  let cls="stile";
+  if(idx===selShop) cls+=" sel";
+  else if(gold<item.g) cls+=" broke";
+  return `<div class="${cls}" onclick="clickShopTile(${idx})">
+    <div class="ic">${item.ic}</div>
+    <div class="nm">${item.nm}</div>
+    <div class="at">+${item.at}</div>
+    <div class="gp">${item.g}G</div>
+    <div class="tpill ${item.t}">${item.t}</div>
+  </div>`;
+}
+
+function weaponRow(h){
+  if(h.locked) return `<div class="wrow locked">
+    <div class="wportrait">❔</div>
+    <div class="wslots">${[0,1,2].map(()=>'<div class="wslot">🔒</div>').join("")}</div>
+  </div>`;
+  const ws=h.slots.map((it,i)=>
+    `<div class="wslot ${i===1?'rune':''} ${it?'':'empty'}">${it?it.ic:'·'}</div>`
+  ).join("");
+  return `<div class="wrow ${h.cls}">
+    <div class="wportrait">${h.face}</div>
+    <div class="wslots">${ws}</div>
+  </div>`;
+}
+
+function render(){
+  document.getElementById("dioHeroes").innerHTML=dioramaHeroes();
+  document.getElementById("dioFoes").innerHTML=dioramaFoes();
+  document.getElementById("forgeRows").innerHTML=HEROES.map((h,i)=>forgeRow(h,i)).join("");
+  document.getElementById("shopRack").innerHTML=shopSlots.map((s,i)=>shopTile(s,i)).join("");
+  document.getElementById("goldDisplay").textContent="🪙 "+gold+"G";
+  document.getElementById("waveLabel").textContent="WAVE "+wave;
+  document.getElementById("waveNumBtn").textContent=wave;
+  document.getElementById("rerollBtn").classList.toggle("broke",gold<REROLL_COST);
+  document.getElementById("weaponRail").innerHTML=HEROES.map(weaponRow).join("");
+}
+
+function renderBattle(){
+  const heroesCol=HEROES.map((h,i)=>{
+    const top=7+i*31;
+    const bars=h.locked?"":
+      `<div class="gbars">
+        <div class="bar hp"><i style="width:${h.hp}%"></i></div>
+        <div class="bar ult"><i style="width:${h.ult}%"></i></div>
+      </div>`;
+    return `<div class="gcell" style="left:5%;top:${top}%">
+      <span style="font-size:32px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))">${h.locked?'❔':h.face}</span>
+      ${bars}
+    </div>`;
+  }).join("");
+  const en=ENEMIES.map(m=>{
+    const left=34+(m.x-1)*24,top=7+m.y*31;
+    const st=m.st?`<div class="status" style="left:${left}%;top:${top-5}%;color:${m.st[1]}">${m.st[0]}</div>`:"";
+    return `<div class="gcell" style="left:${left}%;top:${top}%">
+      <span class="enemy">${m.e}</span>
+      <div class="ehp"><i style="width:${m.hp}%"></i></div>
+    </div>${st}`;
+  }).join("");
+  const vfx=`
+    <div class="vfxline" style="left:16%;top:14%;width:18%;background:linear-gradient(90deg,transparent,#ff8a4a)"></div>
+    <div class="vfxline" style="left:13%;top:77%;width:22%;background:linear-gradient(90deg,transparent,#7fd0ff);height:4px"></div>`;
+  document.getElementById("battleGrid").innerHTML=heroesCol+en+vfx;
+  document.getElementById("weaponRail").innerHTML=HEROES.map(weaponRow).join("");
+}
+
+function setView(v){
+  const isForge=v==='forge';
+  document.getElementById("forgePhone").classList.toggle("hidden",!isForge);
+  document.getElementById("battlePhone").classList.toggle("hidden",isForge);
+  document.getElementById("bForge").classList.toggle("on",isForge);
+  document.getElementById("bBattle").classList.toggle("on",!isForge);
+}
+
+render();
+</script>
+</body>
+</html>

@@ -93,13 +93,13 @@ func _build_lanes() -> void:
 		var psb := StyleBoxFlat.new()
 		psb.bg_color = Color(0.082, 0.063, 0.047, 1)
 		psb.border_color = accent
-		psb.set_border_width_all(3)
-		psb.set_corner_radius_all(24)
+		psb.set_border_width_all(2)
+		psb.set_corner_radius_all(6)   ## portrait frame, not circle
 		pwrap.add_theme_stylebox_override(&"panel", psb)
 		lane.add_child(pwrap)
 
 		var sprite := TextureRect.new()
-		sprite.custom_minimum_size = Vector2(46, 46)
+		sprite.custom_minimum_size = Vector2(52, 80)   ## taller: full-body display
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		pwrap.add_child(sprite)

@@ -44,12 +44,6 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="StartWaveBtn" type="Button" parent="MarginContainer/VBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 36)
-layout_mode = 2
-text = "⚔ START WAVE"
-
 [node name="ShopHeader" type="HBoxContainer" parent="MarginContainer/VBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
@@ -89,12 +83,14 @@ theme_override_constants/separation = 4
 
 [node name="InvHeader" type="Label" parent="MarginContainer/VBox"]
 layout_mode = 2
+visible = false
 text = "Inventory"
 theme_override_font_sizes/font_size = 11
 
 [node name="InvScroll" type="ScrollContainer" parent="MarginContainer/VBox"]
 custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
+visible = false
 vertical_scroll_mode = 0
 
 [node name="InventoryStrip" type="HBoxContainer" parent="MarginContainer/VBox/InvScroll"]
@@ -107,3 +103,9 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "(empty)"
 theme_override_font_sizes/font_size = 10
+
+[node name="StartWaveBtn" type="Button" parent="MarginContainer/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "⚔ START WAVE"

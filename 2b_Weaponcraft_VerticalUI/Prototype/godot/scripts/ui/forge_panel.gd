@@ -361,25 +361,36 @@ func _on_anvil_clicked(_card, _mode: StringName, slot, hero_id: StringName) -> v
 	if hero == null:
 		return
 	if _armed != null:
-		# Commit equip if this slot matches the armed part's slot and is empty.
-		if slot == _armed.slot and hero.weapon.get_slot(slot) == null:
+		# Only act when the slot type matches the armed part type.
+		if slot == _armed.slot:
 			if _armed.source == &"shop":
+				var armed_part_id = GameState.shop_parts[int(_armed.payload)]
+				var current = hero.weapon.get_slot(slot)
+				# Occupied by a DIFFERENT part → unequip it first so the shop item
+				# lands via acquire_part Step 2 (equip fresh) rather than landing in
+				# inventory. Same part → let acquire_part Step 1 merge.
+				if current != null and current.part_id != armed_part_id:
+					Merge.unequip_to_inventory(slot, hero_id)
 				Shop.buy(int(_armed.payload), hero_id)
 			else:
+				# equip_from_inventory already handles merge (same partId) and swap
+				# (different partId → old goes to inventory, new equips).
 				Merge.equip_from_inventory(_armed.payload, hero_id)
 			_armed = null
 			_rebuild_all()
-		# else: incompatible/occupied — ignore (keep armed so player can retarget).
+		# Incompatible slot type → keep armed so player can retarget.
 		return
 	# Nothing armed: tapping a filled slot sells it back to inventory.
 	if slot != &"" and hero.weapon.get_slot(slot) != null:
 		Merge.unequip_to_inventory(slot, hero_id)
 
 ## Highlight an anvil card based on the current armed selection.
-func _apply_arm_highlight(card, slot: StringName, item) -> void:
+## Any slot with a matching type glows (whether empty or already occupied —
+## occupied same-part will merge, occupied different-part will swap).
+func _apply_arm_highlight(card, slot: StringName, _item) -> void:
 	if _armed == null:
 		return
-	if slot == _armed.slot and item == null:
-		card.modulate = Color(1.35, 1.25, 0.7)   ## compatible empty → glow
+	if slot == _armed.slot:
+		card.modulate = Color(1.35, 1.25, 0.7)   ## compatible slot → glow
 	else:
-		card.modulate = Color(0.6, 0.6, 0.6, 0.85)  ## dim the rest
+		card.modulate = Color(0.6, 0.6, 0.6, 0.85)  ## incompatible type → dim

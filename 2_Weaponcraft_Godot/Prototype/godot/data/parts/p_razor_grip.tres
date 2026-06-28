@@ -6,9 +6,9 @@
 [resource]
 script = ExtResource("1")
 id = &"p_razor_grip"
-slot = &"hilt"
+slot = &"body"
 name = "Razor Grip"
-desc = "Universal hilt with +10% crit. Enables the derived CRIT tag — pair with pierce for Razor Wind."
+desc = "Universal weapon-body with +10% crit. Enables the derived CRIT tag — pair with pierce for Razor Wind."
 icon = ExtResource("2")
 cost = 4
 atk = 3

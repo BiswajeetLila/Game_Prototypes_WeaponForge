@@ -89,14 +89,14 @@ func _test_slot_coverage_when_bran_empty() -> void:
 	## Bran's weapon starts empty -> guarantee kicks in.
 	for trial in 25:
 		Shop.refresh(true)
-		var slots := {&"head": 0, &"hilt": 0, &"rune": 0}
+		var slots := {&"head": 0, &"body": 0, &"rune": 0}
 		for pid in GameState.shop_parts:
 			if pid == null:
 				continue
 			var def = GameState.get_part_def(pid)
 			if def != null:
 				slots[def.slot] = int(slots.get(def.slot, 0)) + 1
-		if slots[&"head"] < 1 or slots[&"hilt"] < 1 or slots[&"rune"] < 1:
+		if slots[&"head"] < 1 or slots[&"body"] < 1 or slots[&"rune"] < 1:
 			_check("slot coverage when not kitted: every roll has >=1 head, hilt, rune",
 				false, "trial %d slots=%s" % [trial, str(slots)])
 			return
@@ -107,7 +107,7 @@ func _test_slot_coverage_satisfied_when_kitted() -> void:
 	GameState.new_session()
 	## Manually kit Bran with any 3 parts so guarantee should NOT apply.
 	GameState.hero.weapon.set_slot(&"head", InventoryItemT.new(100, &"h_iron_edge", 1))
-	GameState.hero.weapon.set_slot(&"hilt", InventoryItemT.new(101, &"p_steel_grip", 1))
+	GameState.hero.weapon.set_slot(&"body", InventoryItemT.new(101, &"p_steel_grip", 1))
 	GameState.hero.weapon.set_slot(&"rune", InventoryItemT.new(102, &"r_fire", 1))
 	## Now refresh many times — pure-random pool means SOME rolls will lack a slot type.
 	## Since pool is 5 parts (1H/2hilts/2runes), runes-only-of-5 is unlikely but possible.
@@ -115,14 +115,14 @@ func _test_slot_coverage_satisfied_when_kitted() -> void:
 	var seen_missing_slot := false
 	for _i in 200:
 		Shop.refresh(true)
-		var slots := {&"head": 0, &"hilt": 0, &"rune": 0}
+		var slots := {&"head": 0, &"body": 0, &"rune": 0}
 		for pid in GameState.shop_parts:
 			if pid == null:
 				continue
 			var def = GameState.get_part_def(pid)
 			if def != null:
 				slots[def.slot] = int(slots.get(def.slot, 0)) + 1
-		if slots[&"head"] == 0 or slots[&"hilt"] == 0 or slots[&"rune"] == 0:
+		if slots[&"head"] == 0 or slots[&"body"] == 0 or slots[&"rune"] == 0:
 			seen_missing_slot = true
 			break
 	_check("slot coverage NOT enforced when fully kitted (rolls eventually skip a slot type)",

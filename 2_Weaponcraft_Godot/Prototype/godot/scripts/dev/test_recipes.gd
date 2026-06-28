@@ -48,7 +48,7 @@ func _test_empty_weapon_no_recipes() -> void:
 
 func _test_pyro_pommel_alone_no_recipe() -> void:
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(1, &"p_pyro_pommel", 1))
+	w.set_slot(&"body", InventoryItemT.new(1, &"p_pyro_pommel", 1))
 	var counts: Dictionary = Recipes.weapon_tag_counts(w)
 	var active: Array = Recipes.get_active_recipes(w)
 	_check("pyro_pommel alone: fire=1, no recipe", counts.get(&"fire", 0) == 1 and active.is_empty(),
@@ -56,7 +56,7 @@ func _test_pyro_pommel_alone_no_recipe() -> void:
 
 func _test_pyro_pommel_plus_ice_rune_steamburst() -> void:
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(2, &"p_pyro_pommel", 1))
+	w.set_slot(&"body", InventoryItemT.new(2, &"p_pyro_pommel", 1))
 	w.set_slot(&"rune", InventoryItemT.new(3, &"r_ice", 1))
 	var active: Array = Recipes.get_active_recipes(w)
 	_check("pyro_pommel + r_ice: Steamburst triggers",
@@ -65,7 +65,7 @@ func _test_pyro_pommel_plus_ice_rune_steamburst() -> void:
 
 func _test_pyro_pommel_plus_fire_rune_inferno() -> void:
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(4, &"p_pyro_pommel", 1))
+	w.set_slot(&"body", InventoryItemT.new(4, &"p_pyro_pommel", 1))
 	w.set_slot(&"rune", InventoryItemT.new(5, &"r_fire", 1))
 	var active: Array = Recipes.get_active_recipes(w)
 	_check("pyro_pommel + r_fire: Inferno triggers",
@@ -86,7 +86,7 @@ func _test_pattern_matches_helper() -> void:
 func _test_tag_count_explicit_and_derived() -> void:
 	## p_steel_grip (no tag) + r_fire (fire) — only fire shows up.
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(10, &"p_steel_grip", 1))
+	w.set_slot(&"body", InventoryItemT.new(10, &"p_steel_grip", 1))
 	w.set_slot(&"rune", InventoryItemT.new(11, &"r_fire", 1))
 	var counts: Dictionary = Recipes.weapon_tag_counts(w)
 	_check("steel_grip + r_fire: fire=1, no derived tags",
@@ -103,7 +103,7 @@ func _test_bonus_aggregation() -> void:
 	## Achievable instead with pyro_pommel (fire hilt) + r_fire (fire rune):
 	## fire=2 -> Inferno only. Test that path.
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(20, &"p_pyro_pommel", 1))
+	w.set_slot(&"body", InventoryItemT.new(20, &"p_pyro_pommel", 1))
 	w.set_slot(&"rune", InventoryItemT.new(21, &"r_fire", 1))
 	var hero = HeroStateT.new(GameState.heroes_by_id[&"bran"])
 	hero.weapon = w
@@ -121,7 +121,7 @@ func _test_check_hero_for_discoveries_fires_once() -> void:
 	GameState.recipe_discovered.connect(func(_rid): fire_count[0] += 1)
 
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(30, &"p_pyro_pommel", 1))
+	w.set_slot(&"body", InventoryItemT.new(30, &"p_pyro_pommel", 1))
 	w.set_slot(&"rune", InventoryItemT.new(31, &"r_fire", 1))
 	var hero = HeroStateT.new(GameState.heroes_by_id[&"bran"])
 	hero.weapon = w
@@ -158,7 +158,7 @@ func _test_razor_wind_derived_crit_plus_pierce() -> void:
 	## p_razor_grip (hilt, crit=10, no explicit tag) + r_pierce (rune, pierce) ->
 	## explicit tags = [pierce]; derived = [crit] (crit% > 0). counts = {crit:1, pierce:1}.
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(44, &"p_razor_grip", 1))
+	w.set_slot(&"body", InventoryItemT.new(44, &"p_razor_grip", 1))
 	w.set_slot(&"rune", InventoryItemT.new(45, &"r_pierce", 1))
 	var counts: Dictionary = Recipes.weapon_tag_counts(w)
 	var active: Array = Recipes.get_active_recipes(w)
@@ -193,7 +193,7 @@ func _test_quickdraw_derived_charge_plus_fire() -> void:
 	## Lightning Grip (hilt, ult_rate=12, no explicit tag) + r_fire (rune, fire).
 	## counts = {fire:1, charge:1}.
 	var w = WeaponT.new()
-	w.set_slot(&"hilt", InventoryItemT.new(50, &"p_lightning_grip", 1))
+	w.set_slot(&"body", InventoryItemT.new(50, &"p_lightning_grip", 1))
 	w.set_slot(&"rune", InventoryItemT.new(51, &"r_fire", 1))
 	var counts: Dictionary = Recipes.weapon_tag_counts(w)
 	var active: Array = Recipes.get_active_recipes(w)

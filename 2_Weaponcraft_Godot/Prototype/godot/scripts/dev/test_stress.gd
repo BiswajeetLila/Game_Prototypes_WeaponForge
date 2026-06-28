@@ -29,7 +29,7 @@ func _run_wave(w: int) -> void:
 		_log("  wave %d skipped — no hero" % w)
 		return
 	hero.weapon.set_slot(&"head", InventoryItemT.new(GameState.next_uid(), &"h_iron_edge", 1))
-	hero.weapon.set_slot(&"hilt", InventoryItemT.new(GameState.next_uid(), &"p_pyro_pommel", 1))
+	hero.weapon.set_slot(&"body", InventoryItemT.new(GameState.next_uid(), &"p_pyro_pommel", 1))
 	hero.weapon.set_slot(&"rune", InventoryItemT.new(GameState.next_uid(), &"r_ice", 1))
 	hero.refresh_max_hp()
 	hero.hp = hero.max_hp

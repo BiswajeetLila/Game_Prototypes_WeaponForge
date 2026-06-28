@@ -29,6 +29,7 @@ func _ready() -> void:
 	_test_buy_with_insufficient_gold_refunded()
 	_test_level_multiplier_table()
 	_test_weapon_level_mult_mirrors_merge()
+	_test_slots_order_head_rune_body()
 	_test_equip_from_inv_swaps_when_source_higher_level()
 	_test_equip_from_inv_swaps_when_source_higher_mid_levels()
 	_test_equip_from_inv_merges_when_source_lower_or_equal()
@@ -65,7 +66,7 @@ func _test_acquire_different_partid_in_slot_goes_to_inventory() -> void:
 	GameState.new_session()
 	Merge.acquire_part(&"p_steel_grip")       ## hilt L1
 	Merge.acquire_part(&"p_pyro_pommel")      ## hilt occupied, different partId -> inventory
-	var equipped = GameState.hero.weapon.get_slot(&"hilt")
+	var equipped = GameState.hero.weapon.get_slot(&"body")
 	var inv_ok: bool = GameState.inventory.size() == 1 and GameState.inventory[0].part_id == &"p_pyro_pommel"
 	_check("different-partId in slot: new part lands in inventory L1",
 		equipped != null and equipped.part_id == &"p_steel_grip" and inv_ok,
@@ -230,6 +231,24 @@ func _test_weapon_level_mult_mirrors_merge() -> void:
 	var ok = WeaponT2.LEVEL_MULT == Merge.LEVEL_MULT
 	_check("Weapon.LEVEL_MULT == Merge.LEVEL_MULT (mirror lockstep)",
 		ok, "weapon=%s merge=%s" % [str(WeaponT2.LEVEL_MULT), str(Merge.LEVEL_MULT)])
+
+func _test_slots_order_head_rune_body() -> void:
+	## Post-rename contract: slots are head · rune · body (rune is the CENTER slot),
+	## and the `body` slot replaces the old `hilt`. slots() returns [head, rune, body].
+	const WeaponT3 = preload("res://scripts/data/weapon.gd")
+	var w = WeaponT3.new()
+	var h = InventoryItemT.new(900, &"h_iron_edge", 1)
+	var r = InventoryItemT.new(901, &"r_fire", 1)
+	var b = InventoryItemT.new(902, &"p_steel_grip", 1)
+	w.set_slot(&"head", h)
+	w.set_slot(&"rune", r)
+	w.set_slot(&"body", b)
+	var order_ok: bool = w.slots() == [h, r, b]
+	var body_roundtrip: bool = w.get_slot(&"body") == b
+	var no_hilt: bool = w.get_slot(&"hilt") == null  ## old name no longer resolves
+	_check("slots() order is [head, rune, body] + body round-trips, hilt is gone",
+		order_ok and body_roundtrip and no_hilt,
+		"slots=%s body=%s hilt=%s" % [str(w.slots()), str(w.get_slot(&"body")), str(w.get_slot(&"hilt"))])
 
 ## ---------- Test helpers ----------
 

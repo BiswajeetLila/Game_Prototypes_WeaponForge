@@ -145,7 +145,7 @@ func _test_spawned_enemies_have_weak_always_and_resist_70pct() -> void:
 func _test_hero_attack_deals_atk_damage() -> void:
 	_fresh_session_with_weapon([
 		[&"head", &"h_iron_edge", 1],    ## +8 atk -> total 6+8=14
-		[&"hilt", &"p_steel_grip", 1],   ## +4 atk -> total 18
+		[&"body", &"p_steel_grip", 1],   ## +4 atk -> total 18
 	])
 	Combat.start_wave(1, false)
 	_force_enemies([
@@ -173,7 +173,7 @@ func _test_hero_attack_deals_atk_damage() -> void:
 func _test_weak_multiplier_18x_applied() -> void:
 	_fresh_session_with_weapon([
 		[&"head", &"h_iron_edge", 1],
-		[&"hilt", &"p_pyro_pommel", 1],   ## fire tag, +2 atk -> total 16
+		[&"body", &"p_pyro_pommel", 1],   ## fire tag, +2 atk -> total 16
 	])
 	Combat.start_wave(1, false)
 	_force_enemies([{"hp": 9999, "weak": &"fire", "resist": &""}])
@@ -188,7 +188,7 @@ func _test_weak_multiplier_18x_applied() -> void:
 func _test_resist_multiplier_05x_applied() -> void:
 	_fresh_session_with_weapon([
 		[&"head", &"h_iron_edge", 1],
-		[&"hilt", &"p_pyro_pommel", 1],   ## fire tag, total atk 16
+		[&"body", &"p_pyro_pommel", 1],   ## fire tag, total atk 16
 	])
 	Combat.start_wave(1, false)
 	_force_enemies([{"hp": 9999, "weak": &"ice", "resist": &"fire"}])
@@ -203,7 +203,7 @@ func _test_resist_multiplier_05x_applied() -> void:
 func _test_ult_gauge_fills_from_damage() -> void:
 	_fresh_session_with_weapon([
 		[&"head", &"h_iron_edge", 1],
-		[&"hilt", &"p_steel_grip", 1],
+		[&"body", &"p_steel_grip", 1],
 	])
 	Combat.start_wave(1, false)
 	_force_enemies([{"hp": 9999, "weak": &"", "resist": &""}])
@@ -228,7 +228,7 @@ func _test_persistent_ult_gauge_across_waves() -> void:
 func _test_fire_ult_aoe_resets_used_clears_gauge() -> void:
 	_fresh_session_with_weapon([
 		[&"head", &"h_iron_edge", 1],
-		[&"hilt", &"p_steel_grip", 1],
+		[&"body", &"p_steel_grip", 1],
 	])
 	Combat.start_wave(1, false)
 	_force_enemies([{"hp": 999}, {"hp": 999}, {"hp": 999}])
@@ -270,7 +270,7 @@ func _test_fire_ult_blocked_below_100_gauge() -> void:
 
 func _test_steamburst_splash_hits_other_enemies() -> void:
 	_fresh_session_with_weapon([
-		[&"hilt", &"p_pyro_pommel", 1],   ## fire
+		[&"body", &"p_pyro_pommel", 1],   ## fire
 		[&"rune", &"r_ice", 1],           ## ice -> Steamburst triggers (fire+ice)
 	])
 	Combat.start_wave(1, false)
@@ -295,7 +295,7 @@ func _test_steamburst_splash_hits_other_enemies() -> void:
 
 func _test_inferno_stack_burn_resets_on_target_switch() -> void:
 	_fresh_session_with_weapon([
-		[&"hilt", &"p_pyro_pommel", 1],   ## fire
+		[&"body", &"p_pyro_pommel", 1],   ## fire
 		[&"rune", &"r_fire", 1],           ## fire -> Inferno triggers (fire+fire)
 	])
 	Combat.start_wave(1, false)
@@ -375,7 +375,7 @@ func _test_fire_ult_meteor_aoe_plus_burn_on_primary() -> void:
 	## Meteor: AoE all alive enemies × ult_atk_multiplier + advances burn_stack
 	## against the highest-HP target (capped by Inferno's stack_cap).
 	_fresh_session_with_weapon([
-		[&"hilt", &"p_pyro_pommel", 1],   ## fire
+		[&"body", &"p_pyro_pommel", 1],   ## fire
 		[&"rune", &"r_fire", 1],          ## fire -> Inferno active, stack_cap=3
 	])
 	Combat.start_wave(1, false)

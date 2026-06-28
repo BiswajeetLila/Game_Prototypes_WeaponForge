@@ -135,7 +135,7 @@ func _rebuild_anvil() -> void:
 	var hero = _current_hero()
 	if hero == null or hero.weapon == null:
 		return
-	for slot in [&"head", &"hilt", &"rune"]:
+	for slot in [&"head", &"rune", &"body"]:
 		var item = hero.weapon.get_slot(slot)
 		var card = PartCardScene.instantiate()
 		_anvil_row.add_child(card)

@@ -15,31 +15,32 @@ extends RefCounted
 ## Merge.LEVEL_MULT; test_weapon_level_mult_mirrors_merge locks drift.
 const LEVEL_MULT: Array = [1.00, 1.35, 1.80, 2.30, 2.75]
 
-## Three slots. Each is either an InventoryItem (RefCounted) or null.
+## Three slots: head · rune · body. Rune is the CENTER slot; `body` replaced the
+## old `hilt`. Each is either an InventoryItem (RefCounted) or null.
 var head = null
-var hilt = null
 var rune = null
+var body = null
 
 ## ---------- Slot access ----------
 
 func get_slot(slot: StringName):
 	match slot:
 		&"head": return head
-		&"hilt": return hilt
 		&"rune": return rune
+		&"body": return body
 	return null
 
 func set_slot(slot: StringName, item) -> void:
 	match slot:
 		&"head": head = item
-		&"hilt": hilt = item
 		&"rune": rune = item
+		&"body": body = item
 
 func slots() -> Array:
-	return [head, hilt, rune]
+	return [head, rune, body]
 
 func is_full() -> bool:
-	return head != null and hilt != null and rune != null
+	return head != null and rune != null and body != null
 
 ## ---------- Stat aggregation ----------
 ## Reads PartData via GameState.get_part_def() — a deliberate dependency so we
@@ -62,16 +63,16 @@ func _stat_for(item, key: StringName) -> float:
 	return raw * mult
 
 func get_atk() -> int:
-	return int(floor(_stat_for(head, &"atk") + _stat_for(hilt, &"atk") + _stat_for(rune, &"atk")))
+	return int(floor(_stat_for(head, &"atk") + _stat_for(rune, &"atk") + _stat_for(body, &"atk")))
 
 func get_hp_bonus() -> int:
-	return int(floor(_stat_for(head, &"hp") + _stat_for(hilt, &"hp") + _stat_for(rune, &"hp")))
+	return int(floor(_stat_for(head, &"hp") + _stat_for(rune, &"hp") + _stat_for(body, &"hp")))
 
 func get_crit() -> int:
-	return int(floor(_stat_for(head, &"crit") + _stat_for(hilt, &"crit") + _stat_for(rune, &"crit")))
+	return int(floor(_stat_for(head, &"crit") + _stat_for(rune, &"crit") + _stat_for(body, &"crit")))
 
 func get_ult_rate() -> int:
-	return int(floor(_stat_for(head, &"ult_rate") + _stat_for(hilt, &"ult_rate") + _stat_for(rune, &"ult_rate")))
+	return int(floor(_stat_for(head, &"ult_rate") + _stat_for(rune, &"ult_rate") + _stat_for(body, &"ult_rate")))
 
 ## ---------- Tags ----------
 ## Explicit tags come from PartData.tag. Derived tags ("crit" from any crit%,

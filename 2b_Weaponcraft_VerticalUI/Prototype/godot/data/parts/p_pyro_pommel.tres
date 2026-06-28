@@ -6,9 +6,9 @@
 [resource]
 script = ExtResource("1")
 id = &"p_pyro_pommel"
-slot = &"hilt"
+slot = &"body"
 name = "Pyro Pommel"
-desc = "Universal hilt smoldering with FIRE. Pair with a fire or ice rune to unlock crafting recipes."
+desc = "Universal weapon-body smoldering with FIRE. Pair with a fire or ice rune to unlock crafting recipes."
 icon = ExtResource("1_wuv36")
 cost = 4
 atk = 2

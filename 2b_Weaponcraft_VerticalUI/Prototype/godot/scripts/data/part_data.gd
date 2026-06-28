@@ -6,7 +6,7 @@ extends Resource
 ## Stable string id used as merge key + shop pool key. e.g. "h_iron_edge".
 @export var id: StringName = &""
 
-## Slot the part occupies: "head", "hilt", or "rune".
+## Slot the part occupies: "head", "rune", or "body".
 @export var slot: StringName = &"head"
 
 ## Class affinity: "warrior", "mage", "rogue", or "universal".

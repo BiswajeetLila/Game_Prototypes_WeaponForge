@@ -6,9 +6,9 @@
 [resource]
 script = ExtResource("1")
 id = &"p_steel_grip"
-slot = &"hilt"
+slot = &"body"
 cls = &"warrior"
 name = "Steel Grip"
-desc = "Sturdy warrior hilt. +ATK."
+desc = "Sturdy warrior weapon-body. +ATK."
 icon = ExtResource("1_ehfem")
 atk = 4

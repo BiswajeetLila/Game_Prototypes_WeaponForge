@@ -119,8 +119,8 @@ func _roll_shop() -> Array:
 
 	var out: Array = []
 	if _needs_slot_guarantee():
-		## Force 1 head, 1 hilt, 1 rune (each from eligibles of that slot, if any).
-		for slot in [&"head", &"hilt", &"rune"]:
+		## Force 1 head, 1 rune, 1 body (each from eligibles of that slot, if any).
+		for slot in [&"head", &"rune", &"body"]:
 			var bucket: Array = eligible.filter(
 				func(pid): return GameState.get_part_def(pid).slot == slot
 			)
@@ -133,7 +133,7 @@ func _roll_shop() -> Array:
 		for i in SHOP_SIZE:
 			out.append(eligible[randi() % eligible.size()])
 	## Potion-wave injection: replace last slot with the heal potion. Preserves
-	## the head/hilt/rune slot-coverage guarantee in slots 0-2.
+	## the head/rune/body slot-coverage guarantee in slots 0-2.
 	if _is_potion_wave():
 		out[SHOP_SIZE - 1] = POTION_PART_ID
 	return out

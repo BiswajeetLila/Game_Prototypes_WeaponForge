@@ -6,9 +6,9 @@
 [resource]
 script = ExtResource("1")
 id = &"p_lightning_grip"
-slot = &"hilt"
+slot = &"body"
 name = "Lightning Grip"
-desc = "Universal hilt with +12% ult rate. Enables the derived CHARGE tag — pair with fire for Quickdraw."
+desc = "Universal weapon-body with +12% ult rate. Enables the derived CHARGE tag — pair with fire for Quickdraw."
 icon = ExtResource("2")
 cost = 4
 atk = 2
